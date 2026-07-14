@@ -5,6 +5,13 @@ import { uploadPhoto } from "../../lib/supabaseApi";
 import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
 import { compressImage } from "../../lib/imageCompression";
+import { addToQueue } from "../../lib/uploadQueue";
+
+// Network failures surface as TypeError (fetch's own error type) rather than the
+// PostgrestError/StorageError objects Supabase throws for validation/permission failures.
+function isNetworkError(error: unknown): boolean {
+  return !navigator.onLine || error instanceof TypeError;
+}
 
 export default function PhotoUploadPage() {
   const navigate = useNavigate();
@@ -174,6 +181,8 @@ export default function PhotoUploadPage() {
     }
 
     setIsUploading(true);
+    let successCount = 0;
+    let queuedCount = 0;
     try {
       // Upload each photo (with automatic compression and individual location)
       for (let i = 0; i < photosToUpload.length; i++) {
@@ -201,14 +210,42 @@ export default function PhotoUploadPage() {
         // Compress image before upload to reduce storage and bandwidth
         const compressedFile = await compressImage(file);
 
-        await uploadPhoto(compressedFile, user.id, projectId, visitId, {
-          tags: tags,
-          location: locationObj,
-        });
+        try {
+          await uploadPhoto(compressedFile, user.id, projectId, visitId, {
+            tags: tags,
+            location: locationObj,
+          });
+          successCount++;
+        } catch (uploadError) {
+          if (!isNetworkError(uploadError)) {
+            // Not a connectivity issue (e.g. validation/permission error) —
+            // let the outer catch handle it with the generic error toast.
+            throw uploadError;
+          }
+
+          console.warn("⚠️ Upload failed due to network, queueing for later:", uploadError);
+          await addToQueue({
+            file: compressedFile,
+            userId: user.id,
+            projectId,
+            visitId,
+            tags,
+            location: locationObj,
+          });
+          queuedCount++;
+        }
       }
 
-      console.log("✅ All photos uploaded successfully");
-      toast.success(`${photosToUpload.length} photo(s) ajoutée(s) avec succès!`);
+      console.log("✅ Batch finished", { successCount, queuedCount });
+
+      if (queuedCount > 0) {
+        toast.info(
+          `${queuedCount} photo(s) enregistrée(s) localement, envoi automatique dès le retour en ligne.`,
+        );
+      }
+      if (successCount > 0) {
+        toast.success(`${successCount} photo(s) ajoutée(s) avec succès!`);
+      }
       navigate(`/app/projects/${projectId}/visits/${visitId}`);
     } catch (error) {
       console.error("❌ Error uploading photos:", error);
