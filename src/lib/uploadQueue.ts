@@ -1,5 +1,7 @@
 // IndexedDB-backed queue for photo uploads that failed or are waiting to be sent.
 // Kept separate from the `redmark_photos` database in indexedDB.ts.
+import { uploadPhoto } from "./supabaseApi";
+
 const DB_NAME = "redmark_upload_queue";
 const DB_VERSION = 1;
 const QUEUE_STORE = "uploadQueue";
@@ -168,3 +170,46 @@ export const updateQueueItemStatus = async (
     };
   });
 };
+
+export interface ProcessQueueResult {
+  uploaded: number;
+  failed: number;
+}
+
+// Retries every queued photo. Successful uploads are removed from the queue;
+// photos that fail again are marked "failed" and left in place for the next attempt.
+export async function processQueue(): Promise<ProcessQueueResult> {
+  const items = await getQueuedItems();
+  let uploaded = 0;
+  let failed = 0;
+
+  for (const item of items) {
+    try {
+      await updateQueueItemStatus(item.id, "uploading");
+
+      // IndexedDB's structured clone preserves File instances (name, type) as-is;
+      // fall back to a synthesized name for plain Blobs.
+      const fileForUpload =
+        item.file instanceof File
+          ? item.file
+          : new File([item.file], `queued-photo-${item.id}.jpg`, {
+              type: item.file.type || "image/jpeg",
+            });
+
+      await uploadPhoto(fileForUpload, item.userId, item.projectId, item.visitId, {
+        tags: item.tags,
+        location: item.location,
+        description: item.description,
+      });
+
+      await removeFromQueue(item.id);
+      uploaded++;
+    } catch (error) {
+      console.error("❌ Failed to upload queued photo:", item.id, error);
+      await updateQueueItemStatus(item.id, "failed");
+      failed++;
+    }
+  }
+
+  return { uploaded, failed };
+}
