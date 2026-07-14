@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { projectId as supabaseProjectId, publicAnonKey } from "/utils/supabase/info";
+import { projectId as supabaseProjectId, publicAnonKey } from "../../utils/supabase/info";
 
 const BASE = `https://${supabaseProjectId}.supabase.co/functions/v1/make-server-9fe75696`;
 

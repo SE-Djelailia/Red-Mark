@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { createPin, deletePin, getFloorPlanSignedUrl, listPins } from "../../lib/floorPlansApi";
 import type { FloorPlan, FloorPlanPin } from "../../lib/floorPlansApi";
 import { supabase } from "../../lib/supabase";
-import { projectId as supabaseProjectId } from "/utils/supabase/info";
+import { projectId as supabaseProjectId } from "../../../utils/supabase/info";
 import PinIssueDialog from "./PinIssueDialog";
 import ConfirmDialog from "./ConfirmDialog";
 

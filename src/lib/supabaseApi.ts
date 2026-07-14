@@ -9,6 +9,16 @@ import type {
   ProjectMember,
 } from "./supabase";
 
+// Resolves a Supabase head-count query (or `null` when the query is skipped),
+// returning a plain number instead of the raw PostgREST response.
+async function resolveCount(
+  query: PromiseLike<{ count: number | null }> | null,
+): Promise<number> {
+  if (!query) return 0;
+  const { count } = await query;
+  return count ?? 0;
+}
+
 // ============================================
 // PROJECTS API
 // ============================================
@@ -394,50 +404,61 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     const projectIds = projects.map((p) => p.id);
 
     // Décomptes en parallèle via `head: true` (ne transfère pas les lignes, juste le count)
-    const [visitsRes, photosRes, openRes, inProgressRes, resolvedRes] = await Promise.all([
-      projectIds.length
-        ? supabase
-            .from("site_visits")
-            .select("id", { count: "exact", head: true })
-            .in("project_id", projectIds)
-        : Promise.resolve({ count: 0 } as any),
-      projectIds.length
-        ? supabase
-            .from("photos")
-            .select("id", { count: "exact", head: true })
-            .in("project_id", projectIds)
-            .gte("created_at", weekAgo.toISOString())
-        : Promise.resolve({ count: 0 } as any),
-      projectIds.length
-        ? supabase
-            .from("issues")
-            .select("id", { count: "exact", head: true })
-            .in("project_id", projectIds)
-            .eq("status", "open")
-        : Promise.resolve({ count: 0 } as any),
-      projectIds.length
-        ? supabase
-            .from("issues")
-            .select("id", { count: "exact", head: true })
-            .in("project_id", projectIds)
-            .eq("status", "in_progress")
-        : Promise.resolve({ count: 0 } as any),
-      projectIds.length
-        ? supabase
-            .from("issues")
-            .select("id", { count: "exact", head: true })
-            .in("project_id", projectIds)
-            .eq("status", "resolved")
-        : Promise.resolve({ count: 0 } as any),
-    ]);
+    const [totalVisits, photosThisWeek, openIssues, inProgressIssues, resolvedIssues] =
+      await Promise.all([
+        resolveCount(
+          projectIds.length
+            ? supabase
+                .from("site_visits")
+                .select("id", { count: "exact", head: true })
+                .in("project_id", projectIds)
+            : null,
+        ),
+        resolveCount(
+          projectIds.length
+            ? supabase
+                .from("photos")
+                .select("id", { count: "exact", head: true })
+                .in("project_id", projectIds)
+                .gte("created_at", weekAgo.toISOString())
+            : null,
+        ),
+        resolveCount(
+          projectIds.length
+            ? supabase
+                .from("issues")
+                .select("id", { count: "exact", head: true })
+                .in("project_id", projectIds)
+                .eq("status", "open")
+            : null,
+        ),
+        resolveCount(
+          projectIds.length
+            ? supabase
+                .from("issues")
+                .select("id", { count: "exact", head: true })
+                .in("project_id", projectIds)
+                .eq("status", "in_progress")
+            : null,
+        ),
+        resolveCount(
+          projectIds.length
+            ? supabase
+                .from("issues")
+                .select("id", { count: "exact", head: true })
+                .in("project_id", projectIds)
+                .eq("status", "resolved")
+            : null,
+        ),
+      ]);
 
     return {
       totalProjects: projects.length,
-      totalVisits: visitsRes.count ?? 0,
-      photosThisWeek: photosRes.count ?? 0,
-      openIssues: openRes.count ?? 0,
-      inProgressIssues: inProgressRes.count ?? 0,
-      resolvedIssues: resolvedRes.count ?? 0,
+      totalVisits,
+      photosThisWeek,
+      openIssues,
+      inProgressIssues,
+      resolvedIssues,
     };
   } catch (error) {
     console.error("❌ Error fetching dashboard stats:", error);
@@ -456,25 +477,29 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
     const projects = await getProjects(userId);
     const projectIds = projects.map((p) => p.id);
 
-    const [visitsRes, photosRes] = await Promise.all([
-      projectIds.length
-        ? supabase
-            .from("site_visits")
-            .select("id", { count: "exact", head: true })
-            .in("project_id", projectIds)
-        : Promise.resolve({ count: 0 } as any),
-      projectIds.length
-        ? supabase
-            .from("photos")
-            .select("id", { count: "exact", head: true })
-            .in("project_id", projectIds)
-        : Promise.resolve({ count: 0 } as any),
+    const [totalVisits, totalPhotos] = await Promise.all([
+      resolveCount(
+        projectIds.length
+          ? supabase
+              .from("site_visits")
+              .select("id", { count: "exact", head: true })
+              .in("project_id", projectIds)
+          : null,
+      ),
+      resolveCount(
+        projectIds.length
+          ? supabase
+              .from("photos")
+              .select("id", { count: "exact", head: true })
+              .in("project_id", projectIds)
+          : null,
+      ),
     ]);
 
     return {
       projectCount: projects.length,
-      totalVisits: visitsRes.count ?? 0,
-      totalPhotos: photosRes.count ?? 0,
+      totalVisits,
+      totalPhotos,
     };
   } catch (error) {
     console.error("❌ Error fetching profile stats:", error);
@@ -485,6 +510,8 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
 // ============================================
 // ISSUES API
 // ============================================
+
+type IssueRowWithProject = Issue & { projects: { name: string } | null };
 
 export async function getAllUserIssues(
   userId: string,
@@ -497,9 +524,9 @@ export async function getAllUserIssues(
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return (data || []).map((row: any) => ({
+    return ((data as IssueRowWithProject[] | null) || []).map(({ projects, ...row }) => ({
       ...row,
-      projectName: row.projects?.name ?? "Projet inconnu",
+      projectName: projects?.name ?? "Projet inconnu",
     }));
   } catch (error) {
     console.error("❌ Error fetching all user issues:", error);

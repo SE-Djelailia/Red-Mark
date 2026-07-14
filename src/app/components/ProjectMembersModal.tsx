@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { X, UserPlus, Shield, Trash2, Loader2, Mail } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import { supabase } from "../../lib/supabase";
-import { projectId as supabaseProjectId, publicAnonKey } from "/utils/supabase/info";
+import { projectId as supabaseProjectId, publicAnonKey } from "../../../utils/supabase/info";
 import { toast } from "sonner";
 
 interface Member {
