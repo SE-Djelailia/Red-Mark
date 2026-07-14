@@ -15,7 +15,8 @@ import {
 import { toast } from "sonner";
 import { createIssue, getIssuesByProject, updateIssue } from "../../lib/issuesApi";
 import { ISSUE_TRADES } from "./IssueCreation";
-import { saveIssueExtras, updatePin, FloorPlanPin } from "../../lib/floorPlansApi";
+import { saveIssueExtras, updatePin } from "../../lib/floorPlansApi";
+import type { FloorPlanPin } from "../../lib/floorPlansApi";
 import { getSiteVisits, getPhotos } from "../../lib/supabaseApi";
 import { supabase } from "../../lib/supabase";
 import { compressImage } from "../../lib/imageCompression";

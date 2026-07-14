@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { Mic, Square, Trash2, Play, Pause, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
-  VoiceNote,
   deleteVoiceNote,
   getFloorPlanSignedUrl,
   listVoiceNotes,
   uploadVoiceNote,
 } from "../../lib/floorPlansApi";
+import type { VoiceNote } from "../../lib/floorPlansApi";
 import ConfirmDialog from "./ConfirmDialog";
 
 interface Props {

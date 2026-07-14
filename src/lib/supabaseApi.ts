@@ -1,5 +1,5 @@
-import {
-  supabase,
+import { supabase } from "./supabase";
+import type {
   Project,
   SiteVisit,
   Photo,

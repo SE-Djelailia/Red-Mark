@@ -2,12 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Upload, FileImage, Trash2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import {
-  FloorPlan,
-  deleteFloorPlan,
-  listFloorPlans,
-  uploadFloorPlan,
-} from "../../lib/floorPlansApi";
+import { deleteFloorPlan, listFloorPlans, uploadFloorPlan } from "../../lib/floorPlansApi";
+import type { FloorPlan } from "../../lib/floorPlansApi";
 import FloorPlanUploadModal from "./FloorPlanUploadModal";
 import ConfirmDialog from "./ConfirmDialog";
 

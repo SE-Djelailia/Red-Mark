@@ -2,14 +2,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { ArrowLeft, Minus, Plus, MapPin, Maximize2, Check } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
-import {
-  FloorPlan,
-  FloorPlanPin,
-  createPin,
-  deletePin,
-  getFloorPlanSignedUrl,
-  listPins,
-} from "../../lib/floorPlansApi";
+import { createPin, deletePin, getFloorPlanSignedUrl, listPins } from "../../lib/floorPlansApi";
+import type { FloorPlan, FloorPlanPin } from "../../lib/floorPlansApi";
 import { supabase } from "../../lib/supabase";
 import { projectId as supabaseProjectId } from "/utils/supabase/info";
 import PinIssueDialog from "./PinIssueDialog";
