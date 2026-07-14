@@ -7,6 +7,7 @@
 ## ✅ Batch 2: UI Components & Additional Features
 
 ### UI Components (~30 files)
+
 ```
 ✅ /src/app/components/ui/button.tsx
 ✅ /src/app/components/ui/card.tsx
@@ -41,6 +42,7 @@
 ```
 
 ### Additional Components (~20 files)
+
 ```
 ✅ /src/app/components/QuickVisit.tsx
 ✅ /src/app/components/PhotoLightbox.tsx

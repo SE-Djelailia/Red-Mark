@@ -49,10 +49,12 @@ git push
 ### **2️⃣ Download Updated Files**
 
 **Option A: Individual files** (for small changes)
+
 - Copy updated file content from Figma Make
 - Paste into local file
 
 **Option B: Full export** (for major changes)
+
 - Export entire project from Figma Make
 - Extract ZIP and overwrite local files
 
@@ -70,6 +72,7 @@ git push
 ```
 
 **Examples:**
+
 ```bash
 git commit -m "Fix: Photo gallery sorting"
 git commit -m "Add: Export to PDF feature"
@@ -93,11 +96,13 @@ git commit -m "Improve: Mobile menu navigation"
 ### **5️⃣ Verify Changes**
 
 **Open your live app:**
+
 ```
 https://your-app.vercel.app
 ```
 
 **Hard refresh to see changes:**
+
 - **Windows**: `Ctrl + Shift + R`
 - **Mac**: `Cmd + Shift + R`
 
@@ -152,6 +157,7 @@ git add . && git commit -m "Update: message" && git push
 ## 🐛 Common Issues & Fixes
 
 ### **"Changes not showing up"**
+
 ```
 Solution: Hard refresh browser
 Windows: Ctrl + Shift + R
@@ -159,6 +165,7 @@ Mac: Cmd + Shift + R
 ```
 
 ### **"Nothing to commit"**
+
 ```bash
 # Make sure you're in the right folder
 pwd     # Should show path ending in /redmark-app
@@ -168,6 +175,7 @@ git status
 ```
 
 ### **"Deployment failed on Vercel"**
+
 ```
 1. Go to vercel.com/dashboard
 2. Click your project
@@ -181,12 +189,12 @@ git status
 
 ## 📊 When to Update
 
-| Situation | How Often | Time |
-|-----------|-----------|------|
-| **Bug fix** | Immediately | 1 min |
-| **Small tweak** | Anytime | 1 min |
-| **New feature** | When ready | 2 min |
-| **Major update** | Weekly | 5 min |
+| Situation        | How Often   | Time  |
+| ---------------- | ----------- | ----- |
+| **Bug fix**      | Immediately | 1 min |
+| **Small tweak**  | Anytime     | 1 min |
+| **New feature**  | When ready  | 2 min |
+| **Major update** | Weekly      | 5 min |
 
 **You can update as often as you want!** Every push deploys automatically.
 
@@ -195,11 +203,13 @@ git status
 ## ✅ Quick Checklist
 
 **Before pushing:**
+
 - [ ] Changes tested in Figma Make
 - [ ] Files downloaded to local computer
 - [ ] In correct folder (`cd redmark-app`)
 
 **Push commands:**
+
 ```bash
 git add .
 git commit -m "Update: clear description"
@@ -207,6 +217,7 @@ git push
 ```
 
 **After pushing:**
+
 - [ ] Check Vercel dashboard (optional)
 - [ ] Wait 30-60 seconds
 - [ ] Hard refresh live site

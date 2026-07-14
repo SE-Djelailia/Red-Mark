@@ -28,6 +28,7 @@
 3. **Clique sur le bucket** → **"Policies"** → **"New policy"**
 
 4. **Politique 1** - Paste ce code :
+
 ```sql
 CREATE POLICY "Users can upload photos"
 ON storage.objects FOR INSERT
@@ -35,6 +36,7 @@ WITH CHECK (bucket_id = 'project-photos');
 ```
 
 5. **Politique 2** - Paste ce code :
+
 ```sql
 CREATE POLICY "Users can view photos"
 ON storage.objects FOR SELECT
@@ -42,6 +44,7 @@ USING (bucket_id = 'project-photos');
 ```
 
 6. **Politique 3** - Paste ce code :
+
 ```sql
 CREATE POLICY "Users can delete photos"
 ON storage.objects FOR DELETE
@@ -74,22 +77,26 @@ USING (bucket_id = 'project-photos');
 ✅ Tes données sont dans le cloud  
 ✅ Accessibles depuis n'importe quel appareil  
 ✅ Sauvegardées automatiquement  
-✅ Protégées contre la perte  
+✅ Protégées contre la perte
 
 ---
 
 ## 🐛 Problème ?
 
 ### ❌ Erreur "Invalid API key"
+
 → Les credentials Supabase sont déjà configurés, ce n'est pas ça
 
 ### ❌ Erreur "Row Level Security policy violation"
+
 → Tu as oublié d'exécuter le schéma SQL (Étape 1)
 
 ### ❌ Erreur "Bucket not found"
+
 → Tu n'as pas créé le bucket `project-photos` (Étape 2)
 
 ### ❌ Le Health Check est rouge
+
 → Lis le message d'erreur, il te dit exactement quoi faire
 
 ---

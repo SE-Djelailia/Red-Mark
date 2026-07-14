@@ -347,6 +347,7 @@ USER UPDATES
 ## 🎯 Common Workflows Visualized
 
 ### **Quick Bug Fix**
+
 ```
 ┌─────────────┐     ┌──────────┐     ┌─────────┐
 │ Found bug   │ →   │ Fix in   │ →   │ Push    │ → ✅ Fixed!
@@ -359,6 +360,7 @@ Total time: ~6 minutes from bug report to fix live
 ---
 
 ### **New Feature**
+
 ```
 ┌──────────────┐    ┌───────────┐    ┌──────────┐
 │ Build in     │ →  │ Test in   │ →  │ Push to  │ → ✅ Live!
@@ -371,6 +373,7 @@ Total time: ~2 hours dev + 1 min deploy
 ---
 
 ### **Emergency Hotfix**
+
 ```
 ┌──────────────┐    ┌───────────┐    ┌──────────┐
 │ Critical bug │ →  │ Quick fix │ →  │ Emergency│ → ✅ Fixed!
@@ -390,19 +393,19 @@ Total time: ~15 min from report to live fix
 
 Terminal/Git:
   "Everything up-to-date" or "X files changed"
-  
+
 GitHub:
   Green checkmark ✓
   "Latest commit: X minutes ago"
-  
+
 Vercel Dashboard:
   "Ready ✓"
   "Deployed X seconds ago"
-  
+
 Live Site:
   Hard refresh shows changes
   PWA prompts for update
-  
+
 Email:
   "Your deployment is ready"
 ```
@@ -419,13 +422,13 @@ Vercel Dashboard:
   "Error ×"
   "Build failed"
   Red error message
-  
+
 What to do:
   1. Read error message
   2. Fix issue in Figma Make
   3. Download fixed file
   4. Push again
-  
+
 Common errors:
   - Syntax error (missing bracket, typo)
   - Import error (wrong path)
@@ -478,7 +481,7 @@ Common errors:
 
 ---
 
-**Ready to make your first update?** 
+**Ready to make your first update?**
 
 → **[UPDATE-QUICK-GUIDE.md](./UPDATE-QUICK-GUIDE.md)** for commands  
 → **[FIGMA-TO-VERCEL-UPDATE.md](./FIGMA-TO-VERCEL-UPDATE.md)** for details

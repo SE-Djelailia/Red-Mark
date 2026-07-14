@@ -52,12 +52,14 @@
 ## Technology Stack
 
 ### Frontend (Mobile App)
+
 - **React Native** - Build native iOS app with JavaScript
 - **Expo** - Tools and services for React Native
 - **TypeScript** - Type-safe JavaScript
 - **React Navigation** - Navigate between screens
 
 ### Backend (Already Built!)
+
 - **Supabase** - Your existing backend
   - Authentication (user login)
   - PostgreSQL database (projects, visits, photos)
@@ -65,6 +67,7 @@
   - Real-time subscriptions (future feature)
 
 ### Development Tools
+
 - **Xcode** - Apple's development environment
 - **iOS Simulator** - Test app without iPhone
 - **Expo Go** - Test on real iPhone
@@ -75,6 +78,7 @@
 ## App Flow (User Journey)
 
 ### 1️⃣ First Launch
+
 ```
 User opens app
     ↓
@@ -92,6 +96,7 @@ Navigate to Projects List
 ```
 
 ### 2️⃣ View Projects
+
 ```
 Projects List Screen loads
     ↓
@@ -109,6 +114,7 @@ Display visits with dates
 ```
 
 ### 3️⃣ Take Photos (Coming Soon)
+
 ```
 User taps "New Visit"
     ↓
@@ -126,6 +132,7 @@ Display in visit detail
 ```
 
 ### 4️⃣ Annotate Photos (Coming Soon)
+
 ```
 User taps photo
     ↓
@@ -203,6 +210,7 @@ redmark-mobile/
 ## Data Flow
 
 ### Reading Data (GET)
+
 ```
 1. User opens Projects List
 2. Component calls: supabase.from('projects').select('*')
@@ -212,6 +220,7 @@ redmark-mobile/
 ```
 
 ### Writing Data (POST)
+
 ```
 1. User creates new visit
 2. Component calls: supabase.from('visits').insert({ ... })
@@ -222,6 +231,7 @@ redmark-mobile/
 ```
 
 ### Uploading Files
+
 ```
 1. User takes photo with camera
 2. Photo saved as blob in memory
@@ -236,27 +246,28 @@ redmark-mobile/
 ## Component Lifecycle
 
 ### Screen Loads
+
 ```javascript
 export default function ProjectsListScreen() {
   const [projects, setProjects] = useState([]);
-  
+
   // 1. Component mounts
   useEffect(() => {
     loadProjects(); // 2. Fetch data
   }, []);
-  
+
   const loadProjects = async () => {
     // 3. Query Supabase
     const { data } = await supabase
       .from('projects')
       .select('*');
-    
+
     // 4. Update state
     setProjects(data);
-    
+
     // 5. Re-render with data
   };
-  
+
   // 6. Display UI
   return <FlatList data={projects} ... />
 }
@@ -267,6 +278,7 @@ export default function ProjectsListScreen() {
 ## Navigation Explained
 
 ### Stack Navigation
+
 Think of it like a stack of cards:
 
 ```
@@ -276,20 +288,22 @@ Think of it like a stack of cards:
 ```
 
 When you navigate:
+
 - **Push** - Add new card on top
 - **Pop** - Remove top card, reveal previous
 - **Replace** - Swap top card
 
 Code example:
+
 ```typescript
 // Go to project detail (push)
-navigation.navigate('ProjectDetail', { projectId: '123' });
+navigation.navigate("ProjectDetail", { projectId: "123" });
 
 // Go back (pop)
 navigation.goBack();
 
 // Replace current screen
-navigation.replace('Projects');
+navigation.replace("Projects");
 ```
 
 ---
@@ -297,6 +311,7 @@ navigation.replace('Projects');
 ## Authentication Flow
 
 ### Sign Up
+
 ```
 1. User enters: email, password, name
 2. App sends to: /signup endpoint
@@ -307,6 +322,7 @@ navigation.replace('Projects');
 ```
 
 ### Sign In
+
 ```
 1. User enters: email, password
 2. App calls: supabase.auth.signInWithPassword()
@@ -317,6 +333,7 @@ navigation.replace('Projects');
 ```
 
 ### Session Check
+
 ```
 1. App launches
 2. Check: supabase.auth.getSession()
@@ -325,6 +342,7 @@ navigation.replace('Projects');
 ```
 
 ### Sign Out
+
 ```
 1. User taps "Sign Out"
 2. App calls: supabase.auth.signOut()
@@ -337,6 +355,7 @@ navigation.replace('Projects');
 ## Styling in React Native
 
 ### Web vs Mobile
+
 ```javascript
 // ❌ Web (doesn't work in React Native)
 <div className="bg-red p-4 rounded">
@@ -354,29 +373,31 @@ const styles = StyleSheet.create({
 ```
 
 ### No Tailwind
+
 React Native doesn't support Tailwind CSS. Everything is styled with JavaScript objects.
 
 ---
 
 ## Differences from Web App
 
-| Feature | Web App | Mobile App |
-|---------|---------|------------|
-| **Language** | HTML/CSS | React Native components |
-| **Styling** | Tailwind classes | StyleSheet objects |
-| **Navigation** | URLs/Links | Navigation stack |
-| **Images** | `<img>` tag | `<Image>` component |
-| **Clicks** | `onClick` | `onPress` |
-| **Input** | `<input>` | `<TextInput>` |
-| **Buttons** | `<button>` | `<TouchableOpacity>` |
-| **Scrolling** | Automatic | `<ScrollView>` or `<FlatList>` |
-| **Layout** | Flexbox | Flexbox (same!) |
+| Feature        | Web App          | Mobile App                     |
+| -------------- | ---------------- | ------------------------------ |
+| **Language**   | HTML/CSS         | React Native components        |
+| **Styling**    | Tailwind classes | StyleSheet objects             |
+| **Navigation** | URLs/Links       | Navigation stack               |
+| **Images**     | `<img>` tag      | `<Image>` component            |
+| **Clicks**     | `onClick`        | `onPress`                      |
+| **Input**      | `<input>`        | `<TextInput>`                  |
+| **Buttons**    | `<button>`       | `<TouchableOpacity>`           |
+| **Scrolling**  | Automatic        | `<ScrollView>` or `<FlatList>` |
+| **Layout**     | Flexbox          | Flexbox (same!)                |
 
 ---
 
 ## Why Expo?
 
 ### Without Expo:
+
 ```
 1. Install Xcode command line tools
 2. Install CocoaPods
@@ -390,6 +411,7 @@ React Native doesn't support Tailwind CSS. Everything is styled with JavaScript 
 ```
 
 ### With Expo:
+
 ```
 1. npm install -g expo-cli
 2. npx create-expo-app
@@ -404,6 +426,7 @@ Expo handles all the native configuration for you!
 ## Development Workflow
 
 ### Typical Day:
+
 ```
 1. Open Terminal
 2. cd ~/Desktop/redmark-mobile
@@ -416,6 +439,7 @@ Expo handles all the native configuration for you!
 ```
 
 ### Hot Reload
+
 When you save a file, the app reloads instantly. No need to restart!
 
 ---
@@ -423,17 +447,20 @@ When you save a file, the app reloads instantly. No need to restart!
 ## Testing Strategy
 
 ### Phase 1: Simulator
+
 - Free, fast, unlimited testing
 - Good for UI and logic
 - Can't test: camera, notifications
 
 ### Phase 2: Expo Go
+
 - Test on real iPhone
 - Scan QR code to load
 - Good for all features
 - Can't test: production behavior
 
 ### Phase 3: TestFlight
+
 - Real production build
 - Distributed via Apple
 - Test before App Store
@@ -444,12 +471,14 @@ When you save a file, the app reloads instantly. No need to restart!
 ## Build & Release Process
 
 ### Development Build (Now)
+
 ```bash
 npx expo start
 # Instant updates, hot reload
 ```
 
 ### Preview Build (Testing)
+
 ```bash
 eas build --platform ios --profile preview
 # Real app, but not on App Store
@@ -457,6 +486,7 @@ eas build --platform ios --profile preview
 ```
 
 ### Production Build (App Store)
+
 ```bash
 eas build --platform ios --profile production
 eas submit --platform ios
@@ -469,6 +499,7 @@ eas submit --platform ios
 ## Cost Breakdown
 
 ### Free:
+
 - ✅ Expo account
 - ✅ Development tools
 - ✅ Simulator testing
@@ -477,6 +508,7 @@ eas submit --platform ios
 - ✅ Supabase free tier
 
 ### Paid:
+
 - 💰 Apple Developer: $99/year (only for App Store)
 - 💰 EAS Pro: $29/month (optional, for more builds)
 - 💰 Supabase Pro: $25/month (optional, for more storage)
@@ -493,12 +525,14 @@ Think of it like this:
 2. **Mobile App** = Same data, different interface
 
 They share:
+
 - ✅ Same Supabase database
 - ✅ Same user accounts
 - ✅ Same projects and visits
 - ✅ Same photos
 
 They differ:
+
 - 📱 Mobile has camera access
 - 📱 Mobile works offline better
 - 📱 Mobile has native feel
@@ -509,22 +543,26 @@ They differ:
 ## Next Steps After Basic App Works
 
 ### Week 1: Core Features
+
 - [ ] Camera integration
 - [ ] Photo upload
 - [ ] Photo display
 
 ### Week 2: Advanced Features
+
 - [ ] Photo annotation
 - [ ] Comments system
 - [ ] Create visits
 
 ### Week 3: Polish
+
 - [ ] App icon
 - [ ] Splash screen
 - [ ] Offline support
 - [ ] Pull to refresh
 
 ### Week 4: Release
+
 - [ ] TestFlight beta
 - [ ] Fix bugs
 - [ ] App Store submission
@@ -535,18 +573,23 @@ They differ:
 ## Common Questions
 
 ### "Do I need to learn Swift?"
+
 No! You're using React Native with JavaScript/TypeScript.
 
 ### "Will it work on Android too?"
+
 Yes! With minor modifications, same code works on Android.
 
 ### "Can I reuse my web components?"
+
 Not directly, but the logic is the same. Just change the UI parts.
 
 ### "What if I break something?"
+
 Git lets you undo! Plus we test in simulator first.
 
 ### "How long to build?"
+
 - Basic app: 1-2 weeks
 - Full features: 1 month
 - App Store approved: +1-3 days

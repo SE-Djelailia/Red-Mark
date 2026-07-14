@@ -17,7 +17,12 @@ import {
   AtSign,
 } from "lucide-react";
 import { getIssue, updateIssue, deleteIssue } from "../../lib/issuesApi";
-import { getCommentsForIssue, addComment, updateComment, deleteComment } from "../../lib/commentsApi";
+import {
+  getCommentsForIssue,
+  addComment,
+  updateComment,
+  deleteComment,
+} from "../../lib/commentsApi";
 import { getAllUsers, createNotification } from "../../lib/notificationsApi";
 import { parseLocalDate, formatDateLongWithWeekday, formatDateForInput } from "../../lib/dateUtils";
 import CommentThread from "./CommentThread";
@@ -31,14 +36,16 @@ export default function IssueDetail() {
   const { projectId, visitId, issueId } = useParams();
   const [searchParams] = useSearchParams();
   const highlightCommentId = searchParams.get("commentId");
-  
+
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentText, setEditingCommentText] = useState("");
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
-  const [mentionSuggestions, setMentionSuggestions] = useState<Array<{ id: string; name: string }>>([]);
+  const [mentionSuggestions, setMentionSuggestions] = useState<Array<{ id: string; name: string }>>(
+    [],
+  );
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
   const [mentionSearchQuery, setMentionSearchQuery] = useState("");
   const commentRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -179,9 +186,7 @@ export default function IssueDetail() {
     if (editingCommentId && editingCommentText.trim()) {
       const updatedComment = updateComment(editingCommentId, editingCommentText);
       if (updatedComment) {
-        setComments(
-          comments.map((c) => (c.id === editingCommentId ? updatedComment : c))
-        );
+        setComments(comments.map((c) => (c.id === editingCommentId ? updatedComment : c)));
         setEditingCommentId(null);
         setEditingCommentText("");
         alert("Commentaire mis à jour!");
@@ -254,9 +259,11 @@ export default function IssueDetail() {
   const handleMentionSearch = (query: string) => {
     setMentionSearchQuery(query);
     if (query.length > 0) {
-      getAllUsers().then(users => {
-        const filteredUsers = users.filter(user => user.name.toLowerCase().includes(query.toLowerCase()));
-        setMentionSuggestions(filteredUsers.map(user => ({ id: user.id, name: user.name })));
+      getAllUsers().then((users) => {
+        const filteredUsers = users.filter((user) =>
+          user.name.toLowerCase().includes(query.toLowerCase()),
+        );
+        setMentionSuggestions(filteredUsers.map((user) => ({ id: user.id, name: user.name })));
         setShowMentionSuggestions(true);
       });
     } else {
@@ -342,7 +349,9 @@ export default function IssueDetail() {
             <User size={18} className="text-gray-500 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
               <div className="text-xs text-gray-500 mb-1">Assigné à</div>
-              <div className="text-sm text-[#1A1A1A] font-medium">{issue?.assignedTo || defaultIssue.assignedTo}</div>
+              <div className="text-sm text-[#1A1A1A] font-medium">
+                {issue?.assignedTo || defaultIssue.assignedTo}
+              </div>
             </div>
           </div>
 
@@ -377,7 +386,9 @@ export default function IssueDetail() {
               ) : (
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-[#1A1A1A] font-medium">
-                    {formatDateLongWithWeekday(parseLocalDate(issue?.createdDate || defaultIssue.createdDate))}
+                    {formatDateLongWithWeekday(
+                      parseLocalDate(issue?.createdDate || defaultIssue.createdDate),
+                    )}
                   </div>
                   <button
                     onClick={() => setIsEditingDate(true)}
@@ -503,7 +514,9 @@ export default function IssueDetail() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-700 leading-relaxed">{issue?.description || defaultIssue.description}</p>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {issue?.description || defaultIssue.description}
+            </p>
           )}
         </div>
 
@@ -549,8 +562,8 @@ export default function IssueDetail() {
 
           <CommentThread
             comments={comments}
-            issueId={issueId || ''}
-            projectId={projectId || ''}
+            issueId={issueId || ""}
+            projectId={projectId || ""}
             visitId={visitId}
             onCommentsUpdate={setComments}
             highlightCommentId={highlightCommentId}

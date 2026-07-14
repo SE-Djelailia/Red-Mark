@@ -125,7 +125,7 @@ export default function ReportTemplateSelector({
     // In a real app, this would call an API to generate the PDF
     const template = templates.find((t) => t.id === selectedTemplate);
     alert(
-      `Rapport généré avec succès!\n\nType: ${template?.name}\nProjet: ${projectName}\nPhotos: ${includePhotos ? "Oui" : "Non"}\nDéficiences: ${includeIssues ? "Oui" : "Non"}`
+      `Rapport généré avec succès!\n\nType: ${template?.name}\nProjet: ${projectName}\nPhotos: ${includePhotos ? "Oui" : "Non"}\nDéficiences: ${includeIssues ? "Oui" : "Non"}`,
     );
 
     setIsGenerating(false);
@@ -133,10 +133,7 @@ export default function ReportTemplateSelector({
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/60 z-[60] overflow-y-auto"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 bg-black/60 z-[60] overflow-y-auto" onClick={onClose}>
       <div className="min-h-screen px-4 flex items-center justify-center py-8">
         <div
           className="bg-white rounded-xl max-w-4xl w-full shadow-2xl"
@@ -160,9 +157,7 @@ export default function ReportTemplateSelector({
           <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
             {/* Template Selection */}
             <div>
-              <h3 className="text-lg text-[#1A1A1A] mb-4">
-                Choisir un modèle de rapport
-              </h3>
+              <h3 className="text-lg text-[#1A1A1A] mb-4">Choisir un modèle de rapport</h3>
               <div className="grid md:grid-cols-2 gap-4">
                 {templates.map((template) => (
                   <button
@@ -176,12 +171,8 @@ export default function ReportTemplateSelector({
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h4 className="font-medium text-[#1A1A1A] mb-1">
-                          {template.name}
-                        </h4>
-                        <p className="text-sm text-gray-600">
-                          {template.description}
-                        </p>
+                        <h4 className="font-medium text-[#1A1A1A] mb-1">{template.name}</h4>
+                        <p className="text-sm text-gray-600">{template.description}</p>
                       </div>
                       {selectedTemplate === template.id && (
                         <CheckCircle2 size={20} className="text-[#E10600] flex-shrink-0 ml-3" />
@@ -214,9 +205,7 @@ export default function ReportTemplateSelector({
             {selectedTemplate && (
               <div className="space-y-5">
                 <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-lg text-[#1A1A1A] mb-4">
-                    Options du rapport
-                  </h3>
+                  <h3 className="text-lg text-[#1A1A1A] mb-4">Options du rapport</h3>
 
                   {/* Content Options */}
                   <div className="space-y-3 mb-5">
@@ -230,9 +219,7 @@ export default function ReportTemplateSelector({
                       <div className="flex items-center gap-3 flex-1">
                         <ImageIcon size={20} className="text-gray-600" />
                         <div>
-                          <div className="text-sm text-[#1A1A1A]">
-                            Inclure les photos
-                          </div>
+                          <div className="text-sm text-[#1A1A1A]">Inclure les photos</div>
                           <div className="text-xs text-gray-500">
                             Ajouter toutes les photos du projet
                           </div>
@@ -250,9 +237,7 @@ export default function ReportTemplateSelector({
                       <div className="flex items-center gap-3 flex-1">
                         <AlertTriangle size={20} className="text-gray-600" />
                         <div>
-                          <div className="text-sm text-[#1A1A1A]">
-                            Inclure les déficiences
-                          </div>
+                          <div className="text-sm text-[#1A1A1A]">Inclure les déficiences</div>
                           <div className="text-xs text-gray-500">
                             Liste complète des déficiences et leur statut
                           </div>
@@ -263,9 +248,7 @@ export default function ReportTemplateSelector({
 
                   {/* Date Range */}
                   <div>
-                    <label className="block text-sm text-[#1A1A1A] mb-3">
-                      Période couverte
-                    </label>
+                    <label className="block text-sm text-[#1A1A1A] mb-3">Période couverte</label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                       {[
                         { value: "all", label: "Tout" },
@@ -291,9 +274,7 @@ export default function ReportTemplateSelector({
                     {dateRange === "custom" && (
                       <div className="grid md:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs text-gray-600 mb-2">
-                            Date de début
-                          </label>
+                          <label className="block text-xs text-gray-600 mb-2">Date de début</label>
                           <input
                             type="date"
                             value={startDate}
@@ -302,9 +283,7 @@ export default function ReportTemplateSelector({
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-gray-600 mb-2">
-                            Date de fin
-                          </label>
+                          <label className="block text-xs text-gray-600 mb-2">Date de fin</label>
                           <input
                             type="date"
                             value={endDate}

@@ -18,6 +18,7 @@ Quick checklist to ensure successful deployment to Vercel.
 Make sure these files are included when you export:
 
 ### Required Files
+
 - [ ] `/src` folder (entire folder with all subfolders)
 - [ ] `/public` folder with:
   - [ ] `icon.svg`
@@ -28,6 +29,7 @@ Make sure these files are included when you export:
 - [ ] `.gitignore`
 
 ### Optional (but recommended)
+
 - [ ] `README.md`
 - [ ] `DEPLOYMENT.md`
 - [ ] `CHECKLIST.md` (this file)
@@ -37,6 +39,7 @@ Make sure these files are included when you export:
 ## 🔍 Pre-Deployment Verification
 
 ### Check vite.config.ts
+
 - [ ] VitePWA plugin is configured
 - [ ] Manifest has correct app name: "RedMark"
 - [ ] Theme color is set: `#E10600`
@@ -44,17 +47,20 @@ Make sure these files are included when you export:
 - [ ] Service worker enabled with `devOptions.enabled: true`
 
 ### Check vercel.json
+
 - [ ] Build command: `npm run build`
 - [ ] Output directory: `dist`
 - [ ] Rewrites configured for SPA routing
 - [ ] Service worker headers configured
 
 ### Check package.json
+
 - [ ] Name: `redmark-app`
 - [ ] Scripts include: `build`, `dev`, `preview`
 - [ ] All dependencies present (especially `vite-plugin-pwa`)
 
 ### Check /public folder
+
 - [ ] `icon.svg` exists and is valid SVG
 - [ ] `favicon.svg` exists and is valid SVG
 - [ ] Both icons have red (#E10600) and black (#1A1A1A) colors
@@ -70,6 +76,7 @@ Make sure these files are included when you export:
 - [ ] No upload errors in GitHub
 
 ### Files you should see on GitHub:
+
 ```
 redmark-app/
 ├── src/
@@ -90,11 +97,13 @@ redmark-app/
 ## 🚀 Vercel Deployment Checklist
 
 ### Import Phase
+
 - [ ] Connected GitHub to Vercel
 - [ ] Found `redmark-app` repository
 - [ ] Clicked "Import"
 
 ### Configuration Phase
+
 - [ ] Framework preset: Vite ✅
 - [ ] Build command: `npm run build` ✅
 - [ ] Output directory: `dist` ✅
@@ -102,6 +111,7 @@ redmark-app/
 - [ ] No environment variables needed ✅
 
 ### Deployment Phase
+
 - [ ] Clicked "Deploy"
 - [ ] Build started successfully
 - [ ] Build completed (no errors)
@@ -113,6 +123,7 @@ redmark-app/
 ## 🧪 Post-Deployment Testing
 
 ### Basic Functionality
+
 - [ ] App loads on Vercel URL
 - [ ] Login page appears
 - [ ] Can login with demo credentials
@@ -136,6 +147,7 @@ redmark-app/
 ### PWA Testing - Mobile
 
 #### iOS Safari
+
 - [ ] Open Vercel URL in Safari
 - [ ] Tap Share button
 - [ ] "Add to Home Screen" option available
@@ -145,6 +157,7 @@ redmark-app/
 - [ ] Status bar color is correct
 
 #### Android Chrome
+
 - [ ] Open Vercel URL in Chrome
 - [ ] Install prompt appears OR
 - [ ] Menu has "Install app" option
@@ -153,6 +166,7 @@ redmark-app/
 - [ ] Opens like native app
 
 ### Offline Testing
+
 - [ ] Open installed app while online
 - [ ] Turn on Airplane Mode
 - [ ] Close app completely
@@ -164,6 +178,7 @@ redmark-app/
 - [ ] Changes sync when back online
 
 ### Chrome DevTools Verification
+
 - [ ] Open DevTools (F12)
 - [ ] Go to Application tab
 - [ ] **Manifest**: Shows RedMark info ✅
@@ -172,6 +187,7 @@ redmark-app/
 - [ ] No console errors
 
 ### Lighthouse Audit
+
 - [ ] Run Lighthouse in DevTools
 - [ ] PWA score: 90+ ✅
 - [ ] Performance score: 70+ ✅
@@ -191,28 +207,32 @@ Your deployment is successful if:
 ✅ Service worker is active  
 ✅ Manifest is detected  
 ✅ No console errors  
-✅ Lighthouse PWA score 90+  
+✅ Lighthouse PWA score 90+
 
 ---
 
 ## 🐛 Common Issues & Fixes
 
 ### "Build failed"
+
 - Check package.json has all dependencies
 - Verify vite.config.ts syntax is correct
 - Check build logs for specific error
 
 ### "404 on page refresh"
+
 - Verify vercel.json has rewrites configured
 - Check output directory is "dist"
 
 ### "Install button doesn't appear"
+
 - Wait 5 seconds after page load
 - Hard refresh (Ctrl+Shift+R)
 - Check manifest in DevTools
 - Verify service worker is registered
 
 ### "Offline doesn't work"
+
 - Visit site while online first
 - Check service worker is active
 - Verify cache storage has files
@@ -237,6 +257,7 @@ Once all items are checked, your RedMark PWA is successfully deployed!
 **Your live app**: `https://your-app.vercel.app`
 
 Share it with:
+
 - Jodoin Lamarre Pratte architectes team
 - Other architecture firms for pilot testing
 - Mobile users for field testing

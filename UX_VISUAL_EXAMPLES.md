@@ -10,7 +10,7 @@ This document shows concrete examples of UX improvements with visual code compar
 
 ```typescript
 // ProjectList.tsx - One click deletes everything!
-<button 
+<button
   onClick={() => handleDeleteProject(project.id)}
   className="text-red-600 hover:text-red-800"
 >
@@ -19,6 +19,7 @@ This document shows concrete examples of UX improvements with visual code compar
 ```
 
 **User Experience:**
+
 ```
 User clicks delete → Project deleted instantly ⚠️
 No warning, no undo, no confirmation
@@ -30,10 +31,10 @@ No warning, no undo, no confirmation
 
 ```typescript
 // Shows confirmation before deleting
-<button 
-  onClick={() => setDeleteDialog({ 
-    open: true, 
-    project 
+<button
+  onClick={() => setDeleteDialog({
+    open: true,
+    project
   })}
   className="text-red-600 hover:text-red-800"
 >
@@ -43,7 +44,7 @@ No warning, no undo, no confirmation
 <ConfirmDialog
   open={deleteDialog.open}
   title="Supprimer le projet ?"
-  description={`Êtes-vous sûr de vouloir supprimer "${project.name}" ? 
+  description={`Êtes-vous sûr de vouloir supprimer "${project.name}" ?
     Cette action supprimera ${visitCount} visites et ${photoCount} photos.`}
   variant="destructive"
   onConfirm={handleDeleteConfirm}
@@ -51,8 +52,9 @@ No warning, no undo, no confirmation
 ```
 
 **User Experience:**
+
 ```
-User clicks delete 
+User clicks delete
   ↓
 Modal appears with:
   - Clear title: "Supprimer le projet ?"
@@ -86,6 +88,7 @@ const handleSubmit = async () => {
 ```
 
 **User sees:**
+
 ```
 ┌─────────────────────────────┐
 │ Créer un projet             │
@@ -120,6 +123,7 @@ User confused: which field? where?
 ```
 
 **User sees:**
+
 ```
 ┌─────────────────────────────┐
 │ Créer un projet             │
@@ -140,6 +144,7 @@ User confused: which field? where?
 ```
 
 **Visual indicators:**
+
 - ✅ Red border on invalid field
 - ✅ Error icon + message below field
 - ✅ Red background tint
@@ -220,8 +225,8 @@ Tour complete → User knows how to use app!
 // Renders ALL 500 photos at once
 <div className="grid grid-cols-4 gap-4">
   {photos.map(photo => (
-    <img 
-      key={photo.id} 
+    <img
+      key={photo.id}
       src={photo.url}       // Loads immediately
       className="w-full"
     />
@@ -230,6 +235,7 @@ Tour complete → User knows how to use app!
 ```
 
 **Performance:**
+
 ```
 500 photos × 2MB each = 1GB to load
   ↓
@@ -262,8 +268,8 @@ User frustrated
         const photo = photos[rowIndex * 4 + columnIndex];
         return (
           <div style={style}>
-            <img 
-              src={photo.url} 
+            <img
+              src={photo.url}
               loading="lazy"  // Only loads when scrolled into view
             />
           </div>
@@ -275,6 +281,7 @@ User frustrated
 ```
 
 **Performance:**
+
 ```
 Only 12 visible photos loaded (3 rows × 4 cols)
   ↓
@@ -303,6 +310,7 @@ User delighted
 ```
 
 **Mobile Experience:**
+
 ```
 User viewing photo
   ↓
@@ -334,6 +342,7 @@ const handlers = useSwipeable({
 ```
 
 **Mobile Experience:**
+
 ```
 User viewing photo
   ↓
@@ -362,6 +371,7 @@ const handleDelete = async (id: string) => {
 ```
 
 **User Experience:**
+
 ```
 User deletes project
   ↓
@@ -396,12 +406,13 @@ const handleDelete = async (project: Project) => {
       });
     },
   };
-  
+
   await undoManager.execute(action);
 };
 ```
 
 **User Experience:**
+
 ```
 User deletes project
   ↓
@@ -417,6 +428,7 @@ User relieved, trusts app more
 ```
 
 **Keyboard shortcut:**
+
 ```
 Cmd/Ctrl + Z → Undo last action
 Cmd/Ctrl + Shift + Z → Redo
@@ -436,12 +448,13 @@ Cmd/Ctrl + Shift + Z → Redo
   onChange={(e) => setQuery(e.target.value)}
 />
 
-{projects.filter(p => 
+{projects.filter(p =>
   p.name.includes(query)
 ).map(...)}
 ```
 
 **User Experience:**
+
 ```
 User types "montreal"
   ↓
@@ -461,6 +474,7 @@ User thinks project doesn't exist
 ```
 
 **Features:**
+
 ```
 ┌────────────────────────────────────┐
 │ 🔍 Rechercher...            [×]    │
@@ -484,6 +498,7 @@ User thinks project doesn't exist
 ```
 
 **Smart features:**
+
 - ✅ Searches across all fields (name, address, client, notes)
 - ✅ Searches all content types (projects, visits, photos, issues)
 - ✅ Shows recent searches
@@ -507,6 +522,7 @@ User thinks project doesn't exist
 ```
 
 **User at 11 PM:**
+
 ```
 😵 Blinded by white screen
 🌞 Too bright for night work
@@ -528,6 +544,7 @@ User thinks project doesn't exist
 ```
 
 **User at 11 PM:**
+
 ```
 😌 Easy on the eyes
 🌙 Comfortable night mode
@@ -535,6 +552,7 @@ User thinks project doesn't exist
 ```
 
 **Toggle:**
+
 ```
 ┌────────────────────┐
 │ Thème              │
@@ -555,6 +573,7 @@ User thinks project doesn't exist
 ```
 
 **User sees:**
+
 ```
 Page loads
   ↓
@@ -580,6 +599,7 @@ Projects suddenly appear
 ```
 
 **User sees:**
+
 ```
 Page loads
   ↓
@@ -608,6 +628,7 @@ Feels fast and professional
 ```
 
 **Mobile Experience:**
+
 ```
 User taps "Create Project"
   ↓
@@ -637,6 +658,7 @@ Hard to see and interact
 ```
 
 **Mobile Experience:**
+
 ```
 User taps "Create Project"
   ↓
@@ -661,22 +683,23 @@ Feels native to mobile!
 
 ```css
 /* BEFORE: Only primary red */
---color-primary: #E10600;
+--color-primary: #e10600;
 
 /* AFTER: Full semantic palette */
---color-primary: #E10600;
---color-success: #10B981;  /* For success messages */
---color-warning: #F59E0B;  /* For warnings */
---color-error: #EF4444;    /* For errors */
---color-info: #3B82F6;     /* For info */
+--color-primary: #e10600;
+--color-success: #10b981; /* For success messages */
+--color-warning: #f59e0b; /* For warnings */
+--color-error: #ef4444; /* For errors */
+--color-info: #3b82f6; /* For info */
 
 /* Status colors */
---color-status-open: #EF4444;
---color-status-progress: #3B82F6;
---color-status-resolved: #10B981;
+--color-status-open: #ef4444;
+--color-status-progress: #3b82f6;
+--color-status-resolved: #10b981;
 ```
 
 **Usage:**
+
 ```typescript
 // Clear visual feedback
 <Badge variant="success">Résolu</Badge>
@@ -706,6 +729,7 @@ Feels native to mobile!
 ```
 
 **Keyboard user experience:**
+
 ```
 User presses Tab on page load
   ↓
@@ -720,26 +744,27 @@ Skips navigation, jumps to main content ✨
 
 ## Summary: Impact of Each Change
 
-| Enhancement | Before | After | User Feeling |
-|-------------|--------|-------|--------------|
-| Confirmation | ❌ Instant delete | ✅ Confirm dialog | Safe, confident |
-| Validation | ❌ Toast errors | ✅ Inline errors | Clear, informed |
-| Onboarding | ❌ Empty screen | ✅ Guided tour | Welcomed, guided |
-| Photo gallery | ❌ 10s load | ✅ <1s load | Fast, smooth |
-| Swipe gestures | ❌ Tap only | ✅ Swipe nav | Native, natural |
-| Undo | ❌ Permanent | ✅ Undoable | Relaxed, safe |
-| Search | ❌ Name only | ✅ Everything | Powerful, fast |
-| Dark mode | ❌ Light only | ✅ Auto dark | Comfortable |
-| Loading | ❌ Blank | ✅ Skeleton | Informed |
-| Mobile modal | ❌ Centered | ✅ Bottom sheet | Native feel |
+| Enhancement    | Before            | After             | User Feeling     |
+| -------------- | ----------------- | ----------------- | ---------------- |
+| Confirmation   | ❌ Instant delete | ✅ Confirm dialog | Safe, confident  |
+| Validation     | ❌ Toast errors   | ✅ Inline errors  | Clear, informed  |
+| Onboarding     | ❌ Empty screen   | ✅ Guided tour    | Welcomed, guided |
+| Photo gallery  | ❌ 10s load       | ✅ <1s load       | Fast, smooth     |
+| Swipe gestures | ❌ Tap only       | ✅ Swipe nav      | Native, natural  |
+| Undo           | ❌ Permanent      | ✅ Undoable       | Relaxed, safe    |
+| Search         | ❌ Name only      | ✅ Everything     | Powerful, fast   |
+| Dark mode      | ❌ Light only     | ✅ Auto dark      | Comfortable      |
+| Loading        | ❌ Blank          | ✅ Skeleton       | Informed         |
+| Mobile modal   | ❌ Centered       | ✅ Bottom sheet   | Native feel      |
 
 ---
 
 **Ready to implement these improvements?**
 
 Tell me:
+
 - "Start with confirmations" → I'll add delete confirmations
-- "Fix forms" → I'll improve form validation  
+- "Fix forms" → I'll improve form validation
 - "Add onboarding" → I'll create the guided tour
 - "Do all critical fixes" → I'll implement all 3 critical UX improvements
 

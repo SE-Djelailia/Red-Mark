@@ -12,6 +12,7 @@
 Your RedMark application has a **solid, professional UX foundation** with consistent design patterns, good mobile responsiveness, and thoughtful accessibility features. The interface is clean, French-language focused, and construction industry-appropriate.
 
 ### Strengths ✅
+
 - Consistent design system with clear brand colors
 - Mobile-first responsive layouts
 - Good loading states and user feedback
@@ -20,6 +21,7 @@ Your RedMark application has a **solid, professional UX foundation** with consis
 - Professional, clean aesthetic
 
 ### Critical UX Issues ⚠️
+
 - Inconsistent navigation patterns (bottom nav + routes)
 - No user onboarding flow for new users
 - Missing critical feedback for destructive actions
@@ -34,10 +36,12 @@ Your RedMark application has a **solid, professional UX foundation** with consis
 ### 🔴 CRITICAL (Fix Immediately)
 
 #### 1. Add Confirmation Modals for Destructive Actions
+
 **Current Issue:** Delete actions have minimal or no confirmation  
 **Risk:** Users can accidentally delete projects, visits, or photos
 
 **Problem Code** (`ProjectList.tsx` line 120):
+
 ```typescript
 const handleDeleteProject = async (projectId: string) => {
   try {
@@ -53,6 +57,7 @@ const handleDeleteProject = async (projectId: string) => {
 **Recommended Fix:**
 
 Create `/src/app/components/ui/confirmation-dialog.tsx`:
+
 ```typescript
 import {
   AlertDialog,
@@ -109,6 +114,7 @@ export function ConfirmDialog({
 ```
 
 **Usage in ProjectList.tsx:**
+
 ```typescript
 const [deleteDialog, setDeleteDialog] = useState<{
   open: boolean;
@@ -126,7 +132,7 @@ const handleDeleteClick = (project: Project) => {
 
 const handleDeleteConfirm = async () => {
   if (!deleteDialog.projectId) return;
-  
+
   try {
     await deleteProject(deleteDialog.projectId);
     toast.success("Projet supprimé");
@@ -151,6 +157,7 @@ const handleDeleteConfirm = async () => {
 ```
 
 **Apply to all destructive actions:**
+
 - ✅ Delete project
 - ✅ Delete visit
 - ✅ Delete photo(s)
@@ -164,10 +171,12 @@ const handleDeleteConfirm = async () => {
 ---
 
 #### 2. Improve Form Validation Feedback
+
 **Current Issue:** Validation errors only show as toast notifications  
 **Problem:** Users don't know which field failed validation
 
 **Current Pattern:**
+
 ```typescript
 const handleSubmit = async () => {
   if (!formData.name) {
@@ -181,16 +190,15 @@ const handleSubmit = async () => {
 **Recommended Solution:**
 
 Create form validation hook `/src/hooks/useFormValidation.ts`:
+
 ```typescript
-import { useState } from 'react';
+import { useState } from "react";
 
 interface FieldError {
   [key: string]: string;
 }
 
-export function useFormValidation<T extends Record<string, any>>(
-  initialValues: T
-) {
+export function useFormValidation<T extends Record<string, any>>(initialValues: T) {
   const [values, setValues] = useState<T>(initialValues);
   const [errors, setErrors] = useState<FieldError>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -199,7 +207,7 @@ export function useFormValidation<T extends Record<string, any>>(
     setValues({ ...values, [field]: value });
     // Clear error when user starts typing
     if (errors[field as string]) {
-      setErrors({ ...errors, [field as string]: '' });
+      setErrors({ ...errors, [field as string]: "" });
     }
   };
 
@@ -229,6 +237,7 @@ export function useFormValidation<T extends Record<string, any>>(
 ```
 
 **Updated Input Component** (`/src/app/components/ui/input.tsx`):
+
 ```typescript
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
@@ -239,7 +248,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, error, touched, label, ...props }, ref) => {
     const hasError = error && touched;
-    
+
     return (
       <div className="space-y-2">
         {label && (
@@ -280,9 +289,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 ```
 
 **Usage Example:**
+
 ```typescript
 const CreateProjectModal = () => {
-  const { values, errors, touched, handleChange, handleBlur, setFieldError } = 
+  const { values, errors, touched, handleChange, handleBlur, setFieldError } =
     useFormValidation({
       name: '',
       address: '',
@@ -291,25 +301,25 @@ const CreateProjectModal = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate
     let hasErrors = false;
-    
+
     if (!values.name.trim()) {
       setFieldError('name', 'Le nom du projet est requis');
       hasErrors = true;
     }
-    
+
     if (!values.address.trim()) {
       setFieldError('address', 'L\'adresse est requise');
       hasErrors = true;
     }
-    
+
     if (hasErrors) {
       toast.error('Veuillez corriger les erreurs');
       return;
     }
-    
+
     // Submit...
   };
 
@@ -347,12 +357,14 @@ const CreateProjectModal = () => {
 ---
 
 #### 3. Add User Onboarding Flow for New Users
+
 **Current Issue:** New users see empty state with no guidance  
 **Impact:** Confusion about how to start using the app
 
 **Recommended Solution:**
 
 Create `/src/app/components/OnboardingTour.tsx`:
+
 ```typescript
 import { useState, useEffect } from 'react';
 import { X, ChevronRight, Check } from 'lucide-react';
@@ -400,7 +412,7 @@ export function OnboardingTour() {
     // Check if user has completed onboarding
     const hasCompletedOnboarding = localStorage.getItem('onboarding_completed');
     const projectCount = localStorage.getItem('project_count') || '0';
-    
+
     if (!hasCompletedOnboarding && projectCount === '0') {
       // Wait for page to load
       setTimeout(() => {
@@ -419,15 +431,15 @@ export function OnboardingTour() {
   const updatePosition = () => {
     const step = ONBOARDING_STEPS[currentStep];
     const element = document.querySelector(step.target);
-    
+
     if (element) {
       const rect = element.getBoundingClientRect();
       const tooltipWidth = 320;
       const tooltipHeight = 150;
-      
+
       let top = 0;
       let left = 0;
-      
+
       switch (step.position) {
         case 'bottom':
           top = rect.bottom + 16;
@@ -446,9 +458,9 @@ export function OnboardingTour() {
           left = rect.right + 16;
           break;
       }
-      
+
       setPosition({ top, left });
-      
+
       // Highlight element
       element.classList.add('onboarding-highlight');
     }
@@ -458,7 +470,7 @@ export function OnboardingTour() {
     // Remove highlight from current element
     const currentElement = document.querySelector(ONBOARDING_STEPS[currentStep].target);
     currentElement?.classList.remove('onboarding-highlight');
-    
+
     if (currentStep < ONBOARDING_STEPS.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -470,7 +482,7 @@ export function OnboardingTour() {
     // Remove highlight
     const currentElement = document.querySelector(ONBOARDING_STEPS[currentStep].target);
     currentElement?.classList.remove('onboarding-highlight');
-    
+
     localStorage.setItem('onboarding_completed', 'true');
     setIsOpen(false);
   };
@@ -479,7 +491,7 @@ export function OnboardingTour() {
     // Remove highlight
     const currentElement = document.querySelector(ONBOARDING_STEPS[currentStep].target);
     currentElement?.classList.remove('onboarding-highlight');
-    
+
     localStorage.setItem('onboarding_completed', 'true');
     setIsOpen(false);
   };
@@ -492,7 +504,7 @@ export function OnboardingTour() {
     <>
       {/* Overlay */}
       <div className="fixed inset-0 bg-black/50 z-40" onClick={handleSkip} />
-      
+
       {/* Tooltip */}
       <div
         className="fixed z-50 bg-white rounded-lg shadow-xl p-6 w-80"
@@ -505,7 +517,7 @@ export function OnboardingTour() {
         >
           <X size={20} />
         </button>
-        
+
         {/* Progress */}
         <div className="flex gap-1 mb-4">
           {ONBOARDING_STEPS.map((_, index) => (
@@ -517,11 +529,11 @@ export function OnboardingTour() {
             />
           ))}
         </div>
-        
+
         {/* Content */}
         <h3 className="text-lg font-semibold text-gray-900 mb-2">{step.title}</h3>
         <p className="text-sm text-gray-600 mb-6">{step.description}</p>
-        
+
         {/* Actions */}
         <div className="flex items-center justify-between">
           <button
@@ -554,16 +566,20 @@ export function OnboardingTour() {
 ```
 
 **Add to CSS** (`/src/styles/theme.css`):
+
 ```css
 .onboarding-highlight {
   position: relative;
   z-index: 45;
-  box-shadow: 0 0 0 4px rgba(225, 6, 0, 0.3), 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 0 0 4px rgba(225, 6, 0, 0.3),
+    0 0 0 9999px rgba(0, 0, 0, 0.5);
   border-radius: 8px;
 }
 ```
 
 **Usage in App.tsx:**
+
 ```typescript
 import { OnboardingTour } from './components/OnboardingTour';
 
@@ -585,10 +601,12 @@ function App() {
 ### 🟡 HIGH PRIORITY (Do This Month)
 
 #### 4. Optimize Photo Gallery Performance
+
 **Current Issue:** Slow rendering with 100+ photos  
 **Problem:** All photos load at once, causing lag
 
 **Current Implementation** (`PhotoGallery.tsx`):
+
 ```typescript
 return (
   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -602,11 +620,13 @@ return (
 **Recommended Fix:** Virtual scrolling + Lazy loading
 
 **Install react-window:**
+
 ```bash
 pnpm add react-window @types/react-window
 ```
 
 **Create Virtualized Photo Grid:**
+
 ```typescript
 import { FixedSizeGrid as Grid } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
@@ -667,6 +687,7 @@ function useBreakpoint() {
 ```
 
 **Add Image Lazy Loading:**
+
 ```typescript
 export function PhotoCard({ photo }: { photo: Photo }) {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -698,15 +719,18 @@ export function PhotoCard({ photo }: { photo: Photo }) {
 ---
 
 #### 5. Improve Mobile Touch Interactions
+
 **Current Issue:** No gesture support for photo viewing  
 **Enhancement:** Add swipe gestures for photo navigation
 
 **Install react-swipeable:**
+
 ```bash
 pnpm add react-swipeable
 ```
 
 **Create Photo Lightbox with Swipe** (`/src/app/components/PhotoLightbox.tsx`):
+
 ```typescript
 import { useSwipeable } from 'react-swipeable';
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
@@ -847,10 +871,12 @@ export function PhotoLightbox({
 ---
 
 #### 6. Add Undo for All Major Actions
+
 **Current Issue:** No way to undo accidental actions  
 **Enhancement:** Implement undo/redo system
 
 **Create Undo Manager** (`/src/lib/undoManager.ts`):
+
 ```typescript
 interface Action {
   type: string;
@@ -867,24 +893,24 @@ class UndoManager {
   async execute(action: Action) {
     // Remove any actions after current index
     this.history = this.history.slice(0, this.currentIndex + 1);
-    
+
     // Add new action
     this.history.push(action);
     this.currentIndex++;
-    
+
     // Limit history size
     if (this.history.length > this.maxHistory) {
       this.history.shift();
       this.currentIndex--;
     }
-    
+
     // Execute redo (initial action)
     await action.redo();
   }
 
   async undo() {
     if (!this.canUndo()) return;
-    
+
     const action = this.history[this.currentIndex];
     await action.undo();
     this.currentIndex--;
@@ -892,7 +918,7 @@ class UndoManager {
 
   async redo() {
     if (!this.canRedo()) return;
-    
+
     this.currentIndex++;
     const action = this.history[this.currentIndex];
     await action.redo();
@@ -916,29 +942,30 @@ export const undoManager = new UndoManager();
 ```
 
 **Usage Example - Delete Project with Undo:**
+
 ```typescript
-import { undoManager } from '@/lib/undoManager';
-import { toast } from 'sonner';
+import { undoManager } from "@/lib/undoManager";
+import { toast } from "sonner";
 
 const handleDeleteProject = async (project: Project) => {
   // Create undo action
   const deleteAction = {
-    type: 'DELETE_PROJECT',
+    type: "DELETE_PROJECT",
     data: project,
     undo: async () => {
       // Restore project
       await createProject(project);
-      toast.success('Suppression annulée', {
+      toast.success("Suppression annulée", {
         description: `${project.name} a été restauré`,
       });
     },
     redo: async () => {
       // Delete project
       await deleteProject(project.id);
-      toast.success('Projet supprimé', {
-        description: 'Cliquez ici pour annuler',
+      toast.success("Projet supprimé", {
+        description: "Cliquez ici pour annuler",
         action: {
-          label: 'Annuler',
+          label: "Annuler",
           onClick: () => undoManager.undo(),
         },
         duration: 10000, // Give user 10 seconds to undo
@@ -951,25 +978,26 @@ const handleDeleteProject = async (project: Project) => {
 ```
 
 **Add Undo/Redo Shortcuts:**
+
 ```typescript
 // In KeyboardShortcuts component
 useEffect(() => {
   const handleKeyPress = (e: KeyboardEvent) => {
     // Cmd/Ctrl + Z for undo
-    if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+    if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
       e.preventDefault();
       undoManager.undo();
     }
-    
+
     // Cmd/Ctrl + Shift + Z for redo
-    if ((e.metaKey || e.ctrlKey) && e.key === 'z' && e.shiftKey) {
+    if ((e.metaKey || e.ctrlKey) && e.key === "z" && e.shiftKey) {
       e.preventDefault();
       undoManager.redo();
     }
   };
 
-  window.addEventListener('keydown', handleKeyPress);
-  return () => window.removeEventListener('keydown', handleKeyPress);
+  window.addEventListener("keydown", handleKeyPress);
+  return () => window.removeEventListener("keydown", handleKeyPress);
 }, []);
 ```
 
@@ -979,10 +1007,12 @@ useEffect(() => {
 ---
 
 #### 7. Improve Search Experience
+
 **Current Issue:** Basic text search, no advanced filters  
 **Enhancement:** Add search suggestions, recent searches, filters
 
 **Create Advanced Search Component** (`/src/app/components/AdvancedSearch.tsx`):
+
 ```typescript
 import { useState, useEffect, useRef } from 'react';
 import { Search, X, Clock, Filter } from 'lucide-react';
@@ -1192,12 +1222,14 @@ export function AdvancedSearch() {
 ### 🟢 MEDIUM PRIORITY (Do Next Quarter)
 
 #### 8. Add Dark Mode
+
 **Enhancement:** Implement dark theme for night work
 
 **Already have theme context** (`/src/app/context/ThemeContext.tsx`)  
 **Just need to:** Apply dark mode styles throughout
 
 **Update theme.css:**
+
 ```css
 @media (prefers-color-scheme: dark) {
   :root {
@@ -1213,6 +1245,7 @@ export function AdvancedSearch() {
 ```
 
 **Apply dark mode classes:**
+
 ```typescript
 <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
 ```
@@ -1223,33 +1256,35 @@ export function AdvancedSearch() {
 ---
 
 #### 9. Add Haptic Feedback (Mobile)
+
 **Enhancement:** Tactile feedback for actions
 
 **Create haptic utility** (`/src/lib/haptics.ts`):
+
 ```typescript
 export const haptics = {
   light: () => {
-    if ('vibrate' in navigator) {
+    if ("vibrate" in navigator) {
       navigator.vibrate(10);
     }
   },
   medium: () => {
-    if ('vibrate' in navigator) {
+    if ("vibrate" in navigator) {
       navigator.vibrate(20);
     }
   },
   heavy: () => {
-    if ('vibrate' in navigator) {
+    if ("vibrate" in navigator) {
       navigator.vibrate(30);
     }
   },
   success: () => {
-    if ('vibrate' in navigator) {
+    if ("vibrate" in navigator) {
       navigator.vibrate([10, 50, 10]);
     }
   },
   error: () => {
-    if ('vibrate' in navigator) {
+    if ("vibrate" in navigator) {
       navigator.vibrate([50, 100, 50]);
     }
   },
@@ -1257,8 +1292,9 @@ export const haptics = {
 ```
 
 **Usage:**
+
 ```typescript
-import { haptics } from '@/lib/haptics';
+import { haptics } from "@/lib/haptics";
 
 const handleDelete = async () => {
   haptics.heavy(); // Feedback on delete
@@ -1273,10 +1309,12 @@ const handleDelete = async () => {
 ---
 
 #### 10. Improve Accessibility Score
+
 **Current:** Good foundation, but missing some WCAG AA requirements  
 **Goal:** Achieve WCAG AA compliance
 
 **Actions:**
+
 1. Add skip-to-content link
 2. Improve focus indicators
 3. Add more ARIA labels
@@ -1285,6 +1323,7 @@ const handleDelete = async () => {
 6. Add ARIA live regions for dynamic content
 
 **Create Skip Link** (`/src/app/components/SkipLink.tsx`):
+
 ```typescript
 export function SkipLink() {
   return (
@@ -1299,6 +1338,7 @@ export function SkipLink() {
 ```
 
 **Add to App.tsx:**
+
 ```typescript
 <SkipLink />
 <main id="main-content">
@@ -1313,39 +1353,43 @@ export function SkipLink() {
 
 ## 📊 Impact vs Effort Matrix
 
-| Recommendation | Impact | Effort | Priority | Time |
-|----------------|--------|--------|----------|------|
-| Confirmation dialogs | HIGH | LOW | 🔴 Critical | 4-6h |
-| Form validation feedback | HIGH | MEDIUM | 🔴 Critical | 6-8h |
-| Onboarding flow | HIGH | MEDIUM | 🔴 Critical | 8-10h |
-| Photo gallery performance | HIGH | MEDIUM | 🟡 High | 6-8h |
-| Mobile touch gestures | MEDIUM | MEDIUM | 🟡 High | 4-6h |
-| Undo system | HIGH | HIGH | 🟡 High | 10-12h |
-| Advanced search | HIGH | MEDIUM | 🟡 High | 8-10h |
-| Dark mode | MEDIUM | HIGH | 🟢 Medium | 12-16h |
-| Haptic feedback | LOW | LOW | 🟢 Medium | 2-3h |
-| Accessibility improvements | MEDIUM | MEDIUM | 🟢 Medium | 10-12h |
+| Recommendation             | Impact | Effort | Priority    | Time   |
+| -------------------------- | ------ | ------ | ----------- | ------ |
+| Confirmation dialogs       | HIGH   | LOW    | 🔴 Critical | 4-6h   |
+| Form validation feedback   | HIGH   | MEDIUM | 🔴 Critical | 6-8h   |
+| Onboarding flow            | HIGH   | MEDIUM | 🔴 Critical | 8-10h  |
+| Photo gallery performance  | HIGH   | MEDIUM | 🟡 High     | 6-8h   |
+| Mobile touch gestures      | MEDIUM | MEDIUM | 🟡 High     | 4-6h   |
+| Undo system                | HIGH   | HIGH   | 🟡 High     | 10-12h |
+| Advanced search            | HIGH   | MEDIUM | 🟡 High     | 8-10h  |
+| Dark mode                  | MEDIUM | HIGH   | 🟢 Medium   | 12-16h |
+| Haptic feedback            | LOW    | LOW    | 🟢 Medium   | 2-3h   |
+| Accessibility improvements | MEDIUM | MEDIUM | 🟢 Medium   | 10-12h |
 
 ---
 
 ## 🗓️ Suggested Implementation Timeline
 
 ### Week 1-2: Critical UX Fixes (18-24 hours)
+
 - ✅ Add confirmation dialogs for destructive actions
 - ✅ Improve form validation feedback
 - ✅ Create user onboarding flow
 
 ### Week 3-4: Performance & Mobile (18-26 hours)
+
 - ✅ Optimize photo gallery performance
 - ✅ Add mobile touch gestures
 - ✅ Implement advanced search
 
 ### Month 2: Advanced Features (22-28 hours)
+
 - ✅ Build undo/redo system
 - ✅ Add dark mode support
 - ✅ Improve accessibility
 
 ### Month 3: Polish (12-15 hours)
+
 - ✅ Add haptic feedback
 - ✅ User testing & iteration
 - ✅ Bug fixes from feedback
@@ -1357,6 +1401,7 @@ export function SkipLink() {
 ## 🎨 Visual Design Enhancements
 
 ### Color System Improvements
+
 **Current:** Good, but could be expanded
 
 **Recommendation:** Add semantic color tokens
@@ -1365,25 +1410,25 @@ export function SkipLink() {
 /* theme.css */
 :root {
   /* Existing */
-  --color-primary: #E10600;
-  --color-primary-hover: #C00500;
-  
+  --color-primary: #e10600;
+  --color-primary-hover: #c00500;
+
   /* Add semantic colors */
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
-  --color-info: #3B82F6;
-  
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
   /* Status colors */
-  --color-status-open: #EF4444;
-  --color-status-progress: #3B82F6;
-  --color-status-resolved: #10B981;
-  
+  --color-status-open: #ef4444;
+  --color-status-progress: #3b82f6;
+  --color-status-resolved: #10b981;
+
   /* Priority colors */
-  --color-priority-critical: #DC2626;
-  --color-priority-high: #F97316;
-  --color-priority-medium: #FBBF24;
-  --color-priority-low: #9CA3AF;
+  --color-priority-critical: #dc2626;
+  --color-priority-high: #f97316;
+  --color-priority-medium: #fbbf24;
+  --color-priority-low: #9ca3af;
 }
 ```
 
@@ -1392,9 +1437,11 @@ export function SkipLink() {
 ## 💡 UX Best Practices to Implement
 
 ### 1. Progressive Disclosure
+
 **Principle:** Show only essential info first, reveal more on demand
 
 **Example - Project Card:**
+
 ```typescript
 // Before: Show everything
 <div>
@@ -1427,40 +1474,42 @@ export function SkipLink() {
 ```
 
 ### 2. Skeleton Screens (Already implemented ✅)
+
 **Good:** You have LoadingStates component  
 **Enhance:** Use more consistently across app
 
 ### 3. Optimistic UI Updates
+
 **Principle:** Show success immediately, revert on error
 
 **Example:**
+
 ```typescript
 const handleCreateProject = async (data: ProjectFormData) => {
   // Create optimistic project
   const tempId = `temp-${Date.now()}`;
   const optimisticProject = { ...data, id: tempId };
-  
+
   // Add to state immediately
   setProjects([optimisticProject, ...projects]);
-  toast.success('Projet créé!');
-  
+  toast.success("Projet créé!");
+
   try {
     // Make actual API call
     const realProject = await createProject(data);
-    
+
     // Replace temp with real
-    setProjects(projects.map(p => 
-      p.id === tempId ? realProject : p
-    ));
+    setProjects(projects.map((p) => (p.id === tempId ? realProject : p)));
   } catch (error) {
     // Revert on error
-    setProjects(projects.filter(p => p.id !== tempId));
-    toast.error('Erreur lors de la création');
+    setProjects(projects.filter((p) => p.id !== tempId));
+    toast.error("Erreur lors de la création");
   }
 };
 ```
 
 ### 4. Empty State CTAs (Already implemented ✅)
+
 **Good:** You have empty states with CTAs  
 **Enhance:** Make them more visually engaging
 
@@ -1471,6 +1520,7 @@ const handleCreateProject = async (data: ProjectFormData) => {
 ### Conduct Usability Testing
 
 **Test Scenarios:**
+
 1. **New User Onboarding**
    - Can they create their first project?
    - Do they understand the visit flow?
@@ -1487,12 +1537,14 @@ const handleCreateProject = async (data: ProjectFormData) => {
    - Do they understand error messages?
 
 **Metrics to Track:**
+
 - Time to completion
 - Error rate
 - User satisfaction (1-10 scale)
 - Feature discoverability
 
 **Tools:**
+
 - Hotjar for session recording
 - PostHog for analytics
 - UserTesting.com for user interviews
@@ -1504,23 +1556,27 @@ const handleCreateProject = async (data: ProjectFormData) => {
 ### Once you build the iOS app (from starter files):
 
 **1. Native Navigation Patterns**
+
 - Bottom tab bar (already planned ✅)
 - Swipe back gesture
 - Pull-to-refresh (already implemented ✅)
 
 **2. Camera Integration UX**
+
 - Show camera permission request with explanation
 - Preview before upload
 - Batch photo capture mode
 - Quick retake option
 
 **3. Offline Mode UX**
+
 - Clear offline indicator (already have ✅)
 - Queue pending uploads with progress
 - Sync status per item
 - Conflict resolution UI
 
 **4. Push Notifications**
+
 - Opt-in during onboarding
 - Notification grouping by project
 - Rich notifications with photo previews
@@ -1531,24 +1587,28 @@ const handleCreateProject = async (data: ProjectFormData) => {
 ## 🎯 Key Metrics to Track Post-Implementation
 
 ### User Engagement
+
 - Daily active users (DAU)
 - Session duration
 - Feature adoption rate
 - Retention (7-day, 30-day)
 
 ### Task Completion
+
 - Time to create first project
 - Photos uploaded per visit
 - Reports generated per week
 - Issues created and resolved
 
 ### User Satisfaction
+
 - Net Promoter Score (NPS)
 - Customer Satisfaction (CSAT)
 - Support ticket volume
 - App store ratings
 
 ### Performance
+
 - Page load time
 - Time to interactive
 - Photo upload success rate
@@ -1571,12 +1631,14 @@ const handleCreateProject = async (data: ProjectFormData) => {
 ## ✨ Conclusion
 
 Your RedMark application has a **strong UX foundation** with:
+
 - Clean, professional design
 - Good mobile responsiveness
 - Thoughtful loading states
 - Keyboard shortcuts for power users
 
 **Top 3 priorities:**
+
 1. 🔴 **Add confirmation dialogs** - Prevents accidental deletions
 2. 🔴 **Improve form validation** - Reduces user errors
 3. 🔴 **Add onboarding flow** - Helps new users succeed

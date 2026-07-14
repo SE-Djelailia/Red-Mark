@@ -11,16 +11,19 @@
 ## ✅ Corrections effectuées:
 
 ### 1. `/src/app/routes.tsx`
+
 - ❌ `import { AuthProvider } from "./context/AuthContext";`
 - ✅ `import { AuthProvider } from "../contexts/AuthContext";`
 - **Résultat**: RootLayout fournit maintenant le bon AuthContext
 
 ### 2. `/src/app/App.tsx`
+
 - ❌ Double AuthProvider (App.tsx ET routes.tsx)
 - ✅ Enlevé de App.tsx (gardé uniquement dans routes.tsx/RootLayout)
 - **Résultat**: Un seul provider, pas de conflit
 
 ### 3. `/src/app/components/ProjectDetail.tsx`
+
 - ❌ `import { useAuth } from "../context/AuthContext";`
 - ✅ `import { useAuth } from "../../contexts/AuthContext";`
 
@@ -60,6 +63,7 @@ App.tsx
 ## 🚀 Prochaine étape:
 
 **Rafraîchissez la page** et testez:
+
 1. Accéder à la page de login
 2. Créer un compte
 3. Voir la liste des projets (vide au début)
@@ -68,6 +72,7 @@ App.tsx
 ## ⚠️ Composants à mettre à jour plus tard:
 
 Ces composants utilisent encore l'ancien `/lib/api.ts` et le serveur backend:
+
 - `/src/app/components/ProjectDetail.tsx`
 - `/src/app/components/VisitDetail.tsx`
 - `/src/app/components/PhotoGallery.tsx`

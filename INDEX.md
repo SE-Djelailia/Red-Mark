@@ -35,79 +35,87 @@
 
 ### 🚀 Deployment Guides
 
-| File | Description | When to Use |
-|------|-------------|-------------|
-| **START-HERE.md** | Main entry point | First time seeing this project |
-| **QUICK-START.md** | 5-min quick guide | Want to deploy ASAP |
-| **DEPLOYMENT.md** | Full deployment guide | Need step-by-step instructions |
-| **DEPLOYMENT-SUMMARY.md** | Complete overview | Want to understand everything |
-| **EXPORT-GUIDE.md** | How to export from Figma Make | Stuck at export step |
-| **CHECKLIST.md** | Verification checklist | Checking if everything works |
-| **COMMANDS.md** | Command reference | Need specific commands |
+| File                      | Description                   | When to Use                    |
+| ------------------------- | ----------------------------- | ------------------------------ |
+| **START-HERE.md**         | Main entry point              | First time seeing this project |
+| **QUICK-START.md**        | 5-min quick guide             | Want to deploy ASAP            |
+| **DEPLOYMENT.md**         | Full deployment guide         | Need step-by-step instructions |
+| **DEPLOYMENT-SUMMARY.md** | Complete overview             | Want to understand everything  |
+| **EXPORT-GUIDE.md**       | How to export from Figma Make | Stuck at export step           |
+| **CHECKLIST.md**          | Verification checklist        | Checking if everything works   |
+| **COMMANDS.md**           | Command reference             | Need specific commands         |
 
 ### 📤 GitHub Upload Methods
 
-| File | Description | When to Use |
-|------|-------------|-------------|
-| **TOO-MANY-FILES-FIX.md** | Quick fix for 100-file limit | Got "too many files" error |
-| **GITHUB-UPLOAD-OPTIONS.md** | Compare upload methods | Choosing how to upload |
-| **GIT-COMMAND-GUIDE.md** | Git terminal commands | Using Git (recommended) |
-| **UPLOAD-BATCH-1.md** | Web upload - first batch | Using web interface |
-| **UPLOAD-BATCH-2.md** | Web upload - second batch | Completing web upload |
+| File                         | Description                  | When to Use                |
+| ---------------------------- | ---------------------------- | -------------------------- |
+| **TOO-MANY-FILES-FIX.md**    | Quick fix for 100-file limit | Got "too many files" error |
+| **GITHUB-UPLOAD-OPTIONS.md** | Compare upload methods       | Choosing how to upload     |
+| **GIT-COMMAND-GUIDE.md**     | Git terminal commands        | Using Git (recommended)    |
+| **UPLOAD-BATCH-1.md**        | Web upload - first batch     | Using web interface        |
+| **UPLOAD-BATCH-2.md**        | Web upload - second batch    | Completing web upload      |
 
 ### 🔄 Update Workflow
 
-| File | Description | When to Use |
-|------|-------------|-------------|
+| File                          | Description              | When to Use                     |
+| ----------------------------- | ------------------------ | ------------------------------- |
 | **FIGMA-TO-VERCEL-UPDATE.md** | Complete update workflow | Making changes after deployment |
-| **UPDATE-QUICK-GUIDE.md** | Quick update commands | Fast reference for updates |
-| **UPDATE-VISUAL-FLOW.md** | Visual diagrams | Understanding the flow |
+| **UPDATE-QUICK-GUIDE.md**     | Quick update commands    | Fast reference for updates      |
+| **UPDATE-VISUAL-FLOW.md**     | Visual diagrams          | Understanding the flow          |
 
 ### 📱 Technical Documentation
 
-| File | Description | When to Use |
-|------|-------------|-------------|
-| **README.md** | Project overview | Learn about RedMark features |
-| **PWA_SETUP.md** | PWA configuration details | Understanding PWA setup |
-| **P1_IMPLEMENTATION_SUMMARY.md** | Feature summary | See what's implemented |
-| **INTEGRATION_EXAMPLES.md** | Integration examples | Adding new features |
+| File                             | Description               | When to Use                  |
+| -------------------------------- | ------------------------- | ---------------------------- |
+| **README.md**                    | Project overview          | Learn about RedMark features |
+| **PWA_SETUP.md**                 | PWA configuration details | Understanding PWA setup      |
+| **P1_IMPLEMENTATION_SUMMARY.md** | Feature summary           | See what's implemented       |
+| **INTEGRATION_EXAMPLES.md**      | Integration examples      | Adding new features          |
 
 ### 🔧 Configuration Files
 
-| File | Description | Purpose |
-|------|-------------|---------|
-| **vercel.json** | Vercel configuration | Deployment settings |
-| **.gitignore** | Git exclusions | What files to ignore |
-| **.nvmrc** | Node version | Version compatibility |
-| **package.json** | Dependencies | NPM packages |
-| **vite.config.ts** | Build configuration | Vite + PWA setup |
+| File               | Description          | Purpose               |
+| ------------------ | -------------------- | --------------------- |
+| **vercel.json**    | Vercel configuration | Deployment settings   |
+| **.gitignore**     | Git exclusions       | What files to ignore  |
+| **.nvmrc**         | Node version         | Version compatibility |
+| **package.json**   | Dependencies         | NPM packages          |
+| **vite.config.ts** | Build configuration  | Vite + PWA setup      |
 
 ---
 
 ## 🎯 Common Scenarios
 
 ### "I want to deploy quickly"
+
 → **[QUICK-START.md](./QUICK-START.md)**
 
 ### "I want detailed instructions"
+
 → **[DEPLOYMENT.md](./DEPLOYMENT.md)**
 
 ### "I'm stuck at the export step"
+
 → **[EXPORT-GUIDE.md](./EXPORT-GUIDE.md)**
 
 ### "I need to verify everything works"
+
 → **[CHECKLIST.md](./CHECKLIST.md)**
 
 ### "I need a specific command"
+
 → **[COMMANDS.md](./COMMANDS.md)**
 
 ### "I want to understand the PWA setup"
+
 → **[PWA_SETUP.md](./PWA_SETUP.md)**
 
 ### "What features are included?"
+
 → **[README.md](./README.md)**
 
 ### "I want a complete overview"
+
 → **[DEPLOYMENT-SUMMARY.md](./DEPLOYMENT-SUMMARY.md)**
 
 ---
@@ -157,6 +165,7 @@
 ## 🗂️ File Categories
 
 ### 📚 User Guides (Read These)
+
 - QUICK-START.md
 - DEPLOYMENT.md
 - EXPORT-GUIDE.md
@@ -164,12 +173,14 @@
 - README.md
 
 ### 🔍 Reference (Look Up When Needed)
+
 - COMMANDS.md
 - DEPLOYMENT-SUMMARY.md
 - PWA_SETUP.md
 - INTEGRATION_EXAMPLES.md
 
 ### ⚙️ Configuration (Don't Edit Unless You Know What You're Doing)
+
 - vercel.json
 - vite.config.ts
 - package.json
@@ -177,6 +188,7 @@
 - .nvmrc
 
 ### 📝 Archive (Historical Reference)
+
 - P1_IMPLEMENTATION_SUMMARY.md
 - ATTRIBUTIONS.md
 - INTEGRATION_EXAMPLES.md
@@ -186,17 +198,20 @@
 ## 🎯 Quick Links Within Docs
 
 ### Deployment Steps
+
 - [Step 1: Export](./DEPLOYMENT.md#step-1-export-from-figma-make)
 - [Step 2: GitHub](./DEPLOYMENT.md#step-2-upload-to-github)
 - [Step 3: Vercel](./DEPLOYMENT.md#step-3-deploy-to-vercel)
 - [Step 4: Verify](./DEPLOYMENT.md#step-4-verify-pwa-works)
 
 ### Testing
+
 - [Desktop Testing](./CHECKLIST.md#pwa-testing---desktop-chrome)
 - [Mobile Testing](./CHECKLIST.md#pwa-testing---mobile)
 - [Offline Testing](./CHECKLIST.md#offline-testing)
 
 ### Troubleshooting
+
 - [Common Issues](./DEPLOYMENT.md#troubleshooting)
 - [Debug Commands](./COMMANDS.md#debugging-commands)
 - [Build Errors](./CHECKLIST.md#troubleshooting)
@@ -228,12 +243,14 @@ These docs are version-controlled with your app:
 ## 💡 Tips for Using These Docs
 
 ### ✅ Do:
+
 - Start with QUICK-START.md
 - Keep CHECKLIST.md open while deploying
 - Reference COMMANDS.md when needed
 - Read troubleshooting sections when stuck
 
 ### ❌ Don't:
+
 - Skip QUICK-START.md
 - Edit config files without understanding
 - Ignore error messages
@@ -245,18 +262,18 @@ These docs are version-controlled with your app:
 
 Throughout the docs, you'll see:
 
-| Symbol | Meaning |
-|--------|---------|
-| ✅ | Success / Completed |
-| ❌ | Error / Failed |
-| ⚠️ | Warning / Caution |
-| 💡 | Tip / Pro Tip |
-| 🔍 | Look Here / Important |
-| 📱 | Mobile-specific |
-| 💻 | Desktop-specific |
-| 🚀 | Deploy / Launch |
-| 🐛 | Bug / Issue |
-| ⏱️ | Time estimate |
+| Symbol | Meaning               |
+| ------ | --------------------- |
+| ✅     | Success / Completed   |
+| ❌     | Error / Failed        |
+| ⚠️     | Warning / Caution     |
+| 💡     | Tip / Pro Tip         |
+| 🔍     | Look Here / Important |
+| 📱     | Mobile-specific       |
+| 💻     | Desktop-specific      |
+| 🚀     | Deploy / Launch       |
+| 🐛     | Bug / Issue           |
+| ⏱️     | Time estimate         |
 
 ---
 
@@ -288,13 +305,14 @@ You'll know deployment succeeded when:
 ✅ App loads on Vercel URL  
 ✅ PWA install works  
 ✅ Offline mode works  
-✅ No console errors  
+✅ No console errors
 
 ---
 
 ## 📦 What's Included in RedMark
 
 **Core Features**:
+
 - Project management
 - Photo documentation
 - Site visit logs
@@ -303,6 +321,7 @@ You'll know deployment succeeded when:
 - Team collaboration
 
 **PWA Features**:
+
 - Offline support
 - Installable
 - Auto-updates
@@ -310,6 +329,7 @@ You'll know deployment succeeded when:
 - App shortcuts
 
 **Mobile Optimized**:
+
 - Responsive design
 - Touch-friendly
 - Quebec French UI

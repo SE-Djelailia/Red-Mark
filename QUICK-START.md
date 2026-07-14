@@ -14,24 +14,27 @@ Get RedMark deployed and installable on mobile devices ASAP.
 
 ✅ Built complete RedMark app in Figma Make  
 ✅ PWA configuration complete  
-🎯 **Next**: Deploy to make it installable  
+🎯 **Next**: Deploy to make it installable
 
 ---
 
 ## 🚀 3-Step Deployment
 
 ### Step 1: Export (2 min)
+
 1. Click **Export** button in Figma Make
 2. Download `.zip` file
 3. Extract to folder
 
 ### Step 2: GitHub (3 min)
+
 1. Go to **github.com** → New repository
 2. Name: `redmark-app`
 3. Upload all files
 4. Commit changes
 
 ### Step 3: Vercel (5 min)
+
 1. Go to **vercel.com** → New Project
 2. Import your GitHub repo
 3. Click **Deploy**
@@ -43,6 +46,7 @@ Get RedMark deployed and installable on mobile devices ASAP.
 ## ✅ Verify It Works
 
 ### Quick Test
+
 1. Open your Vercel URL in Chrome
 2. Wait 5 seconds
 3. Look for **install icon** in address bar
@@ -50,6 +54,7 @@ Get RedMark deployed and installable on mobile devices ASAP.
 5. **App opens!** 🎉
 
 ### Mobile Test
+
 1. Open Vercel URL on your phone
 2. **iPhone**: Share → Add to Home Screen
 3. **Android**: Menu → Install app
@@ -61,27 +66,31 @@ Get RedMark deployed and installable on mobile devices ASAP.
 
 Need details? Check these files:
 
-| File | What's Inside |
-|------|---------------|
-| **DEPLOYMENT.md** | Complete step-by-step deployment guide |
-| **CHECKLIST.md** | Verification checklist for each step |
-| **EXPORT-GUIDE.md** | How to export from Figma Make |
-| **README.md** | Project overview and features |
+| File                | What's Inside                          |
+| ------------------- | -------------------------------------- |
+| **DEPLOYMENT.md**   | Complete step-by-step deployment guide |
+| **CHECKLIST.md**    | Verification checklist for each step   |
+| **EXPORT-GUIDE.md** | How to export from Figma Make          |
+| **README.md**       | Project overview and features          |
 
 ---
 
 ## 🆘 Troubleshooting
 
 ### Export Issues
+
 → See **EXPORT-GUIDE.md**
 
-### Upload Issues  
+### Upload Issues
+
 → See **DEPLOYMENT.md** Step 2
 
 ### Build Fails
+
 → See **CHECKLIST.md** troubleshooting section
 
 ### Install Not Working
+
 → See **DEPLOYMENT.md** Step 5
 
 ---
@@ -95,7 +104,7 @@ After deployment:
 ✅ **Offline**: Works without internet  
 ✅ **Auto-updates**: Automatic when you redeploy  
 ✅ **Fast**: Loads instantly from cache  
-✅ **Professional**: Standalone app experience  
+✅ **Professional**: Standalone app experience
 
 ---
 
@@ -125,14 +134,14 @@ Remind your pilot users:
 
 ## ⏱️ Time Estimate
 
-| Task | Time |
-|------|------|
-| Export from Figma Make | 2 min |
-| Create GitHub repo | 2 min |
-| Upload files | 3 min |
-| Deploy on Vercel | 3 min |
-| Test install | 2 min |
-| **TOTAL** | **~12 minutes** |
+| Task                   | Time            |
+| ---------------------- | --------------- |
+| Export from Figma Make | 2 min           |
+| Create GitHub repo     | 2 min           |
+| Upload files           | 3 min           |
+| Deploy on Vercel       | 3 min           |
+| Test install           | 2 min           |
+| **TOTAL**              | **~12 minutes** |
 
 ---
 
@@ -182,6 +191,7 @@ Remind your pilot users:
 **Start with DEPLOYMENT.md Step 1!**
 
 Or jump straight in:
+
 1. Export files from Figma Make
 2. Upload to GitHub
 3. Deploy to Vercel

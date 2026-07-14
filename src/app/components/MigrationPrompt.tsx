@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Database, Upload, X, CheckCircle, AlertCircle } from 'lucide-react';
-import { migrateLocalDataToSupabase, needsMigration } from '../../lib/migrationToSupabase';
-import { useSupabaseAuth } from '../../contexts/SupabaseAuthContext';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { Database, Upload, X, CheckCircle, AlertCircle } from "lucide-react";
+import { migrateLocalDataToSupabase, needsMigration } from "../../lib/migrationToSupabase";
+import { useSupabaseAuth } from "../../contexts/SupabaseAuthContext";
+import { toast } from "sonner";
 
 export default function MigrationPrompt() {
   const { user } = useSupabaseAuth();
@@ -25,14 +25,14 @@ export default function MigrationPrompt() {
       setMigrating(true);
       await migrateLocalDataToSupabase(user.id);
       setMigrationComplete(true);
-      
+
       // Cacher le prompt après 3 secondes
       setTimeout(() => {
         setShowPrompt(false);
       }, 3000);
     } catch (error) {
-      console.error('Migration error:', error);
-      toast.error('Erreur lors de la migration');
+      console.error("Migration error:", error);
+      toast.error("Erreur lors de la migration");
     } finally {
       setMigrating(false);
     }
@@ -40,7 +40,7 @@ export default function MigrationPrompt() {
 
   const handleSkip = () => {
     setShowPrompt(false);
-    toast.info('Vous pourrez migrer vos données plus tard depuis les paramètres');
+    toast.info("Vous pourrez migrer vos données plus tard depuis les paramètres");
   };
 
   if (!showPrompt) {
@@ -56,12 +56,10 @@ export default function MigrationPrompt() {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle size={32} className="text-green-600" />
             </div>
-            <h2 className="text-xl font-semibold text-[#1A1A1A] mb-2">
-              Migration réussie ! 🎉
-            </h2>
+            <h2 className="text-xl font-semibold text-[#1A1A1A] mb-2">Migration réussie ! 🎉</h2>
             <p className="text-gray-600 text-sm">
-              Toutes vos données ont été transférées vers Supabase.
-              Elles sont maintenant sécurisées dans le cloud !
+              Toutes vos données ont été transférées vers Supabase. Elles sont maintenant sécurisées
+              dans le cloud !
             </p>
           </div>
         ) : (
@@ -73,12 +71,8 @@ export default function MigrationPrompt() {
                   <Database size={24} className="text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-[#1A1A1A]">
-                    Migration vers Supabase
-                  </h2>
-                  <p className="text-xs text-gray-500">
-                    Base de données cloud sécurisée
-                  </p>
+                  <h2 className="text-lg font-semibold text-[#1A1A1A]">Migration vers Supabase</h2>
+                  <p className="text-xs text-gray-500">Base de données cloud sécurisée</p>
                 </div>
               </div>
               {!migrating && (
@@ -97,10 +91,18 @@ export default function MigrationPrompt() {
                 <div className="text-sm text-blue-900">
                   <p className="font-medium mb-1">Pourquoi migrer ?</p>
                   <ul className="space-y-1 text-xs">
-                    <li>✅ Vos données seront <strong>sauvegardées dans le cloud</strong></li>
-                    <li>✅ <strong>Accessibles de n'importe quel appareil</strong></li>
-                    <li>✅ <strong>Protégées contre la perte</strong> (cache vidé, etc.)</li>
-                    <li>✅ <strong>Synchronisation automatique</strong></li>
+                    <li>
+                      ✅ Vos données seront <strong>sauvegardées dans le cloud</strong>
+                    </li>
+                    <li>
+                      ✅ <strong>Accessibles de n'importe quel appareil</strong>
+                    </li>
+                    <li>
+                      ✅ <strong>Protégées contre la perte</strong> (cache vidé, etc.)
+                    </li>
+                    <li>
+                      ✅ <strong>Synchronisation automatique</strong>
+                    </li>
                   </ul>
                 </div>
               </div>

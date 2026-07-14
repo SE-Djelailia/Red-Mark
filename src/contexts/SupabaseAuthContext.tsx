@@ -1,13 +1,17 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
-import { toast } from 'sonner';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { User, Session } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, metadata: { name: string; firm: string }) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    metadata: { name: string; firm: string },
+  ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (data: { name?: string; firm?: string }) => Promise<void>;
@@ -23,7 +27,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     // Vérifier la session au chargement
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('🔍 Session initiale:', session?.user?.email);
+      console.log("🔍 Session initiale:", session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -33,7 +37,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('🔄 Auth state changed:', _event, session?.user?.email);
+      console.log("🔄 Auth state changed:", _event, session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -42,9 +46,13 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, metadata: { name: string; firm: string }) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    metadata: { name: string; firm: string },
+  ) => {
     try {
-      console.log('🔐 SignUp called:', { email, name: metadata.name });
+      console.log("🔐 SignUp called:", { email, name: metadata.name });
 
       // Créer le compte avec Supabase Auth
       const { data, error } = await supabase.auth.signUp({
@@ -54,25 +62,25 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           data: {
             name: metadata.name,
             firm: metadata.firm,
-            role: 'architect',
+            role: "architect",
           },
         },
       });
 
       if (error) {
-        console.error('❌ Signup error:', error);
+        console.error("❌ Signup error:", error);
         throw error;
       }
 
-      console.log('✅ User created:', data.user?.email);
+      console.log("✅ User created:", data.user?.email);
 
       // Le profil sera créé automatiquement par le trigger SQL
       // Pas besoin de créer manuellement dans la table profiles
 
-      toast.success('Compte créé avec succès!');
+      toast.success("Compte créé avec succès!");
     } catch (error: any) {
-      console.error('❌ Signup error:', error);
-      const errorMessage = error.message || 'Erreur lors de la création du compte';
+      console.error("❌ Signup error:", error);
+      const errorMessage = error.message || "Erreur lors de la création du compte";
       toast.error(errorMessage);
       throw error;
     }
@@ -80,7 +88,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('🔐 SignIn called:', email);
+      console.log("🔐 SignIn called:", email);
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -88,17 +96,18 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       });
 
       if (error) {
-        console.error('❌ Login error:', error);
+        console.error("❌ Login error:", error);
         throw error;
       }
 
-      console.log('✅ User logged in:', data.user?.email);
-      toast.success('Connexion réussie!');
+      console.log("✅ User logged in:", data.user?.email);
+      toast.success("Connexion réussie!");
     } catch (error: any) {
-      console.error('❌ Login error:', error);
-      const errorMessage = error.message === 'Invalid login credentials'
-        ? 'Email ou mot de passe incorrect'
-        : error.message || 'Erreur de connexion';
+      console.error("❌ Login error:", error);
+      const errorMessage =
+        error.message === "Invalid login credentials"
+          ? "Email ou mot de passe incorrect"
+          : error.message || "Erreur de connexion";
       toast.error(errorMessage);
       throw error;
     }
@@ -106,19 +115,19 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   const signOut = async () => {
     try {
-      console.log('🚪 SignOut called');
+      console.log("🚪 SignOut called");
       const { error } = await supabase.auth.signOut();
 
       if (error) {
-        console.error('❌ Logout error:', error);
+        console.error("❌ Logout error:", error);
         throw error;
       }
 
-      console.log('✅ User logged out');
-      toast.success('Déconnexion réussie');
+      console.log("✅ User logged out");
+      toast.success("Déconnexion réussie");
     } catch (error: any) {
-      console.error('❌ Logout error:', error);
-      toast.error('Erreur lors de la déconnexion');
+      console.error("❌ Logout error:", error);
+      toast.error("Erreur lors de la déconnexion");
       throw error;
     }
   };
@@ -126,10 +135,10 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const updateProfile = async (data: { name?: string; firm?: string }) => {
     try {
       if (!user) {
-        throw new Error('Utilisateur non connecté');
+        throw new Error("Utilisateur non connecté");
       }
 
-      console.log('📝 Updating profile:', data);
+      console.log("📝 Updating profile:", data);
 
       // Mettre à jour les métadonnées utilisateur
       const { error: authError } = await supabase.auth.updateUser({
@@ -140,21 +149,21 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
       // Mettre à jour le profil dans la table profiles
       const { error: profileError } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({
           name: data.name,
           firm: data.firm,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', user.id);
+        .eq("id", user.id);
 
       if (profileError) throw profileError;
 
-      console.log('✅ Profile updated');
-      toast.success('Profil mis à jour!');
+      console.log("✅ Profile updated");
+      toast.success("Profil mis à jour!");
     } catch (error: any) {
-      console.error('❌ Update profile error:', error);
-      toast.error('Erreur lors de la mise à jour du profil');
+      console.error("❌ Update profile error:", error);
+      toast.error("Erreur lors de la mise à jour du profil");
       throw error;
     }
   };
@@ -179,7 +188,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 export function useSupabaseAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useSupabaseAuth must be used within a SupabaseAuthProvider');
+    throw new Error("useSupabaseAuth must be used within a SupabaseAuthProvider");
   }
   return context;
 }

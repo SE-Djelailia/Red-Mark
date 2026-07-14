@@ -34,11 +34,7 @@ type DrawingElement = {
   id?: string;
 };
 
-export default function PhotoMarkup({
-  imageUrl,
-  onClose,
-  onSave,
-}: PhotoMarkupProps) {
+export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [tool, setTool] = useState<Tool>("pencil");
   const [color, setColor] = useState("#E10600");
@@ -46,9 +42,7 @@ export default function PhotoMarkup({
   const [fontSize, setFontSize] = useState(24);
   const [isDrawing, setIsDrawing] = useState(false);
   const [elements, setElements] = useState<DrawingElement[]>([]);
-  const [currentElement, setCurrentElement] = useState<DrawingElement | null>(
-    null
-  );
+  const [currentElement, setCurrentElement] = useState<DrawingElement | null>(null);
   const [history, setHistory] = useState<DrawingElement[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -127,7 +121,7 @@ export default function PhotoMarkup({
           if (element.endX !== undefined && element.endY !== undefined) {
             const radius = Math.sqrt(
               Math.pow(element.endX - element.startX, 2) +
-                Math.pow(element.endY - element.startY, 2)
+                Math.pow(element.endY - element.startY, 2),
             );
             ctx.beginPath();
             ctx.arc(element.startX, element.startY, radius, 0, 2 * Math.PI);
@@ -141,7 +135,7 @@ export default function PhotoMarkup({
               element.startX,
               element.startY,
               element.endX - element.startX,
-              element.endY - element.startY
+              element.endY - element.startY,
             );
           }
           break;
@@ -162,12 +156,12 @@ export default function PhotoMarkup({
             ctx.moveTo(element.endX, element.endY);
             ctx.lineTo(
               element.endX - headlen * Math.cos(angle - Math.PI / 6),
-              element.endY - headlen * Math.sin(angle - Math.PI / 6)
+              element.endY - headlen * Math.sin(angle - Math.PI / 6),
             );
             ctx.moveTo(element.endX, element.endY);
             ctx.lineTo(
               element.endX - headlen * Math.cos(angle + Math.PI / 6),
-              element.endY - headlen * Math.sin(angle + Math.PI / 6)
+              element.endY - headlen * Math.sin(angle + Math.PI / 6),
             );
             ctx.stroke();
           }
@@ -183,7 +177,9 @@ export default function PhotoMarkup({
     });
   };
 
-  const getCanvasCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const getCanvasCoordinates = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>,
+  ) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
 
@@ -193,7 +189,7 @@ export default function PhotoMarkup({
 
     let clientX: number, clientY: number;
 
-    if ('touches' in e) {
+    if ("touches" in e) {
       // Touch event
       if (e.touches.length > 0) {
         clientX = e.touches[0].clientX;
@@ -339,14 +335,14 @@ export default function PhotoMarkup({
         // Remove elements that intersect with eraser path
         const eraserRadius = 15; // Half of eraser width
         const eraserPoints = currentElement.points || [];
-        
+
         const remainingElements = elements.filter((element) => {
           // Check if element intersects with any point in the eraser path
           return !eraserPoints.some((eraserPoint) => {
             return isElementNearPoint(element, eraserPoint, eraserRadius);
           });
         });
-        
+
         setElements(remainingElements);
         addToHistory(remainingElements);
       } else {
@@ -366,14 +362,14 @@ export default function PhotoMarkup({
         // Remove elements that intersect with eraser path
         const eraserRadius = 15; // Half of eraser width
         const eraserPoints = currentElement.points || [];
-        
+
         const remainingElements = elements.filter((element) => {
           // Check if element intersects with any point in the eraser path
           return !eraserPoints.some((eraserPoint) => {
             return isElementNearPoint(element, eraserPoint, eraserRadius);
           });
         });
-        
+
         setElements(remainingElements);
         addToHistory(remainingElements);
       } else {
@@ -390,16 +386,14 @@ export default function PhotoMarkup({
   const isElementNearPoint = (
     element: DrawingElement,
     point: { x: number; y: number },
-    radius: number
+    radius: number,
   ): boolean => {
     switch (element.type) {
       case "pencil":
         // Check if any point in the pencil stroke is near the eraser point
         return (
           element.points?.some((p) => {
-            const distance = Math.sqrt(
-              Math.pow(p.x - point.x, 2) + Math.pow(p.y - point.y, 2)
-            );
+            const distance = Math.sqrt(Math.pow(p.x - point.x, 2) + Math.pow(p.y - point.y, 2));
             return distance < radius;
           }) || false
         );
@@ -407,12 +401,10 @@ export default function PhotoMarkup({
       case "circle":
         if (element.endX !== undefined && element.endY !== undefined) {
           const circleRadius = Math.sqrt(
-            Math.pow(element.endX - element.startX, 2) +
-              Math.pow(element.endY - element.startY, 2)
+            Math.pow(element.endX - element.startX, 2) + Math.pow(element.endY - element.startY, 2),
           );
           const distanceToCenter = Math.sqrt(
-            Math.pow(element.startX - point.x, 2) +
-              Math.pow(element.startY - point.y, 2)
+            Math.pow(element.startX - point.x, 2) + Math.pow(element.startY - point.y, 2),
           );
           // Check if eraser point is near the circle's edge
           return Math.abs(distanceToCenter - circleRadius) < radius;
@@ -425,13 +417,25 @@ export default function PhotoMarkup({
           const maxX = Math.max(element.startX, element.endX);
           const minY = Math.min(element.startY, element.endY);
           const maxY = Math.max(element.startY, element.endY);
-          
+
           // Check if point is near any edge of the rectangle
-          const nearLeft = Math.abs(point.x - minX) < radius && point.y >= minY - radius && point.y <= maxY + radius;
-          const nearRight = Math.abs(point.x - maxX) < radius && point.y >= minY - radius && point.y <= maxY + radius;
-          const nearTop = Math.abs(point.y - minY) < radius && point.x >= minX - radius && point.x <= maxX + radius;
-          const nearBottom = Math.abs(point.y - maxY) < radius && point.x >= minX - radius && point.x <= maxX + radius;
-          
+          const nearLeft =
+            Math.abs(point.x - minX) < radius &&
+            point.y >= minY - radius &&
+            point.y <= maxY + radius;
+          const nearRight =
+            Math.abs(point.x - maxX) < radius &&
+            point.y >= minY - radius &&
+            point.y <= maxY + radius;
+          const nearTop =
+            Math.abs(point.y - minY) < radius &&
+            point.x >= minX - radius &&
+            point.x <= maxX + radius;
+          const nearBottom =
+            Math.abs(point.y - maxY) < radius &&
+            point.x >= minX - radius &&
+            point.x <= maxX + radius;
+
           return nearLeft || nearRight || nearTop || nearBottom;
         }
         return false;
@@ -442,7 +446,7 @@ export default function PhotoMarkup({
           const distance = distanceToLineSegment(
             point,
             { x: element.startX, y: element.startY },
-            { x: element.endX, y: element.endY }
+            { x: element.endX, y: element.endY },
           );
           return distance < radius;
         }
@@ -453,8 +457,7 @@ export default function PhotoMarkup({
         const textWidth = (element.text?.length || 0) * ((element.fontSize || 24) * 0.6);
         const textHeight = element.fontSize || 24;
         const distance = Math.sqrt(
-          Math.pow(element.startX - point.x, 2) +
-            Math.pow(element.startY - point.y, 2)
+          Math.pow(element.startX - point.x, 2) + Math.pow(element.startY - point.y, 2),
         );
         return distance < radius + textWidth / 2 || distance < radius + textHeight / 2;
 
@@ -467,7 +470,7 @@ export default function PhotoMarkup({
   const distanceToLineSegment = (
     point: { x: number; y: number },
     lineStart: { x: number; y: number },
-    lineEnd: { x: number; y: number }
+    lineEnd: { x: number; y: number },
   ): number => {
     const A = point.x - lineStart.x;
     const B = point.y - lineStart.y;
@@ -653,9 +656,7 @@ export default function PhotoMarkup({
               key={c.hex}
               onClick={() => setColor(c.hex)}
               className={`w-8 h-8 rounded-full border-2 transition-transform ${
-                color === c.hex
-                  ? "border-white scale-110"
-                  : "border-gray-600 hover:scale-105"
+                color === c.hex ? "border-white scale-110" : "border-gray-600 hover:scale-105"
               }`}
               style={{ backgroundColor: c.hex }}
               title={c.name}
@@ -680,10 +681,10 @@ export default function PhotoMarkup({
             >
               <div
                 className="rounded-full"
-                style={{ 
-                  backgroundColor: lineWidth === lw.value ? 'white' : '#9CA3AF',
-                  width: `${lw.value * 2}px`, 
-                  height: `${lw.value * 2}px` 
+                style={{
+                  backgroundColor: lineWidth === lw.value ? "white" : "#9CA3AF",
+                  width: `${lw.value * 2}px`,
+                  height: `${lw.value * 2}px`,
                 }}
               />
             </button>

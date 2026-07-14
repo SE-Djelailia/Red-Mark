@@ -8,7 +8,7 @@ import { useAuth } from "../../contexts/useAuth";
 export default function QuickVisit() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+
   const [selectedProject, setSelectedProject] = useState("");
   const [visitDate, setVisitDate] = useState(getTodayForInput());
   const [notes, setNotes] = useState("");
@@ -26,7 +26,7 @@ export default function QuickVisit() {
   ];
 
   const phases = ["Fondation", "Charpente", "ÉMÉ", "Finitions", "Extérieur"];
-  
+
   const suggestedTags = [
     "Problème ÉMÉ",
     "Déficience",
@@ -75,14 +75,14 @@ export default function QuickVisit() {
       alert("Veuillez sélectionner un projet");
       return;
     }
-    
+
     setIsSubmitting(true);
 
     try {
       // Vérifier que l'utilisateur est connecté
       if (!user?.id) {
         alert("Session expirée. Veuillez vous reconnecter.");
-        navigate('/');
+        navigate("/");
         return;
       }
 
@@ -96,8 +96,8 @@ export default function QuickVisit() {
         weather: undefined,
         temperature: undefined,
       });
-      
-      console.log('✅ Site visit created successfully');
+
+      console.log("✅ Site visit created successfully");
       navigate(`/app/projects/${selectedProject}`);
     } catch (error) {
       console.error("Error creating site visit:", error);
@@ -146,9 +146,7 @@ export default function QuickVisit() {
 
           {/* Visit Date */}
           <div>
-            <label className="block text-sm text-[#1A1A1A] mb-2">
-              Date de visite
-            </label>
+            <label className="block text-sm text-[#1A1A1A] mb-2">Date de visite</label>
             <div className="relative">
               <input
                 type="date"
@@ -183,9 +181,7 @@ export default function QuickVisit() {
 
           {/* Room/Area */}
           <div>
-            <label className="block text-sm text-[#1A1A1A] mb-2">
-              Pièce / Zone
-            </label>
+            <label className="block text-sm text-[#1A1A1A] mb-2">Pièce / Zone</label>
             <input
               type="text"
               value={room}
@@ -310,7 +306,10 @@ export default function QuickVisit() {
             {photos.length > 0 && (
               <div className="mt-4 grid grid-cols-3 gap-3">
                 {photos.map((photo, index) => (
-                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                  <div
+                    key={index}
+                    className="relative aspect-square rounded-lg overflow-hidden bg-gray-100"
+                  >
                     <img
                       src={URL.createObjectURL(photo)}
                       alt={`Photo ${index + 1}`}
@@ -330,7 +329,8 @@ export default function QuickVisit() {
 
             {photos.length > 0 && (
               <p className="text-sm text-gray-600 mt-2">
-                {photos.length} photo{photos.length !== 1 ? "s" : ""} sélectionnée{photos.length !== 1 ? "s" : ""}
+                {photos.length} photo{photos.length !== 1 ? "s" : ""} sélectionnée
+                {photos.length !== 1 ? "s" : ""}
               </p>
             )}
           </div>

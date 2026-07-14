@@ -9,10 +9,11 @@ Les dates affichées dans l'application étaient décalées d'un jour à cause d
 Quand JavaScript convertit une date au format `YYYY-MM-DD` (ex: `2026-02-21`) en objet `Date`, il assume que c'est une date UTC et la convertit selon le fuseau horaire local. Pour le Québec (UTC-5 ou UTC-4), cela peut causer un décalage d'un jour.
 
 **Exemple du problème :**
+
 ```javascript
 // ❌ AVANT (problématique)
 const date = "2026-02-21";
-new Date(date).toLocaleDateString('fr-CA');
+new Date(date).toLocaleDateString("fr-CA");
 // Résultat: "2026-02-20" (décalé d'un jour!)
 ```
 
@@ -24,20 +25,21 @@ new Date(date).toLocaleDateString('fr-CA');
 
 Un fichier centralisé avec toutes les fonctions nécessaires pour gérer les dates correctement :
 
-| Fonction | Usage | Exemple |
-|----------|-------|---------|
-| `parseLocalDate()` | Parse une date sans décalage timezone | `parseLocalDate("2026-02-21")` |
-| `formatDateForInput()` | Formate pour `<input type="date">` | `"2026-02-21"` |
-| `formatDateShort()` | Affichage court | `"21/02/2026"` |
-| `formatDateLong()` | Affichage long | `"21 février 2026"` |
-| `formatDateLongWithWeekday()` | Avec jour de semaine | `"samedi 21 février 2026"` |
-| `formatRelativeDate()` | Date relative | `"Il y a 2 jours"` |
-| `getTodayForInput()` | Date d'aujourd'hui pour input | `"2026-02-21"` |
+| Fonction                      | Usage                                 | Exemple                        |
+| ----------------------------- | ------------------------------------- | ------------------------------ |
+| `parseLocalDate()`            | Parse une date sans décalage timezone | `parseLocalDate("2026-02-21")` |
+| `formatDateForInput()`        | Formate pour `<input type="date">`    | `"2026-02-21"`                 |
+| `formatDateShort()`           | Affichage court                       | `"21/02/2026"`                 |
+| `formatDateLong()`            | Affichage long                        | `"21 février 2026"`            |
+| `formatDateLongWithWeekday()` | Avec jour de semaine                  | `"samedi 21 février 2026"`     |
+| `formatRelativeDate()`        | Date relative                         | `"Il y a 2 jours"`             |
+| `getTodayForInput()`          | Date d'aujourd'hui pour input         | `"2026-02-21"`                 |
 
 **Exemple d'utilisation correcte :**
+
 ```javascript
 // ✅ APRÈS (correct)
-import { parseLocalDate, formatDateShort } from '../../lib/dateUtils';
+import { parseLocalDate, formatDateShort } from "../../lib/dateUtils";
 
 const date = "2026-02-21";
 formatDateShort(parseLocalDate(date));
@@ -51,31 +53,39 @@ formatDateShort(parseLocalDate(date));
 Les composants suivants ont été corrigés pour utiliser les nouveaux utilitaires :
 
 ✅ **`ProjectList.tsx`**
+
 - Utilise `getTodayForInput()` pour la date de début
 - Affiche les dates avec `formatDateShort()`
 
 ✅ **`VisitDetail.tsx`**
+
 - Affiche la date de visite avec `formatDateLongWithWeekday()`
 - Formate correctement toutes les dates
 
 ✅ **`QuickVisit.tsx`**
+
 - Initialise la date de visite avec `getTodayForInput()`
 
 ✅ **`IssueDetail.tsx`**
+
 - Utilise `parseLocalDate()` pour parser les dates
 - Affiche avec `formatDateLongWithWeekday()`
 - Utilise `formatDateForInput()` pour l'édition
 
 ✅ **`IssueCreation.tsx`**
+
 - Initialise la date d'échéance avec `getTodayForInput()`
 
 ✅ **`ActivityFeed.tsx`**
+
 - Affiche les dates relatives avec `formatRelativeDate()`
 
 ✅ **`CommentThread.tsx`**
+
 - Affiche les timestamps avec `formatRelativeDate()`
 
 ✅ **`Dashboard.tsx`**
+
 - Formate les dates avec `formatDateShort()`
 
 ---
@@ -83,6 +93,7 @@ Les composants suivants ont été corrigés pour utiliser les nouveaux utilitair
 ## 🧪 Comment tester
 
 ### Test 1 : Création de projet
+
 ```
 1. Allez sur "Mes Projets"
 2. Créez un nouveau projet
@@ -92,6 +103,7 @@ Les composants suivants ont été corrigés pour utiliser les nouveaux utilitair
 ```
 
 ### Test 2 : Création de visite
+
 ```
 1. Créez une nouvelle visite
 2. Sélectionnez une date (ex: 25 février 2026)
@@ -101,6 +113,7 @@ Les composants suivants ont été corrigés pour utiliser les nouveaux utilitair
 ```
 
 ### Test 3 : Création de déficience
+
 ```
 1. Créez une déficience avec date d'échéance
 2. Sélectionnez le 28 février 2026
@@ -109,6 +122,7 @@ Les composants suivants ont été corrigés pour utiliser les nouveaux utilitair
 ```
 
 ### Test 4 : Affichage relatif
+
 ```
 1. Ajoutez un commentaire
 2. ✅ Il doit afficher "À l'instant"
@@ -121,8 +135,9 @@ Les composants suivants ont été corrigés pour utiliser les nouveaux utilitair
 ## 📝 Formats de dates disponibles
 
 ### Pour les inputs HTML (`<input type="date">`)
+
 ```javascript
-import { getTodayForInput, formatDateForInput } from '../../lib/dateUtils';
+import { getTodayForInput, formatDateForInput } from "../../lib/dateUtils";
 
 // Date d'aujourd'hui
 const today = getTodayForInput(); // "2026-02-21"
@@ -132,25 +147,27 @@ const inputDate = formatDateForInput(new Date()); // "2026-02-21"
 ```
 
 ### Pour l'affichage
+
 ```javascript
-import { 
-  formatDateShort, 
-  formatDateLong, 
+import {
+  formatDateShort,
+  formatDateLong,
   formatDateLongWithWeekday,
-  formatRelativeDate 
-} from '../../lib/dateUtils';
+  formatRelativeDate,
+} from "../../lib/dateUtils";
 
 const date = "2026-02-21";
 
-formatDateShort(date);              // "21/02/2026"
-formatDateLong(date);               // "21 février 2026"
-formatDateLongWithWeekday(date);    // "samedi 21 février 2026"
-formatRelativeDate(date);           // "Il y a 2 jours"
+formatDateShort(date); // "21/02/2026"
+formatDateLong(date); // "21 février 2026"
+formatDateLongWithWeekday(date); // "samedi 21 février 2026"
+formatRelativeDate(date); // "Il y a 2 jours"
 ```
 
 ### Pour parser des dates
+
 ```javascript
-import { parseLocalDate } from '../../lib/dateUtils';
+import { parseLocalDate } from "../../lib/dateUtils";
 
 // Parse une date YYYY-MM-DD sans décalage
 const date = parseLocalDate("2026-02-21");
@@ -162,30 +179,32 @@ const date = parseLocalDate("2026-02-21");
 ## 🔧 Règles importantes
 
 ### ✅ À FAIRE
+
 ```javascript
 // Import des utilitaires
-import { getTodayForInput, formatDateShort } from '../../lib/dateUtils';
+import { getTodayForInput, formatDateShort } from "../../lib/dateUtils";
 
 // Initialiser un input date
 const [date, setDate] = useState(getTodayForInput());
 
 // Afficher une date
-<span>{formatDateShort(project.startDate)}</span>
+<span>{formatDateShort(project.startDate)}</span>;
 
 // Parser une date avant manipulation
 const dateObj = parseLocalDate(dateString);
 ```
 
 ### ❌ À ÉVITER
+
 ```javascript
 // ❌ NE PAS utiliser directement
-new Date().toISOString().split('T')[0]  // Peut causer des décalages
+new Date().toISOString().split("T")[0]; // Peut causer des décalages
 
 // ❌ NE PAS utiliser directement
-new Date(dateString).toLocaleDateString()  // Décalage timezone
+new Date(dateString).toLocaleDateString(); // Décalage timezone
 
 // ❌ NE PAS créer de Date avec string YYYY-MM-DD
-new Date("2026-02-21")  // Problème de timezone
+new Date("2026-02-21"); // Problème de timezone
 ```
 
 ---
@@ -195,8 +214,8 @@ new Date("2026-02-21")  // Problème de timezone
 Toutes les fonctions supportent la locale `fr-CA` (français canadien) par défaut, mais peuvent être configurées :
 
 ```javascript
-formatDateLong("2026-02-21", "fr-FR");  // Format France
-formatDateLong("2026-02-21", "en-US");  // Format US
+formatDateLong("2026-02-21", "fr-FR"); // Format France
+formatDateLong("2026-02-21", "en-US"); // Format US
 ```
 
 ---
@@ -204,12 +223,14 @@ formatDateLong("2026-02-21", "en-US");  // Format US
 ## 📊 Avant / Après
 
 ### AVANT ❌
+
 ```
 Sélection: 21 février 2026
 Affichage: 20 février 2026  ← ERREUR!
 ```
 
 ### APRÈS ✅
+
 ```
 Sélection: 21 février 2026
 Affichage: samedi 21 février 2026  ← CORRECT!

@@ -6,11 +6,12 @@
 
 ## 🚀 Live Demo
 
-[View Live App](https://your-app-url.vercel.app) *(Update after deployment)*
+[View Live App](https://your-app-url.vercel.app) _(Update after deployment)_
 
 ## ✨ Features
 
 ### Core Functionality
+
 - 🔐 **Login/Authentication** - Secure user authentication
 - 📁 **Project Management** - Organize multiple construction projects
 - 📸 **Photo Gallery** - Capture and organize site photos
@@ -20,6 +21,7 @@
 - 👥 **Team Collaboration** - Share projects with colleagues
 
 ### PWA Features
+
 - 📱 **Installable** - Add to home screen like a native app
 - 🔌 **Offline Support** - Works without internet connection
 - 🔄 **Auto-Updates** - Automatic updates when online
@@ -27,6 +29,7 @@
 - 🎯 **App Shortcuts** - Quick access to key features
 
 ### Mobile Optimized
+
 - 📱 Responsive design for mobile and tablet
 - 👆 Touch-friendly 44px minimum tap targets
 - 🎨 Professional design system (Red #E10600, Black #1A1A1A)
@@ -70,6 +73,7 @@ This app is configured for deployment on Vercel:
 No environment variables required for the demo version. The app uses mock data for demonstration purposes.
 
 For production with real backend:
+
 - Configure API endpoints
 - Add authentication provider
 - Set up database connection
@@ -79,14 +83,17 @@ For production with real backend:
 Once deployed on HTTPS:
 
 **Desktop (Chrome/Edge)**:
+
 - Look for install icon in address bar
 - Or wait for install prompt
 
 **Mobile (iOS Safari)**:
+
 - Tap Share button
 - Select "Add to Home Screen"
 
 **Mobile (Android Chrome)**:
+
 - Tap menu (⋮)
 - Select "Install app" or "Add to Home Screen"
 

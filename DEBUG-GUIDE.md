@@ -19,8 +19,9 @@ Vous devriez voir des logs avec des emojis:
 ### 3️⃣ Effacez le localStorage (nettoyage complet)
 
 Dans la console, tapez:
+
 ```javascript
-localStorage.clear()
+localStorage.clear();
 ```
 
 Puis rafraîchissez la page (F5).
@@ -51,14 +52,17 @@ Vous devriez voir:
 ## ❌ Si vous voyez des erreurs:
 
 ### Erreur: "useAuth must be used within an AuthProvider"
+
 - Le AuthProvider n'est pas au bon endroit
 - Vérifiez que `/src/app/routes.tsx` importe `SimpleAuthContext`
 
 ### Erreur: user is null après signup
+
 - Le `setUser()` ne fonctionne pas
 - Vérifiez les logs dans SimpleAuthContext
 
 ### Écran blanc sans logs
+
 - Erreur de compilation React
 - Vérifiez l'onglet "Console" pour les erreurs rouges
 - Vérifiez l'onglet "Network" pour les 404
@@ -70,6 +74,7 @@ Vous devriez voir:
 Dans la console:
 
 ### Créer une fausse session:
+
 ```javascript
 const fakeUser = {
   id: "test-123",
@@ -77,16 +82,16 @@ const fakeUser = {
   user_metadata: {
     name: "Test User",
     firm: "Test Firm",
-    role: "architect"
-  }
+    role: "architect",
+  },
 };
 
 const fakeSession = {
   user: fakeUser,
-  created_at: new Date().toISOString()
+  created_at: new Date().toISOString(),
 };
 
-localStorage.setItem('redmark_session', JSON.stringify(fakeSession));
+localStorage.setItem("redmark_session", JSON.stringify(fakeSession));
 
 // Puis rafraîchissez la page
 location.reload();
@@ -110,7 +115,9 @@ Si ça fonctionne avec la fausse session, le problème est dans la fonction `sig
 ## 🚨 Actions d'urgence:
 
 ### Option 1: Utilisez le test manuel
+
 Copiez-collez dans la console:
+
 ```javascript
 localStorage.clear();
 const user = {
@@ -119,15 +126,20 @@ const user = {
   user_metadata: {
     name: "Demo User",
     firm: "JLP",
-    role: "architect"
-  }
+    role: "architect",
+  },
 };
-localStorage.setItem('redmark_session', JSON.stringify({ user, created_at: new Date().toISOString() }));
-window.location.href = '/app';
+localStorage.setItem(
+  "redmark_session",
+  JSON.stringify({ user, created_at: new Date().toISOString() }),
+);
+window.location.href = "/app";
 ```
 
 ### Option 2: Vérifiez l'URL
+
 Êtes-vous sur `/app` ou `/` ?
+
 - Si `/` : C'est normal de voir le login
 - Si `/app` : Problème d'auth
 

@@ -7,16 +7,19 @@
 ## ✅ What Was Fixed
 
 ### **Error 1: `publicAnonKey is not defined`**
+
 **Problem:** Missing import in AuthContext.tsx  
 **Fix:** Added `import { projectId, publicAnonKey } from '/utils/supabase/info'`  
 **Status:** ✅ Fixed
 
 ### **Error 2: `Invalid login credentials`**
+
 **Problem:** Users trying to login before creating an account  
 **Fix:** Added better error messages and guidance  
 **Status:** ✅ Fixed
 
 ### **Bonus Fixes:**
+
 - ✅ Added Toaster component so notifications appear
 - ✅ Improved error messages in French
 - ✅ Auto-switch to login mode if email already exists
@@ -115,6 +118,7 @@
 **Open DevTools** (F12) → Console tab
 
 **Look for:**
+
 - ✅ "Auth error: [error message]" - Shows what went wrong
 - ✅ Supabase API responses
 - ✅ Network requests to `/auth/signup` and `/auth/login`
@@ -124,6 +128,7 @@
 **DevTools** (F12) → Network tab
 
 **Look for:**
+
 1. **POST request to `/auth/signup`**
    - Status: 200 = Success ✅
    - Status: 400 = Error (check response)
@@ -177,7 +182,8 @@
 ### **Issue: Session not persisting**
 
 **Cause:** Browser blocking cookies  
-**Solution:** 
+**Solution:**
+
 - Check browser privacy settings
 - Allow cookies for your domain
 - Try different browser
@@ -186,6 +192,7 @@
 
 **Cause:** Backend server not running or CORS issue  
 **Solution:**
+
 - Check Supabase Edge Function is deployed
 - Check CORS headers in server code
 - Verify API URL is correct
@@ -194,15 +201,15 @@
 
 ## ✅ Expected Behavior Summary
 
-| Action | Expected Result |
-|--------|----------------|
-| Sign up with new email | ✅ Account created → Auto login → Dashboard |
-| Sign up with existing email | ❌ Error: "Email already used" → Switch to login |
-| Login with correct credentials | ✅ Login successful → Dashboard |
-| Login with wrong password | ❌ Error: "Incorrect credentials" |
-| Logout | ✅ Return to login page |
-| Refresh page while logged in | ✅ Stay logged in |
-| Password < 6 chars | ❌ Browser validation error |
+| Action                         | Expected Result                                  |
+| ------------------------------ | ------------------------------------------------ |
+| Sign up with new email         | ✅ Account created → Auto login → Dashboard      |
+| Sign up with existing email    | ❌ Error: "Email already used" → Switch to login |
+| Login with correct credentials | ✅ Login successful → Dashboard                  |
+| Login with wrong password      | ❌ Error: "Incorrect credentials"                |
+| Logout                         | ✅ Return to login page                          |
+| Refresh page while logged in   | ✅ Stay logged in                                |
+| Password < 6 chars             | ❌ Browser validation error                      |
 
 ---
 
@@ -313,11 +320,13 @@ git push
 ## ✅ Summary
 
 **Fixed Files:**
+
 - ✅ `/src/app/context/AuthContext.tsx` - Added missing import
 - ✅ `/src/app/components/Login.tsx` - Better error messages
 - ✅ `/src/app/App.tsx` - Added Toaster component
 
 **Now Working:**
+
 - ✅ User signup
 - ✅ User login
 - ✅ Session persistence
@@ -325,6 +334,7 @@ git push
 - ✅ Better UX with French messages
 
 **Test It:**
+
 1. Deploy the updated code
 2. Open your app
 3. Create an account

@@ -34,7 +34,7 @@ export default function DataExport({ onClose }: DataExportProps) {
             visits.map(async (visit) => {
               const photos = await getPhotos(visit.id);
               return { ...visit, photos };
-            })
+            }),
           );
 
           return {
@@ -42,7 +42,7 @@ export default function DataExport({ onClose }: DataExportProps) {
             visits: visitsWithPhotos,
             issues,
           };
-        })
+        }),
       );
 
       // 3. Create export data
@@ -60,7 +60,7 @@ export default function DataExport({ onClose }: DataExportProps) {
           totalVisits: enrichedProjects.reduce((sum, p) => sum + p.visits.length, 0),
           totalPhotos: enrichedProjects.reduce(
             (sum, p) => sum + p.visits.reduce((vSum, v) => vSum + v.photos.length, 0),
-            0
+            0,
           ),
           totalIssues: enrichedProjects.reduce((sum, p) => sum + p.issues.length, 0),
         },
@@ -107,7 +107,7 @@ export default function DataExport({ onClose }: DataExportProps) {
           new Date(p.created_at).toLocaleDateString("fr-CA"),
           p.visits.length,
           p.visits.reduce((sum: number, v: any) => sum + v.photos.length, 0),
-        ].join(",")
+        ].join(","),
       ),
     ].join("\n");
 
@@ -125,10 +125,7 @@ export default function DataExport({ onClose }: DataExportProps) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={onClose}>
       <div className="min-h-screen px-4 flex items-center justify-center py-8">
-        <div
-          className="bg-white rounded-xl max-w-lg w-full"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="bg-white rounded-xl max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div className="p-6 border-b border-gray-200 flex items-center justify-between">
             <div>

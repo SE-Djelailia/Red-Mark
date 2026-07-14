@@ -18,18 +18,21 @@
 ### Check if Git is Installed
 
 **Windows**:
+
 ```bash
 # Open Command Prompt or PowerShell
 git --version
 ```
 
 **Mac**:
+
 ```bash
 # Open Terminal
 git --version
 ```
 
 **If NOT installed**:
+
 - **Windows**: Download from https://git-scm.com/download/win
 - **Mac**: Run `git` in Terminal, macOS will offer to install
 
@@ -40,10 +43,12 @@ git --version
 ### Step 1: Open Terminal/Command Prompt
 
 **Windows**:
+
 - Press `Win + R`
 - Type `cmd` and press Enter
 
 **Mac**:
+
 - Press `Cmd + Space`
 - Type `Terminal` and press Enter
 
@@ -63,6 +68,7 @@ cd ~/Downloads/redmark-app
 ```
 
 **Verify you're in the right folder**:
+
 ```bash
 # List files - should see package.json, vite.config.ts, etc.
 dir      # Windows
@@ -78,6 +84,7 @@ git init
 ```
 
 **You'll see**:
+
 ```
 Initialized empty Git repository in ...
 ```
@@ -97,9 +104,11 @@ git add .
 **See**: [GIT-WARNINGS-FIX.md](./GIT-WARNINGS-FIX.md) for details on warnings.
 
 **Common warning you might see:**
+
 ```
 warning: LF will be replaced by CRLF in src/app/App.tsx
 ```
+
 **This is SAFE!** ✅ Just continue to the next step.
 
 ---
@@ -111,6 +120,7 @@ git commit -m "Initial commit - RedMark PWA"
 ```
 
 **You'll see**:
+
 ```
 [main (root-commit) abc123] Initial commit - RedMark PWA
  110 files changed, 5000+ insertions(+)
@@ -129,6 +139,7 @@ git commit -m "Initial commit - RedMark PWA"
 5. **Click** "Create repository"
 
 **Copy the URL shown** - looks like:
+
 ```
 https://github.com/YOUR_USERNAME/redmark-app.git
 ```
@@ -143,11 +154,13 @@ git remote add origin https://github.com/YOUR_USERNAME/redmark-app.git
 ```
 
 **Verify connection**:
+
 ```bash
 git remote -v
 ```
 
 **You'll see**:
+
 ```
 origin  https://github.com/YOUR_USERNAME/redmark-app.git (fetch)
 origin  https://github.com/YOUR_USERNAME/redmark-app.git (push)
@@ -163,10 +176,12 @@ git push -u origin main
 ```
 
 **First time?** You'll be asked to login:
+
 - Enter your GitHub username
 - Enter your GitHub password OR personal access token
 
 **You'll see**:
+
 ```
 Enumerating objects: 120, done.
 Counting objects: 100% (120/120), done.
@@ -180,6 +195,7 @@ To https://github.com/YOUR_USERNAME/redmark-app.git
 ## 🎉 Done! All Files Uploaded!
 
 Check your GitHub repository:
+
 - Go to: `https://github.com/YOUR_USERNAME/redmark-app`
 - You should see ALL files!
 
@@ -200,10 +216,13 @@ Now that all files are on GitHub:
 ## 🐛 Troubleshooting
 
 ### "git: command not found"
+
 → Install Git from https://git-scm.com/downloads
 
 ### "Permission denied"
+
 → You need a GitHub Personal Access Token:
+
 1. GitHub → Settings → Developer settings → Personal access tokens
 2. Generate new token (classic)
 3. Select scopes: `repo`
@@ -211,9 +230,11 @@ Now that all files are on GitHub:
 5. Use token as password when pushing
 
 ### "Already exists"
+
 → Delete and recreate the repository on GitHub
 
 ### "Nothing to commit"
+
 → Make sure you're in the right folder with `ls` or `dir`
 
 ---
@@ -259,10 +280,10 @@ git push
 
 ## ✅ Advantages of Git Commands
 
-| Method | File Limit | Speed | Updates |
-|--------|------------|-------|---------|
-| **Web Upload** | 100 files | Slow | Manual |
-| **Git Commands** | Unlimited | Fast | Easy |
+| Method           | File Limit | Speed | Updates |
+| ---------------- | ---------- | ----- | ------- |
+| **Web Upload**   | 100 files  | Slow  | Manual  |
+| **Git Commands** | Unlimited  | Fast  | Easy    |
 
 **Recommended**: Git Commands ✅
 
@@ -271,11 +292,13 @@ git push
 ## 🎯 Your Choice
 
 **Option A**: Use Git commands (this guide)
+
 - ✅ Upload all files at once
 - ✅ No file limits
 - ✅ Industry standard
 
 **Option B**: Use web interface in 2 batches
+
 - → See UPLOAD-BATCH-1.md
 - → Then UPLOAD-BATCH-2.md
 

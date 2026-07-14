@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { X, MapPin, Save, Building2 } from 'lucide-react';
-import type { Photo } from '../../lib/supabase';
-import SecureImage from './SecureImage';
+import { useState } from "react";
+import { X, MapPin, Save, Building2 } from "lucide-react";
+import type { Photo } from "../../lib/supabase";
+import SecureImage from "./SecureImage";
 
 interface PhotoLocationEditorProps {
   photo: Photo;
@@ -10,8 +10,8 @@ interface PhotoLocationEditorProps {
 }
 
 export function PhotoLocationEditor({ photo, onClose, onSave }: PhotoLocationEditorProps) {
-  const [niveau, setNiveau] = useState(photo.location?.floor || '');
-  const [zone, setZone] = useState(photo.location?.room || '');
+  const [niveau, setNiveau] = useState(photo.location?.floor || "");
+  const [zone, setZone] = useState(photo.location?.room || "");
 
   const handleSave = () => {
     onSave(photo.id, niveau, zone);
@@ -129,8 +129,8 @@ interface BulkLocationEditorProps {
 }
 
 export function BulkLocationEditor({ photoCount, onClose, onSave }: BulkLocationEditorProps) {
-  const [niveau, setNiveau] = useState('');
-  const [zone, setZone] = useState('');
+  const [niveau, setNiveau] = useState("");
+  const [zone, setZone] = useState("");
 
   const handleSave = () => {
     onSave(niveau, zone);
@@ -144,9 +144,7 @@ export function BulkLocationEditor({ photoCount, onClose, onSave }: BulkLocation
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <MapPin size={20} className="text-[#E10600]" />
-            <h2 className="text-lg font-semibold text-[#1A1A1A]">
-              Édition en masse
-            </h2>
+            <h2 className="text-lg font-semibold text-[#1A1A1A]">Édition en masse</h2>
           </div>
           <button
             onClick={onClose}
@@ -160,7 +158,11 @@ export function BulkLocationEditor({ photoCount, onClose, onSave }: BulkLocation
         <div className="p-5 pb-0">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
             <p className="text-sm text-blue-800">
-              <strong>{photoCount} photo{photoCount > 1 ? 's' : ''} sélectionnée{photoCount > 1 ? 's' : ''}</strong><br />
+              <strong>
+                {photoCount} photo{photoCount > 1 ? "s" : ""} sélectionnée
+                {photoCount > 1 ? "s" : ""}
+              </strong>
+              <br />
               La localisation sera appliquée à toutes les photos sélectionnées.
             </p>
           </div>
@@ -234,7 +236,7 @@ export function BulkLocationEditor({ photoCount, onClose, onSave }: BulkLocation
               className="flex-1 px-4 py-2.5 bg-[#E10600] text-white rounded-lg font-medium hover:bg-[#C00500] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={18} />
-              Appliquer à {photoCount} photo{photoCount > 1 ? 's' : ''}
+              Appliquer à {photoCount} photo{photoCount > 1 ? "s" : ""}
             </button>
           </div>
         </div>

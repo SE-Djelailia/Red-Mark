@@ -8,17 +8,17 @@
  */
 export function parseLocalDate(dateString: string): Date {
   if (!dateString) return new Date();
-  
+
   // Si c'est déjà un objet Date, le retourner tel quel
   if (dateString instanceof Date) return dateString;
-  
+
   // Si c'est une date ISO complète (avec heure), la parser normalement
-  if (dateString.includes('T')) {
+  if (dateString.includes("T")) {
     return new Date(dateString);
   }
-  
+
   // Pour les dates au format YYYY-MM-DD, parser en UTC pour éviter les décalages
-  const [year, month, day] = dateString.split('-').map(Number);
+  const [year, month, day] = dateString.split("-").map(Number);
   return new Date(year, month - 1, day);
 }
 
@@ -26,14 +26,14 @@ export function parseLocalDate(dateString: string): Date {
  * Formate une date au format YYYY-MM-DD pour les inputs HTML
  */
 export function formatDateForInput(date: Date | string): string {
-  if (!date) return '';
-  
-  const dateObj = typeof date === 'string' ? parseLocalDate(date) : date;
-  
+  if (!date) return "";
+
+  const dateObj = typeof date === "string" ? parseLocalDate(date) : date;
+
   const year = dateObj.getFullYear();
-  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-  const day = String(dateObj.getDate()).padStart(2, '0');
-  
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const day = String(dateObj.getDate()).padStart(2, "0");
+
   return `${year}-${month}-${day}`;
 }
 
@@ -41,15 +41,15 @@ export function formatDateForInput(date: Date | string): string {
  * Formate une date pour l'affichage en français (format court)
  * Ex: 2026-02-21 => 21 février 2026
  */
-export function formatDateLong(date: Date | string, locale: string = 'fr-CA'): string {
-  if (!date) return '';
-  
-  const dateObj = typeof date === 'string' ? parseLocalDate(date) : date;
-  
+export function formatDateLong(date: Date | string, locale: string = "fr-CA"): string {
+  if (!date) return "";
+
+  const dateObj = typeof date === "string" ? parseLocalDate(date) : date;
+
   return dateObj.toLocaleDateString(locale, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 }
 
@@ -57,16 +57,16 @@ export function formatDateLong(date: Date | string, locale: string = 'fr-CA'): s
  * Formate une date pour l'affichage en français (format avec jour de semaine)
  * Ex: 2026-02-21 => vendredi 21 février 2026
  */
-export function formatDateLongWithWeekday(date: Date | string, locale: string = 'fr-CA'): string {
-  if (!date) return '';
-  
-  const dateObj = typeof date === 'string' ? parseLocalDate(date) : date;
-  
+export function formatDateLongWithWeekday(date: Date | string, locale: string = "fr-CA"): string {
+  if (!date) return "";
+
+  const dateObj = typeof date === "string" ? parseLocalDate(date) : date;
+
   return dateObj.toLocaleDateString(locale, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 }
 
@@ -74,11 +74,11 @@ export function formatDateLongWithWeekday(date: Date | string, locale: string = 
  * Formate une date pour l'affichage court
  * Ex: 2026-02-21 => 21/02/2026
  */
-export function formatDateShort(date: Date | string, locale: string = 'fr-CA'): string {
-  if (!date) return '';
-  
-  const dateObj = typeof date === 'string' ? parseLocalDate(date) : date;
-  
+export function formatDateShort(date: Date | string, locale: string = "fr-CA"): string {
+  if (!date) return "";
+
+  const dateObj = typeof date === "string" ? parseLocalDate(date) : date;
+
   return dateObj.toLocaleDateString(locale);
 }
 
@@ -94,9 +94,9 @@ export function getTodayForInput(): string {
  * Calcule la différence en jours entre deux dates
  */
 export function daysBetween(date1: Date | string, date2: Date | string): number {
-  const d1 = typeof date1 === 'string' ? parseLocalDate(date1) : date1;
-  const d2 = typeof date2 === 'string' ? parseLocalDate(date2) : date2;
-  
+  const d1 = typeof date1 === "string" ? parseLocalDate(date1) : date1;
+  const d2 = typeof date2 === "string" ? parseLocalDate(date2) : date2;
+
   const diffTime = Math.abs(d2.getTime() - d1.getTime());
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
@@ -105,9 +105,9 @@ export function daysBetween(date1: Date | string, date2: Date | string): number 
  * Formate une date relative (il y a X jours, etc.)
  */
 export function formatRelativeDate(date: Date | string): string {
-  if (!date) return '';
-  
-  const dateObj = typeof date === 'string' ? parseLocalDate(date) : date;
+  if (!date) return "";
+
+  const dateObj = typeof date === "string" ? parseLocalDate(date) : date;
   const now = new Date();
   const diffMs = now.getTime() - dateObj.getTime();
   const diffSecs = Math.floor(diffMs / 1000);
@@ -116,22 +116,22 @@ export function formatRelativeDate(date: Date | string): string {
   const diffDays = Math.floor(diffHours / 24);
 
   if (diffSecs < 60) {
-    return 'À l\'instant';
+    return "À l'instant";
   } else if (diffMins < 60) {
-    return `Il y a ${diffMins} minute${diffMins > 1 ? 's' : ''}`;
+    return `Il y a ${diffMins} minute${diffMins > 1 ? "s" : ""}`;
   } else if (diffHours < 24) {
-    return `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+    return `Il y a ${diffHours} heure${diffHours > 1 ? "s" : ""}`;
   } else if (diffDays < 7) {
-    return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+    return `Il y a ${diffDays} jour${diffDays > 1 ? "s" : ""}`;
   } else if (diffDays < 30) {
     const weeks = Math.floor(diffDays / 7);
-    return `Il y a ${weeks} semaine${weeks > 1 ? 's' : ''}`;
+    return `Il y a ${weeks} semaine${weeks > 1 ? "s" : ""}`;
   } else if (diffDays < 365) {
     const months = Math.floor(diffDays / 30);
     return `Il y a ${months} mois`;
   } else {
     const years = Math.floor(diffDays / 365);
-    return `Il y a ${years} an${years > 1 ? 's' : ''}`;
+    return `Il y a ${years} an${years > 1 ? "s" : ""}`;
   }
 }
 
@@ -140,14 +140,14 @@ export function formatRelativeDate(date: Date | string): string {
  * Retourne au format YYYY-MM-DD
  */
 export function extractDateOnly(dateString: string | Date): string {
-  if (!dateString) return '';
-  
-  const dateObj = typeof dateString === 'string' ? new Date(dateString) : dateString;
-  
+  if (!dateString) return "";
+
+  const dateObj = typeof dateString === "string" ? new Date(dateString) : dateString;
+
   const year = dateObj.getFullYear();
-  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-  const day = String(dateObj.getDate()).padStart(2, '0');
-  
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const day = String(dateObj.getDate()).padStart(2, "0");
+
   return `${year}-${month}-${day}`;
 }
 
@@ -158,7 +158,7 @@ export function extractDateOnly(dateString: string | Date): string {
 export function isDateInRange(
   dateToCheck: string | Date,
   startDate: string,
-  endDate: string
+  endDate: string,
 ): boolean {
   const checkDateOnly = extractDateOnly(dateToCheck);
   return checkDateOnly >= startDate && checkDateOnly <= endDate;

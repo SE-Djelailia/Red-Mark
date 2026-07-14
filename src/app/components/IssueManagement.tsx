@@ -1,13 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import {
-  Search,
-  AlertCircle,
-  Clock,
-  CheckCircle2,
-  X,
-  MapPin,
-  Loader2,
-} from "lucide-react";
+import { Search, AlertCircle, Clock, CheckCircle2, X, MapPin, Loader2 } from "lucide-react";
 import { getAllUserIssues } from "../../lib/supabaseApi";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/useAuth";
@@ -164,7 +156,8 @@ export default function IssueManagement() {
             const StatusIcon = sc.icon;
             const pc = priorityConfig[issue.priority] ?? priorityConfig.medium;
             const loc = issue.location as any;
-            const locText = loc?.label || (loc?.floor ? `${loc.floor}${loc.room ? ` · ${loc.room}` : ""}` : "");
+            const locText =
+              loc?.label || (loc?.floor ? `${loc.floor}${loc.room ? ` · ${loc.room}` : ""}` : "");
             return (
               <div
                 key={issue.id}
@@ -176,7 +169,10 @@ export default function IssueManagement() {
                     <h3 className="text-base font-medium text-[#1A1A1A] mb-1">{issue.title}</h3>
                     <p className="text-sm text-gray-500">{issue.projectName}</p>
                   </div>
-                  <div className={`w-3 h-3 rounded-full flex-shrink-0 ml-2 mt-1 ${pc.color}`} title={pc.label} />
+                  <div
+                    className={`w-3 h-3 rounded-full flex-shrink-0 ml-2 mt-1 ${pc.color}`}
+                    title={pc.label}
+                  />
                 </div>
 
                 {issue.description && (
@@ -204,88 +200,92 @@ export default function IssueManagement() {
         )}
       </div>
 
-      {selectedIssue && (() => {
-        const sc = statusConfig[selectedIssue.status] ?? statusConfig.open;
-        const StatusIcon = sc.icon;
-        const pc = priorityConfig[selectedIssue.priority] ?? priorityConfig.medium;
-        const loc = selectedIssue.location as any;
-        const locText = loc?.label || (loc?.floor ? `${loc.floor}${loc.room ? ` · ${loc.room}` : ""}` : "");
-        return (
-          <div
-            className="fixed inset-0 bg-black/50 z-50 overflow-y-auto"
-            onClick={() => setSelectedIssue(null)}
-          >
-            <div className="min-h-screen px-4 flex items-center justify-center py-8">
-              <div
-                className="bg-white rounded-xl max-w-2xl w-full"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
-                  <h2 className="text-xl font-medium text-[#1A1A1A]">Détails de la déficience</h2>
-                  <button
-                    onClick={() => setSelectedIssue(null)}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <X size={24} />
-                  </button>
-                </div>
-
-                <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
-                  <div>
-                    <h3 className="text-xl text-[#1A1A1A] mb-1">{selectedIssue.title}</h3>
-                    <p className="text-sm text-gray-500">{selectedIssue.projectName}</p>
+      {selectedIssue &&
+        (() => {
+          const sc = statusConfig[selectedIssue.status] ?? statusConfig.open;
+          const StatusIcon = sc.icon;
+          const pc = priorityConfig[selectedIssue.priority] ?? priorityConfig.medium;
+          const loc = selectedIssue.location as any;
+          const locText =
+            loc?.label || (loc?.floor ? `${loc.floor}${loc.room ? ` · ${loc.room}` : ""}` : "");
+          return (
+            <div
+              className="fixed inset-0 bg-black/50 z-50 overflow-y-auto"
+              onClick={() => setSelectedIssue(null)}
+            >
+              <div className="min-h-screen px-4 flex items-center justify-center py-8">
+                <div
+                  className="bg-white rounded-xl max-w-2xl w-full"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
+                    <h2 className="text-xl font-medium text-[#1A1A1A]">Détails de la déficience</h2>
+                    <button
+                      onClick={() => setSelectedIssue(null)}
+                      className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <X size={24} />
+                    </button>
                   </div>
 
-                  {selectedIssue.description && (
+                  <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
                     <div>
-                      <h4 className="text-sm text-gray-500 mb-1">Description</h4>
-                      <p className="text-[#1A1A1A]">{selectedIssue.description}</p>
+                      <h3 className="text-xl text-[#1A1A1A] mb-1">{selectedIssue.title}</h3>
+                      <p className="text-sm text-gray-500">{selectedIssue.projectName}</p>
                     </div>
-                  )}
 
-                  <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Statut</p>
-                      <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full ${sc.color}`}>
-                        <StatusIcon size={14} />
-                        <span className="text-sm">{sc.label}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Priorité</p>
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${pc.color}`} />
-                        <span className="text-sm text-[#1A1A1A]">{pc.label}</span>
-                      </div>
-                    </div>
-                    {locText && (
+                    {selectedIssue.description && (
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">Localisation</p>
-                        <p className="text-sm text-[#1A1A1A]">{locText}</p>
+                        <h4 className="text-sm text-gray-500 mb-1">Description</h4>
+                        <p className="text-[#1A1A1A]">{selectedIssue.description}</p>
                       </div>
                     )}
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Créée le</p>
-                      <p className="text-sm text-[#1A1A1A]">
-                        {new Date(selectedIssue.created_at).toLocaleDateString("fr-CA")}
-                      </p>
+
+                    <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Statut</p>
+                        <div
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full ${sc.color}`}
+                        >
+                          <StatusIcon size={14} />
+                          <span className="text-sm">{sc.label}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Priorité</p>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${pc.color}`} />
+                          <span className="text-sm text-[#1A1A1A]">{pc.label}</span>
+                        </div>
+                      </div>
+                      {locText && (
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Localisation</p>
+                          <p className="text-sm text-[#1A1A1A]">{locText}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Créée le</p>
+                        <p className="text-sm text-[#1A1A1A]">
+                          {new Date(selectedIssue.created_at).toLocaleDateString("fr-CA")}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="px-6 py-4 border-t border-gray-200 bg-white rounded-b-xl">
-                  <button
-                    onClick={() => setSelectedIssue(null)}
-                    className="w-full py-3 bg-gray-200 text-[#1A1A1A] rounded-lg hover:bg-gray-300 transition-colors font-medium min-h-[48px]"
-                  >
-                    Fermer
-                  </button>
+                  <div className="px-6 py-4 border-t border-gray-200 bg-white rounded-b-xl">
+                    <button
+                      onClick={() => setSelectedIssue(null)}
+                      className="w-full py-3 bg-gray-200 text-[#1A1A1A] rounded-lg hover:bg-gray-300 transition-colors font-medium min-h-[48px]"
+                    >
+                      Fermer
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
     </div>
   );
 }

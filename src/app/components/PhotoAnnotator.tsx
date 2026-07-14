@@ -1,5 +1,19 @@
-import { useState, useRef, useEffect } from 'react';
-import { X, Pencil, Type, Circle, Square, ArrowRight, Undo, Redo, Save, Trash2, Eraser, Move, Palette } from 'lucide-react';
+import { useState, useRef, useEffect } from "react";
+import {
+  X,
+  Pencil,
+  Type,
+  Circle,
+  Square,
+  ArrowRight,
+  Undo,
+  Redo,
+  Save,
+  Trash2,
+  Eraser,
+  Move,
+  Palette,
+} from "lucide-react";
 
 interface PhotoAnnotatorProps {
   photo: {
@@ -12,7 +26,7 @@ interface PhotoAnnotatorProps {
   onSave?: (photoId: string, annotatedImageBlob: Blob) => Promise<void>;
 }
 
-type Tool = 'pencil' | 'arrow' | 'rectangle' | 'circle' | 'text' | 'eraser';
+type Tool = "pencil" | "arrow" | "rectangle" | "circle" | "text" | "eraser";
 
 interface DrawingPoint {
   x: number;
@@ -34,8 +48,8 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [activeTool, setActiveTool] = useState<Tool>('pencil');
-  const [color, setColor] = useState('#E10600');
+  const [activeTool, setActiveTool] = useState<Tool>("pencil");
+  const [color, setColor] = useState("#E10600");
   const [lineWidth, setLineWidth] = useState(3);
   const [isDrawing, setIsDrawing] = useState(false);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
@@ -43,7 +57,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
   const [history, setHistory] = useState<Annotation[][]>([[]]);
   const [historyStep, setHistoryStep] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [textInput, setTextInput] = useState('');
+  const [textInput, setTextInput] = useState("");
   const [textPosition, setTextPosition] = useState<DrawingPoint | null>(null);
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [isDraggingText, setIsDraggingText] = useState(false);
@@ -60,7 +74,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     async function loadImageAsBlob() {
       try {
         // Get signed URL from SecureImage hook
-        const { getPhotoSignedUrl } = await import('../../lib/supabaseApi');
+        const { getPhotoSignedUrl } = await import("../../lib/supabaseApi");
         const signedUrl = await getPhotoSignedUrl(photo.storage_path);
 
         // Fetch as blob
@@ -71,7 +85,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         const objectUrl = URL.createObjectURL(blob);
         setImageUrl(objectUrl);
       } catch (error) {
-        console.error('Error loading image:', error);
+        console.error("Error loading image:", error);
       }
     }
 
@@ -100,14 +114,14 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
 
   const redrawCanvas = () => {
     const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
+    const ctx = canvas?.getContext("2d");
     if (!ctx || !canvas) return;
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw all annotations
-    annotations.forEach(annotation => {
+    annotations.forEach((annotation) => {
       drawAnnotation(ctx, annotation);
     });
 
@@ -117,9 +131,9 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     }
 
     // Draw eraser cursor
-    if (activeTool === 'eraser' && cursorPos) {
+    if (activeTool === "eraser" && cursorPos) {
       const eraserRadius = lineWidth * 5;
-      ctx.strokeStyle = '#FF0000';
+      ctx.strokeStyle = "#FF0000";
       ctx.lineWidth = 2;
       ctx.setLineDash([3, 3]);
       ctx.beginPath();
@@ -132,23 +146,23 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
   const drawAnnotation = (ctx: CanvasRenderingContext2D, annotation: Annotation) => {
     ctx.strokeStyle = annotation.color;
     ctx.lineWidth = annotation.lineWidth;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
 
     const points = annotation.points;
     if (points.length === 0) return;
 
     switch (annotation.type) {
-      case 'pencil':
+      case "pencil":
         ctx.beginPath();
         ctx.moveTo(points[0].x, points[0].y);
-        points.forEach(point => {
+        points.forEach((point) => {
           ctx.lineTo(point.x, point.y);
         });
         ctx.stroke();
         break;
 
-      case 'arrow':
+      case "arrow":
         if (points.length >= 2) {
           const start = points[0];
           const end = points[points.length - 1];
@@ -156,7 +170,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         }
         break;
 
-      case 'rectangle':
+      case "rectangle":
         if (points.length >= 2) {
           const start = points[0];
           const end = points[points.length - 1];
@@ -164,7 +178,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         }
         break;
 
-      case 'circle':
+      case "circle":
         if (points.length >= 2) {
           const start = points[0];
           const end = points[points.length - 1];
@@ -175,7 +189,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         }
         break;
 
-      case 'text':
+      case "text":
         if (annotation.text && points.length > 0) {
           const textFontSize = annotation.fontSize || annotation.lineWidth * 8;
           ctx.font = `${textFontSize}px Arial`;
@@ -188,14 +202,14 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
             const textWidth = metrics.width;
             const textHeight = textFontSize;
 
-            ctx.strokeStyle = annotation.id === selectedTextId ? '#0066FF' : '#00AAFF';
+            ctx.strokeStyle = annotation.id === selectedTextId ? "#0066FF" : "#00AAFF";
             ctx.lineWidth = 2;
             ctx.setLineDash(annotation.id === selectedTextId ? [5, 5] : [3, 3]);
             ctx.strokeRect(
               points[0].x - 5,
               points[0].y - textHeight,
               textWidth + 10,
-              textHeight + 10
+              textHeight + 10,
             );
             ctx.setLineDash([]);
           }
@@ -204,7 +218,13 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     }
   };
 
-  const drawArrow = (ctx: CanvasRenderingContext2D, fromX: number, fromY: number, toX: number, toY: number) => {
+  const drawArrow = (
+    ctx: CanvasRenderingContext2D,
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+  ) => {
     const headLength = 15;
     const angle = Math.atan2(toY - fromY, toX - fromX);
 
@@ -219,12 +239,12 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     ctx.moveTo(toX, toY);
     ctx.lineTo(
       toX - headLength * Math.cos(angle - Math.PI / 6),
-      toY - headLength * Math.sin(angle - Math.PI / 6)
+      toY - headLength * Math.sin(angle - Math.PI / 6),
     );
     ctx.moveTo(toX, toY);
     ctx.lineTo(
       toX - headLength * Math.cos(angle + Math.PI / 6),
-      toY - headLength * Math.sin(angle + Math.PI / 6)
+      toY - headLength * Math.sin(angle + Math.PI / 6),
     );
     ctx.stroke();
   };
@@ -239,7 +259,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
 
     return {
       x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY
+      y: (e.clientY - rect.top) * scaleY,
     };
   };
 
@@ -247,12 +267,12 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     const point = getCanvasPoint(e);
 
     // Check if clicking on a text annotation
-    const clickedText = annotations.find(ann => {
-      if (ann.type === 'text' && ann.text && ann.points.length > 0) {
+    const clickedText = annotations.find((ann) => {
+      if (ann.type === "text" && ann.text && ann.points.length > 0) {
         const canvas = canvasRef.current;
         if (!canvas) return false;
 
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         if (!ctx) return false;
 
         const textFontSize = ann.fontSize || ann.lineWidth * 8;
@@ -277,7 +297,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
       setIsDraggingText(true);
       setDragOffset({
         x: point.x - clickedText.points[0].x,
-        y: point.y - clickedText.points[0].y
+        y: point.y - clickedText.points[0].y,
       });
       return;
     }
@@ -285,12 +305,12 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     // Deselect text if clicking elsewhere
     setSelectedTextId(null);
 
-    if (activeTool === 'text') {
+    if (activeTool === "text") {
       setTextPosition(point);
       return;
     }
 
-    if (activeTool === 'eraser') {
+    if (activeTool === "eraser") {
       setIsDrawing(true);
       // Start erasing
       return;
@@ -304,7 +324,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
       points: [point],
       color,
       lineWidth,
-      fontSize
+      fontSize,
     });
   };
 
@@ -315,13 +335,13 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     setCursorPos(point);
 
     // Check if hovering over text (when not drawing)
-    if (!isDrawing && !isDraggingText && activeTool !== 'eraser') {
-      const hoveredText = annotations.find(ann => {
-        if (ann.type === 'text' && ann.text && ann.points.length > 0) {
+    if (!isDrawing && !isDraggingText && activeTool !== "eraser") {
+      const hoveredText = annotations.find((ann) => {
+        if (ann.type === "text" && ann.text && ann.points.length > 0) {
           const canvas = canvasRef.current;
           if (!canvas) return false;
 
-          const ctx = canvas.getContext('2d');
+          const ctx = canvas.getContext("2d");
           if (!ctx) return false;
 
           const textFontSize = ann.fontSize || ann.lineWidth * 8;
@@ -350,14 +370,16 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
 
     // Handle text dragging
     if (isDraggingText && selectedTextId) {
-      const newAnnotations = annotations.map(ann => {
+      const newAnnotations = annotations.map((ann) => {
         if (ann.id === selectedTextId) {
           return {
             ...ann,
-            points: [{
-              x: point.x - dragOffset.x,
-              y: point.y - dragOffset.y
-            }]
+            points: [
+              {
+                x: point.x - dragOffset.x,
+                y: point.y - dragOffset.y,
+              },
+            ],
           };
         }
         return ann;
@@ -370,14 +392,14 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     if (!isDrawing) return;
 
     // Handle eraser
-    if (activeTool === 'eraser') {
+    if (activeTool === "eraser") {
       const eraserRadius = lineWidth * 5;
-      const remainingAnnotations = annotations.filter(ann => {
+      const remainingAnnotations = annotations.filter((ann) => {
         // Don't erase text annotations with eraser
-        if (ann.type === 'text') return true;
+        if (ann.type === "text") return true;
 
         // Check if any point is within eraser radius
-        return !ann.points.some(p => {
+        return !ann.points.some((p) => {
           const dist = Math.sqrt(Math.pow(p.x - point.x, 2) + Math.pow(p.y - point.y, 2));
           return dist < eraserRadius;
         });
@@ -392,15 +414,15 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
 
     if (!currentAnnotation) return;
 
-    if (activeTool === 'pencil') {
+    if (activeTool === "pencil") {
       setCurrentAnnotation({
         ...currentAnnotation,
-        points: [...currentAnnotation.points, point]
+        points: [...currentAnnotation.points, point],
       });
     } else {
       setCurrentAnnotation({
         ...currentAnnotation,
-        points: [currentAnnotation.points[0], point]
+        points: [currentAnnotation.points[0], point],
       });
     }
 
@@ -424,7 +446,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     setIsDrawing(false);
 
     // For eraser, history was already updated during movement
-    if (activeTool === 'eraser') {
+    if (activeTool === "eraser") {
       const newHistory = history.slice(0, historyStep + 1);
       newHistory.push([...annotations]);
       setHistory(newHistory);
@@ -451,12 +473,12 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
 
     const textAnnotation: Annotation = {
       id: `text_${Date.now()}`,
-      type: 'text',
+      type: "text",
       points: [textPosition],
       color,
       lineWidth,
       text: textInput,
-      fontSize
+      fontSize,
     };
 
     const newAnnotations = [...annotations, textAnnotation];
@@ -468,17 +490,17 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     setHistory(newHistory);
     setHistoryStep(newHistory.length - 1);
 
-    setTextInput('');
+    setTextInput("");
     setTextPosition(null);
   };
 
   const handleEditSelectedText = () => {
     if (!selectedTextId) return;
 
-    const selectedText = annotations.find(ann => ann.id === selectedTextId);
-    if (selectedText && selectedText.type === 'text') {
+    const selectedText = annotations.find((ann) => ann.id === selectedTextId);
+    if (selectedText && selectedText.type === "text") {
       setEditingTextId(selectedTextId);
-      setTextInput(selectedText.text || '');
+      setTextInput(selectedText.text || "");
       setColor(selectedText.color);
       setFontSize(selectedText.fontSize || 16);
     }
@@ -487,13 +509,13 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
   const handleUpdateText = () => {
     if (!editingTextId || !textInput.trim()) return;
 
-    const newAnnotations = annotations.map(ann => {
+    const newAnnotations = annotations.map((ann) => {
       if (ann.id === editingTextId) {
         return {
           ...ann,
           text: textInput,
           color,
-          fontSize
+          fontSize,
         };
       }
       return ann;
@@ -508,15 +530,15 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     setHistoryStep(newHistory.length - 1);
 
     setEditingTextId(null);
-    setTextInput('');
+    setTextInput("");
     redrawCanvas();
   };
 
   const handleDeleteSelectedText = () => {
     if (!selectedTextId) return;
 
-    if (window.confirm('Supprimer ce texte ?')) {
-      const newAnnotations = annotations.filter(ann => ann.id !== selectedTextId);
+    if (window.confirm("Supprimer ce texte ?")) {
+      const newAnnotations = annotations.filter((ann) => ann.id !== selectedTextId);
       setAnnotations(newAnnotations);
 
       // Update history
@@ -545,7 +567,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
   };
 
   const handleClear = () => {
-    if (window.confirm('Effacer toutes les annotations ?')) {
+    if (window.confirm("Effacer toutes les annotations ?")) {
       const newAnnotations: Annotation[] = [];
       setAnnotations(newAnnotations);
 
@@ -565,10 +587,10 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
       setIsSaving(true);
 
       // Create a new canvas to combine image + annotations
-      const compositeCanvas = document.createElement('canvas');
+      const compositeCanvas = document.createElement("canvas");
       compositeCanvas.width = canvas.width;
       compositeCanvas.height = canvas.height;
-      const compositeCtx = compositeCanvas.getContext('2d');
+      const compositeCtx = compositeCanvas.getContext("2d");
 
       if (!compositeCtx) {
         setIsSaving(false);
@@ -579,15 +601,19 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
       compositeCtx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
       // Draw all annotations on top
-      annotations.forEach(annotation => {
+      annotations.forEach((annotation) => {
         drawAnnotation(compositeCtx, annotation);
       });
 
       // Convert to blob for upload (wrapped in promise)
       const blob = await new Promise<Blob | null>((resolve) => {
-        compositeCanvas.toBlob((blob) => {
-          resolve(blob);
-        }, 'image/jpeg', 0.95);
+        compositeCanvas.toBlob(
+          (blob) => {
+            resolve(blob);
+          },
+          "image/jpeg",
+          0.95,
+        );
       });
 
       if (blob) {
@@ -595,8 +621,8 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         onClose();
       }
     } catch (error) {
-      console.error('Error creating annotated image:', error);
-      alert('Erreur lors de la sauvegarde de l\'annotation');
+      console.error("Error creating annotated image:", error);
+      alert("Erreur lors de la sauvegarde de l'annotation");
     } finally {
       setIsSaving(false);
     }
@@ -615,10 +641,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
             </span>
           )}
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-        >
+        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
           <X size={24} />
         </button>
       </div>
@@ -628,54 +651,54 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         {/* Tools */}
         <div className="flex items-center gap-2 border-r border-white/20 pr-3">
           <button
-            onClick={() => setActiveTool('pencil')}
+            onClick={() => setActiveTool("pencil")}
             className={`p-2 rounded-lg transition-colors ${
-              activeTool === 'pencil' ? 'bg-[#E10600]' : 'hover:bg-white/10'
+              activeTool === "pencil" ? "bg-[#E10600]" : "hover:bg-white/10"
             }`}
             title="Crayon"
           >
             <Pencil size={20} />
           </button>
           <button
-            onClick={() => setActiveTool('arrow')}
+            onClick={() => setActiveTool("arrow")}
             className={`p-2 rounded-lg transition-colors ${
-              activeTool === 'arrow' ? 'bg-[#E10600]' : 'hover:bg-white/10'
+              activeTool === "arrow" ? "bg-[#E10600]" : "hover:bg-white/10"
             }`}
             title="Flèche"
           >
             <ArrowRight size={20} />
           </button>
           <button
-            onClick={() => setActiveTool('rectangle')}
+            onClick={() => setActiveTool("rectangle")}
             className={`p-2 rounded-lg transition-colors ${
-              activeTool === 'rectangle' ? 'bg-[#E10600]' : 'hover:bg-white/10'
+              activeTool === "rectangle" ? "bg-[#E10600]" : "hover:bg-white/10"
             }`}
             title="Rectangle"
           >
             <Square size={20} />
           </button>
           <button
-            onClick={() => setActiveTool('circle')}
+            onClick={() => setActiveTool("circle")}
             className={`p-2 rounded-lg transition-colors ${
-              activeTool === 'circle' ? 'bg-[#E10600]' : 'hover:bg-white/10'
+              activeTool === "circle" ? "bg-[#E10600]" : "hover:bg-white/10"
             }`}
             title="Cercle"
           >
             <Circle size={20} />
           </button>
           <button
-            onClick={() => setActiveTool('text')}
+            onClick={() => setActiveTool("text")}
             className={`p-2 rounded-lg transition-colors ${
-              activeTool === 'text' ? 'bg-[#E10600]' : 'hover:bg-white/10'
+              activeTool === "text" ? "bg-[#E10600]" : "hover:bg-white/10"
             }`}
             title="Texte"
           >
             <Type size={20} />
           </button>
           <button
-            onClick={() => setActiveTool('eraser')}
+            onClick={() => setActiveTool("eraser")}
             className={`p-2 rounded-lg transition-colors ${
-              activeTool === 'eraser' ? 'bg-[#E10600]' : 'hover:bg-white/10'
+              activeTool === "eraser" ? "bg-[#E10600]" : "hover:bg-white/10"
             }`}
             title="Gomme"
           >
@@ -685,14 +708,14 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
 
         {/* Colors */}
         <div className="flex items-center gap-2 border-r border-white/20 pr-3">
-          {['#E10600', '#FFFFFF', '#FFD700', '#00FF00', '#0000FF', '#000000'].map(c => (
+          {["#E10600", "#FFFFFF", "#FFD700", "#00FF00", "#0000FF", "#000000"].map((c) => (
             <button
               key={c}
               onClick={() => {
                 setColor(c);
                 // If text is selected, update its color immediately
                 if (selectedTextId) {
-                  const newAnnotations = annotations.map(ann => {
+                  const newAnnotations = annotations.map((ann) => {
                     if (ann.id === selectedTextId) {
                       return { ...ann, color: c };
                     }
@@ -703,7 +726,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
                 }
               }}
               className={`w-8 h-8 rounded-full border-2 transition-transform ${
-                color === c ? 'border-white scale-110' : 'border-gray-400'
+                color === c ? "border-white scale-110" : "border-gray-400"
               }`}
               style={{ backgroundColor: c }}
               title={c}
@@ -712,10 +735,10 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         </div>
 
         {/* Line Width / Eraser Size */}
-        {activeTool !== 'text' && (
+        {activeTool !== "text" && (
           <div className="flex items-center gap-2 border-r border-white/20 pr-3">
             <span className="text-sm text-gray-400">
-              {activeTool === 'eraser' ? 'Taille gomme:' : 'Épaisseur:'}
+              {activeTool === "eraser" ? "Taille gomme:" : "Épaisseur:"}
             </span>
             <input
               type="range"
@@ -730,7 +753,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         )}
 
         {/* Font Size (for text tool or selected text) */}
-        {(activeTool === 'text' || selectedTextId) && (
+        {(activeTool === "text" || selectedTextId) && (
           <div className="flex items-center gap-2 border-r border-white/20 pr-3">
             <span className="text-sm text-gray-400">Taille:</span>
             <input
@@ -743,7 +766,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
                 setFontSize(newSize);
                 // If text is selected, update it immediately
                 if (selectedTextId) {
-                  const newAnnotations = annotations.map(ann => {
+                  const newAnnotations = annotations.map((ann) => {
                     if (ann.id === selectedTextId) {
                       return { ...ann, fontSize: newSize };
                     }
@@ -848,14 +871,17 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
               className={`absolute top-0 left-0 ${
-                activeTool === 'eraser' ? 'cursor-not-allowed' :
-                isDraggingText ? 'cursor-move' :
-                hoveredTextId ? 'cursor-pointer' :
-                'cursor-crosshair'
+                activeTool === "eraser"
+                  ? "cursor-not-allowed"
+                  : isDraggingText
+                    ? "cursor-move"
+                    : hoveredTextId
+                      ? "cursor-pointer"
+                      : "cursor-crosshair"
               }`}
               style={{
-                width: imageRef.current?.width || '100%',
-                height: imageRef.current?.height || '100%'
+                width: imageRef.current?.width || "100%",
+                height: imageRef.current?.height || "100%",
               }}
             />
           </div>
@@ -867,7 +893,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4">
-              {editingTextId ? 'Modifier le texte' : 'Ajouter du texte'}
+              {editingTextId ? "Modifier le texte" : "Ajouter du texte"}
             </h3>
             <input
               type="text"
@@ -877,17 +903,17 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-[#E10600] mb-4"
               autoFocus
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   if (editingTextId) {
                     handleUpdateText();
                   } else {
                     handleTextSubmit();
                   }
                 }
-                if (e.key === 'Escape') {
+                if (e.key === "Escape") {
                   setTextPosition(null);
                   setEditingTextId(null);
-                  setTextInput('');
+                  setTextInput("");
                 }
               }}
             />
@@ -896,7 +922,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
                 onClick={() => {
                   setTextPosition(null);
                   setEditingTextId(null);
-                  setTextInput('');
+                  setTextInput("");
                 }}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
               >
@@ -906,7 +932,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
                 onClick={editingTextId ? handleUpdateText : handleTextSubmit}
                 className="flex-1 px-4 py-2 bg-[#E10600] text-white rounded-lg font-medium hover:bg-[#C00500] transition-colors"
               >
-                {editingTextId ? 'Modifier' : 'Ajouter'}
+                {editingTextId ? "Modifier" : "Ajouter"}
               </button>
             </div>
           </div>

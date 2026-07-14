@@ -18,23 +18,27 @@
 ### **1. Line Ending Warnings (CRLF/LF)** ⚠️ HARMLESS
 
 **You'll see:**
+
 ```
 warning: LF will be replaced by CRLF in src/app/App.tsx
 The file will have its original line endings in your working directory
 ```
 
 **OR:**
+
 ```
 warning: CRLF will be replaced by LF in src/app/App.tsx
 ```
 
 **What it means:**
+
 - Windows uses CRLF for line endings
 - Mac/Linux use LF
 - Git is converting between them
 - **This is NORMAL and SAFE!** ✅
 
 **What to do:**
+
 ```bash
 # Option 1: Just ignore and continue (RECOMMENDED)
 git commit -m "Initial commit - RedMark PWA"
@@ -56,12 +60,14 @@ git push
 ### **2. Embedded Git Repository Warning** ⚠️ ACTION NEEDED
 
 **You'll see:**
+
 ```
 warning: adding embedded git repository: node_modules
 hint: You've added another git repository inside your current repository.
 ```
 
 **What it means:**
+
 - You have `node_modules` folder
 - It shouldn't be in Git
 - Missing or incorrect `.gitignore`
@@ -69,11 +75,13 @@ hint: You've added another git repository inside your current repository.
 **What to do:**
 
 **Step 1: Remove from staging**
+
 ```bash
 git rm -r --cached node_modules
 ```
 
 **Step 2: Make sure `.gitignore` exists and contains:**
+
 ```
 node_modules
 dist
@@ -81,6 +89,7 @@ dist
 ```
 
 **Step 3: Add files again**
+
 ```bash
 git add .
 git commit -m "Initial commit - RedMark PWA"
@@ -94,11 +103,13 @@ git push
 ### **3. Large File Warning** ⚠️ CHECK SIZE
 
 **You'll see:**
+
 ```
 warning: large file detected: src/assets/large-image.jpg
 ```
 
 **What it means:**
+
 - File is very large (>50MB typically)
 - Git doesn't like huge files
 - Might slow down repository
@@ -106,6 +117,7 @@ warning: large file detected: src/assets/large-image.jpg
 **What to do:**
 
 **Check file size:**
+
 ```bash
 # Windows:
 dir /s src\assets
@@ -115,10 +127,12 @@ du -sh src/assets/*
 ```
 
 **If files are images >10MB:**
+
 - Consider compressing them
 - Or add to `.gitignore` if not needed
 
 **If files are <50MB:**
+
 - Safe to continue!
 
 **Verdict**: ⚠️ **CHECK IF >50MB**
@@ -128,15 +142,18 @@ du -sh src/assets/*
 ### **4. Whitespace Warnings** ⚠️ HARMLESS
 
 **You'll see:**
+
 ```
 warning: trailing whitespace
 ```
 
 **What it means:**
+
 - Extra spaces at end of lines
 - Some files have tabs/spaces mixed
 
 **What to do:**
+
 ```bash
 # Just ignore and continue
 git commit -m "Initial commit - RedMark PWA"
@@ -150,14 +167,17 @@ git push
 ### **5. "No commits yet" Warning** ⚠️ HARMLESS
 
 **You'll see:**
+
 ```
 warning: not a git repository (or any of the parent directories): .git
 ```
 
 **What it means:**
+
 - You forgot to run `git init`
 
 **What to do:**
+
 ```bash
 git init
 git add .
@@ -174,11 +194,13 @@ git push
 ### **1. "Fatal: Not a git repository"** ❌
 
 **You'll see:**
+
 ```
 fatal: not a git repository (or any of the parent directories): .git
 ```
 
 **Fix:**
+
 ```bash
 git init
 ```
@@ -188,11 +210,13 @@ git init
 ### **2. "Fatal: Remote origin already exists"** ❌
 
 **You'll see:**
+
 ```
 fatal: remote origin already exists
 ```
 
 **Fix:**
+
 ```bash
 git remote remove origin
 git remote add origin https://github.com/YOUR_USERNAME/redmark-app.git
@@ -203,11 +227,13 @@ git remote add origin https://github.com/YOUR_USERNAME/redmark-app.git
 ### **3. "Fatal: refusing to merge unrelated histories"** ❌
 
 **You'll see:**
+
 ```
 fatal: refusing to merge unrelated histories
 ```
 
 **Fix:**
+
 ```bash
 git pull origin main --allow-unrelated-histories
 git push
@@ -289,6 +315,7 @@ git push
 ## 📝 What SHOULD be in Git
 
 **✅ Include these:**
+
 - `/src` folder (all source code)
 - `/public` folder (icons, assets)
 - `package.json`
@@ -300,6 +327,7 @@ git push
 - All `.md` documentation files
 
 **❌ DON'T include these:**
+
 - `node_modules/` (too large, auto-installed)
 - `dist/` (generated during build)
 - `.env` (sensitive data)
@@ -320,6 +348,7 @@ git ls-files
 ```
 
 **Should see:**
+
 ```
 src/app/App.tsx
 src/app/routes.tsx
@@ -330,6 +359,7 @@ vite.config.ts
 ```
 
 **Should NOT see:**
+
 ```
 node_modules/...
 dist/...
@@ -343,11 +373,13 @@ dist/...
 ### **Share the exact warning:**
 
 **Please copy and paste:**
+
 1. The exact warning message
 2. The command you ran
 3. What happened after
 
 **Example:**
+
 ```
 Command: git add .
 
@@ -377,6 +409,7 @@ warning: LF will be replaced by CRLF in package.json
 **This is 100% NORMAL on Windows!** ✅
 
 **What to do:**
+
 ```bash
 # Just continue!
 git commit -m "Initial commit - RedMark PWA"
@@ -398,12 +431,14 @@ git config core.autocrlf true
 4. **If no**: Share the exact warning and I'll help!
 
 ### **Safe to Continue If:**
+
 - ✅ Warnings mention "CRLF" or "LF"
 - ✅ Warnings mention "whitespace"
 - ✅ Command completed (didn't stop)
 - ✅ `git status` shows your files
 
 ### **Must Fix If:**
+
 - ❌ Error (not warning)
 - ❌ Command stopped/failed
 - ❌ `node_modules` is being added
@@ -413,14 +448,14 @@ git config core.autocrlf true
 
 ## 📊 Summary Table
 
-| Warning Type | Safe? | Action |
-|--------------|-------|--------|
-| CRLF/LF | ✅ Yes | Continue or `git config core.autocrlf true` |
-| Whitespace | ✅ Yes | Continue |
-| Large file (<50MB) | ✅ Yes | Continue |
-| Large file (>50MB) | ⚠️ Check | Consider excluding |
-| node_modules | ⚠️ Fix | Add to .gitignore |
-| Embedded repo | ⚠️ Fix | Remove nested .git |
+| Warning Type       | Safe?    | Action                                      |
+| ------------------ | -------- | ------------------------------------------- |
+| CRLF/LF            | ✅ Yes   | Continue or `git config core.autocrlf true` |
+| Whitespace         | ✅ Yes   | Continue                                    |
+| Large file (<50MB) | ✅ Yes   | Continue                                    |
+| Large file (>50MB) | ⚠️ Check | Consider excluding                          |
+| node_modules       | ⚠️ Fix   | Add to .gitignore                           |
+| Embedded repo      | ⚠️ Fix   | Remove nested .git                          |
 
 ---
 
@@ -470,6 +505,7 @@ git push -u origin main
 **Most likely: Your warnings are SAFE!** ✅
 
 **Just continue with:**
+
 ```bash
 git commit -m "Initial commit - RedMark PWA"
 git push

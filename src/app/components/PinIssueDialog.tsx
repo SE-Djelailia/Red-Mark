@@ -1,13 +1,21 @@
 import { useEffect, useState, useRef } from "react";
-import { X, Plus, Link2, ChevronLeft, Search, AlertCircle, Camera, ImagePlus, Images, Loader2, Trash2 } from "lucide-react";
+import {
+  X,
+  Plus,
+  Link2,
+  ChevronLeft,
+  Search,
+  AlertCircle,
+  Camera,
+  ImagePlus,
+  Images,
+  Loader2,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { createIssue, getIssuesByProject, updateIssue } from "../../lib/issuesApi";
 import { ISSUE_TRADES } from "./IssueCreation";
-import {
-  saveIssueExtras,
-  updatePin,
-  FloorPlanPin,
-} from "../../lib/floorPlansApi";
+import { saveIssueExtras, updatePin, FloorPlanPin } from "../../lib/floorPlansApi";
 import { getSiteVisits, getPhotos } from "../../lib/supabaseApi";
 import { supabase } from "../../lib/supabase";
 import { compressImage } from "../../lib/imageCompression";
@@ -52,10 +60,14 @@ export default function PinIssueDialog({
   const [visitId, setVisitId] = useState<string>("");
 
   // Photo state
-  const [selectedPhotos, setSelectedPhotos] = useState<{ id: string; url: string; preview?: string }[]>([]);
+  const [selectedPhotos, setSelectedPhotos] = useState<
+    { id: string; url: string; preview?: string }[]
+  >([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
-  const [galleryPhotos, setGalleryPhotos] = useState<{ id: string; url: string; storage_path: string }[]>([]);
+  const [galleryPhotos, setGalleryPhotos] = useState<
+    { id: string; url: string; storage_path: string }[]
+  >([]);
   const [loadingGallery, setLoadingGallery] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -93,23 +105,25 @@ export default function PinIssueDialog({
             allPhotos.slice(0, 30).map(async (p) => {
               try {
                 const { data } = await supabase.storage
-                  .from('project-photos')
+                  .from("project-photos")
                   .createSignedUrl(p.storage_path, 3600);
-                return { id: p.id, url: data?.signedUrl ?? '', storage_path: p.storage_path };
+                return { id: p.id, url: data?.signedUrl ?? "", storage_path: p.storage_path };
               } catch {
-                return { id: p.id, url: '', storage_path: p.storage_path };
+                return { id: p.id, url: "", storage_path: p.storage_path };
               }
-            })
+            }),
           );
-          setGalleryPhotos(withUrls.filter(p => p.url));
+          setGalleryPhotos(withUrls.filter((p) => p.url));
         }
       } catch (e) {
-        console.error('Gallery load error', e);
+        console.error("Gallery load error", e);
       } finally {
         if (!cancelled) setLoadingGallery(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [showGallery, projectId]);
 
   useEffect(() => {
@@ -149,9 +163,7 @@ export default function PinIssueDialog({
 
   if (!open || !pin) return null;
 
-  const severityToPriority = (
-    s: Severity,
-  ): "low" | "medium" | "high" | "critical" => {
+  const severityToPriority = (s: Severity): "low" | "medium" | "high" | "critical" => {
     if (s === "minor") return "low";
     if (s === "moderate") return "medium";
     if (s === "major") return "high";
@@ -164,13 +176,18 @@ export default function PinIssueDialog({
     try {
       for (const file of Array.from(files).slice(0, 5)) {
         const compressed = await compressImage(file);
-        const ext = file.name.split('.').pop() ?? 'jpg';
+        const ext = file.name.split(".").pop() ?? "jpg";
         const path = `${user.id}/${projectId}/issues/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error } = await supabase.storage.from('project-photos').upload(path, compressed);
+        const { error } = await supabase.storage.from("project-photos").upload(path, compressed);
         if (error) throw error;
-        const { data } = await supabase.storage.from('project-photos').createSignedUrl(path, 3600 * 24 * 30);
+        const { data } = await supabase.storage
+          .from("project-photos")
+          .createSignedUrl(path, 3600 * 24 * 30);
         if (data?.signedUrl) {
-          setSelectedPhotos(prev => [...prev, { id: path, url: data.signedUrl, preview: URL.createObjectURL(file) }]);
+          setSelectedPhotos((prev) => [
+            ...prev,
+            { id: path, url: data.signedUrl, preview: URL.createObjectURL(file) },
+          ]);
         }
       }
     } catch (e: any) {
@@ -181,9 +198,9 @@ export default function PinIssueDialog({
   }
 
   function toggleGalleryPhoto(photo: { id: string; url: string; storage_path: string }) {
-    setSelectedPhotos(prev => {
-      const exists = prev.find(p => p.id === photo.id);
-      if (exists) return prev.filter(p => p.id !== photo.id);
+    setSelectedPhotos((prev) => {
+      const exists = prev.find((p) => p.id === photo.id);
+      if (exists) return prev.filter((p) => p.id !== photo.id);
       return [...prev, { id: photo.id, url: photo.url }];
     });
   }
@@ -221,7 +238,7 @@ export default function PinIssueDialog({
         priority,
         status: "open",
         assignedTo: "",
-        photos: selectedPhotos.map(p => ({ id: p.id, url: p.url })),
+        photos: selectedPhotos.map((p) => ({ id: p.id, url: p.url })),
         tags: [trade],
         location: "",
       });
@@ -266,10 +283,7 @@ export default function PinIssueDialog({
   );
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 z-[55] overflow-y-auto"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 bg-black/50 z-[55] overflow-y-auto" onClick={onClose}>
       <div className="min-h-screen flex items-end sm:items-center justify-center sm:py-8 px-0 sm:px-4">
         <div
           className="bg-white w-full sm:max-w-md sm:rounded-xl rounded-t-2xl shadow-xl flex flex-col max-h-[90vh]"
@@ -305,8 +319,8 @@ export default function PinIssueDialog({
             {mode === "choose" && (
               <>
                 <p className="text-sm text-gray-600">
-                  Pin enregistré à {(pin.x * 100).toFixed(1)}%,{" "}
-                  {(pin.y * 100).toFixed(1)}%. Que souhaitez-vous faire ?
+                  Pin enregistré à {(pin.x * 100).toFixed(1)}%, {(pin.y * 100).toFixed(1)}%. Que
+                  souhaitez-vous faire ?
                 </p>
                 <button
                   onClick={() => setMode("create")}
@@ -316,12 +330,8 @@ export default function PinIssueDialog({
                     <Plus size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-[#1A1A1A]">
-                      Créer une déficience
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Nouvelle déficience liée à ce pin
-                    </div>
+                    <div className="text-sm font-medium text-[#1A1A1A]">Créer une déficience</div>
+                    <div className="text-xs text-gray-500">Nouvelle déficience liée à ce pin</div>
                   </div>
                 </button>
                 <button
@@ -346,9 +356,7 @@ export default function PinIssueDialog({
             {mode === "create" && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm text-[#1A1A1A] mb-2">
-                    Titre *
-                  </label>
+                  <label className="block text-sm text-[#1A1A1A] mb-2">Titre *</label>
                   <input
                     type="text"
                     value={title}
@@ -358,9 +366,7 @@ export default function PinIssueDialog({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-[#1A1A1A] mb-2">
-                    Description
-                  </label>
+                  <label className="block text-sm text-[#1A1A1A] mb-2">Description</label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
@@ -370,9 +376,7 @@ export default function PinIssueDialog({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-[#1A1A1A] mb-2">
-                    Discipline *
-                  </label>
+                  <label className="block text-sm text-[#1A1A1A] mb-2">Discipline *</label>
                   <select
                     value={trade}
                     onChange={(e) => setTrade(e.target.value)}
@@ -386,9 +390,7 @@ export default function PinIssueDialog({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-[#1A1A1A] mb-2">
-                    Sévérité *
-                  </label>
+                  <label className="block text-sm text-[#1A1A1A] mb-2">Sévérité *</label>
                   <div className="grid grid-cols-4 gap-2">
                     {(
                       [
@@ -431,8 +433,7 @@ export default function PinIssueDialog({
                     ))}
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
-                    La déficience apparaîtra dans cette visite ainsi que sur le
-                    plan.
+                    La déficience apparaîtra dans cette visite ainsi que sur le plan.
                   </p>
                 </div>
                 {/* Photos */}
@@ -443,11 +444,20 @@ export default function PinIssueDialog({
                   {selectedPhotos.length > 0 && (
                     <div className="flex gap-2 flex-wrap mb-3">
                       {selectedPhotos.map((p) => (
-                        <div key={p.id} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
-                          <img src={p.preview ?? p.url} alt="" className="w-full h-full object-cover" />
+                        <div
+                          key={p.id}
+                          className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200"
+                        >
+                          <img
+                            src={p.preview ?? p.url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
                           <button
                             type="button"
-                            onClick={() => setSelectedPhotos(prev => prev.filter(x => x.id !== p.id))}
+                            onClick={() =>
+                              setSelectedPhotos((prev) => prev.filter((x) => x.id !== p.id))
+                            }
                             className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center"
                           >
                             <Trash2 size={10} />
@@ -552,18 +562,11 @@ export default function PinIssueDialog({
                   />
                 </div>
                 {loadingIssues ? (
-                  <div className="text-sm text-gray-500 text-center py-6">
-                    Chargement…
-                  </div>
+                  <div className="text-sm text-gray-500 text-center py-6">Chargement…</div>
                 ) : filtered.length === 0 ? (
                   <div className="bg-gray-50 rounded-lg p-6 text-center">
-                    <AlertCircle
-                      size={28}
-                      className="mx-auto text-gray-300 mb-2"
-                    />
-                    <div className="text-sm text-gray-600">
-                      Aucune déficience trouvée
-                    </div>
+                    <AlertCircle size={28} className="mx-auto text-gray-300 mb-2" />
+                    <div className="text-sm text-gray-600">Aucune déficience trouvée</div>
                   </div>
                 ) : (
                   <ul className="space-y-2">
@@ -624,11 +627,20 @@ export default function PinIssueDialog({
 
       {/* Gallery modal */}
       {showGallery && (
-        <div className="fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowGallery(false)}>
-          <div className="bg-white w-full sm:max-w-lg sm:rounded-xl rounded-t-2xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setShowGallery(false)}
+        >
+          <div
+            className="bg-white w-full sm:max-w-lg sm:rounded-xl rounded-t-2xl max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
               <h3 className="text-base font-medium text-[#1A1A1A]">Photos du projet</h3>
-              <button onClick={() => setShowGallery(false)} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full">
+              <button
+                onClick={() => setShowGallery(false)}
+                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -639,17 +651,19 @@ export default function PinIssueDialog({
                   <span>Chargement des photos…</span>
                 </div>
               ) : galleryPhotos.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 text-sm">Aucune photo dans ce projet</div>
+                <div className="text-center py-12 text-gray-500 text-sm">
+                  Aucune photo dans ce projet
+                </div>
               ) : (
                 <div className="grid grid-cols-3 gap-2">
-                  {galleryPhotos.map(photo => {
-                    const isSelected = selectedPhotos.some(p => p.id === photo.id);
+                  {galleryPhotos.map((photo) => {
+                    const isSelected = selectedPhotos.some((p) => p.id === photo.id);
                     return (
                       <button
                         key={photo.id}
                         type="button"
                         onClick={() => toggleGalleryPhoto(photo)}
-                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${isSelected ? 'border-[#E10600] ring-2 ring-[#E10600]/30' : 'border-transparent'}`}
+                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${isSelected ? "border-[#E10600] ring-2 ring-[#E10600]/30" : "border-transparent"}`}
                       >
                         <img src={photo.url} alt="" className="w-full h-full object-cover" />
                         {isSelected && (
@@ -670,7 +684,7 @@ export default function PinIssueDialog({
                 onClick={() => setShowGallery(false)}
                 className="w-full py-3 bg-[#E10600] text-white rounded-lg font-medium hover:bg-[#C00500] transition-colors"
               >
-                Confirmer ({selectedPhotos.length} photo{selectedPhotos.length !== 1 ? 's' : ''})
+                Confirmer ({selectedPhotos.length} photo{selectedPhotos.length !== 1 ? "s" : ""})
               </button>
             </div>
           </div>

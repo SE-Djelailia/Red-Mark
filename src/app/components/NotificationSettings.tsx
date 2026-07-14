@@ -47,7 +47,7 @@ export default function NotificationSettings({ onClose }: NotificationSettingsPr
   };
 
   const handleToggle = (key: keyof NotificationPreferences) => {
-    if (typeof preferences[key] === 'boolean') {
+    if (typeof preferences[key] === "boolean") {
       savePreferences({
         ...preferences,
         [key]: !preferences[key],
@@ -138,9 +138,7 @@ export default function NotificationSettings({ onClose }: NotificationSettingsPr
                 />
                 {preferences.visitReminders && (
                   <div className="ml-6 border-l-2 border-gray-200 pl-4">
-                    <label className="block text-sm text-gray-700 mb-2">
-                      Rappeler tous les
-                    </label>
+                    <label className="block text-sm text-gray-700 mb-2">Rappeler tous les</label>
                     <select
                       value={preferences.reminderDays}
                       onChange={(e) => handleReminderDaysChange(Number(e.target.value))}
@@ -175,7 +173,9 @@ export default function NotificationSettings({ onClose }: NotificationSettingsPr
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
               <CheckCircle size={20} className="text-green-600 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-green-800">
-                <p className="font-medium mb-1">Vos préférences sont sauvegardées automatiquement</p>
+                <p className="font-medium mb-1">
+                  Vos préférences sont sauvegardées automatiquement
+                </p>
                 <p className="text-xs">Tous les changements sont appliqués immédiatement</p>
               </div>
             </div>
@@ -204,7 +204,13 @@ interface NotificationToggleProps {
   locked?: boolean;
 }
 
-function NotificationToggle({ label, description, checked, onChange, locked }: NotificationToggleProps) {
+function NotificationToggle({
+  label,
+  description,
+  checked,
+  onChange,
+  locked,
+}: NotificationToggleProps) {
   return (
     <div className="flex items-start justify-between gap-4 p-3 bg-gray-50 rounded-lg">
       <div className="flex-1">

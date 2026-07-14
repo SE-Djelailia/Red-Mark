@@ -1,13 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
-import { supabase } from '../lib/supabase';
+import React, { useState, useEffect } from "react";
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { supabase } from "../lib/supabase";
 
 interface Project {
   id: string;
@@ -38,9 +31,9 @@ export default function ProjectDetailScreen({ route, navigation }: any) {
     try {
       // Load project
       const { data: projectData, error: projectError } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', projectId)
+        .from("projects")
+        .select("*")
+        .eq("id", projectId)
         .single();
 
       if (projectError) throw projectError;
@@ -48,16 +41,16 @@ export default function ProjectDetailScreen({ route, navigation }: any) {
 
       // Load visits
       const { data: visitsData, error: visitsError } = await supabase
-        .from('visits')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('date', { ascending: false });
+        .from("visits")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("date", { ascending: false });
 
       if (visitsError) throw visitsError;
       setVisits(visitsData || []);
     } catch (error: any) {
-      Alert.alert('Erreur', 'Impossible de charger les données');
-      console.error('Load project error:', error);
+      Alert.alert("Erreur", "Impossible de charger les données");
+      console.error("Load project error:", error);
     } finally {
       setLoading(false);
     }
@@ -79,12 +72,8 @@ export default function ProjectDetailScreen({ route, navigation }: any) {
         <View style={styles.infoCard}>
           <Text style={styles.projectName}>{project.name}</Text>
           <Text style={styles.infoText}>📍 {project.address}</Text>
-          {project.client_name && (
-            <Text style={styles.infoText}>👤 {project.client_name}</Text>
-          )}
-          {project.description && (
-            <Text style={styles.description}>{project.description}</Text>
-          )}
+          {project.client_name && <Text style={styles.infoText}>👤 {project.client_name}</Text>}
+          {project.description && <Text style={styles.description}>{project.description}</Text>}
         </View>
       </View>
 
@@ -100,20 +89,16 @@ export default function ProjectDetailScreen({ route, navigation }: any) {
             <View key={visit.id} style={styles.visitCard}>
               <View style={styles.visitHeader}>
                 <Text style={styles.visitDate}>
-                  {new Date(visit.date).toLocaleDateString('fr-CA', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
+                  {new Date(visit.date).toLocaleDateString("fr-CA", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
                   })}
                 </Text>
               </View>
-              {visit.weather && (
-                <Text style={styles.visitWeather}>🌤️ {visit.weather}</Text>
-              )}
-              {visit.notes && (
-                <Text style={styles.visitNotes}>{visit.notes}</Text>
-              )}
+              {visit.weather && <Text style={styles.visitWeather}>🌤️ {visit.weather}</Text>}
+              {visit.notes && <Text style={styles.visitNotes}>{visit.notes}</Text>}
             </View>
           ))
         )}
@@ -125,84 +110,84 @@ export default function ProjectDetailScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
+    fontWeight: "bold",
+    color: "#1A1A1A",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#e0e0e0",
   },
   infoCard: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#e0e0e0",
   },
   projectName: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#E10600',
+    fontWeight: "bold",
+    color: "#E10600",
     marginBottom: 12,
   },
   infoText: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginBottom: 6,
   },
   description: {
     fontSize: 14,
-    color: '#1A1A1A',
+    color: "#1A1A1A",
     marginTop: 12,
     lineHeight: 20,
   },
   visitCard: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 16,
     marginHorizontal: 16,
     marginTop: 12,
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   visitHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
   visitDate: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    textTransform: 'capitalize',
+    fontWeight: "600",
+    color: "#1A1A1A",
+    textTransform: "capitalize",
   },
   visitWeather: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginBottom: 8,
   },
   visitNotes: {
     fontSize: 14,
-    color: '#1A1A1A',
+    color: "#1A1A1A",
     lineHeight: 20,
   },
   emptyState: {
     padding: 32,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
+    color: "#999",
   },
 });

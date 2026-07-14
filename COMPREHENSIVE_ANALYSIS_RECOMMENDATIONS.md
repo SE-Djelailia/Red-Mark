@@ -14,6 +14,7 @@
 Your RedMark application is a **well-structured, feature-rich construction management tool** with solid architecture. The codebase shows maturity with comprehensive features, good error handling patterns, and modern tooling. However, there are opportunities for optimization in performance, security, and code maintainability.
 
 ### Strengths ✅
+
 - Complete feature set (projects, visits, photos, annotations, reports)
 - Modern tech stack (React 18, Supabase, TypeScript)
 - PWA-ready with offline support
@@ -21,6 +22,7 @@ Your RedMark application is a **well-structured, feature-rich construction manag
 - Clean component organization
 
 ### Critical Issues ⚠️
+
 - Security vulnerabilities (plaintext passwords in unused code)
 - Performance bottlenecks (O(n²) algorithms, 1,300+ LOC components)
 - Code duplication (3 auth systems, 2 API layers)
@@ -34,10 +36,12 @@ Your RedMark application is a **well-structured, feature-rich construction manag
 ### 🔴 CRITICAL (Do This Week)
 
 #### 1. Security: Remove Plaintext Password Code
+
 **File:** `/src/contexts/SimpleAuthContext.tsx`  
 **Risk:** High - Passwords stored in plaintext in IndexedDB
 
 **Issue:**
+
 ```typescript
 // Line 83-87
 await saveUserToDB({
@@ -47,11 +51,12 @@ await saveUserToDB({
 
 // Line 114
 if (!user || user.password !== password) {
-  throw new Error('Email ou mot de passe incorrect');
+  throw new Error("Email ou mot de passe incorrect");
 }
 ```
 
 **Action:**
+
 ```bash
 # This file is unused - DELETE IT
 rm /src/contexts/SimpleAuthContext.tsx
@@ -63,21 +68,24 @@ rm /src/contexts/AuthContext.tsx
 ---
 
 #### 2. Security: Stop Logging Sensitive Data
+
 **Files:** 293 console.log statements throughout codebase  
 **Risk:** Medium - Emails and user data logged to console
 
 **Issue:**
+
 ```typescript
 // /src/contexts/SupabaseAuthContext.tsx:26
-console.log('🔍 Session initiale:', session?.user?.email);
+console.log("🔍 Session initiale:", session?.user?.email);
 
 // /src/contexts/SupabaseAuthContext.tsx:36
-console.log('🔄 Auth state changed:', _event, session?.user?.email);
+console.log("🔄 Auth state changed:", _event, session?.user?.email);
 ```
 
 **Action:** Create production-safe logger utility:
 
 **Create `/src/lib/logger.ts`:**
+
 ```typescript
 const isDev = import.meta.env.DEV;
 
@@ -91,11 +99,12 @@ export const logger = {
   },
   warn: (...args: any[]) => {
     if (isDev) console.warn(...args);
-  }
+  },
 };
 ```
 
 **Find and replace:**
+
 ```bash
 # Find all console.log with sensitive data
 grep -r "console.log.*email" src/
@@ -108,18 +117,22 @@ grep -r "console.log.*user" src/
 ---
 
 #### 3. Performance: Fix O(n²) Storage Operations
+
 **File:** `/src/lib/storage.ts`  
 **Lines:** 183-207, 210-235  
 **Impact:** Severe performance degradation with large datasets
 
 **Issue:**
+
 ```typescript
 // deletePhoto iterates ALL projects → ALL visits → ALL photos
 export const deletePhoto = (userId: string, photoId: string): void => {
-  const allProjects = getProjects(userId);  // O(n)
-  for (const project of allProjects) {      // O(n)
+  const allProjects = getProjects(userId); // O(n)
+  for (const project of allProjects) {
+    // O(n)
     const visits = getSiteVisits(userId, project.id); // O(m)
-    for (const visit of visits) {           // O(m)
+    for (const visit of visits) {
+      // O(m)
       const photos = getPhotos(userId, visit.id); // O(k)
       // ...
     }
@@ -132,15 +145,15 @@ export const deletePhoto = (userId: string, photoId: string): void => {
 ```typescript
 // Add to storage.ts
 interface PhotoIndex {
-  [photoId: string]: { visitId: string; userId: string; };
+  [photoId: string]: { visitId: string; userId: string };
 }
 
-const PHOTO_INDEX_KEY = 'photo_index';
+const PHOTO_INDEX_KEY = "photo_index";
 
 // Update when adding photo
 export const addPhoto = (userId: string, visitId: string, photo: Photo) => {
   // ... existing code ...
-  
+
   // Add to index
   const index = getPhotoIndex();
   index[photo.id] = { visitId, userId };
@@ -151,13 +164,13 @@ export const addPhoto = (userId: string, visitId: string, photo: Photo) => {
 export const deletePhoto = (userId: string, photoId: string): void => {
   const index = getPhotoIndex();
   const photoData = index[photoId];
-  
+
   if (!photoData) return;
-  
+
   const photos = getPhotos(userId, photoData.visitId);
-  const filtered = photos.filter(p => p.id !== photoId);
+  const filtered = photos.filter((p) => p.id !== photoId);
   savePhotos(userId, photoData.visitId, filtered);
-  
+
   delete index[photoId];
   savePhotoIndex(index);
 };
@@ -171,9 +184,11 @@ export const deletePhoto = (userId: string, photoId: string): void => {
 ### 🟡 HIGH PRIORITY (Do This Month)
 
 #### 4. Code Quality: Remove Dead Code
+
 **Impact:** Reduces bundle size, improves maintainability
 
 **Files to DELETE:**
+
 ```bash
 # Unused auth contexts (5.9 KB)
 rm src/contexts/SimpleAuthContext.tsx
@@ -186,6 +201,7 @@ src/app/components/ExportData.tsx
 ```
 
 **Verification before deletion:**
+
 ```bash
 # Search for imports
 grep -r "SimpleAuthContext" src/
@@ -200,20 +216,22 @@ grep -r "AuthContext" src/ | grep -v "SupabaseAuth"
 ---
 
 #### 5. Performance: Refactor Giant Components
+
 **Files:** 3 components over 1,000 LOC  
 **Risk:** Unmaintainable, performance issues
 
 **Problems:**
 
-| Component | LOC | Hooks | Issues |
-|-----------|-----|-------|--------|
-| ReportGenerator.tsx | 1,328 | 17 | Complex PDF generation, heavy state |
-| VisitDetail.tsx | 1,253 | 24 | Too many responsibilities |
-| ProjectDetail.tsx | 1,205 | 26 | Massive component |
+| Component           | LOC   | Hooks | Issues                              |
+| ------------------- | ----- | ----- | ----------------------------------- |
+| ReportGenerator.tsx | 1,328 | 17    | Complex PDF generation, heavy state |
+| VisitDetail.tsx     | 1,253 | 24    | Too many responsibilities           |
+| ProjectDetail.tsx   | 1,205 | 26    | Massive component                   |
 
 **Action for VisitDetail.tsx:**
 
 **Current structure:**
+
 ```
 VisitDetail.tsx (1,253 LOC)
 ├── Visit header
@@ -227,6 +245,7 @@ VisitDetail.tsx (1,253 LOC)
 ```
 
 **Refactor to:**
+
 ```
 VisitDetail.tsx (200 LOC) - orchestrator
 ├── VisitHeader.tsx (50 LOC)
@@ -238,6 +257,7 @@ VisitDetail.tsx (200 LOC) - orchestrator
 ```
 
 **Benefits:**
+
 - Easier to test each piece
 - Better code reusability
 - Faster re-renders (React.memo on sub-components)
@@ -249,10 +269,12 @@ VisitDetail.tsx (200 LOC) - orchestrator
 ---
 
 #### 6. Bundle Optimization: Choose ONE UI Library
+
 **Current:** Both Material-UI (7.3.5) AND Radix UI (27 components)  
 **Impact:** Massive bundle size increase
 
 **Analysis:**
+
 ```json
 // Material-UI (package.json lines 13-16)
 "@emotion/react": "11.14.0",      // 42 KB
@@ -269,6 +291,7 @@ VisitDetail.tsx (200 LOC) - orchestrator
 **Recommendation:** **Keep Radix UI, remove Material-UI**
 
 **Why Radix:**
+
 - ✅ Headless (fully customizable with Tailwind)
 - ✅ Better accessibility (WAI-ARIA compliant)
 - ✅ Smaller bundle size
@@ -276,6 +299,7 @@ VisitDetail.tsx (200 LOC) - orchestrator
 - ✅ Modern, actively maintained
 
 **Why remove Material:**
+
 - ❌ Opinionated design (harder to customize)
 - ❌ Larger bundle size
 - ❌ Requires Emotion CSS-in-JS (overhead)
@@ -301,12 +325,14 @@ grep -r "@mui" src/
 ---
 
 #### 7. Testing: Add Test Coverage
+
 **Current coverage:** 0%  
 **Risk:** Regressions, bugs in production
 
 **Recommended approach:**
 
 **Install testing tools:**
+
 ```bash
 pnpm add -D vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event
 ```
@@ -329,6 +355,7 @@ pnpm add -D vitest @testing-library/react @testing-library/jest-dom @testing-lib
    - VisitDetail
 
 **Example test structure:**
+
 ```
 src/
 ├── lib/
@@ -340,31 +367,32 @@ src/
 ```
 
 **Sample test:**
+
 ```typescript
 // src/lib/supabaseApi.test.ts
-import { describe, it, expect, vi } from 'vitest';
-import { getProjects } from './supabaseApi';
+import { describe, it, expect, vi } from "vitest";
+import { getProjects } from "./supabaseApi";
 
-describe('supabaseApi', () => {
-  it('should fetch projects for user', async () => {
-    const userId = 'test-user-123';
+describe("supabaseApi", () => {
+  it("should fetch projects for user", async () => {
+    const userId = "test-user-123";
     const projects = await getProjects(userId);
     expect(Array.isArray(projects)).toBe(true);
   });
-  
-  it('should handle errors gracefully', async () => {
+
+  it("should handle errors gracefully", async () => {
     // Mock Supabase error
-    vi.mock('./supabase', () => ({
+    vi.mock("./supabase", () => ({
       supabase: {
         from: () => ({
           select: () => ({
-            eq: () => Promise.resolve({ data: null, error: new Error('DB error') })
-          })
-        })
-      }
+            eq: () => Promise.resolve({ data: null, error: new Error("DB error") }),
+          }),
+        }),
+      },
     }));
-    
-    await expect(getProjects('invalid')).rejects.toThrow();
+
+    await expect(getProjects("invalid")).rejects.toThrow();
   });
 });
 ```
@@ -377,10 +405,12 @@ describe('supabaseApi', () => {
 ### 🟢 MEDIUM PRIORITY (Do Next Quarter)
 
 #### 8. State Management: Implement Zustand
+
 **Current:** Context API + localStorage + Supabase  
 **Issue:** Props drilling, no centralized state
 
 **Benefits of Zustand:**
+
 - ✅ Simple API (easier than Redux)
 - ✅ No boilerplate
 - ✅ TypeScript-first
@@ -390,20 +420,22 @@ describe('supabaseApi', () => {
 **Example implementation:**
 
 **Install:**
+
 ```bash
 pnpm add zustand
 ```
 
 **Create `/src/stores/projectStore.ts`:**
+
 ```typescript
-import { create } from 'zustand';
-import { Project } from '../lib/supabase';
+import { create } from "zustand";
+import { Project } from "../lib/supabase";
 
 interface ProjectStore {
   projects: Project[];
   currentProject: Project | null;
   isLoading: boolean;
-  
+
   // Actions
   setProjects: (projects: Project[]) => void;
   selectProject: (id: string) => void;
@@ -416,26 +448,29 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   projects: [],
   currentProject: null,
   isLoading: false,
-  
+
   setProjects: (projects) => set({ projects }),
-  selectProject: (id) => set((state) => ({
-    currentProject: state.projects.find(p => p.id === id) || null
-  })),
-  addProject: (project) => set((state) => ({
-    projects: [...state.projects, project]
-  })),
-  updateProject: (id, updates) => set((state) => ({
-    projects: state.projects.map(p => 
-      p.id === id ? { ...p, ...updates } : p
-    )
-  })),
-  deleteProject: (id) => set((state) => ({
-    projects: state.projects.filter(p => p.id !== id)
-  })),
+  selectProject: (id) =>
+    set((state) => ({
+      currentProject: state.projects.find((p) => p.id === id) || null,
+    })),
+  addProject: (project) =>
+    set((state) => ({
+      projects: [...state.projects, project],
+    })),
+  updateProject: (id, updates) =>
+    set((state) => ({
+      projects: state.projects.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+    })),
+  deleteProject: (id) =>
+    set((state) => ({
+      projects: state.projects.filter((p) => p.id !== id),
+    })),
 }));
 ```
 
 **Usage in components:**
+
 ```typescript
 // Before (props drilling)
 function ProjectList({ projects, onSelectProject }) { ... }
@@ -453,12 +488,14 @@ function ProjectList() {
 ---
 
 #### 9. Performance: Implement React.memo & useMemo
+
 **Current:** No memoization  
 **Impact:** Unnecessary re-renders
 
 **Example optimization for PhotoGallery:**
 
 **Before:**
+
 ```typescript
 export default function PhotoGallery({ photos, onPhotoClick }) {
   return (
@@ -472,6 +509,7 @@ export default function PhotoGallery({ photos, onPhotoClick }) {
 ```
 
 **After:**
+
 ```typescript
 import React, { memo, useMemo } from 'react';
 
@@ -483,15 +521,15 @@ const PhotoCard = memo(({ photo, onClick }) => {
 export default function PhotoGallery({ photos, onPhotoClick }) {
   // Memoize expensive computations
   const sortedPhotos = useMemo(() => {
-    return [...photos].sort((a, b) => 
+    return [...photos].sort((a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }, [photos]);
-  
+
   const photosByLocation = useMemo(() => {
     return groupBy(sortedPhotos, 'location');
   }, [sortedPhotos]);
-  
+
   return (
     <div>
       {sortedPhotos.map(photo => (
@@ -503,6 +541,7 @@ export default function PhotoGallery({ photos, onPhotoClick }) {
 ```
 
 **Priority components for memoization:**
+
 1. PhotoCard (rendered 100+ times)
 2. CommentItem (in threads)
 3. IssueCard
@@ -514,10 +553,12 @@ export default function PhotoGallery({ photos, onPhotoClick }) {
 ---
 
 #### 10. Code Quality: Add TypeScript Strict Mode
+
 **Current:** 79 instances of `any` type  
 **Impact:** Type safety compromised
 
 **Enable in `tsconfig.json`:**
+
 ```json
 {
   "compilerOptions": {
@@ -532,6 +573,7 @@ export default function PhotoGallery({ photos, onPhotoClick }) {
 **Fix common patterns:**
 
 **Before:**
+
 ```typescript
 catch (error: any) {
   console.error('Error:', error);
@@ -540,6 +582,7 @@ catch (error: any) {
 ```
 
 **After:**
+
 ```typescript
 catch (error) {
   if (error instanceof Error) {
@@ -560,10 +603,12 @@ catch (error) {
 ### 🔵 LOW PRIORITY (Nice to Have)
 
 #### 11. Add Error Boundaries
+
 **Current:** No React Error Boundaries  
 **Risk:** Entire app crashes on component error
 
 **Create `/src/components/ErrorBoundary.tsx`:**
+
 ```typescript
 import React, { Component, ReactNode } from 'react';
 
@@ -620,6 +665,7 @@ export class ErrorBoundary extends Component<Props, State> {
 ```
 
 **Usage in App.tsx:**
+
 ```typescript
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -639,16 +685,18 @@ function App() {
 ---
 
 #### 12. Implement Code Splitting
+
 **Current:** Single bundle loaded upfront  
 **Impact:** Slow initial load
 
 **Use React.lazy:**
+
 ```typescript
 // Before
 import ReportGenerator from './components/ReportGenerator';
 
 // After
-const ReportGenerator = React.lazy(() => 
+const ReportGenerator = React.lazy(() =>
   import('./components/ReportGenerator')
 );
 
@@ -664,6 +712,7 @@ function App() {
 ```
 
 **Priority routes for code splitting:**
+
 - `/reports` (ReportGenerator - 1,328 LOC)
 - `/projects/:id/annotate` (PhotoAnnotator - 917 LOC)
 - `/settings` (Settings components)
@@ -674,16 +723,20 @@ function App() {
 ---
 
 #### 13. Add Analytics & Error Tracking
+
 **Recommended tools:**
+
 - **Analytics:** PostHog (open source) or Plausible (privacy-first)
 - **Error Tracking:** Sentry (free tier)
 
 **Install Sentry:**
+
 ```bash
 pnpm add @sentry/react
 ```
 
 **Setup:**
+
 ```typescript
 // src/main.tsx
 import * as Sentry from "@sentry/react";
@@ -691,10 +744,7 @@ import * as Sentry from "@sentry/react";
 Sentry.init({
   dsn: "your-sentry-dsn",
   environment: import.meta.env.MODE,
-  integrations: [
-    new Sentry.BrowserTracing(),
-    new Sentry.Replay(),
-  ],
+  integrations: [new Sentry.BrowserTracing(), new Sentry.Replay()],
   tracesSampleRate: 0.1,
   replaysSessionSampleRate: 0.1,
 });
@@ -705,6 +755,7 @@ Sentry.init({
 ---
 
 #### 14. Improve PWA Capabilities
+
 **Current:** Basic PWA setup  
 **Enhancements:**
 
@@ -714,17 +765,18 @@ Sentry.init({
 4. **Cache API responses with Workbox**
 
 **Example: Background sync for uploads:**
+
 ```typescript
 // In service worker
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-photos') {
+self.addEventListener("sync", (event) => {
+  if (event.tag === "sync-photos") {
     event.waitUntil(syncPendingPhotos());
   }
 });
 
 // In app
 navigator.serviceWorker.ready.then((registration) => {
-  registration.sync.register('sync-photos');
+  registration.sync.register("sync-photos");
 });
 ```
 
@@ -733,6 +785,7 @@ navigator.serviceWorker.ready.then((registration) => {
 ---
 
 #### 15. Documentation & Developer Experience
+
 **Current:** Minimal code comments, no API docs
 
 **Create documentation:**
@@ -743,13 +796,14 @@ navigator.serviceWorker.ready.then((registration) => {
 4. **`/.claude/CLAUDE.md`** - AI assistant context (for future AI pair programming)
 
 **Add JSDoc comments to key functions:**
+
 ```typescript
 /**
  * Fetches all projects accessible to the user (owned + shared)
  * @param userId - Supabase user ID
  * @returns Promise<Project[]> - Array of projects
  * @throws Error if database query fails
- * 
+ *
  * @example
  * const projects = await getProjects('user-123');
  */
@@ -767,29 +821,33 @@ export async function getProjects(userId: string): Promise<Project[]> {
 ### Short-term (Next 2-3 Months)
 
 #### 16. Real-time Collaboration
+
 **Tech:** Supabase Realtime subscriptions  
 **Features:**
+
 - See when teammates are viewing same project
 - Live cursor positions on photos
 - Real-time comment updates
 - Notification badges for new activity
 
 **Implementation:**
+
 ```typescript
 // Subscribe to project changes
 useEffect(() => {
   const subscription = supabase
     .channel(`project:${projectId}`)
-    .on('postgres_changes', 
-      { 
-        event: '*', 
-        schema: 'public', 
-        table: 'visits' 
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "visits",
       },
       (payload) => {
-        console.log('Change received!', payload);
+        console.log("Change received!", payload);
         // Update local state
-      }
+      },
     )
     .subscribe();
 
@@ -804,8 +862,10 @@ useEffect(() => {
 ---
 
 #### 17. Advanced Search & Filters
+
 **Current:** Basic search  
 **Enhancements:**
+
 - Full-text search across all fields
 - Filter by date range, location, priority
 - Saved search queries
@@ -818,8 +878,10 @@ useEffect(() => {
 ---
 
 #### 18. Email Notifications
+
 **Integration:** Supabase Edge Functions + SendGrid/Resend  
 **Notifications for:**
+
 - New project member added
 - Issue assigned to you
 - Comment mentions (@username)
@@ -832,8 +894,10 @@ useEffect(() => {
 ### Mid-term (3-6 Months)
 
 #### 19. Mobile App (iOS/Android)
+
 **Status:** Starter files created ✅  
 **Next steps:**
+
 - Complete camera integration
 - Offline photo queue
 - Push notifications
@@ -844,20 +908,23 @@ useEffect(() => {
 ---
 
 #### 20. AI Features
+
 **Powered by:** Claude API or GPT-4
 
 **Features:**
+
 1. **Auto-caption photos** - AI describes construction progress
 2. **Issue detection** - AI analyzes photos for defects
 3. **Report summaries** - AI generates visit summaries
 4. **Smart search** - Natural language queries
 
 **Example:**
+
 ```typescript
 // Auto-caption with Claude
 const generateCaption = async (photoUrl: string) => {
-  const response = await fetch('/api/ai/caption', {
-    method: 'POST',
+  const response = await fetch("/api/ai/caption", {
+    method: "POST",
     body: JSON.stringify({ imageUrl: photoUrl }),
   });
   return response.json();
@@ -869,7 +936,9 @@ const generateCaption = async (photoUrl: string) => {
 ---
 
 #### 21. Advanced Analytics Dashboard
+
 **Features:**
+
 - Project timeline visualization
 - Photo upload trends
 - Issue resolution time tracking
@@ -883,7 +952,9 @@ const generateCaption = async (photoUrl: string) => {
 ---
 
 #### 22. Integration with Other Tools
+
 **Potential integrations:**
+
 - **Slack** - Notifications and updates
 - **Microsoft Teams** - Same as Slack
 - **Procore** - Construction management platform sync
@@ -898,6 +969,7 @@ const generateCaption = async (photoUrl: string) => {
 ### Long-term (6-12 Months)
 
 #### 23. Multi-language Support (i18n)
+
 **Current:** French only  
 **Add:** English, Spanish, Portuguese
 
@@ -908,7 +980,9 @@ const generateCaption = async (photoUrl: string) => {
 ---
 
 #### 24. White-label Solution
+
 **Allow:** Architecture firms to brand the app
+
 - Custom logo
 - Custom colors
 - Custom domain
@@ -919,7 +993,9 @@ const generateCaption = async (photoUrl: string) => {
 ---
 
 #### 25. Marketplace for Templates
+
 **Features:**
+
 - Report templates marketplace
 - Pre-made issue categories
 - Annotation stamp library
@@ -931,29 +1007,30 @@ const generateCaption = async (photoUrl: string) => {
 
 ## 📊 Impact Matrix
 
-| Recommendation | Impact | Effort | ROI | Priority |
-|----------------|--------|--------|-----|----------|
-| Remove plaintext passwords | HIGH | 1h | 10/10 | 🔴 CRITICAL |
-| Stop logging sensitive data | HIGH | 3h | 9/10 | 🔴 CRITICAL |
-| Fix O(n²) storage ops | HIGH | 4h | 9/10 | 🔴 CRITICAL |
-| Remove dead code | MED | 1h | 8/10 | 🟡 HIGH |
-| Refactor giant components | HIGH | 18h | 8/10 | 🟡 HIGH |
-| Remove Material-UI | HIGH | 12h | 9/10 | 🟡 HIGH |
-| Add test coverage | HIGH | 30h | 9/10 | 🟡 HIGH |
-| Implement Zustand | MED | 16h | 7/10 | 🟢 MEDIUM |
-| Add React.memo | MED | 6h | 7/10 | 🟢 MEDIUM |
-| TypeScript strict mode | MED | 12h | 7/10 | 🟢 MEDIUM |
-| Error boundaries | LOW | 2h | 6/10 | 🔵 LOW |
-| Code splitting | MED | 4h | 7/10 | 🔵 LOW |
-| Real-time collaboration | HIGH | 16h | 9/10 | Feature |
-| AI features | HIGH | 30h | 8/10 | Feature |
-| Mobile app | VERY HIGH | 60h | 10/10 | Feature |
+| Recommendation              | Impact    | Effort | ROI   | Priority    |
+| --------------------------- | --------- | ------ | ----- | ----------- |
+| Remove plaintext passwords  | HIGH      | 1h     | 10/10 | 🔴 CRITICAL |
+| Stop logging sensitive data | HIGH      | 3h     | 9/10  | 🔴 CRITICAL |
+| Fix O(n²) storage ops       | HIGH      | 4h     | 9/10  | 🔴 CRITICAL |
+| Remove dead code            | MED       | 1h     | 8/10  | 🟡 HIGH     |
+| Refactor giant components   | HIGH      | 18h    | 8/10  | 🟡 HIGH     |
+| Remove Material-UI          | HIGH      | 12h    | 9/10  | 🟡 HIGH     |
+| Add test coverage           | HIGH      | 30h    | 9/10  | 🟡 HIGH     |
+| Implement Zustand           | MED       | 16h    | 7/10  | 🟢 MEDIUM   |
+| Add React.memo              | MED       | 6h     | 7/10  | 🟢 MEDIUM   |
+| TypeScript strict mode      | MED       | 12h    | 7/10  | 🟢 MEDIUM   |
+| Error boundaries            | LOW       | 2h     | 6/10  | 🔵 LOW      |
+| Code splitting              | MED       | 4h     | 7/10  | 🔵 LOW      |
+| Real-time collaboration     | HIGH      | 16h    | 9/10  | Feature     |
+| AI features                 | HIGH      | 30h    | 8/10  | Feature     |
+| Mobile app                  | VERY HIGH | 60h    | 10/10 | Feature     |
 
 ---
 
 ## 🗓️ Suggested Timeline
 
 ### Week 1-2: Security & Critical Fixes
+
 - [ ] Remove plaintext password code (1h)
 - [ ] Create production logger (3h)
 - [ ] Fix O(n²) storage operations (4h)
@@ -962,6 +1039,7 @@ const generateCaption = async (photoUrl: string) => {
 **Total: 9 hours**
 
 ### Week 3-6: Performance & Code Quality
+
 - [ ] Refactor ReportGenerator (6h)
 - [ ] Refactor VisitDetail (6h)
 - [ ] Refactor ProjectDetail (6h)
@@ -970,6 +1048,7 @@ const generateCaption = async (photoUrl: string) => {
 **Total: 30 hours**
 
 ### Week 7-10: Testing Infrastructure
+
 - [ ] Setup Vitest & Testing Library (4h)
 - [ ] Test critical auth flows (8h)
 - [ ] Test API layer (8h)
@@ -978,6 +1057,7 @@ const generateCaption = async (photoUrl: string) => {
 **Total: 30 hours**
 
 ### Month 3: State Management & Optimization
+
 - [ ] Implement Zustand stores (16h)
 - [ ] Add React.memo to key components (6h)
 - [ ] Enable TypeScript strict mode (12h)
@@ -987,6 +1067,7 @@ const generateCaption = async (photoUrl: string) => {
 **Total: 40 hours**
 
 ### Month 4-6: Feature Development
+
 - [ ] Real-time collaboration (16h)
 - [ ] Advanced search (12h)
 - [ ] Email notifications (14h)
@@ -999,6 +1080,7 @@ const generateCaption = async (photoUrl: string) => {
 ## 💰 Cost-Benefit Analysis
 
 ### Current State
+
 - **Bundle size:** ~2.5 MB (estimate)
 - **Lighthouse score:** ~70-80 (estimate)
 - **Time to interactive:** ~3-4s (estimate)
@@ -1006,6 +1088,7 @@ const generateCaption = async (photoUrl: string) => {
 - **Known security issues:** 2 critical
 
 ### After All Critical + High Priority Fixes
+
 - **Bundle size:** ~1.5 MB (-40%)
 - **Lighthouse score:** ~90-95
 - **Time to interactive:** ~1-2s (-60%)
@@ -1013,6 +1096,7 @@ const generateCaption = async (photoUrl: string) => {
 - **Known security issues:** 0
 
 ### Business Impact
+
 - ✅ **Faster app** = Better user experience = More usage
 - ✅ **Secure code** = Customer trust = More contracts
 - ✅ **Tested code** = Fewer bugs = Lower support costs
@@ -1024,28 +1108,19 @@ const generateCaption = async (photoUrl: string) => {
 ## 🎯 Recommended Action Plan
 
 ### If you have 10 hours this week:
+
 1. Remove security vulnerabilities (4h)
 2. Fix O(n²) storage bug (4h)
 3. Remove dead code (1h)
 4. Create production logger (1h)
 
 ### If you have 40 hours this month:
-Do the above, plus:
-5. Refactor one giant component (6h)
-6. Remove Material-UI (12h)
-7. Setup testing infrastructure (4h)
-8. Write tests for auth flow (8h)
-9. Add error boundaries (2h)
-10. Implement code splitting (4h)
+
+Do the above, plus: 5. Refactor one giant component (6h) 6. Remove Material-UI (12h) 7. Setup testing infrastructure (4h) 8. Write tests for auth flow (8h) 9. Add error boundaries (2h) 10. Implement code splitting (4h)
 
 ### If you have 120 hours this quarter:
-Do the above, plus:
-11. Refactor all giant components (18h total)
-12. Implement Zustand (16h)
-13. Full test coverage for API layer (16h)
-14. TypeScript strict mode (12h)
-15. Add React.memo optimization (6h)
-16. Real-time collaboration (16h)
+
+Do the above, plus: 11. Refactor all giant components (18h total) 12. Implement Zustand (16h) 13. Full test coverage for API layer (16h) 14. TypeScript strict mode (12h) 15. Add React.memo optimization (6h) 16. Real-time collaboration (16h)
 
 ---
 
@@ -1080,6 +1155,7 @@ Do the above, plus:
 I can help you with any of these recommendations:
 
 **Just tell me:**
+
 - "Start with security fixes" → I'll remove the vulnerable code
 - "Fix the performance issues" → I'll refactor the O(n²) algorithms
 - "Help me refactor VisitDetail" → I'll break it into smaller components
@@ -1088,6 +1164,7 @@ I can help you with any of these recommendations:
 - "Add [specific feature]" → I'll implement it
 
 **Or ask me:**
+
 - "What should I prioritize?" → I'll give you a custom roadmap
 - "How do I implement [X]?" → I'll show you step-by-step
 - "Is this a good idea?" → I'll give you my honest assessment

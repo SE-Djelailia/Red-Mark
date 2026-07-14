@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { getPhotoSignedUrl } from '../lib/supabaseApi';
+import { useState, useEffect } from "react";
+import { getPhotoSignedUrl } from "../lib/supabaseApi";
 
 /**
  * Custom hook to automatically fetch and manage signed URLs for photos
@@ -35,7 +35,7 @@ export function usePhotoUrl(storagePath: string | null | undefined) {
       } catch (err) {
         if (mounted) {
           setError(err as Error);
-          console.error('Error fetching signed URL:', err);
+          console.error("Error fetching signed URL:", err);
         }
       } finally {
         if (mounted) {
@@ -89,10 +89,10 @@ export function usePhotoUrls(storagePaths: (string | null | undefined)[]) {
             try {
               return await getPhotoSignedUrl(path);
             } catch (err) {
-              console.error('Error fetching signed URL for path:', path, err);
+              console.error("Error fetching signed URL for path:", path, err);
               return null;
             }
-          })
+          }),
         );
 
         if (mounted) {

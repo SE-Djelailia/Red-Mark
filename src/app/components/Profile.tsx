@@ -50,7 +50,7 @@ export default function Profile() {
       const profileStats = await getProfileStats(user.id);
       setStats(profileStats);
     } catch (error) {
-      console.error('Error loading stats:', error);
+      console.error("Error loading stats:", error);
     } finally {
       setLoading(false);
     }
@@ -80,9 +80,9 @@ export default function Profile() {
   }
 
   // Extract user metadata
-  const userName = user.user_metadata?.name || user.email?.split('@')[0] || 'Utilisateur';
-  const userFirm = user.user_metadata?.firm || 'Non spécifié';
-  const userRole = user.user_metadata?.role || 'architect';
+  const userName = user.user_metadata?.name || user.email?.split("@")[0] || "Utilisateur";
+  const userFirm = user.user_metadata?.firm || "Non spécifié";
+  const userRole = user.user_metadata?.role || "architect";
 
   return (
     <div className="min-h-screen pb-20">
@@ -92,7 +92,11 @@ export default function Profile() {
           {/* Avatar */}
           <div className="flex items-center gap-4 mb-6">
             <div className="w-20 h-20 rounded-full bg-[#E10600] flex items-center justify-center text-2xl font-bold">
-              {userName.split(" ").map((n) => n[0]).join("").toUpperCase()}
+              {userName
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .toUpperCase()}
             </div>
             <div>
               <h1 className="text-2xl font-medium mb-1">{userName}</h1>
@@ -103,21 +107,15 @@ export default function Profile() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white/10 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold mb-1">
-                {loading ? "-" : stats.projectCount}
-              </div>
+              <div className="text-2xl font-bold mb-1">{loading ? "-" : stats.projectCount}</div>
               <div className="text-xs text-gray-400">Projets</div>
             </div>
             <div className="bg-white/10 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold mb-1">
-                {loading ? "-" : stats.totalVisits}
-              </div>
+              <div className="text-2xl font-bold mb-1">{loading ? "-" : stats.totalVisits}</div>
               <div className="text-xs text-gray-400">Visites</div>
             </div>
             <div className="bg-white/10 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold mb-1">
-                {loading ? "-" : stats.totalPhotos}
-              </div>
+              <div className="text-2xl font-bold mb-1">{loading ? "-" : stats.totalPhotos}</div>
               <div className="text-xs text-gray-400">Photos</div>
             </div>
           </div>

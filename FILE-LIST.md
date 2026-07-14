@@ -7,6 +7,7 @@
 ## 🎯 What This Is
 
 This is the **complete inventory** of all files in your RedMark project. Use this to:
+
 - ✅ Verify you exported everything from Figma Make
 - ✅ Check nothing is missing before uploading to GitHub
 - ✅ Understand the project structure
@@ -18,6 +19,7 @@ This is the **complete inventory** of all files in your RedMark project. Use thi
 These files are **required** for deployment:
 
 ### Configuration Files (Root Level)
+
 ```
 ✅ package.json          (Dependencies)
 ✅ vite.config.ts        (Build configuration)
@@ -27,12 +29,14 @@ These files are **required** for deployment:
 ```
 
 ### Public Assets
+
 ```
 ✅ /public/icon.svg      (App icon - PWA)
 ✅ /public/favicon.svg   (Browser favicon)
 ```
 
 ### Source Code
+
 ```
 ✅ /src/app/App.tsx      (Main app file)
 ✅ /src/app/routes.tsx   (Routing config)
@@ -191,17 +195,17 @@ redmark-app/
 
 ## 📊 File Count Summary
 
-| Category | Count |
-|----------|-------|
-| **Configuration** | 6 files |
-| **Documentation** | 14 files |
-| **Public Assets** | 6 files |
-| **Source Code** | 80+ files |
-| **Components** | 40+ files |
-| **UI Components** | 30+ files |
-| **Utilities** | 4 files |
-| **Styles** | 4 files |
-| **TOTAL** | **~110 files** |
+| Category          | Count          |
+| ----------------- | -------------- |
+| **Configuration** | 6 files        |
+| **Documentation** | 14 files       |
+| **Public Assets** | 6 files        |
+| **Source Code**   | 80+ files      |
+| **Components**    | 40+ files      |
+| **UI Components** | 30+ files      |
+| **Utilities**     | 4 files        |
+| **Styles**        | 4 files        |
+| **TOTAL**         | **~110 files** |
 
 ---
 
@@ -257,12 +261,14 @@ Before exporting from Figma Make:
 ## 📦 What Gets Exported
 
 ### ✅ Export These
+
 ```
 All files listed above
 EXCEPT node_modules (never export)
 ```
 
 ### ❌ Don't Export
+
 ```
 ❌ node_modules/      (will be installed on Vercel)
 ❌ dist/              (will be built on Vercel)
@@ -287,8 +293,9 @@ After downloading from Figma Make:
 ## 📤 Upload to GitHub
 
 Upload **all files** except:
+
 - ❌ `node_modules/` (if present)
-- ❌ `dist/` (if present)  
+- ❌ `dist/` (if present)
 - ❌ Any `.cache` folders
 
 Everything else → **Upload to GitHub** ✅
@@ -300,6 +307,7 @@ Everything else → **Upload to GitHub** ✅
 After uploading to GitHub, verify:
 
 ### Files You Should See on GitHub:
+
 ```
 ✅ package.json
 ✅ vite.config.ts
@@ -310,6 +318,7 @@ After uploading to GitHub, verify:
 ```
 
 ### Files You Should NOT See:
+
 ```
 ❌ node_modules/
 ❌ dist/
@@ -322,14 +331,14 @@ After uploading to GitHub, verify:
 
 Approximate sizes:
 
-| Item | Size |
-|------|------|
-| **Source code** | ~500 KB |
-| **Documentation** | ~100 KB |
-| **Icons/Assets** | ~50 KB |
-| **Config files** | ~10 KB |
+| Item                        | Size        |
+| --------------------------- | ----------- |
+| **Source code**             | ~500 KB     |
+| **Documentation**           | ~100 KB     |
+| **Icons/Assets**            | ~50 KB      |
+| **Config files**            | ~10 KB      |
 | **Total (no node_modules)** | **~700 KB** |
-| **With node_modules** | ~200 MB |
+| **With node_modules**       | ~200 MB     |
 
 **Upload to GitHub**: Only the ~700 KB (no node_modules)
 
@@ -338,6 +347,7 @@ Approximate sizes:
 ## 🔄 After Deployment
 
 Vercel will:
+
 1. **Install** dependencies (`npm install`)
 2. **Build** app (`npm run build`)
 3. **Generate** dist/ folder
@@ -352,6 +362,7 @@ You **don't** upload node_modules or dist - Vercel creates them!
 Print this and check off:
 
 ### Root Files
+
 - [ ] package.json
 - [ ] vite.config.ts
 - [ ] vercel.json
@@ -361,11 +372,13 @@ Print this and check off:
 - [ ] All other .md docs
 
 ### Public Folder
+
 - [ ] /public/icon.svg
 - [ ] /public/favicon.svg
 - [ ] Other public files
 
 ### Source Folder
+
 - [ ] /src/main.tsx
 - [ ] /src/app/App.tsx
 - [ ] /src/app/routes.tsx

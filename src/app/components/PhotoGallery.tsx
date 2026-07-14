@@ -1,5 +1,16 @@
 import { useState, useEffect } from "react";
-import { X, Calendar, MapPin, Tag, Edit3, Pencil, AlertCircle, Filter, Search, Camera } from "lucide-react";
+import {
+  X,
+  Calendar,
+  MapPin,
+  Tag,
+  Edit3,
+  Pencil,
+  AlertCircle,
+  Filter,
+  Search,
+  Camera,
+} from "lucide-react";
 import PhotoMarkup from "./PhotoMarkup";
 import IssueCreation from "./IssueCreation";
 import type { Issue } from "./IssueCreation";
@@ -64,15 +75,13 @@ export default function PhotoGallery() {
           photo.projectName.toLowerCase().includes(query) ||
           photo.room.toLowerCase().includes(query) ||
           photo.notes.toLowerCase().includes(query) ||
-          photo.phase.toLowerCase().includes(query)
+          photo.phase.toLowerCase().includes(query),
       );
     }
 
     // Tag filter
     if (selectedTags.length > 0) {
-      filtered = filtered.filter((photo) =>
-        selectedTags.every((tag) => photo.tags.includes(tag))
-      );
+      filtered = filtered.filter((photo) => selectedTags.every((tag) => photo.tags.includes(tag)));
     }
 
     // Phase filter
@@ -84,19 +93,22 @@ export default function PhotoGallery() {
   }, [searchQuery, selectedTags, selectedPhase, allPhotos]);
 
   // Get all unique tags and their counts
-  const allTags = allPhotos.reduce((acc, photo) => {
-    photo.tags.forEach((tag) => {
-      acc[tag] = (acc[tag] || 0) + 1;
-    });
-    return acc;
-  }, {} as Record<string, number>);
+  const allTags = allPhotos.reduce(
+    (acc, photo) => {
+      photo.tags.forEach((tag) => {
+        acc[tag] = (acc[tag] || 0) + 1;
+      });
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   // Get all unique phases
   const allPhases = [...new Set(allPhotos.map((photo) => photo.phase))];
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   };
 
@@ -145,7 +157,8 @@ export default function PhotoGallery() {
       <div className="bg-[#1A1A1A] text-white px-6 py-6 md:py-8">
         <h1 className="text-2xl md:text-3xl">Galerie de photos</h1>
         <p className="text-gray-400 mt-1">
-          {filteredPhotos.length} photo{filteredPhotos.length !== 1 ? "s" : ""} sur {allPhotos.length}
+          {filteredPhotos.length} photo{filteredPhotos.length !== 1 ? "s" : ""} sur{" "}
+          {allPhotos.length}
         </p>
       </div>
 
@@ -233,7 +246,9 @@ export default function PhotoGallery() {
                         }`}
                       >
                         <span>{tag}</span>
-                        <span className={`text-xs ${selectedTags.includes(tag) ? "opacity-75" : "text-gray-500"}`}>
+                        <span
+                          className={`text-xs ${selectedTags.includes(tag) ? "opacity-75" : "text-gray-500"}`}
+                        >
                           ({count})
                         </span>
                       </button>
@@ -265,38 +280,40 @@ export default function PhotoGallery() {
             )}
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-3 gap-3">{filteredPhotos.map((photo) => (
-            <div
-              key={photo.id}
-              onClick={() => handlePhotoClick(photo)}
-              className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-gray-200"
-            >
-              <img
-                src={photo.url}
-                alt={`${photo.projectName} - ${photo.room}`}
-                className="w-full h-full object-cover transition-transform group-hover:scale-105"
-              />
-              {/* Metadata Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                  <div className="text-xs mb-1">
-                    {new Date(photo.date).toLocaleDateString('fr-CA')}
-                  </div>
-                  <div className="text-sm font-medium mb-1 line-clamp-1">{photo.room}</div>
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <div className="text-xs px-2 py-0.5 bg-[#E10600] rounded inline-block">
-                      {photo.phase}
+          <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-3 gap-3">
+            {filteredPhotos.map((photo) => (
+              <div
+                key={photo.id}
+                onClick={() => handlePhotoClick(photo)}
+                className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-gray-200"
+              >
+                <img
+                  src={photo.url}
+                  alt={`${photo.projectName} - ${photo.room}`}
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                />
+                {/* Metadata Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                    <div className="text-xs mb-1">
+                      {new Date(photo.date).toLocaleDateString("fr-CA")}
                     </div>
-                    {photo.tags.length > 0 && (
-                      <div className="text-xs px-2 py-0.5 bg-white/20 rounded inline-block">
-                        +{photo.tags.length}
+                    <div className="text-sm font-medium mb-1 line-clamp-1">{photo.room}</div>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <div className="text-xs px-2 py-0.5 bg-[#E10600] rounded inline-block">
+                        {photo.phase}
                       </div>
-                    )}
+                      {photo.tags.length > 0 && (
+                        <div className="text-xs px-2 py-0.5 bg-white/20 rounded inline-block">
+                          +{photo.tags.length}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}</div>
+            ))}
+          </div>
         )}
       </div>
 
@@ -357,7 +374,7 @@ export default function PhotoGallery() {
           >
             <div className="flex items-center gap-3 text-sm">
               <Calendar size={18} className="text-gray-400" />
-              <span>{new Date(selectedPhoto.date).toLocaleDateString('fr-CA')}</span>
+              <span>{new Date(selectedPhoto.date).toLocaleDateString("fr-CA")}</span>
             </div>
 
             <div className="flex items-center gap-3 text-sm">
@@ -375,10 +392,7 @@ export default function PhotoGallery() {
                   {selectedPhoto.phase}
                 </span>
                 {selectedPhoto.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-1 bg-gray-700 text-white rounded-md text-xs"
-                  >
+                  <span key={tag} className="px-2 py-1 bg-gray-700 text-white rounded-md text-xs">
                     {tag}
                   </span>
                 ))}
@@ -427,9 +441,7 @@ export default function PhotoGallery() {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-300 leading-relaxed">
-                  {selectedPhoto.notes}
-                </p>
+                <p className="text-sm text-gray-300 leading-relaxed">{selectedPhoto.notes}</p>
               )}
             </div>
           </div>

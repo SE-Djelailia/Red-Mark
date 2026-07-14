@@ -79,7 +79,7 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
 
   const updateSetting = <K extends keyof GeneralSettingsData>(
     key: K,
-    value: GeneralSettingsData[K]
+    value: GeneralSettingsData[K],
   ) => {
     saveSettings({ ...settings, [key]: value });
   };
@@ -157,7 +157,8 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
                     </span>
                   </div>
                   <p className="text-xs text-gray-600">
-                    Vos données sont stockées sur Supabase pour permettre la synchronisation multi-appareils
+                    Vos données sont stockées sur Supabase pour permettre la synchronisation
+                    multi-appareils
                   </p>
                 </div>
                 <SettingToggle
@@ -253,7 +254,8 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
               <div>
                 <h3 className="text-lg font-medium text-[#1A1A1A] mb-1">Vider le cache?</h3>
                 <p className="text-sm text-gray-600">
-                  Cette action supprimera les données en cache local. Vos projets dans le cloud ne seront pas affectés.
+                  Cette action supprimera les données en cache local. Vos projets dans le cloud ne
+                  seront pas affectés.
                 </p>
               </div>
             </div>

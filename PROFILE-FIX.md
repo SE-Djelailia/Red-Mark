@@ -9,18 +9,20 @@
 ## 🔧 What Was Fixed
 
 ### **Before (Mock Data):**
+
 ```typescript
 const user = {
-  name: "Jean-François Tremblay",  // ❌ Hardcoded
-  email: "jf.tremblay@jlp.ca",     // ❌ Hardcoded
-  firm: "Jodoin Lamarre Pratte architectes",  // ❌ Hardcoded
-  role: "Architecte principal",    // ❌ Hardcoded
+  name: "Jean-François Tremblay", // ❌ Hardcoded
+  email: "jf.tremblay@jlp.ca", // ❌ Hardcoded
+  firm: "Jodoin Lamarre Pratte architectes", // ❌ Hardcoded
+  role: "Architecte principal", // ❌ Hardcoded
 };
 ```
 
 ### **After (Real Data):**
+
 ```typescript
-const { user, signOut } = useAuth();  // ✅ From your actual account!
+const { user, signOut } = useAuth(); // ✅ From your actual account!
 
 // Now displays:
 // - Your real name
@@ -34,21 +36,25 @@ const { user, signOut } = useAuth();  // ✅ From your actual account!
 ## ✅ What Now Works
 
 ### **Profile Information:**
+
 - ✅ **Name** - Shows the name you entered during signup
 - ✅ **Email** - Shows your actual email address
 - ✅ **Company** - Shows the firm name you entered
 - ✅ **Role** - Shows your role (architect, admin, viewer)
 
 ### **Avatar/Initials:**
+
 - ✅ Automatically generated from YOUR name
 - ✅ Example: "Marie Tremblay" → "MT"
 
 ### **Statistics:**
+
 - ✅ **Projects** - Real count from database (currently implemented)
 - ⏭️ **Visits** - Will show real count (coming soon)
 - ⏭️ **Photos** - Will show real count (coming soon)
 
 ### **Logout:**
+
 - ✅ Actually logs you out (not just redirect)
 - ✅ Clears session properly
 - ✅ Toast notification confirmation
@@ -60,6 +66,7 @@ const { user, signOut } = useAuth();  // ✅ From your actual account!
 **File:** `/src/app/components/Profile.tsx`
 
 **Changes:**
+
 1. ✅ Import `useAuth` hook
 2. ✅ Get real `user` data from AuthContext
 3. ✅ Implement real `signOut` function
@@ -105,6 +112,7 @@ git push
 ## 🎯 Example Output
 
 ### **Your Account:**
+
 ```
 Created account with:
 - Name: Marie Tremblay
@@ -113,6 +121,7 @@ Created account with:
 ```
 
 ### **Profile Page Shows:**
+
 ```
 ┌─────────────────────────────────┐
 │   MT  Marie Tremblay            │
@@ -173,10 +182,13 @@ Rôle:        architect
 ## 📊 Statistics Feature
 
 ### **Currently Working:**
+
 - ✅ **Project Count** - Fetched from database via `getProjects()` API
 
 ### **Coming Soon:**
+
 When we integrate site visits and photos:
+
 - ⏭️ **Visit Count** - Will count all your site visits
 - ⏭️ **Photo Count** - Will count all uploaded photos
 
@@ -196,6 +208,7 @@ When we integrate site visits and photos:
 ```
 
 **Displayed in:**
+
 - Red circle background (#E10600)
 - White text
 - Uppercase letters
@@ -205,15 +218,15 @@ When we integrate site visits and photos:
 
 ## ✅ Summary
 
-| Feature | Before | After |
-|---------|--------|-------|
-| Name | ❌ Jean-François Tremblay | ✅ YOUR name |
-| Email | ❌ jf.tremblay@jlp.ca | ✅ YOUR email |
-| Firm | ❌ JLP (hardcoded) | ✅ YOUR firm |
-| Role | ❌ Architecte principal | ✅ YOUR role |
-| Avatar | ❌ JFT | ✅ YOUR initials |
-| Logout | ❌ Fake redirect | ✅ Real logout |
-| Stats | ❌ Mock numbers | ✅ Real project count |
+| Feature | Before                    | After                 |
+| ------- | ------------------------- | --------------------- |
+| Name    | ❌ Jean-François Tremblay | ✅ YOUR name          |
+| Email   | ❌ jf.tremblay@jlp.ca     | ✅ YOUR email         |
+| Firm    | ❌ JLP (hardcoded)        | ✅ YOUR firm          |
+| Role    | ❌ Architecte principal   | ✅ YOUR role          |
+| Avatar  | ❌ JFT                    | ✅ YOUR initials      |
+| Logout  | ❌ Fake redirect          | ✅ Real logout        |
+| Stats   | ❌ Mock numbers           | ✅ Real project count |
 
 ---
 
@@ -224,6 +237,7 @@ When we integrate site visits and photos:
 **Want to see more real data?**
 
 I can now integrate:
+
 1. **ProjectList** - Show your real projects
 2. **Dashboard** - Show real statistics
 3. **SiteVisits** - Create and view real visits
@@ -236,6 +250,7 @@ I can now integrate:
 ## ✨ Profile Features Summary
 
 **What works now:**
+
 - ✅ Real user information display
 - ✅ Dynamic avatar with initials
 - ✅ Real logout functionality
@@ -244,6 +259,7 @@ I can now integrate:
 - ✅ Error handling
 
 **What's coming:**
+
 - ⏭️ Visit statistics
 - ⏭️ Photo statistics
 - ⏭️ Team management UI

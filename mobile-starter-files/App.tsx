@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-import { Session } from '@supabase/supabase-js';
-import { supabase } from './lib/supabase';
+import React, { useEffect, useState } from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import { Session } from "@supabase/supabase-js";
+import { supabase } from "./lib/supabase";
 
 // Screens (we'll create these next)
-import AuthScreen from './screens/AuthScreen';
-import ProjectsListScreen from './screens/ProjectsListScreen';
-import ProjectDetailScreen from './screens/ProjectDetailScreen';
+import AuthScreen from "./screens/AuthScreen";
+import ProjectsListScreen from "./screens/ProjectsListScreen";
+import ProjectDetailScreen from "./screens/ProjectDetailScreen";
 
 const Stack = createStackNavigator();
 
@@ -23,7 +23,9 @@ export default function App() {
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
@@ -39,33 +41,29 @@ export default function App() {
       <Stack.Navigator
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#E10600',
+            backgroundColor: "#E10600",
           },
-          headerTintColor: '#fff',
+          headerTintColor: "#fff",
           headerTitleStyle: {
-            fontWeight: 'bold',
+            fontWeight: "bold",
           },
         }}
       >
         {!session ? (
           // Not logged in - show auth screen
-          <Stack.Screen
-            name="Auth"
-            component={AuthScreen}
-            options={{ headerShown: false }}
-          />
+          <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: false }} />
         ) : (
           // Logged in - show app screens
           <>
             <Stack.Screen
               name="Projects"
               component={ProjectsListScreen}
-              options={{ title: 'Mes Projets' }}
+              options={{ title: "Mes Projets" }}
             />
             <Stack.Screen
               name="ProjectDetail"
               component={ProjectDetailScreen}
-              options={{ title: 'Détails du Projet' }}
+              options={{ title: "Détails du Projet" }}
             />
           </>
         )}

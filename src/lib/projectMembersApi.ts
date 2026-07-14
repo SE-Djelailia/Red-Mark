@@ -3,13 +3,13 @@ export interface ProjectMember {
   projectId: string;
   name: string;
   email: string;
-  role: 'owner' | 'collaborator' | 'viewer';
+  role: "owner" | "collaborator" | "viewer";
   addedBy: string; // User ID who added this member
   addedDate: string;
-  status: 'pending' | 'active'; // pending = invitation sent, active = accepted
+  status: "pending" | "active"; // pending = invitation sent, active = accepted
 }
 
-const STORAGE_KEY = 'redmark_project_members';
+const STORAGE_KEY = "redmark_project_members";
 
 // Get all project members from localStorage
 function getAllProjectMembers(): ProjectMember[] {
@@ -17,7 +17,7 @@ function getAllProjectMembers(): ProjectMember[] {
     const data = localStorage.getItem(STORAGE_KEY);
     return data ? JSON.parse(data) : [];
   } catch (error) {
-    console.error('Error loading project members:', error);
+    console.error("Error loading project members:", error);
     return [];
   }
 }
@@ -27,14 +27,14 @@ function saveAllProjectMembers(members: ProjectMember[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(members));
   } catch (error) {
-    console.error('Error saving project members:', error);
+    console.error("Error saving project members:", error);
   }
 }
 
 // Get members for a specific project
 export function getMembersByProject(projectId: string): ProjectMember[] {
   const allMembers = getAllProjectMembers();
-  return allMembers.filter(member => member.projectId === projectId);
+  return allMembers.filter((member) => member.projectId === projectId);
 }
 
 // Add a member to a project
@@ -42,8 +42,8 @@ export function addProjectMember(
   projectId: string,
   name: string,
   email: string,
-  role: ProjectMember['role'],
-  addedBy: string
+  role: ProjectMember["role"],
+  addedBy: string,
 ): ProjectMember {
   const newMember: ProjectMember = {
     id: Date.now().toString(),
@@ -53,7 +53,7 @@ export function addProjectMember(
     role,
     addedBy,
     addedDate: new Date().toISOString(),
-    status: 'pending' // They need to accept the invitation
+    status: "pending", // They need to accept the invitation
   };
 
   const allMembers = getAllProjectMembers();
@@ -66,16 +66,16 @@ export function addProjectMember(
 // Update a member's role or status
 export function updateProjectMember(
   memberId: string,
-  updates: Partial<Pick<ProjectMember, 'role' | 'status'>>
+  updates: Partial<Pick<ProjectMember, "role" | "status">>,
 ): ProjectMember | null {
   const allMembers = getAllProjectMembers();
-  const index = allMembers.findIndex(m => m.id === memberId);
-  
+  const index = allMembers.findIndex((m) => m.id === memberId);
+
   if (index === -1) return null;
 
   allMembers[index] = {
     ...allMembers[index],
-    ...updates
+    ...updates,
   };
 
   saveAllProjectMembers(allMembers);
@@ -85,8 +85,8 @@ export function updateProjectMember(
 // Remove a member from a project
 export function removeProjectMember(memberId: string): boolean {
   const allMembers = getAllProjectMembers();
-  const filtered = allMembers.filter(m => m.id !== memberId);
-  
+  const filtered = allMembers.filter((m) => m.id !== memberId);
+
   if (filtered.length === allMembers.length) return false;
 
   saveAllProjectMembers(filtered);
@@ -98,12 +98,12 @@ export function initializeProjectOwner(
   projectId: string,
   ownerId: string,
   ownerName: string,
-  ownerEmail: string
+  ownerEmail: string,
 ): ProjectMember {
   // Check if owner already exists for this project
   const existingMembers = getMembersByProject(projectId);
-  const ownerExists = existingMembers.find(m => m.email === ownerEmail && m.role === 'owner');
-  
+  const ownerExists = existingMembers.find((m) => m.email === ownerEmail && m.role === "owner");
+
   if (ownerExists) return ownerExists;
 
   const owner: ProjectMember = {
@@ -111,10 +111,10 @@ export function initializeProjectOwner(
     projectId,
     name: ownerName,
     email: ownerEmail,
-    role: 'owner',
+    role: "owner",
     addedBy: ownerId,
     addedDate: new Date().toISOString(),
-    status: 'active'
+    status: "active",
   };
 
   const allMembers = getAllProjectMembers();
@@ -127,5 +127,5 @@ export function initializeProjectOwner(
 // Check if a user has access to a project
 export function hasProjectAccess(projectId: string, userEmail: string): boolean {
   const members = getMembersByProject(projectId);
-  return members.some(m => m.email === userEmail && m.status === 'active');
+  return members.some((m) => m.email === userEmail && m.status === "active");
 }

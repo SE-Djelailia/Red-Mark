@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
-import { Edit, Trash2, Reply, AtSign, Send, MoreVertical } from 'lucide-react';
-import { getMembersByProject } from '../../lib/projectMembersApi';
-import { formatRelativeDate } from '../../lib/dateUtils';
-import { addComment, updateComment, deleteComment } from '../../lib/commentsApi';
-import { createNotification } from '../../lib/notificationsApi';
-import { useAuth } from '../../contexts/useAuth';
-import type { Comment } from '../../lib/commentsApi';
+import { useState, useRef, useEffect } from "react";
+import { Edit, Trash2, Reply, AtSign, Send, MoreVertical } from "lucide-react";
+import { getMembersByProject } from "../../lib/projectMembersApi";
+import { formatRelativeDate } from "../../lib/dateUtils";
+import { addComment, updateComment, deleteComment } from "../../lib/commentsApi";
+import { createNotification } from "../../lib/notificationsApi";
+import { useAuth } from "../../contexts/useAuth";
+import type { Comment } from "../../lib/commentsApi";
 
 interface CommentThreadProps {
   comments: Comment[];
@@ -25,29 +25,31 @@ export default function CommentThread({
   highlightCommentId,
 }: CommentThreadProps) {
   const { user } = useAuth();
-  const [commentText, setCommentText] = useState('');
+  const [commentText, setCommentText] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editingCommentText, setEditingCommentText] = useState('');
+  const [editingCommentText, setEditingCommentText] = useState("");
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
-  const [mentionSuggestions, setMentionSuggestions] = useState<Array<{ id: string; name: string }>>([]);
+  const [mentionSuggestions, setMentionSuggestions] = useState<Array<{ id: string; name: string }>>(
+    [],
+  );
   const [cursorPosition, setCursorPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const commentRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   // Get current user from Supabase auth (single source of truth)
   const getCurrentUser = () => ({
-    id: user?.id || 'anonymous',
-    name: user?.user_metadata?.name || user?.email || 'Utilisateur',
+    id: user?.id || "anonymous",
+    name: user?.user_metadata?.name || user?.email || "Utilisateur",
   });
 
   // Scroll to highlighted comment
   useEffect(() => {
     if (highlightCommentId && commentRefs.current[highlightCommentId]) {
       setTimeout(() => {
-        commentRefs.current[highlightCommentId]?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
+        commentRefs.current[highlightCommentId]?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
         });
       }, 500);
     }
@@ -58,16 +60,16 @@ export default function CommentThread({
     // Match @UserName or @"User Name" (with quotes for names with spaces)
     const allUsers = getMembersByProject(projectId);
     const mentionedUserIds: string[] = [];
-    
+
     // Try to find all users mentioned in the text
-    allUsers.forEach(user => {
+    allUsers.forEach((user) => {
       // Check if user name appears after @
       const patterns = [
-        new RegExp(`@${user.name.replace(/\s+/g, '\\s+')}(?=\\s|$)`, 'gi'),
-        new RegExp(`@${user.name.split(' ')[0]}(?=\\s|$)`, 'gi'), // First name only
+        new RegExp(`@${user.name.replace(/\s+/g, "\\s+")}(?=\\s|$)`, "gi"),
+        new RegExp(`@${user.name.split(" ")[0]}(?=\\s|$)`, "gi"), // First name only
       ];
-      
-      patterns.forEach(pattern => {
+
+      patterns.forEach((pattern) => {
         if (pattern.test(text)) {
           if (!mentionedUserIds.includes(user.id)) {
             mentionedUserIds.push(user.id);
@@ -75,26 +77,26 @@ export default function CommentThread({
         }
       });
     });
-    
+
     return mentionedUserIds;
   };
 
   // Handle text input and detect @ for mention autocomplete
   const handleTextChange = (text: string) => {
     setCommentText(text);
-    
+
     // Check if user just typed @
     const cursorPos = textareaRef.current?.selectionStart || 0;
     const textBeforeCursor = text.substring(0, cursorPos);
-    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
-    
+    const lastAtIndex = textBeforeCursor.lastIndexOf("@");
+
     if (lastAtIndex !== -1 && cursorPos - lastAtIndex <= 20) {
       const searchQuery = textBeforeCursor.substring(lastAtIndex + 1);
-      if (!searchQuery.includes(' ')) {
+      if (!searchQuery.includes(" ")) {
         // Show mention suggestions
         const users = getMembersByProject(projectId);
-        const filtered = users.filter(u => 
-          u.name.toLowerCase().includes(searchQuery.toLowerCase())
+        const filtered = users.filter((u) =>
+          u.name.toLowerCase().includes(searchQuery.toLowerCase()),
         );
         setMentionSuggestions(filtered.slice(0, 5));
         setShowMentionSuggestions(filtered.length > 0);
@@ -111,13 +113,13 @@ export default function CommentThread({
   const insertMention = (userName: string, userId: string) => {
     const cursorPos = textareaRef.current?.selectionStart || 0;
     const textBeforeCursor = commentText.substring(0, cursorPos);
-    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    const lastAtIndex = textBeforeCursor.lastIndexOf("@");
     const textAfterCursor = commentText.substring(cursorPos);
-    
+
     const newText = commentText.substring(0, lastAtIndex) + `@${userName} ` + textAfterCursor;
     setCommentText(newText);
     setShowMentionSuggestions(false);
-    
+
     // Focus back on textarea
     setTimeout(() => {
       if (textareaRef.current) {
@@ -133,12 +135,12 @@ export default function CommentThread({
     if (!commentText.trim()) return;
 
     const currentUser = getCurrentUser();
-    console.log('🔵 Current user:', currentUser);
-    
+    console.log("🔵 Current user:", currentUser);
+
     const mentionedUserIds = detectMentions(commentText);
-    console.log('🔵 Detected mentions:', mentionedUserIds);
-    console.log('🔵 Comment text:', commentText);
-    
+    console.log("🔵 Detected mentions:", mentionedUserIds);
+    console.log("🔵 Comment text:", commentText);
+
     // Create comment
     const newComment = addComment(
       issueId,
@@ -146,61 +148,61 @@ export default function CommentThread({
       currentUser.name,
       currentUser.id,
       replyingToId || undefined,
-      mentionedUserIds.length > 0 ? mentionedUserIds : undefined
+      mentionedUserIds.length > 0 ? mentionedUserIds : undefined,
     );
 
     if (newComment) {
-      console.log('✅ Comment created:', newComment);
-      
+      console.log("✅ Comment created:", newComment);
+
       // Create notifications for mentioned users
-      mentionedUserIds.forEach(userId => {
+      mentionedUserIds.forEach((userId) => {
         if (userId !== currentUser.id) {
-          console.log('📧 Creating notification for user:', userId);
+          console.log("📧 Creating notification for user:", userId);
           createNotification(
             userId,
-            'mention',
+            "mention",
             `vous a mentionné dans un commentaire`,
             newComment.id,
             issueId,
             projectId,
             currentUser.id,
             currentUser.name,
-            visitId
+            visitId,
           );
-          console.log('✅ Notification created for:', userId);
+          console.log("✅ Notification created for:", userId);
         }
       });
 
       // Create notification for parent comment author (if replying)
       if (replyingToId) {
-        const parentComment = comments.find(c => c.id === replyingToId);
+        const parentComment = comments.find((c) => c.id === replyingToId);
         if (parentComment && parentComment.authorId !== currentUser.id) {
-          console.log('📧 Creating reply notification for:', parentComment.authorId);
+          console.log("📧 Creating reply notification for:", parentComment.authorId);
           createNotification(
             parentComment.authorId,
-            'reply',
+            "reply",
             `a répondu à votre commentaire`,
             newComment.id,
             issueId,
             projectId,
             currentUser.id,
             currentUser.name,
-            visitId
+            visitId,
           );
-          console.log('✅ Reply notification created');
+          console.log("✅ Reply notification created");
         }
       }
 
       // Update comments list
       onCommentsUpdate([...comments, newComment]);
-      setCommentText('');
+      setCommentText("");
       setReplyingToId(null);
     }
   };
 
   const handleEditComment = (commentId: string) => {
     setEditingCommentId(commentId);
-    const commentToEdit = comments.find(c => c.id === commentId);
+    const commentToEdit = comments.find((c) => c.id === commentId);
     if (commentToEdit) {
       setEditingCommentText(commentToEdit.text);
     }
@@ -210,20 +212,18 @@ export default function CommentThread({
     if (editingCommentId && editingCommentText.trim()) {
       const updatedComment = updateComment(editingCommentId, editingCommentText);
       if (updatedComment) {
-        onCommentsUpdate(
-          comments.map(c => (c.id === editingCommentId ? updatedComment : c))
-        );
+        onCommentsUpdate(comments.map((c) => (c.id === editingCommentId ? updatedComment : c)));
         setEditingCommentId(null);
-        setEditingCommentText('');
+        setEditingCommentText("");
       }
     }
   };
 
   const handleDeleteComment = (commentId: string) => {
-    if (confirm('Supprimer ce commentaire?')) {
+    if (confirm("Supprimer ce commentaire?")) {
       const success = deleteComment(commentId);
       if (success) {
-        onCommentsUpdate(comments.filter(c => c.id !== commentId));
+        onCommentsUpdate(comments.filter((c) => c.id !== commentId));
       }
     }
   };
@@ -238,31 +238,30 @@ export default function CommentThread({
   const renderComment = (comment: Comment, isReply: boolean = false) => {
     const currentUser = getCurrentUser();
     const isHighlighted = comment.id === highlightCommentId;
-    const replies = comments.filter(c => c.parentCommentId === comment.id);
+    const replies = comments.filter((c) => c.parentCommentId === comment.id);
 
     return (
-      <div 
-        key={comment.id} 
-        ref={el => commentRefs.current[comment.id] = el}
-        className={`${isReply ? 'ml-8 mt-2' : ''}`}
+      <div
+        key={comment.id}
+        ref={(el) => (commentRefs.current[comment.id] = el)}
+        className={`${isReply ? "ml-8 mt-2" : ""}`}
       >
-        <div 
+        <div
           className={`bg-gray-50 rounded-lg p-4 transition-all ${
-            isHighlighted ? 'ring-2 ring-[#E10600] shadow-lg' : ''
+            isHighlighted ? "ring-2 ring-[#E10600] shadow-lg" : ""
           }`}
         >
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-full bg-[#E10600] text-white flex items-center justify-center text-xs font-medium flex-shrink-0">
-              {comment.author.split(' ').map(n => n[0]).join('')}
+              {comment.author
+                .split(" ")
+                .map((n) => n[0])
+                .join("")}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-medium text-[#1A1A1A]">
-                  {comment.author}
-                </span>
-                <span className="text-xs text-gray-500">
-                  {formatRelativeDate(comment.date)}
-                </span>
+                <span className="text-sm font-medium text-[#1A1A1A]">{comment.author}</span>
+                <span className="text-xs text-gray-500">{formatRelativeDate(comment.date)}</span>
                 {comment.parentCommentId && (
                   <span className="text-xs text-gray-400 flex items-center gap-1">
                     <Reply size={12} />
@@ -270,12 +269,12 @@ export default function CommentThread({
                   </span>
                 )}
               </div>
-              
+
               {editingCommentId === comment.id ? (
                 <div className="space-y-2">
                   <textarea
                     value={editingCommentText}
-                    onChange={e => setEditingCommentText(e.target.value)}
+                    onChange={(e) => setEditingCommentText(e.target.value)}
                     rows={3}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent resize-none"
                     autoFocus
@@ -290,7 +289,7 @@ export default function CommentThread({
                     <button
                       onClick={() => {
                         setEditingCommentId(null);
-                        setEditingCommentText('');
+                        setEditingCommentText("");
                       }}
                       className="px-4 py-2 bg-gray-200 text-[#1A1A1A] rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm"
                     >
@@ -336,20 +335,20 @@ export default function CommentThread({
             </div>
           </div>
         </div>
-        
+
         {/* Render replies */}
-        {replies.map(reply => renderComment(reply, true))}
+        {replies.map((reply) => renderComment(reply, true))}
       </div>
     );
   };
 
   // Get top-level comments (no parent)
-  const topLevelComments = comments.filter(c => !c.parentCommentId);
+  const topLevelComments = comments.filter((c) => !c.parentCommentId);
 
   return (
     <div className="space-y-4">
       {/* Comment List */}
-      {topLevelComments.map(comment => renderComment(comment))}
+      {topLevelComments.map((comment) => renderComment(comment))}
 
       {/* Add Comment Form */}
       <div className="bg-gray-50 rounded-lg p-4 space-y-3">
@@ -360,7 +359,7 @@ export default function CommentThread({
             <button
               onClick={() => {
                 setReplyingToId(null);
-                setCommentText('');
+                setCommentText("");
               }}
               className="ml-auto text-[#E10600] hover:underline"
             >
@@ -368,21 +367,21 @@ export default function CommentThread({
             </button>
           </div>
         )}
-        
+
         <div className="relative">
           <textarea
             ref={textareaRef}
             value={commentText}
-            onChange={e => handleTextChange(e.target.value)}
+            onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Écrivez un commentaire... (utilisez @ pour mentionner quelqu'un)"
             rows={3}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent resize-none"
           />
-          
+
           {/* Mention Autocomplete */}
           {showMentionSuggestions && (
             <div className="absolute bottom-full left-0 mb-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-              {mentionSuggestions.map(user => (
+              {mentionSuggestions.map((user) => (
                 <button
                   key={user.id}
                   onClick={() => insertMention(user.name, user.id)}
@@ -402,7 +401,7 @@ export default function CommentThread({
             disabled={!commentText.trim()}
             className="flex-1 py-2.5 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
           >
-            {replyingToId ? 'Répondre' : 'Publier'}
+            {replyingToId ? "Répondre" : "Publier"}
           </button>
         </div>
       </div>

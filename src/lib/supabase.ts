@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { createClient } from "@supabase/supabase-js";
+import { projectId, publicAnonKey } from "/utils/supabase/info";
 
 // Supabase URL et clé publique
 const supabaseUrl = `https://${projectId}.supabase.co`;
@@ -32,7 +32,7 @@ export interface Project {
   name: string;
   address?: string;
   client_name?: string;
-  status: 'planning' | 'in-progress' | 'on-hold' | 'completed' | 'active' | 'archived';
+  status: "planning" | "in-progress" | "on-hold" | "completed" | "active" | "archived";
   start_date?: string;
   created_at: string;
   updated_at: string;
@@ -75,8 +75,8 @@ export interface Issue {
   photo_id?: string;
   title: string;
   description?: string;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  status: 'open' | 'in_progress' | 'resolved';
+  priority: "low" | "medium" | "high" | "critical";
+  status: "open" | "in_progress" | "resolved";
   assigned_to?: string;
   location?: {
     floor?: string;
@@ -110,7 +110,7 @@ export interface ProjectMember {
   id: string;
   project_id: string;
   user_id: string;
-  role: 'owner' | 'editor' | 'viewer';
+  role: "owner" | "editor" | "viewer";
   invited_by?: string;
   created_at: string;
 }

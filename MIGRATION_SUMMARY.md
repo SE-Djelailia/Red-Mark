@@ -3,18 +3,21 @@
 ## ✅ Ce qui a été fait
 
 ### 1. **Base de Données Cloud** 🗄️
+
 - ✅ Schéma complet créé (`/supabase-schema.sql`)
 - ✅ 9 tables créées : profiles, projects, site_visits, photos, issues, comments, notifications, project_members
 - ✅ Row Level Security (RLS) configuré pour la sécurité
 - ✅ Triggers automatiques pour profils et timestamps
 
 ### 2. **Authentification Sécurisée** 🔐
+
 - ✅ Nouveau contexte `SupabaseAuthContext.tsx`
 - ✅ SignUp / SignIn / SignOut avec Supabase Auth
 - ✅ Sessions persistantes et auto-refresh
 - ✅ Métadonnées utilisateur (nom, firme)
 
 ### 3. **API Supabase** 📡
+
 - ✅ Fichier `/src/lib/supabaseApi.ts` avec toutes les fonctions CRUD :
   - Projects (get, create, update, delete)
   - Site Visits (get, create, update, delete)
@@ -23,12 +26,14 @@
   - Project Members (collaboration)
 
 ### 4. **Migration Automatique** 🔄
+
 - ✅ Script `/src/lib/migrationToSupabase.ts`
 - ✅ Transfert automatique localStorage → Supabase
 - ✅ UI de migration (`MigrationPrompt.tsx`)
 - ✅ Migration des projets, visites, photos
 
 ### 5. **Stockage de Fichiers** 📸
+
 - ✅ Supabase Storage configuré
 - ✅ Bucket `project-photos` privé
 - ✅ Upload sécurisé avec permissions RLS
@@ -39,6 +44,7 @@
 ## 📊 Architecture Avant / Après
 
 ### **AVANT (localStorage)** ❌
+
 ```
 Navigateur utilisateur
 ├── localStorage (5-10 MB max)
@@ -57,6 +63,7 @@ Navigateur utilisateur
 ```
 
 ### **APRÈS (Supabase)** ✅
+
 ```
 Navigateur utilisateur
      ↓ HTTPS API
@@ -87,6 +94,7 @@ Supabase Cloud
 ## 🚀 Prochaines Étapes
 
 ### **Immédiatement (Toi)**
+
 1. ✅ Lire `/SUPABASE_SETUP.md`
 2. ✅ Exécuter le schéma SQL dans Supabase Dashboard
 3. ✅ Créer le bucket `project-photos`
@@ -94,6 +102,7 @@ Supabase Cloud
 5. ✅ Migrer tes données existantes
 
 ### **Avant le Pilote**
+
 1. ✅ Configurer l'email SMTP (notifications)
 2. ✅ Tester avec plusieurs utilisateurs
 3. ✅ Vérifier la collaboration (partage de projets)
@@ -101,6 +110,7 @@ Supabase Cloud
 5. ✅ Backups automatiques Supabase
 
 ### **Pendant le Pilote**
+
 1. ✅ Monitorer l'usage (Dashboard Supabase)
 2. ✅ Collecter les feedbacks utilisateurs
 3. ✅ Optimiser les requêtes si nécessaire
@@ -110,12 +120,12 @@ Supabase Cloud
 
 ## 💰 Coûts (Plan Gratuit Supabase)
 
-| Ressource | Limite Gratuite | Usage Estimé (10 utilisateurs) |
-|-----------|-----------------|-------------------------------|
-| **Base de données** | 500 MB | ~50 MB (100 projets, 1000 photos) |
-| **Storage** | 1 GB | ~200 MB (500 photos) |
-| **Requêtes/mois** | 50,000 | ~5,000 (usage normal) |
-| **Bande passante** | 2 GB | ~500 MB |
+| Ressource           | Limite Gratuite | Usage Estimé (10 utilisateurs)    |
+| ------------------- | --------------- | --------------------------------- |
+| **Base de données** | 500 MB          | ~50 MB (100 projets, 1000 photos) |
+| **Storage**         | 1 GB            | ~200 MB (500 photos)              |
+| **Requêtes/mois**   | 50,000          | ~5,000 (usage normal)             |
+| **Bande passante**  | 2 GB            | ~500 MB                           |
 
 **✅ Le plan gratuit est LARGEMENT suffisant pour le pilote !**
 
@@ -128,12 +138,14 @@ Supabase Cloud
 ### **Expérience Utilisateur**
 
 **Avant :**
+
 - ❌ Risque de perte de données
 - ❌ Données sur 1 seul appareil
 - ❌ Pas de collaboration
 - ❌ Export manuel requis
 
 **Après :**
+
 - ✅ Données toujours sauvegardées
 - ✅ Accès depuis n'importe quel appareil
 - ✅ Partage de projets avec collègues
@@ -169,6 +181,7 @@ Supabase Cloud
 ## 📝 Fichiers Créés/Modifiés
 
 ### **Nouveaux Fichiers**
+
 - `/supabase-schema.sql` - Schéma de base de données
 - `/src/lib/supabase.ts` - Client Supabase + Types
 - `/src/lib/supabaseApi.ts` - Fonctions API
@@ -179,11 +192,13 @@ Supabase Cloud
 - `/MIGRATION_SUMMARY.md` - Ce fichier
 
 ### **Fichiers Modifiés**
+
 - `/src/app/routes.tsx` - Utilise SupabaseAuthProvider
 - `/src/app/components/Login.tsx` - Utilise useSupabaseAuth
 - `/src/lib/indexedDB.ts` - Support users store (backup)
 
 ### **Fichiers Conservés (Backward Compatibility)**
+
 - `/src/contexts/SimpleAuthContext.tsx` - Gardé pour référence
 - `/src/lib/storage.ts` - Peut être utilisé comme fallback
 
@@ -191,18 +206,19 @@ Supabase Cloud
 
 ## 🎯 Statut de Migration
 
-| Fonctionnalité | localStorage | Supabase | Statut |
-|----------------|-------------|----------|--------|
-| **Authentification** | ✅ | ✅ | Migré |
-| **Projets** | ✅ | ✅ | API prête |
-| **Visites** | ✅ | ✅ | API prête |
-| **Photos** | ✅ | ✅ | Storage prêt |
-| **Issues** | ⚠️ | ✅ | API prête |
-| **Comments** | ⚠️ | ✅ | API prête |
-| **Notifications** | ⚠️ | ✅ | API prête |
-| **Collaboration** | ❌ | ✅ | Nouvelle feature |
+| Fonctionnalité       | localStorage | Supabase | Statut           |
+| -------------------- | ------------ | -------- | ---------------- |
+| **Authentification** | ✅           | ✅       | Migré            |
+| **Projets**          | ✅           | ✅       | API prête        |
+| **Visites**          | ✅           | ✅       | API prête        |
+| **Photos**           | ✅           | ✅       | Storage prêt     |
+| **Issues**           | ⚠️           | ✅       | API prête        |
+| **Comments**         | ⚠️           | ✅       | API prête        |
+| **Notifications**    | ⚠️           | ✅       | API prête        |
+| **Collaboration**    | ❌           | ✅       | Nouvelle feature |
 
 **Légende :**
+
 - ✅ Implémenté
 - ⚠️ Partiellement implémenté
 - ❌ Non disponible
@@ -257,7 +273,7 @@ Supabase Cloud
 ✅ Stockage de fichiers  
 ✅ Migration automatique  
 ✅ Collaboration possible  
-✅ Pas de risque de perte de données  
+✅ Pas de risque de perte de données
 
 **Prochaine étape : Configuration Supabase et premier test !** 🚀
 

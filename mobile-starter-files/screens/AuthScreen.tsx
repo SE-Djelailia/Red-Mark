@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,19 +8,19 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-} from 'react-native';
-import { supabase } from '../lib/supabase';
+} from "react-native";
+import { supabase } from "../lib/supabase";
 
 export default function AuthScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSignIn = async () => {
     if (!email || !password) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      Alert.alert("Erreur", "Veuillez remplir tous les champs");
       return;
     }
 
@@ -33,13 +33,13 @@ export default function AuthScreen() {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Erreur de connexion', error.message);
+      Alert.alert("Erreur de connexion", error.message);
     }
   };
 
   const handleSignUp = async () => {
     if (!email || !password || !name) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      Alert.alert("Erreur", "Veuillez remplir tous les champs");
       return;
     }
 
@@ -50,40 +50,40 @@ export default function AuthScreen() {
       const response = await fetch(
         `https://YOUR_PROJECT_ID.supabase.co/functions/v1/make-server-9fe75696/signup`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer YOUR_SUPABASE_ANON_KEY`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer YOUR_SUPABASE_ANON_KEY`,
           },
           body: JSON.stringify({
             email,
             password,
             name,
           }),
-        }
+        },
       );
 
       const data = await response.json();
 
       if (data.error) {
-        Alert.alert('Erreur d\'inscription', data.error);
+        Alert.alert("Erreur d'inscription", data.error);
       } else {
         Alert.alert(
-          'Compte créé',
-          'Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.',
+          "Compte créé",
+          "Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.",
           [
             {
-              text: 'OK',
+              text: "OK",
               onPress: () => {
                 setIsSignUp(false);
-                setPassword(''); // Clear password for security
+                setPassword(""); // Clear password for security
               },
             },
-          ]
+          ],
         );
       }
     } catch (error) {
-      Alert.alert('Erreur', 'Une erreur est survenue lors de l\'inscription');
+      Alert.alert("Erreur", "Une erreur est survenue lors de l'inscription");
     }
 
     setLoading(false);
@@ -91,7 +91,7 @@ export default function AuthScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
       <View style={styles.content}>
@@ -134,7 +134,7 @@ export default function AuthScreen() {
             disabled={loading}
           >
             <Text style={styles.buttonText}>
-              {loading ? 'Chargement...' : isSignUp ? 'S\'inscrire' : 'Se connecter'}
+              {loading ? "Chargement..." : isSignUp ? "S'inscrire" : "Se connecter"}
             </Text>
           </TouchableOpacity>
 
@@ -142,14 +142,12 @@ export default function AuthScreen() {
             style={styles.switchButton}
             onPress={() => {
               setIsSignUp(!isSignUp);
-              setName('');
-              setPassword('');
+              setName("");
+              setPassword("");
             }}
           >
             <Text style={styles.switchButtonText}>
-              {isSignUp
-                ? 'Vous avez déjà un compte ? Se connecter'
-                : 'Pas de compte ? S\'inscrire'}
+              {isSignUp ? "Vous avez déjà un compte ? Se connecter" : "Pas de compte ? S'inscrire"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -161,34 +159,34 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 24,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 48,
   },
   logo: {
     fontSize: 48,
-    fontWeight: 'bold',
-    color: '#E10600',
+    fontWeight: "bold",
+    color: "#E10600",
     marginBottom: 8,
   },
   tagline: {
     fontSize: 16,
-    color: '#666',
+    color: "#666",
   },
   form: {
-    width: '100%',
+    width: "100%",
   },
   input: {
     height: 50,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderRadius: 8,
     paddingHorizontal: 16,
     marginBottom: 16,
@@ -196,26 +194,26 @@ const styles = StyleSheet.create({
   },
   button: {
     height: 50,
-    backgroundColor: '#E10600',
+    backgroundColor: "#E10600",
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 8,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   switchButton: {
     marginTop: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   switchButtonText: {
-    color: '#E10600',
+    color: "#E10600",
     fontSize: 14,
   },
 });

@@ -335,16 +335,17 @@ Total: ~30 seconds - 3 minutes
 ## 💡 Key Concepts
 
 ### Continuous Deployment (CD)
+
 ```
 Traditional:                  With Vercel:
 ━━━━━━━━━━━━━━━━━━          ━━━━━━━━━━━━━━━━━━
 1. Write code                1. Write code
 2. Test locally              2. git push
 3. Build manually            ✨ DONE! ✨
-4. Upload to server          
+4. Upload to server
 5. Configure server          (Everything else
 6. Restart services          is automatic)
-7. Monitor deployment        
+7. Monitor deployment
 
 Time: Hours                  Time: 1 minute
 Effort: High                 Effort: Minimal
@@ -353,6 +354,7 @@ Effort: High                 Effort: Minimal
 ---
 
 ### Version Control
+
 ```
 Every commit is a snapshot:
 
@@ -370,6 +372,7 @@ main branch:
 ---
 
 ### Edge Network (CDN)
+
 ```
 User in Montreal          Vercel Edge Network          Your Code
      │                           │                         │
@@ -382,7 +385,7 @@ User in Montreal          Vercel Edge Network          Your Code
      │ 4. Serve app (FAST!)      │                         │
      │<──────────────────────────┤                         │
      │                           │ 5. Cache for next time  │
-     
+
 Speed: 20-100ms (lightning fast!)
 ```
 
@@ -416,13 +419,16 @@ Speed: 20-100ms (lightning fast!)
 ## 📚 Related Guides
 
 **Want to actually DO this?**
+
 - → [UPDATE-WORKFLOW.md](./UPDATE-WORKFLOW.md) - Step-by-step guide
 - → [UPDATE-CHEATSHEET.md](./UPDATE-CHEATSHEET.md) - Quick commands
 
 **Need Git help?**
+
 - → [GIT-COMMAND-GUIDE.md](./GIT-COMMAND-GUIDE.md) - Git basics
 
 **First deployment?**
+
 - → [START-HERE.md](./START-HERE.md) - Begin here
 
 ---

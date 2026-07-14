@@ -153,17 +153,17 @@ git push
 ```
 1. In Figma Make:
    - Fix bug in PhotoGallery.tsx
-   
+
 2. Download:
    - Copy updated PhotoGallery.tsx content
    - Save to local file
-   
+
 3. Push to GitHub:
    cd redmark-app
    git add src/app/components/PhotoGallery.tsx
    git commit -m "Fix: Photo gallery sorting bug"
    git push
-   
+
 4. Wait 30 seconds:
    - Vercel auto-deploys
    - Bug fix is live! ✅
@@ -177,18 +177,18 @@ git push
 1. In Figma Make:
    - Create new component: PhotoExport.tsx
    - Update App.tsx to import it
-   
+
 2. Download:
    - Copy PhotoExport.tsx
    - Copy updated App.tsx
    - Save both locally
-   
+
 3. Push to GitHub:
    cd redmark-app
    git add .
    git commit -m "Add: Photo export to PDF feature"
    git push
-   
+
 4. Wait 1-2 minutes:
    - Vercel builds and deploys
    - New feature is live! ✅
@@ -202,18 +202,18 @@ git push
 1. In Figma Make:
    - Update 15+ component files
    - Update CSS files
-   
+
 2. Download:
    - Export entire Figma Make project
    - Extract ZIP to local folder
    - Overwrite all files
-   
+
 3. Push to GitHub:
    cd redmark-app
    git add .
    git commit -m "Major update: New UI redesign"
    git push
-   
+
 4. Wait 2-3 minutes:
    - Vercel builds everything
    - Redesign is live! ✅
@@ -347,12 +347,12 @@ git reset --hard HEAD
 
 ### How Often Should You Update?
 
-| Type | Frequency | Method |
-|------|-----------|--------|
-| **Bug fixes** | As needed | Git commands (30 sec) |
-| **Small tweaks** | Daily | Git commands (1 min) |
-| **New features** | Weekly | Git commands (2 min) |
-| **Major updates** | Monthly | Full export + Git (5 min) |
+| Type              | Frequency | Method                    |
+| ----------------- | --------- | ------------------------- |
+| **Bug fixes**     | As needed | Git commands (30 sec)     |
+| **Small tweaks**  | Daily     | Git commands (1 min)      |
+| **New features**  | Weekly    | Git commands (2 min)      |
+| **Major updates** | Monthly   | Full export + Git (5 min) |
 
 **Key Point**: You can update as often as you want! Every push triggers a new deployment.
 

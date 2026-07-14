@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Info, X, Download } from 'lucide-react';
-import { exportDataAsFile } from '../../lib/backupUtils';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { Info, X, Download } from "lucide-react";
+import { exportDataAsFile } from "../../lib/backupUtils";
+import { toast } from "sonner";
 
 export default function DataPersistenceWarning() {
   const [isVisible, setIsVisible] = useState(false);
@@ -9,10 +9,10 @@ export default function DataPersistenceWarning() {
 
   useEffect(() => {
     // Check if user has dismissed this warning before
-    const dismissed = localStorage.getItem('data_warning_dismissed');
-    const lastExport = localStorage.getItem('last_data_export');
-    
-    if (dismissed === 'true') {
+    const dismissed = localStorage.getItem("data_warning_dismissed");
+    const lastExport = localStorage.getItem("last_data_export");
+
+    if (dismissed === "true") {
       setIsDismissed(true);
       return;
     }
@@ -31,18 +31,18 @@ export default function DataPersistenceWarning() {
   const handleDismiss = () => {
     setIsVisible(false);
     setIsDismissed(true);
-    localStorage.setItem('data_warning_dismissed', 'true');
+    localStorage.setItem("data_warning_dismissed", "true");
   };
 
   const handleExport = () => {
     try {
       exportDataAsFile();
-      localStorage.setItem('last_data_export', Date.now().toString());
-      toast.success('Données exportées avec succès!');
+      localStorage.setItem("last_data_export", Date.now().toString());
+      toast.success("Données exportées avec succès!");
       setIsVisible(false);
     } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Erreur lors de l\'export');
+      console.error("Export error:", error);
+      toast.error("Erreur lors de l'export");
     }
   };
 
@@ -56,12 +56,10 @@ export default function DataPersistenceWarning() {
         <div className="flex gap-3 flex-1">
           <Info size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <h3 className="text-sm font-semibold text-blue-900 mb-1">
-              💾 Protégez vos données
-            </h3>
+            <h3 className="text-sm font-semibold text-blue-900 mb-1">💾 Protégez vos données</h3>
             <p className="text-sm text-blue-800 mb-3">
-              Vos données sont stockées localement dans votre navigateur. 
-              Pour éviter toute perte, <strong>exportez régulièrement vos données</strong>.
+              Vos données sont stockées localement dans votre navigateur. Pour éviter toute perte,{" "}
+              <strong>exportez régulièrement vos données</strong>.
             </p>
             <button
               onClick={handleExport}

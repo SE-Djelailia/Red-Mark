@@ -5,6 +5,7 @@ L'application RedMark est maintenant configurée pour utiliser de **vraies donn�
 ## ✅ Ce qui a été activé
 
 ### **1. Backend complet Supabase**
+
 - ✅ Authentification utilisateur
 - ✅ Base de données KV pour stocker les données
 - ✅ Stockage Supabase pour les photos
@@ -13,10 +14,12 @@ L'application RedMark est maintenant configurée pour utiliser de **vraies donn�
 ### **2. Routes API disponibles**
 
 #### **Authentification**
+
 - `POST /auth/signup` - Créer un nouveau compte
 - `GET /users/:id` - Obtenir le profil utilisateur
 
 #### **Projets**
+
 - `POST /projects` - Créer un projet
 - `GET /projects` - Liste des projets de l'utilisateur
 - `GET /projects/:id` - Détails d'un projet
@@ -24,17 +27,20 @@ L'application RedMark est maintenant configurée pour utiliser de **vraies donn�
 - `DELETE /projects/:id` - Supprimer un projet
 
 #### **Visites de chantier**
+
 - `POST /site-visits` - Créer une visite
 - `GET /projects/:projectId/site-visits` - Visites d'un projet
 - `GET /site-visits/:id` - Détails d'une visite
 
 #### **Photos**
+
 - `POST /photos` - Créer une photo (après upload Supabase Storage)
 - `GET /site-visits/:visitId/photos` - Photos d'une visite
 - `PUT /photos/:id` - Modifier une photo (tags, caption)
 - `DELETE /photos/:id` - Supprimer une photo
 
 #### **Tags**
+
 - `POST /tags` - Créer un tag personnalisé
 - `GET /tags` - Liste de tous les tags
 
@@ -43,6 +49,7 @@ L'application RedMark est maintenant configurée pour utiliser de **vraies donn�
 Au premier démarrage du serveur, 12 tags sont automatiquement créés:
 
 **Issues (Problèmes)**
+
 - Problème structurel
 - Déficience électrique
 - Plomberie
@@ -50,16 +57,19 @@ Au premier démarrage du serveur, 12 tags sont automatiquement créés:
 - Humidité
 
 **Progress (Progrès)**
+
 - Finitions
 - Conforme
 - Qualité excellente
 
 **Inspection**
+
 - À vérifier
 - Urgent
 - À corriger
 
 **Safety (Sécurité)**
+
 - Sécurité
 
 ---
@@ -196,12 +206,14 @@ Authorization: Bearer <access_token>
 ### **Endpoints de debug disponibles**
 
 1. **Tester l'auth token**
+
    ```
    GET /make-server-9fe75696/debug/test-auth
    Authorization: Bearer <token>
    ```
 
 2. **Vérifier un utilisateur**
+
    ```
    GET /make-server-9fe75696/debug/users/:id
    ```
@@ -214,6 +226,7 @@ Authorization: Bearer <access_token>
 ### **Console logs**
 
 Le serveur log toutes les opérations:
+
 - ✅ Authentification réussie
 - ❌ Erreurs d'autorisation
 - 📦 Opérations de base de données
@@ -225,17 +238,18 @@ Le serveur log toutes les opérations:
 
 ### **Différences avec mode mock**
 
-| Aspect | Mode Mock | Mode Réel |
-|--------|-----------|-----------|
-| Données | localStorage | Supabase KV |
-| Photos | Object URLs | Supabase Storage |
-| Persistence | Navigateur uniquement | Cloud (permanent) |
-| Multi-utilisateur | Non | Oui |
-| Authentification | Simulée | Réelle (Supabase Auth) |
+| Aspect            | Mode Mock             | Mode Réel              |
+| ----------------- | --------------------- | ---------------------- |
+| Données           | localStorage          | Supabase KV            |
+| Photos            | Object URLs           | Supabase Storage       |
+| Persistence       | Navigateur uniquement | Cloud (permanent)      |
+| Multi-utilisateur | Non                   | Oui                    |
+| Authentification  | Simulée               | Réelle (Supabase Auth) |
 
 ### **Limitations KV Store**
 
 La table KV est flexible mais:
+
 - ❌ Pas de requêtes SQL complexes
 - ❌ Pas de joins entre tables
 - ✅ Parfait pour le prototypage

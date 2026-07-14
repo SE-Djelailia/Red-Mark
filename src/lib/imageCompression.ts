@@ -22,16 +22,13 @@ const DEFAULT_OPTIONS: CompressionOptions = {
  * @param options - Compression options
  * @returns Compressed image file
  */
-export async function compressImage(
-  file: File,
-  options: CompressionOptions = {}
-): Promise<File> {
+export async function compressImage(file: File, options: CompressionOptions = {}): Promise<File> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   return new Promise((resolve, reject) => {
     // Skip compression for already small files (< 200KB)
     if (file.size < 200 * 1024) {
-      console.log('📸 Photo already small, skipping compression:', file.name);
+      console.log("📸 Photo already small, skipping compression:", file.name);
       resolve(file);
       return;
     }
@@ -47,41 +44,38 @@ export async function compressImage(
         let height = img.height;
 
         if (width > opts.maxWidth! || height > opts.maxHeight!) {
-          const ratio = Math.min(
-            opts.maxWidth! / width,
-            opts.maxHeight! / height
-          );
+          const ratio = Math.min(opts.maxWidth! / width, opts.maxHeight! / height);
           width = Math.round(width * ratio);
           height = Math.round(height * ratio);
         }
 
         // Create canvas and draw resized image
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
 
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         if (!ctx) {
-          reject(new Error('Failed to get canvas context'));
+          reject(new Error("Failed to get canvas context"));
           return;
         }
 
         // Use better image smoothing
         ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
+        ctx.imageSmoothingQuality = "high";
         ctx.drawImage(img, 0, 0, width, height);
 
         // Convert to blob with compression
         canvas.toBlob(
           (blob) => {
             if (!blob) {
-              reject(new Error('Failed to compress image'));
+              reject(new Error("Failed to compress image"));
               return;
             }
 
             // Create new file from compressed blob
             const compressedFile = new File([blob], file.name, {
-              type: 'image/jpeg', // Always convert to JPEG for best compression
+              type: "image/jpeg", // Always convert to JPEG for best compression
               lastModified: Date.now(),
             });
 
@@ -90,25 +84,25 @@ export async function compressImage(
             const reduction = ((1 - compressedFile.size / file.size) * 100).toFixed(0);
 
             console.log(
-              `📸 Compressed ${file.name}: ${originalSizeMB}MB → ${compressedSizeMB}MB (${reduction}% reduction)`
+              `📸 Compressed ${file.name}: ${originalSizeMB}MB → ${compressedSizeMB}MB (${reduction}% reduction)`,
             );
 
             resolve(compressedFile);
           },
-          'image/jpeg',
-          opts.quality
+          "image/jpeg",
+          opts.quality,
         );
       };
 
       img.onerror = () => {
-        reject(new Error('Failed to load image'));
+        reject(new Error("Failed to load image"));
       };
 
       img.src = e.target?.result as string;
     };
 
     reader.onerror = () => {
-      reject(new Error('Failed to read file'));
+      reject(new Error("Failed to read file"));
     };
 
     reader.readAsDataURL(file);
@@ -123,14 +117,12 @@ export async function compressImage(
  */
 export async function compressImages(
   files: File[],
-  options: CompressionOptions = {}
+  options: CompressionOptions = {},
 ): Promise<File[]> {
   console.log(`📸 Compressing ${files.length} photos...`);
   const startTime = Date.now();
 
-  const compressedFiles = await Promise.all(
-    files.map((file) => compressImage(file, options))
-  );
+  const compressedFiles = await Promise.all(files.map((file) => compressImage(file, options)));
 
   const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
   console.log(`✅ Compression complete in ${totalTime}s`);

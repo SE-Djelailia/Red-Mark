@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Building2, MapPin, Calendar, Users, Search, X } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
-import { getProjects as getProjectsFromSupabase, createProject, deleteProject as deleteProjectFromSupabase, type Project } from "../../lib/supabaseApi";
+import {
+  getProjects as getProjectsFromSupabase,
+  createProject,
+  deleteProject as deleteProjectFromSupabase,
+  type Project,
+} from "../../lib/supabaseApi";
 import { supabase } from "../../lib/supabase";
 import { initializeProjectOwner } from "../../lib/projectMembersApi";
 import { getTodayForInput, formatDateShort } from "../../lib/dateUtils";
@@ -12,17 +17,17 @@ export default function ProjectList() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<Project['status'] | "all">("all");
+  const [filterStatus, setFilterStatus] = useState<Project["status"] | "all">("all");
   const [formData, setFormData] = useState({
     name: "",
     address: "",
     client: "",
     contractor: "",
     startDate: getTodayForInput(),
-    status: "planning" as Project['status']
+    status: "planning" as Project["status"],
   });
 
-  console.log('🏗️ ProjectList render - user:', user, 'loading:', loading);
+  console.log("🏗️ ProjectList render - user:", user, "loading:", loading);
 
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -32,8 +37,8 @@ export default function ProjectList() {
       const userProjects = await getProjectsFromSupabase(user.id);
       setProjects(userProjects);
     } catch (error) {
-      console.error('❌ Error loading projects:', error);
-      toast.error('Erreur lors du chargement des projets');
+      console.error("❌ Error loading projects:", error);
+      toast.error("Erreur lors du chargement des projets");
     }
   }, [user?.id]);
 
@@ -50,8 +55,8 @@ export default function ProjectList() {
       refreshTimer.current = setTimeout(() => loadProjects(), 500);
     };
     const channel = supabase
-      .channel('projectlist-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, scheduleRefresh)
+      .channel("projectlist-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, scheduleRefresh)
       .subscribe();
     return () => {
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
@@ -61,7 +66,7 @@ export default function ProjectList() {
 
   async function handleCreateProject(e: React.FormEvent) {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.address || !user) {
       toast.error("Veuillez remplir les champs requis");
       return;
@@ -76,17 +81,17 @@ export default function ProjectList() {
         status: formData.status,
         start_date: formData.startDate,
       });
-      
+
       // Initialize owner as first project member
       initializeProjectOwner(
         newProject.id,
         user.id,
         user.user_metadata?.name || user.email,
-        user.email
+        user.email,
       );
-      
+
       await loadProjects();
-      
+
       // Reset form
       setFormData({
         name: "",
@@ -94,47 +99,47 @@ export default function ProjectList() {
         client: "",
         contractor: "",
         startDate: getTodayForInput(),
-        status: "planning"
+        status: "planning",
       });
       setShowCreateModal(false);
-      
+
       toast.success(`Projet "${newProject.name}" créé avec succès!`);
     } catch (error) {
-      console.error('❌ Error creating project:', error);
-      toast.error('Erreur lors de la création du projet');
+      console.error("❌ Error creating project:", error);
+      toast.error("Erreur lors de la création du projet");
     }
   }
 
   async function handleDeleteProject(projectId: string, projectName: string) {
     if (!user) return;
-    
+
     if (confirm(`Êtes-vous sûr de vouloir supprimer le projet "${projectName}"?`)) {
       try {
         await deleteProjectFromSupabase(projectId);
         await loadProjects();
         toast.success("Projet supprimé");
       } catch (error) {
-        console.error('❌ Error deleting project:', error);
-        toast.error('Erreur lors de la suppression');
+        console.error("❌ Error deleting project:", error);
+        toast.error("Erreur lors de la suppression");
       }
     }
   }
 
-  const getStatusBadge = (status: Project['status']) => {
+  const getStatusBadge = (status: Project["status"]) => {
     const styles = {
       planning: "bg-blue-100 text-blue-700",
       "in-progress": "bg-green-100 text-green-700",
       "on-hold": "bg-yellow-100 text-yellow-700",
-      completed: "bg-gray-100 text-gray-700"
+      completed: "bg-gray-100 text-gray-700",
     };
-    
+
     const labels = {
       planning: "Planification",
       "in-progress": "En cours",
       "on-hold": "En pause",
-      completed: "Complété"
+      completed: "Complété",
     };
-    
+
     return (
       <span className={`px-3 py-1 rounded-full text-xs font-medium ${styles[status]}`}>
         {labels[status]}
@@ -159,7 +164,7 @@ export default function ProjectList() {
       <div className="flex flex-col items-center justify-center h-64">
         <p className="text-gray-500 text-lg mb-4">Veuillez vous connecter</p>
         <button
-          onClick={() => window.location.href = '/'}
+          onClick={() => (window.location.href = "/")}
           className="px-6 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors"
         >
           Aller à la connexion
@@ -168,14 +173,15 @@ export default function ProjectList() {
     );
   }
 
-  const filteredProjects = projects.filter(project => {
-    const matchesSearch = searchQuery === "" ||
+  const filteredProjects = projects.filter((project) => {
+    const matchesSearch =
+      searchQuery === "" ||
       project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (project.address ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (project.client_name ?? "").toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesStatus = filterStatus === "all" || project.status === filterStatus;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -192,7 +198,10 @@ export default function ProjectList() {
         <div className="mb-6 space-y-3">
           {/* Search Bar */}
           <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <Search
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+            />
             <input
               type="text"
               value={searchQuery}
@@ -222,7 +231,7 @@ export default function ProjectList() {
                   : "bg-blue-100 text-blue-700 hover:bg-blue-200 active:bg-blue-300"
               }`}
             >
-              Planification ({projects.filter(p => p.status === "planning").length})
+              Planification ({projects.filter((p) => p.status === "planning").length})
             </button>
             <button
               onClick={() => setFilterStatus("in-progress")}
@@ -232,7 +241,7 @@ export default function ProjectList() {
                   : "bg-green-100 text-green-700 hover:bg-green-200 active:bg-green-300"
               }`}
             >
-              En cours ({projects.filter(p => p.status === "in-progress").length})
+              En cours ({projects.filter((p) => p.status === "in-progress").length})
             </button>
             <button
               onClick={() => setFilterStatus("on-hold")}
@@ -242,7 +251,7 @@ export default function ProjectList() {
                   : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 active:bg-yellow-300"
               }`}
             >
-              En pause ({projects.filter(p => p.status === "on-hold").length})
+              En pause ({projects.filter((p) => p.status === "on-hold").length})
             </button>
             <button
               onClick={() => setFilterStatus("completed")}
@@ -252,7 +261,7 @@ export default function ProjectList() {
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
               }`}
             >
-              Complété ({projects.filter(p => p.status === "completed").length})
+              Complété ({projects.filter((p) => p.status === "completed").length})
             </button>
           </div>
 
@@ -260,7 +269,7 @@ export default function ProjectList() {
           {(searchQuery || filterStatus !== "all") && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">
-                {filteredProjects.length} résultat{filteredProjects.length > 1 ? 's' : ''}
+                {filteredProjects.length} résultat{filteredProjects.length > 1 ? "s" : ""}
               </span>
               <button
                 onClick={() => {
@@ -281,12 +290,8 @@ export default function ProjectList() {
       {projects.length === 0 && (
         <div className="text-center py-16 bg-gray-50 rounded-xl">
           <Building2 size={64} className="mx-auto text-gray-300 mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            Aucun projet
-          </h3>
-          <p className="text-gray-600 mb-6">
-            Commencez par créer votre premier projet
-          </p>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Aucun projet</h3>
+          <p className="text-gray-600 mb-6">Commencez par créer votre premier projet</p>
           <button
             onClick={() => setShowCreateModal(true)}
             className="px-6 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors inline-flex items-center gap-2"
@@ -303,12 +308,8 @@ export default function ProjectList() {
           {filteredProjects.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <Building2 size={48} className="mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Aucun projet trouvé
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Essayez de modifier vos critères de recherche
-              </p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun projet trouvé</h3>
+              <p className="text-gray-600 mb-4">Essayez de modifier vos critères de recherche</p>
               <button
                 onClick={() => {
                   setSearchQuery("");
@@ -326,9 +327,7 @@ export default function ProjectList() {
                 className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
               >
                 <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-lg font-semibold text-[#1A1A1A] flex-1">
-                    {project.name}
-                  </h3>
+                  <h3 className="text-lg font-semibold text-[#1A1A1A] flex-1">{project.name}</h3>
                   {getStatusBadge(project.status)}
                 </div>
 
@@ -355,7 +354,7 @@ export default function ProjectList() {
 
                 <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
                   <button
-                    onClick={() => window.location.href = `/app/projects/${project.id}`}
+                    onClick={() => (window.location.href = `/app/projects/${project.id}`)}
                     className="flex-1 px-4 py-2 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors text-sm"
                   >
                     Ouvrir
@@ -388,9 +387,7 @@ export default function ProjectList() {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold text-[#1A1A1A] mb-6">
-              Nouveau Projet
-            </h2>
+            <h2 className="text-2xl font-bold text-[#1A1A1A] mb-6">Nouveau Projet</h2>
 
             <form onSubmit={handleCreateProject} className="space-y-4">
               <div>
@@ -408,9 +405,7 @@ export default function ProjectList() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Adresse *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Adresse *</label>
                 <input
                   type="text"
                   value={formData.address}
@@ -422,9 +417,7 @@ export default function ProjectList() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Client
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Client</label>
                 <input
                   type="text"
                   value={formData.client}
@@ -435,9 +428,7 @@ export default function ProjectList() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Entrepreneur
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Entrepreneur</label>
                 <input
                   type="text"
                   value={formData.contractor}
@@ -460,12 +451,12 @@ export default function ProjectList() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Statut
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Statut</label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as Project['status'] })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value as Project["status"] })
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
                 >
                   <option value="planning">Planification</option>

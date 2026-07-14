@@ -6,12 +6,7 @@ interface Props {
   file: File | null;
   defaultName?: string;
   onCancel: () => void;
-  onConfirm: (data: {
-    name: string;
-    level: string;
-    description: string;
-    file: File;
-  }) => void;
+  onConfirm: (data: { name: string; level: string; description: string; file: File }) => void;
   saving?: boolean;
 }
 
@@ -52,10 +47,7 @@ export default function FloorPlanUploadModal({
   const valid = name.trim().length > 0;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 z-[60] overflow-y-auto"
-      onClick={onCancel}
-    >
+    <div className="fixed inset-0 bg-black/50 z-[60] overflow-y-auto" onClick={onCancel}>
       <div className="min-h-screen flex items-center justify-center py-8 px-4">
         <div
           className="bg-white rounded-xl w-full max-w-md shadow-xl"
@@ -64,9 +56,7 @@ export default function FloorPlanUploadModal({
           aria-modal="true"
         >
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between rounded-t-xl">
-            <h2 className="text-xl text-[#1A1A1A] font-medium">
-              Téléverser un plan
-            </h2>
+            <h2 className="text-xl text-[#1A1A1A] font-medium">Téléverser un plan</h2>
             <button
               onClick={onCancel}
               className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
@@ -79,11 +69,7 @@ export default function FloorPlanUploadModal({
           <div className="p-6 space-y-5">
             <div className="rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
               {preview ? (
-                <img
-                  src={preview}
-                  alt="Aperçu du plan"
-                  className="w-full h-40 object-contain"
-                />
+                <img src={preview} alt="Aperçu du plan" className="w-full h-40 object-contain" />
               ) : (
                 <div className="h-40 flex items-center justify-center text-gray-300">
                   <FileImage size={40} />
@@ -95,9 +81,7 @@ export default function FloorPlanUploadModal({
             </div>
 
             <div>
-              <label className="block text-sm text-[#1A1A1A] mb-2">
-                Nom du plan *
-              </label>
+              <label className="block text-sm text-[#1A1A1A] mb-2">Nom du plan *</label>
               <input
                 ref={nameRef}
                 type="text"
@@ -109,9 +93,7 @@ export default function FloorPlanUploadModal({
             </div>
 
             <div>
-              <label className="block text-sm text-[#1A1A1A] mb-2">
-                Niveau / Étage
-              </label>
+              <label className="block text-sm text-[#1A1A1A] mb-2">Niveau / Étage</label>
               <input
                 type="text"
                 value={level}
@@ -122,9 +104,7 @@ export default function FloorPlanUploadModal({
             </div>
 
             <div>
-              <label className="block text-sm text-[#1A1A1A] mb-2">
-                Description (optionnel)
-              </label>
+              <label className="block text-sm text-[#1A1A1A] mb-2">Description (optionnel)</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}

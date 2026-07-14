@@ -1,4 +1,13 @@
-import { supabase, Project, SiteVisit, Photo, Issue, Comment, Notification, ProjectMember } from './supabase';
+import {
+  supabase,
+  Project,
+  SiteVisit,
+  Photo,
+  Issue,
+  Comment,
+  Notification,
+  ProjectMember,
+} from "./supabase";
 
 // ============================================
 // PROJECTS API
@@ -8,30 +17,30 @@ export async function getProjects(userId: string): Promise<Project[]> {
   try {
     // Get projects owned by the user
     const { data: ownedProjects, error: ownedError } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("projects")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (ownedError) throw ownedError;
 
     // Get project IDs where user is a member
     const { data: memberships, error: membershipsError } = await supabase
-      .from('project_members')
-      .select('project_id')
-      .eq('user_id', userId);
+      .from("project_members")
+      .select("project_id")
+      .eq("user_id", userId);
 
     if (membershipsError) throw membershipsError;
 
     // Get shared projects
     let sharedProjects: Project[] = [];
     if (memberships && memberships.length > 0) {
-      const sharedProjectIds = memberships.map(m => m.project_id);
+      const sharedProjectIds = memberships.map((m) => m.project_id);
       const { data: shared, error: sharedError } = await supabase
-        .from('projects')
-        .select('*')
-        .in('id', sharedProjectIds)
-        .order('created_at', { ascending: false });
+        .from("projects")
+        .select("*")
+        .in("id", sharedProjectIds)
+        .order("created_at", { ascending: false });
 
       if (sharedError) throw sharedError;
       sharedProjects = shared || [];
@@ -39,13 +48,11 @@ export async function getProjects(userId: string): Promise<Project[]> {
 
     // Combine and deduplicate projects
     const allProjects = [...(ownedProjects || []), ...sharedProjects];
-    const uniqueProjects = Array.from(
-      new Map(allProjects.map(p => [p.id, p])).values()
-    );
+    const uniqueProjects = Array.from(new Map(allProjects.map((p) => [p.id, p])).values());
 
     return uniqueProjects;
   } catch (error) {
-    console.error('❌ Error fetching projects:', error);
+    console.error("❌ Error fetching projects:", error);
     throw error;
   }
 }
@@ -53,62 +60,60 @@ export async function getProjects(userId: string): Promise<Project[]> {
 export async function getProject(projectId: string): Promise<Project | null> {
   try {
     const { data, error } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('id', projectId)
+      .from("projects")
+      .select("*")
+      .eq("id", projectId)
       .single();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('❌ Error fetching project:', error);
+    console.error("❌ Error fetching project:", error);
     throw error;
   }
 }
 
-export async function createProject(project: Omit<Project, 'id' | 'created_at' | 'updated_at'>): Promise<Project> {
+export async function createProject(
+  project: Omit<Project, "id" | "created_at" | "updated_at">,
+): Promise<Project> {
   try {
-    const { data, error } = await supabase
-      .from('projects')
-      .insert([project])
-      .select()
-      .single();
+    const { data, error } = await supabase.from("projects").insert([project]).select().single();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('❌ Error creating project:', error);
+    console.error("❌ Error creating project:", error);
     throw error;
   }
 }
 
-export async function updateProject(projectId: string, updates: Partial<Project>): Promise<Project> {
+export async function updateProject(
+  projectId: string,
+  updates: Partial<Project>,
+): Promise<Project> {
   try {
     const { data, error } = await supabase
-      .from('projects')
+      .from("projects")
       .update(updates)
-      .eq('id', projectId)
+      .eq("id", projectId)
       .select()
       .single();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('❌ Error updating project:', error);
+    console.error("❌ Error updating project:", error);
     throw error;
   }
 }
 
 export async function deleteProject(projectId: string): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('projects')
-      .delete()
-      .eq('id', projectId);
+    const { error } = await supabase.from("projects").delete().eq("id", projectId);
 
     if (error) throw error;
   } catch (error) {
-    console.error('❌ Error deleting project:', error);
+    console.error("❌ Error deleting project:", error);
     throw error;
   }
 }
@@ -120,15 +125,15 @@ export async function deleteProject(projectId: string): Promise<void> {
 export async function getSiteVisits(projectId: string): Promise<SiteVisit[]> {
   try {
     const { data, error } = await supabase
-      .from('site_visits')
-      .select('*')
-      .eq('project_id', projectId)
-      .order('visit_date', { ascending: false });
+      .from("site_visits")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("visit_date", { ascending: false });
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('❌ Error fetching visits:', error);
+    console.error("❌ Error fetching visits:", error);
     throw error;
   }
 }
@@ -136,62 +141,60 @@ export async function getSiteVisits(projectId: string): Promise<SiteVisit[]> {
 export async function getSiteVisit(visitId: string): Promise<SiteVisit | null> {
   try {
     const { data, error } = await supabase
-      .from('site_visits')
-      .select('*')
-      .eq('id', visitId)
+      .from("site_visits")
+      .select("*")
+      .eq("id", visitId)
       .single();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('❌ Error fetching visit:', error);
+    console.error("❌ Error fetching visit:", error);
     throw error;
   }
 }
 
-export async function createSiteVisit(visit: Omit<SiteVisit, 'id' | 'created_at' | 'updated_at'>): Promise<SiteVisit> {
+export async function createSiteVisit(
+  visit: Omit<SiteVisit, "id" | "created_at" | "updated_at">,
+): Promise<SiteVisit> {
   try {
-    const { data, error } = await supabase
-      .from('site_visits')
-      .insert([visit])
-      .select()
-      .single();
+    const { data, error } = await supabase.from("site_visits").insert([visit]).select().single();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('❌ Error creating visit:', error);
+    console.error("❌ Error creating visit:", error);
     throw error;
   }
 }
 
-export async function updateSiteVisit(visitId: string, updates: Partial<SiteVisit>): Promise<SiteVisit> {
+export async function updateSiteVisit(
+  visitId: string,
+  updates: Partial<SiteVisit>,
+): Promise<SiteVisit> {
   try {
     const { data, error } = await supabase
-      .from('site_visits')
+      .from("site_visits")
       .update(updates)
-      .eq('id', visitId)
+      .eq("id", visitId)
       .select()
       .single();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('❌ Error updating visit:', error);
+    console.error("❌ Error updating visit:", error);
     throw error;
   }
 }
 
 export async function deleteSiteVisit(visitId: string): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('site_visits')
-      .delete()
-      .eq('id', visitId);
+    const { error } = await supabase.from("site_visits").delete().eq("id", visitId);
 
     if (error) throw error;
   } catch (error) {
-    console.error('❌ Error deleting visit:', error);
+    console.error("❌ Error deleting visit:", error);
     throw error;
   }
 }
@@ -203,15 +206,15 @@ export async function deleteSiteVisit(visitId: string): Promise<void> {
 export async function getPhotos(visitId: string): Promise<Photo[]> {
   try {
     const { data, error } = await supabase
-      .from('photos')
-      .select('*')
-      .eq('visit_id', visitId)
-      .order('created_at', { ascending: false });
+      .from("photos")
+      .select("*")
+      .eq("visit_id", visitId)
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('❌ Error fetching photos:', error);
+    console.error("❌ Error fetching photos:", error);
     throw error;
   }
 }
@@ -219,15 +222,15 @@ export async function getPhotos(visitId: string): Promise<Photo[]> {
 export async function getPhoto(photoId: string): Promise<Photo | null> {
   try {
     const { data, error } = await supabase
-      .from('photos')
-      .select('*')
-      .eq('id', photoId)
+      .from("photos")
+      .select("*")
+      .eq("id", photoId)
       .maybeSingle();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('❌ Error fetching photo:', error);
+    console.error("❌ Error fetching photo:", error);
     return null;
   }
 }
@@ -241,31 +244,29 @@ export async function uploadPhoto(
     tags?: string[];
     location?: { floor?: string; room?: string };
     description?: string;
-  }
+  },
 ): Promise<Photo> {
   try {
     // 1. Sanitize filename to remove special characters
     const sanitizedFileName = file.name
-      .normalize('NFD') // Decompose accented characters
-      .replace(/[\u0300-\u036f]/g, '') // Remove accents
-      .replace(/[^a-zA-Z0-9._-]/g, '_'); // Replace special chars with underscore
+      .normalize("NFD") // Decompose accented characters
+      .replace(/[\u0300-\u036f]/g, "") // Remove accents
+      .replace(/[^a-zA-Z0-9._-]/g, "_"); // Replace special chars with underscore
 
     // 2. Upload file to Supabase Storage
     const fileName = `${userId}/${projectId}/${visitId}/${Date.now()}-${sanitizedFileName}`;
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('project-photos')
+      .from("project-photos")
       .upload(fileName, file);
 
     if (uploadError) throw uploadError;
 
     // 2. Get public URL (required for DB constraint, but won't work if bucket is private)
-    const { data: urlData } = supabase.storage
-      .from('project-photos')
-      .getPublicUrl(fileName);
+    const { data: urlData } = supabase.storage.from("project-photos").getPublicUrl(fileName);
 
     // 3. Create photo record in database
     const { data: photoData, error: photoError } = await supabase
-      .from('photos')
+      .from("photos")
       .insert([
         {
           user_id: userId,
@@ -285,7 +286,7 @@ export async function uploadPhoto(
 
     return photoData;
   } catch (error) {
-    console.error('❌ Error uploading photo:', error);
+    console.error("❌ Error uploading photo:", error);
     throw error;
   }
 }
@@ -293,16 +294,16 @@ export async function uploadPhoto(
 export async function updatePhoto(photoId: string, updates: Partial<Photo>): Promise<Photo> {
   try {
     const { data, error } = await supabase
-      .from('photos')
+      .from("photos")
       .update(updates)
-      .eq('id', photoId)
+      .eq("id", photoId)
       .select()
       .single();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('❌ Error updating photo:', error);
+    console.error("❌ Error updating photo:", error);
     throw error;
   }
 }
@@ -315,21 +316,18 @@ export async function deletePhoto(photoId: string): Promise<void> {
     // If photo exists, delete from storage
     if (photo && photo.storage_path) {
       const { error: storageError } = await supabase.storage
-        .from('project-photos')
+        .from("project-photos")
         .remove([photo.storage_path]);
 
-      if (storageError) console.error('⚠️ Error deleting from storage:', storageError);
+      if (storageError) console.error("⚠️ Error deleting from storage:", storageError);
     }
 
     // 2. Delete from database (even if not found in storage)
-    const { error } = await supabase
-      .from('photos')
-      .delete()
-      .eq('id', photoId);
+    const { error } = await supabase.from("photos").delete().eq("id", photoId);
 
     if (error) throw error;
   } catch (error) {
-    console.error('❌ Error deleting photo:', error);
+    console.error("❌ Error deleting photo:", error);
     throw error;
   }
 }
@@ -346,13 +344,13 @@ export async function deletePhoto(photoId: string): Promise<void> {
 export async function getPhotoSignedUrl(storagePath: string): Promise<string> {
   try {
     const { data, error } = await supabase.storage
-      .from('project-photos')
+      .from("project-photos")
       .createSignedUrl(storagePath, 86400); // 86400 seconds = 24 hours
 
     if (error) throw error;
     return data.signedUrl;
   } catch (error) {
-    console.error('❌ Error generating signed URL:', error);
+    console.error("❌ Error generating signed URL:", error);
     throw error;
   }
 }
@@ -364,12 +362,10 @@ export async function getPhotoSignedUrl(storagePath: string): Promise<string> {
  */
 export async function getPhotosSignedUrls(storagePaths: string[]): Promise<string[]> {
   try {
-    const signedUrls = await Promise.all(
-      storagePaths.map(path => getPhotoSignedUrl(path))
-    );
+    const signedUrls = await Promise.all(storagePaths.map((path) => getPhotoSignedUrl(path)));
     return signedUrls;
   } catch (error) {
-    console.error('❌ Error generating signed URLs:', error);
+    console.error("❌ Error generating signed URLs:", error);
     throw error;
   }
 }
@@ -400,23 +396,38 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     // Décomptes en parallèle via `head: true` (ne transfère pas les lignes, juste le count)
     const [visitsRes, photosRes, openRes, inProgressRes, resolvedRes] = await Promise.all([
       projectIds.length
-        ? supabase.from('site_visits').select('id', { count: 'exact', head: true }).in('project_id', projectIds)
+        ? supabase
+            .from("site_visits")
+            .select("id", { count: "exact", head: true })
+            .in("project_id", projectIds)
         : Promise.resolve({ count: 0 } as any),
       projectIds.length
         ? supabase
-            .from('photos')
-            .select('id', { count: 'exact', head: true })
-            .in('project_id', projectIds)
-            .gte('created_at', weekAgo.toISOString())
+            .from("photos")
+            .select("id", { count: "exact", head: true })
+            .in("project_id", projectIds)
+            .gte("created_at", weekAgo.toISOString())
         : Promise.resolve({ count: 0 } as any),
       projectIds.length
-        ? supabase.from('issues').select('id', { count: 'exact', head: true }).in('project_id', projectIds).eq('status', 'open')
+        ? supabase
+            .from("issues")
+            .select("id", { count: "exact", head: true })
+            .in("project_id", projectIds)
+            .eq("status", "open")
         : Promise.resolve({ count: 0 } as any),
       projectIds.length
-        ? supabase.from('issues').select('id', { count: 'exact', head: true }).in('project_id', projectIds).eq('status', 'in_progress')
+        ? supabase
+            .from("issues")
+            .select("id", { count: "exact", head: true })
+            .in("project_id", projectIds)
+            .eq("status", "in_progress")
         : Promise.resolve({ count: 0 } as any),
       projectIds.length
-        ? supabase.from('issues').select('id', { count: 'exact', head: true }).in('project_id', projectIds).eq('status', 'resolved')
+        ? supabase
+            .from("issues")
+            .select("id", { count: "exact", head: true })
+            .in("project_id", projectIds)
+            .eq("status", "resolved")
         : Promise.resolve({ count: 0 } as any),
     ]);
 
@@ -429,7 +440,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
       resolvedIssues: resolvedRes.count ?? 0,
     };
   } catch (error) {
-    console.error('❌ Error fetching dashboard stats:', error);
+    console.error("❌ Error fetching dashboard stats:", error);
     throw error;
   }
 }
@@ -447,10 +458,16 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
 
     const [visitsRes, photosRes] = await Promise.all([
       projectIds.length
-        ? supabase.from('site_visits').select('id', { count: 'exact', head: true }).in('project_id', projectIds)
+        ? supabase
+            .from("site_visits")
+            .select("id", { count: "exact", head: true })
+            .in("project_id", projectIds)
         : Promise.resolve({ count: 0 } as any),
       projectIds.length
-        ? supabase.from('photos').select('id', { count: 'exact', head: true }).in('project_id', projectIds)
+        ? supabase
+            .from("photos")
+            .select("id", { count: "exact", head: true })
+            .in("project_id", projectIds)
         : Promise.resolve({ count: 0 } as any),
     ]);
 
@@ -460,7 +477,7 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
       totalPhotos: photosRes.count ?? 0,
     };
   } catch (error) {
-    console.error('❌ Error fetching profile stats:', error);
+    console.error("❌ Error fetching profile stats:", error);
     throw error;
   }
 }
@@ -469,21 +486,23 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
 // ISSUES API
 // ============================================
 
-export async function getAllUserIssues(userId: string): Promise<(Issue & { projectName: string })[]> {
+export async function getAllUserIssues(
+  userId: string,
+): Promise<(Issue & { projectName: string })[]> {
   try {
     const { data, error } = await supabase
-      .from('issues')
-      .select('*, projects(name)')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("issues")
+      .select("*, projects(name)")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     return (data || []).map((row: any) => ({
       ...row,
-      projectName: row.projects?.name ?? 'Projet inconnu',
+      projectName: row.projects?.name ?? "Projet inconnu",
     }));
   } catch (error) {
-    console.error('❌ Error fetching all user issues:', error);
+    console.error("❌ Error fetching all user issues:", error);
     throw error;
   }
 }
@@ -491,31 +510,29 @@ export async function getAllUserIssues(userId: string): Promise<(Issue & { proje
 export async function getIssues(projectId: string): Promise<Issue[]> {
   try {
     const { data, error } = await supabase
-      .from('issues')
-      .select('*')
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: false });
+      .from("issues")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('❌ Error fetching issues:', error);
+    console.error("❌ Error fetching issues:", error);
     throw error;
   }
 }
 
-export async function createIssue(issue: Omit<Issue, 'id' | 'created_at' | 'updated_at'>): Promise<Issue> {
+export async function createIssue(
+  issue: Omit<Issue, "id" | "created_at" | "updated_at">,
+): Promise<Issue> {
   try {
-    const { data, error } = await supabase
-      .from('issues')
-      .insert([issue])
-      .select()
-      .single();
+    const { data, error } = await supabase.from("issues").insert([issue]).select().single();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('❌ Error creating issue:', error);
+    console.error("❌ Error creating issue:", error);
     throw error;
   }
 }
@@ -523,16 +540,16 @@ export async function createIssue(issue: Omit<Issue, 'id' | 'created_at' | 'upda
 export async function updateIssue(issueId: string, updates: Partial<Issue>): Promise<Issue> {
   try {
     const { data, error } = await supabase
-      .from('issues')
+      .from("issues")
       .update(updates)
-      .eq('id', issueId)
+      .eq("id", issueId)
       .select()
       .single();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('❌ Error updating issue:', error);
+    console.error("❌ Error updating issue:", error);
     throw error;
   }
 }
@@ -544,31 +561,27 @@ export async function updateIssue(issueId: string, updates: Partial<Issue>): Pro
 export async function getComments(photoId: string): Promise<Comment[]> {
   try {
     const { data, error } = await supabase
-      .from('comments')
-      .select('*')
-      .eq('photo_id', photoId)
-      .order('created_at', { ascending: true });
+      .from("comments")
+      .select("*")
+      .eq("photo_id", photoId)
+      .order("created_at", { ascending: true });
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('❌ Error fetching comments:', error);
+    console.error("❌ Error fetching comments:", error);
     throw error;
   }
 }
 
-export async function createComment(comment: Omit<Comment, 'id' | 'created_at'>): Promise<Comment> {
+export async function createComment(comment: Omit<Comment, "id" | "created_at">): Promise<Comment> {
   try {
-    const { data, error } = await supabase
-      .from('comments')
-      .insert([comment])
-      .select()
-      .single();
+    const { data, error } = await supabase.from("comments").insert([comment]).select().single();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('❌ Error creating comment:', error);
+    console.error("❌ Error creating comment:", error);
     throw error;
   }
 }
@@ -580,16 +593,16 @@ export async function createComment(comment: Omit<Comment, 'id' | 'created_at'>)
 export async function getNotifications(userId: string): Promise<Notification[]> {
   try {
     const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
       .limit(50);
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('❌ Error fetching notifications:', error);
+    console.error("❌ Error fetching notifications:", error);
     throw error;
   }
 }
@@ -597,13 +610,13 @@ export async function getNotifications(userId: string): Promise<Notification[]> 
 export async function markNotificationAsRead(notificationId: string): Promise<void> {
   try {
     const { error } = await supabase
-      .from('notifications')
+      .from("notifications")
       .update({ read: true })
-      .eq('id', notificationId);
+      .eq("id", notificationId);
 
     if (error) throw error;
   } catch (error) {
-    console.error('❌ Error marking notification as read:', error);
+    console.error("❌ Error marking notification as read:", error);
     throw error;
   }
 }
@@ -615,14 +628,14 @@ export async function markNotificationAsRead(notificationId: string): Promise<vo
 export async function getProjectMembers(projectId: string): Promise<ProjectMember[]> {
   try {
     const { data, error } = await supabase
-      .from('project_members')
-      .select('*')
-      .eq('project_id', projectId);
+      .from("project_members")
+      .select("*")
+      .eq("project_id", projectId);
 
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('❌ Error fetching project members:', error);
+    console.error("❌ Error fetching project members:", error);
     throw error;
   }
 }
@@ -630,12 +643,12 @@ export async function getProjectMembers(projectId: string): Promise<ProjectMembe
 export async function addProjectMember(
   projectId: string,
   userId: string,
-  role: 'owner' | 'editor' | 'viewer',
-  invitedBy: string
+  role: "owner" | "editor" | "viewer",
+  invitedBy: string,
 ): Promise<ProjectMember> {
   try {
     const { data, error } = await supabase
-      .from('project_members')
+      .from("project_members")
       .insert([
         {
           project_id: projectId,
@@ -650,7 +663,7 @@ export async function addProjectMember(
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('❌ Error adding project member:', error);
+    console.error("❌ Error adding project member:", error);
     throw error;
   }
 }
@@ -658,14 +671,14 @@ export async function addProjectMember(
 export async function removeProjectMember(projectId: string, userId: string): Promise<void> {
   try {
     const { error } = await supabase
-      .from('project_members')
+      .from("project_members")
       .delete()
-      .eq('project_id', projectId)
-      .eq('user_id', userId);
+      .eq("project_id", projectId)
+      .eq("user_id", userId);
 
     if (error) throw error;
   } catch (error) {
-    console.error('❌ Error removing project member:', error);
+    console.error("❌ Error removing project member:", error);
     throw error;
   }
 }

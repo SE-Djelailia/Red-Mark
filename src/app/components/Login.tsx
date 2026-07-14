@@ -19,7 +19,7 @@ export default function Login() {
   // Rediriger si déjà connecté
   useEffect(() => {
     if (user) {
-      console.log('✅ User already logged in, redirecting to /app');
+      console.log("✅ User already logged in, redirecting to /app");
       navigate("/app", { replace: true });
     }
   }, [user, navigate]);
@@ -37,7 +37,7 @@ export default function Login() {
         navigate("/app");
       }
     } catch (error: any) {
-      console.error('Auth error:', error);
+      console.error("Auth error:", error);
       // Error handling is done in AuthContext
     } finally {
       setLoading(false);
@@ -134,7 +134,7 @@ export default function Login() {
             disabled={loading}
             className="w-full py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] active:bg-[#A00400] transition-colors mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Chargement...' : (isSignUp ? "S'inscrire" : "Se connecter")}
+            {loading ? "Chargement..." : isSignUp ? "S'inscrire" : "Se connecter"}
           </button>
         </form>
 

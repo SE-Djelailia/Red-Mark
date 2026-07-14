@@ -208,9 +208,7 @@ export default function FloorPlanViewer() {
         <button
           onClick={() => setAddMode((v) => !v)}
           className={`px-4 h-11 rounded-lg text-sm font-medium ${
-            addMode
-              ? "bg-[#E10600] text-white"
-              : "bg-white/10 text-white hover:bg-white/20"
+            addMode ? "bg-[#E10600] text-white" : "bg-white/10 text-white hover:bg-white/20"
           }`}
         >
           {addMode ? "Terminer" : "Ajouter des pins"}

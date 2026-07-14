@@ -3,12 +3,14 @@
 ## 🎯 Ce qui a changé
 
 ### ✅ AVANT (Complexe - Problèmes JWT)
+
 ```
 Frontend → Edge Function → Supabase Auth (❌ Erreurs JWT constantes)
          → Edge Function → KV Store
 ```
 
 ### ✅ MAINTENANT (Simple - Ça marche!)
+
 ```
 Frontend → Supabase Auth Direct (✅ Pas de JWT complexe!)
 Frontend → localStorage (✅ Données isolées par user_id)
@@ -17,16 +19,19 @@ Frontend → localStorage (✅ Données isolées par user_id)
 ## 📁 Nouveaux fichiers créés
 
 ### 1. `/src/lib/supabase.ts`
+
 - Client Supabase simplifié
 - Auth direct (signUp, signIn, signOut)
 - Pas besoin de serveur intermédiaire!
 
 ### 2. `/src/contexts/AuthContext.tsx`
+
 - Context React pour l'authentification
 - Gère l'état de l'utilisateur globalement
 - Auto-refresh de la session
 
 ### 3. `/src/lib/storage.ts`
+
 - Stockage localStorage organisé
 - Isolation complète des données par `user_id`
 - Fonctions: `getProjects()`, `saveProject()`, `deleteProject()`, etc.
@@ -34,6 +39,7 @@ Frontend → localStorage (✅ Données isolées par user_id)
 ## 🔐 Authentification (SIMPLIFIÉ!)
 
 ### Inscription:
+
 ```typescript
 const { signUp } = useAuth();
 await signUp(email, password, { name, firm });
@@ -42,6 +48,7 @@ await signUp(email, password, { name, firm });
 ```
 
 ### Connexion:
+
 ```typescript
 const { signIn } = useAuth();
 await signIn(email, password);
@@ -50,6 +57,7 @@ await signIn(email, password);
 ```
 
 ### Déconnexion:
+
 ```typescript
 const { signOut } = useAuth();
 await signOut();
@@ -59,8 +67,9 @@ await signOut();
 ## 💾 Stockage des données
 
 ### Projets:
+
 ```typescript
-import { getProjects, saveProject } from '../../lib/storage';
+import { getProjects, saveProject } from "../../lib/storage";
 
 // Récupérer les projets de l'utilisateur
 const projects = getProjects(user.id);
@@ -77,6 +86,7 @@ saveProject(user.id, newProject);
 ```
 
 ### Isolation des données:
+
 - Chaque utilisateur a ses propres clés localStorage:
   - `projects:${userId}` → Projets de l'utilisateur
   - `visits:${userId}:${projectId}` → Visites d'un projet
@@ -86,6 +96,7 @@ saveProject(user.id, newProject);
 ## 🎨 Utilisation dans les composants
 
 ### Exemple: ProjectList.tsx
+
 ```typescript
 import { useAuth } from "../../contexts/AuthContext";
 import { getProjects, saveProject } from "../../lib/storage";
@@ -108,11 +119,13 @@ export default function ProjectList() {
 ## 🚀 Prochaines étapes (si besoin)
 
 ### Option A: Garder localStorage (Simple)
+
 - ✅ Fonctionne immédiatement
 - ✅ Pas de configuration
 - ❌ Données locales seulement (pas de sync entre appareils)
 
 ### Option B: Migrer vers Supabase Database (Plus tard)
+
 - Créer des tables dans Supabase
 - Utiliser Row Level Security (RLS) pour l'isolation
 - Sync automatique entre appareils
@@ -128,10 +141,12 @@ export default function ProjectList() {
 ## ⚠️ Important
 
 ### Supprimé:
+
 - ❌ `/src/app/context/AuthContext.tsx` (ancien - remplacé par `/src/contexts/AuthContext.tsx`)
 - ⚠️ `/supabase/functions/server/index.tsx` (garde pour référence, mais non utilisé)
 
 ### Garder:
+
 - ✅ Tous les composants UI
 - ✅ PWA features
 - ✅ Routing

@@ -1,6 +1,7 @@
 # RedMark iOS App - Complete Setup Guide
 
 ## What You'll Build
+
 A native iOS app version of RedMark that works offline, uses your iPhone camera, and can be published to the App Store.
 
 ---
@@ -8,6 +9,7 @@ A native iOS app version of RedMark that works offline, uses your iPhone camera,
 ## PHASE 1: Prepare Your Mac (30 minutes)
 
 ### Step 1: Install Xcode
+
 1. Open **App Store** on your Mac
 2. Search for "Xcode"
 3. Click **Get** (it's ~15GB, takes 30-60 min to download)
@@ -15,19 +17,24 @@ A native iOS app version of RedMark that works offline, uses your iPhone camera,
 5. Close Xcode
 
 ### Step 2: Install Homebrew (if not already installed)
+
 1. Open **Terminal** app on Mac
 2. Paste this command and press Enter:
+
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
+
 3. Follow the prompts (it may ask for your password)
 
 ### Step 3: Install Node.js
+
 ```bash
 brew install node
 ```
 
 ### Step 4: Verify Installation
+
 ```bash
 node --version    # Should show v18 or higher
 npm --version     # Should show v9 or higher
@@ -38,23 +45,29 @@ npm --version     # Should show v9 or higher
 ## PHASE 2: Create Your Mobile App (20 minutes)
 
 ### Step 1: Create Expo Account
+
 1. Go to https://expo.dev
 2. Click **Sign Up**
 3. Create free account (remember your username/password)
 
 ### Step 2: Install Expo CLI
+
 Open Terminal and run:
+
 ```bash
 npm install -g expo-cli eas-cli
 ```
 
 ### Step 3: Login to Expo
+
 ```bash
 npx expo login
 ```
+
 Enter your expo.dev username and password.
 
 ### Step 4: Create New App
+
 ```bash
 # Navigate to where you want the project (e.g., Desktop)
 cd ~/Desktop
@@ -67,6 +80,7 @@ cd redmark-mobile
 ```
 
 ### Step 5: Install Required Packages
+
 ```bash
 # Install navigation
 npx expo install @react-navigation/native @react-navigation/stack
@@ -87,6 +101,7 @@ npx expo install react-native-gesture-handler react-native-reanimated
 ## PHASE 3: Configure Your App (30 minutes)
 
 ### Step 1: Update app.json
+
 Open `redmark-mobile/app.json` and replace everything with:
 
 ```json
@@ -137,19 +152,21 @@ Open `redmark-mobile/app.json` and replace everything with:
 **Important**: Change `com.yourname.redmark` to use your own name (e.g., `com.john.redmark`)
 
 ### Step 2: Create Supabase Config File
+
 Create file `redmark-mobile/lib/supabase.ts`:
 
 ```typescript
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 // REPLACE THESE with your actual Supabase credentials
-const supabaseUrl = 'YOUR_SUPABASE_URL';
-const supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
+const supabaseUrl = "YOUR_SUPABASE_URL";
+const supabaseAnonKey = "YOUR_SUPABASE_ANON_KEY";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 ```
 
 **Where to find your Supabase credentials:**
+
 1. Go to your Supabase project dashboard
 2. Click **Settings** (gear icon)
 3. Click **API**
@@ -161,6 +178,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 ## PHASE 4: Test on iOS Simulator (10 minutes)
 
 ### Step 1: Start the App
+
 ```bash
 # Make sure you're in the redmark-mobile folder
 cd ~/Desktop/redmark-mobile
@@ -170,11 +188,13 @@ npx expo start
 ```
 
 ### Step 2: Press `i` to open iOS Simulator
+
 - The simulator will open automatically
 - Your app will load
 - You should see the default Expo screen
 
 ### Step 3: Test on Real iPhone (Optional)
+
 1. Install **Expo Go** app from App Store on your iPhone
 2. When you run `npx expo start`, a QR code appears
 3. Open Camera app on iPhone and scan the QR code
@@ -187,6 +207,7 @@ npx expo start
 Now that your environment is set up, we'll build the actual RedMark features:
 
 ### Priority Order:
+
 1. ✅ **Authentication Screen** (login/signup) - START HERE
 2. **Projects List Screen** (view all projects)
 3. **Project Detail Screen** (view visits)
@@ -199,19 +220,23 @@ Now that your environment is set up, we'll build the actual RedMark features:
 ## Common Issues & Fixes
 
 ### "Command not found: expo"
+
 ```bash
 npm install -g expo-cli
 ```
 
 ### "Cannot find module @react-navigation"
+
 ```bash
 npx expo install @react-navigation/native @react-navigation/stack
 ```
 
 ### "iOS Simulator not opening"
+
 Make sure Xcode is installed and you've opened it at least once.
 
 ### "Supabase connection error"
+
 Double-check your `supabaseUrl` and `supabaseAnonKey` in `lib/supabase.ts`
 
 ---
@@ -244,6 +269,7 @@ You can develop and test completely free. You only pay when you're ready to publ
 ## Questions?
 
 After you complete each phase, let me know:
+
 - ✅ "Phase 1 done" - I'll give you Phase 2 details
 - ✅ "Phase 2 done" - I'll help you build the first screen
 - ❌ "Phase X stuck" - Tell me the error message

@@ -22,6 +22,7 @@ When you export, you should get:
 **Format**: Usually a `.zip` file
 
 **Contents**:
+
 ```
 redmark-app.zip
 ├── src/              ← All your app code
@@ -53,19 +54,23 @@ redmark-app.zip
 ### Alternative Methods:
 
 #### Method 1: Browser DevTools (Advanced)
+
 1. Right-click on Figma Make page
 2. "Inspect" → "Sources" tab
 3. Find your files in file tree
 4. Copy manually (tedious!)
 
 #### Method 2: Copy All Files
+
 Since you're in a web environment:
+
 1. Select all code from each file
 2. Create files locally on your computer
 3. Paste content into matching file names
 4. Not ideal, but works!
 
 #### Method 3: Figma Support
+
 - Check Figma Make documentation
 - Look for "Export" help article
 - Contact Figma support if needed
@@ -77,6 +82,7 @@ Since you're in a web environment:
 If you need to copy files manually, here's the complete list:
 
 ### Core Files (Required)
+
 1. `/src/app/App.tsx`
 2. `/src/app/routes.tsx`
 3. `/src/main.tsx`
@@ -89,6 +95,7 @@ If you need to copy files manually, here's the complete list:
 10. `/.gitignore`
 
 ### Components (All in /src/app/components/)
+
 1. `Layout.tsx`
 2. `BottomNav.tsx`
 3. `Header.tsx`
@@ -104,6 +111,7 @@ If you need to copy files manually, here's the complete list:
 13. ... (and any other components you created)
 
 ### Pages (All in /src/app/pages/)
+
 1. `LoginPage.tsx`
 2. `DashboardPage.tsx`
 3. `ProjectsPage.tsx`
@@ -116,10 +124,12 @@ If you need to copy files manually, here's the complete list:
 10. `NotFoundPage.tsx`
 
 ### Static Files (/public/)
+
 1. `icon.svg`
 2. `favicon.svg`
 
 ### Documentation (Optional)
+
 1. `README.md`
 2. `DEPLOYMENT.md`
 3. `CHECKLIST.md`
@@ -130,7 +140,9 @@ If you need to copy files manually, here's the complete list:
 ## 💡 Pro Tips
 
 ### Keep File Structure
+
 When copying manually, maintain the exact folder structure:
+
 ```
 redmark-app/
 ├── src/
@@ -146,11 +158,13 @@ redmark-app/
 ```
 
 ### Use a Code Editor
+
 - VS Code (free)
 - Sublime Text
 - Any text editor works
 
 ### Create Folders First
+
 1. Create main `redmark-app` folder
 2. Create `src`, `public` subfolders
 3. Create nested folders as needed

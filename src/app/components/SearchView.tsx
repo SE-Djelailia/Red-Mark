@@ -90,7 +90,8 @@ export default function SearchView() {
     setDateTo("");
   };
 
-  const activeFilterCount = selectedPhases.length + selectedTags.length + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
+  const activeFilterCount =
+    selectedPhases.length + selectedTags.length + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
 
   return (
     <div className="min-h-screen pb-20">
@@ -107,10 +108,7 @@ export default function SearchView() {
             placeholder="Rechercher projets, photos, notes, étiquettes..."
             className="w-full px-4 py-3 pl-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-white/40 focus:bg-white/15"
           />
-          <Search
-            size={20}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-          />
+          <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
         </div>
 
         {/* Filter Toggle */}
@@ -210,7 +208,8 @@ export default function SearchView() {
       {/* Results */}
       <div className="px-4 py-6 max-w-2xl mx-auto">
         <div className="mb-4 text-sm text-gray-600">
-          {filteredResults.length} résultat{filteredResults.length !== 1 ? "s" : ""} trouvé{filteredResults.length !== 1 ? "s" : ""}
+          {filteredResults.length} résultat{filteredResults.length !== 1 ? "s" : ""} trouvé
+          {filteredResults.length !== 1 ? "s" : ""}
         </div>
 
         <div className="space-y-3">
@@ -230,9 +229,7 @@ export default function SearchView() {
                 )}
 
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs text-[#E10600] mb-1">
-                    {result.projectName}
-                  </div>
+                  <div className="text-xs text-[#E10600] mb-1">{result.projectName}</div>
 
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className="px-2 py-0.5 bg-[#E10600]/10 text-[#E10600] rounded text-xs">
@@ -252,7 +249,7 @@ export default function SearchView() {
                   <div className="flex items-center gap-3 text-xs text-gray-600 mb-2">
                     <div className="flex items-center gap-1">
                       <Calendar size={12} />
-                      {new Date(result.date).toLocaleDateString('fr-CA')}
+                      {new Date(result.date).toLocaleDateString("fr-CA")}
                     </div>
                     <div className="flex items-center gap-1">
                       <MapPin size={12} />
@@ -260,9 +257,7 @@ export default function SearchView() {
                     </div>
                   </div>
 
-                  <p className="text-sm text-gray-700 line-clamp-2">
-                    {result.notes}
-                  </p>
+                  <p className="text-sm text-gray-700 line-clamp-2">{result.notes}</p>
                 </div>
               </div>
             </div>

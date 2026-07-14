@@ -18,6 +18,7 @@ warning: LF will be replaced by CRLF in package.json
 **✅ This is 100% NORMAL and SAFE!**
 
 **What to do:**
+
 ```bash
 # Just continue to the next step!
 git commit -m "Initial commit - RedMark PWA"
@@ -31,6 +32,7 @@ git push
 ## 🤔 Why Did I Get Warnings?
 
 **CRLF/LF Warnings:**
+
 - Windows uses CRLF (Carriage Return + Line Feed) for line endings
 - Mac/Linux use LF (Line Feed only)
 - Git is just telling you it's converting between them
@@ -41,24 +43,30 @@ git push
 ## 🎯 Three Types of Messages
 
 ### **1. "warning:" - Usually Safe** ✅
+
 ```
 warning: LF will be replaced by CRLF
 warning: trailing whitespace
 ```
+
 **Action**: Continue! These are informational.
 
 ### **2. "error:" - Must Fix** ❌
+
 ```
 error: unable to create file
 error: pathspec did not match any files
 ```
+
 **Action**: Read the error and fix the issue.
 
 ### **3. "fatal:" - Must Fix** ❌
+
 ```
 fatal: not a git repository
 fatal: remote origin already exists
 ```
+
 **Action**: Follow the fix instructions.
 
 ---
@@ -66,17 +74,21 @@ fatal: remote origin already exists
 ## ✅ Your Checklist
 
 **Did `git add .` complete?**
+
 - ✅ YES → You're good! Continue to `git commit`
 - ❌ NO (stopped with error) → Check the error message
 
 **Are the warnings about "CRLF" or "LF"?**
+
 - ✅ YES → Safe to ignore! Continue to `git commit`
 - ❌ NO → Check [GIT-WARNINGS-FIX.md](./GIT-WARNINGS-FIX.md)
 
 **Can you run the next command?**
+
 ```bash
 git status
 ```
+
 - ✅ YES → Everything is working! Continue!
 - ❌ NO → You have an error (not just warning)
 
@@ -125,11 +137,13 @@ git add .
 ## 🆘 Other Common Warnings
 
 ### **"warning: node_modules"**
+
 ```
 warning: adding embedded git repository: node_modules
 ```
 
 **Fix:**
+
 ```bash
 # Remove from staging
 git rm -r --cached node_modules
@@ -142,11 +156,13 @@ git add .
 ---
 
 ### **"warning: large file"**
+
 ```
 warning: large file detected
 ```
 
 **Check:**
+
 - If file is <50MB → Safe to continue
 - If file is >50MB → Consider excluding
 
@@ -178,11 +194,13 @@ Got warnings when running git add . ?
 ## 💡 Pro Tip
 
 **99% of the time, the warning is:**
+
 ```
 warning: LF will be replaced by CRLF
 ```
 
 **And 99% of the time, you can:**
+
 ```bash
 # Just ignore it and continue!
 git commit -m "Initial commit - RedMark PWA"
@@ -208,6 +226,7 @@ git commit -m "Initial commit - RedMark PWA"
 **A: No! If they say "CRLF/LF", just continue. They're harmless.** ✅
 
 **What to do now:**
+
 ```bash
 git commit -m "Initial commit - RedMark PWA"
 git push

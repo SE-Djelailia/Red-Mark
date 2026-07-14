@@ -18,7 +18,7 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
     address: project.address || "",
     client: project.client_name || "",
     startDate: project.start_date || "",
-    status: project.status
+    status: project.status,
   });
 
   async function handleSubmit(e: React.FormEvent) {
@@ -50,32 +50,29 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
     }
   }
 
-  const getStatusBadge = (status: Project['status']) => {
+  const getStatusBadge = (status: Project["status"]) => {
     const styles = {
       planning: "bg-blue-100 text-blue-700",
       "in-progress": "bg-green-100 text-green-700",
       "on-hold": "bg-yellow-100 text-yellow-700",
-      completed: "bg-gray-100 text-gray-700"
+      completed: "bg-gray-100 text-gray-700",
     };
-    
+
     const labels = {
       planning: "Planification",
       "in-progress": "En cours",
       "on-hold": "En pause",
-      completed: "Complété"
+      completed: "Complété",
     };
-    
+
     return {
       style: styles[status],
-      label: labels[status]
+      label: labels[status],
     };
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 z-50 overflow-y-auto"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={onClose}>
       <div className="min-h-screen px-4 py-4 sm:py-8 flex items-center justify-center">
         <div
           className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 my-4"
@@ -83,9 +80,7 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-[#1A1A1A]">
-              Modifier le projet
-            </h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-[#1A1A1A]">Modifier le projet</h2>
             <button
               onClick={onClose}
               className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
@@ -112,9 +107,7 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Adresse *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Adresse *</label>
               <input
                 type="text"
                 value={formData.address}
@@ -126,9 +119,7 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Client
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Client</label>
               <input
                 type="text"
                 value={formData.client}
@@ -139,9 +130,7 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date de début
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date de début</label>
               <input
                 type="date"
                 value={formData.startDate}
@@ -151,12 +140,12 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Statut
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Statut</label>
               <select
                 value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as Project['status'] })}
+                onChange={(e) =>
+                  setFormData({ ...formData, status: e.target.value as Project["status"] })
+                }
                 className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
               >
                 <option value="planning">Planification</option>
@@ -165,7 +154,9 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
                 <option value="completed">Complété</option>
               </select>
               <div className="mt-2">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(formData.status).style}`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(formData.status).style}`}
+                >
                   {getStatusBadge(formData.status).label}
                 </span>
               </div>

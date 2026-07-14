@@ -83,7 +83,9 @@ export default function ReportTemplates({ onClose }: ReportTemplatesProps) {
           <div className="p-6 border-b border-gray-200 flex items-center justify-between">
             <div>
               <h2 className="text-xl text-[#1A1A1A] font-medium">Modèles de rapports</h2>
-              <p className="text-sm text-gray-600 mt-1">Personnalisez l'apparence de vos rapports PDF</p>
+              <p className="text-sm text-gray-600 mt-1">
+                Personnalisez l'apparence de vos rapports PDF
+              </p>
             </div>
             <button
               onClick={onClose}
@@ -245,8 +247,8 @@ export default function ReportTemplates({ onClose }: ReportTemplatesProps) {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="text-sm font-medium text-blue-900 mb-2">Aperçu</h4>
               <p className="text-xs text-blue-800">
-                Ces paramètres seront appliqués à tous les nouveaux rapports PDF générés.
-                Vous pourrez toujours prévisualiser avant de télécharger.
+                Ces paramètres seront appliqués à tous les nouveaux rapports PDF générés. Vous
+                pourrez toujours prévisualiser avant de télécharger.
               </p>
             </div>
           </div>

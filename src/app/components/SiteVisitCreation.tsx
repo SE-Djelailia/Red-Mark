@@ -13,9 +13,7 @@ export default function SiteVisitCreation() {
   const { id } = useParams();
   const { user } = useAuth();
 
-  const [visitDate, setVisitDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [visitDate, setVisitDate] = useState(new Date().toISOString().split("T")[0]);
   const [notes, setNotes] = useState("");
   const [phase, setPhase] = useState("Fondation");
   const [room, setRoom] = useState("");
@@ -52,11 +50,12 @@ export default function SiteVisitCreation() {
 
   // Filter phases based on input
   const filteredPhases = phaseInput
-    ? allPhases.filter(p => p.toLowerCase().includes(phaseInput.toLowerCase()))
+    ? allPhases.filter((p) => p.toLowerCase().includes(phaseInput.toLowerCase()))
     : allPhases;
 
   // Check if input is a new phase
-  const isNewPhase = phaseInput && !allPhases.some(p => p.toLowerCase() === phaseInput.toLowerCase());
+  const isNewPhase =
+    phaseInput && !allPhases.some((p) => p.toLowerCase() === phaseInput.toLowerCase());
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -105,23 +104,23 @@ export default function SiteVisitCreation() {
       // Vérifier que l'utilisateur est connecté
       if (!user?.id) {
         alert("Session expirée. Veuillez vous reconnecter.");
-        navigate('/');
+        navigate("/");
         return;
       }
 
       // Create the site visit
       const newVisit = await createSiteVisit({
         user_id: user.id,
-        project_id: id || '',
+        project_id: id || "",
         visit_date: visitDate,
         phase: phase,
         notes: notes,
         weather: weather,
         temperature: temperature,
       });
-      
-      console.log('✅ Site visit created successfully', newVisit.id);
-      
+
+      console.log("✅ Site visit created successfully", newVisit.id);
+
       navigate(`/app/projects/${id}`);
     } catch (error) {
       console.error("Error creating site visit:", error);
@@ -150,9 +149,7 @@ export default function SiteVisitCreation() {
         <div className="space-y-5">
           {/* Visit Date */}
           <div>
-            <label className="block text-sm text-[#1A1A1A] mb-2">
-              Date de visite
-            </label>
+            <label className="block text-sm text-[#1A1A1A] mb-2">Date de visite</label>
             <div className="relative">
               <input
                 type="date"
@@ -241,9 +238,7 @@ export default function SiteVisitCreation() {
 
           {/* Room/Area */}
           <div>
-            <label className="block text-sm text-[#1A1A1A] mb-2">
-              Pièce / Zone
-            </label>
+            <label className="block text-sm text-[#1A1A1A] mb-2">Pièce / Zone</label>
             <input
               type="text"
               value={room}

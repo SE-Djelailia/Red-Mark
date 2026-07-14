@@ -13,7 +13,9 @@ export default function PhotoUploadPage() {
 
   const [photosToUpload, setPhotosToUpload] = useState<File[]>([]);
   const [photoTags, setPhotoTags] = useState<{ [key: string]: string[] }>({});
-  const [photoLocations, setPhotoLocations] = useState<{ [key: string]: { floor?: string; room?: string; lat?: number; lng?: number } }>({});
+  const [photoLocations, setPhotoLocations] = useState<{
+    [key: string]: { floor?: string; room?: string; lat?: number; lng?: number };
+  }>({});
   const [selectedPhotoIndices, setSelectedPhotoIndices] = useState<number[]>([]);
   const [currentTag, setCurrentTag] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -37,7 +39,7 @@ export default function PhotoUploadPage() {
       () => {
         // GPS denied or unavailable — silent, manual location still works
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000 },
     );
   }, []);
 
@@ -90,29 +92,29 @@ export default function PhotoUploadPage() {
     setPhotoTags(newPhotoTags);
     setPhotoLocations(newPhotoLocations);
     setSelectedPhotoIndices(
-      selectedPhotoIndices.filter(i => i !== index).map(i => i > index ? i - 1 : i)
+      selectedPhotoIndices.filter((i) => i !== index).map((i) => (i > index ? i - 1 : i)),
     );
   };
 
   const handleAddTag = (tag: string) => {
     if (!tag.trim()) return;
-    
+
     const newPhotoTags = { ...photoTags };
-    selectedPhotoIndices.forEach(photoIndex => {
+    selectedPhotoIndices.forEach((photoIndex) => {
       const existingTags = newPhotoTags[photoIndex.toString()] || [];
       if (!existingTags.includes(tag.trim())) {
         newPhotoTags[photoIndex.toString()] = [...existingTags, tag.trim()];
       }
     });
     setPhotoTags(newPhotoTags);
-    setCurrentTag('');
+    setCurrentTag("");
   };
 
   const handleRemoveTag = (tag: string) => {
     const newPhotoTags = { ...photoTags };
-    selectedPhotoIndices.forEach(photoIndex => {
+    selectedPhotoIndices.forEach((photoIndex) => {
       const existingTags = newPhotoTags[photoIndex.toString()] || [];
-      newPhotoTags[photoIndex.toString()] = existingTags.filter(t => t !== tag);
+      newPhotoTags[photoIndex.toString()] = existingTags.filter((t) => t !== tag);
     });
     setPhotoTags(newPhotoTags);
   };
@@ -124,7 +126,7 @@ export default function PhotoUploadPage() {
     }
 
     const newPhotoLocations = { ...photoLocations };
-    selectedPhotoIndices.forEach(photoIndex => {
+    selectedPhotoIndices.forEach((photoIndex) => {
       newPhotoLocations[photoIndex.toString()] = {
         floor: tempLevel || undefined,
         room: tempRoom || undefined,
@@ -140,7 +142,7 @@ export default function PhotoUploadPage() {
 
   const handleRemoveLocation = () => {
     const newPhotoLocations = { ...photoLocations };
-    selectedPhotoIndices.forEach(photoIndex => {
+    selectedPhotoIndices.forEach((photoIndex) => {
       newPhotoLocations[photoIndex.toString()] = {};
     });
     setPhotoLocations(newPhotoLocations);
@@ -148,17 +150,21 @@ export default function PhotoUploadPage() {
   };
 
   const handleSubmit = async () => {
-    console.log('🚀 handleSubmit called', { visitId, projectId, photoCount: photosToUpload.length });
+    console.log("🚀 handleSubmit called", {
+      visitId,
+      projectId,
+      photoCount: photosToUpload.length,
+    });
 
     if (!visitId || !projectId) {
-      console.error('❌ Missing IDs:', { visitId, projectId });
+      console.error("❌ Missing IDs:", { visitId, projectId });
       toast.error("Erreur : ID de projet ou visite manquant");
       return;
     }
 
     if (!user?.id) {
       toast.error("Session expirée. Veuillez vous reconnecter.");
-      navigate('/');
+      navigate("/");
       return;
     }
 
@@ -177,30 +183,31 @@ export default function PhotoUploadPage() {
 
         // Build location object — include GPS if available
         const hasManualLocation = location?.floor || location?.room;
-        const locationObj = (hasManualLocation || gpsCoords) ? {
-          floor: location?.floor,
-          room: location?.room,
-          ...(gpsCoords ?? {}),
-        } : undefined;
+        const locationObj =
+          hasManualLocation || gpsCoords
+            ? {
+                floor: location?.floor,
+                room: location?.room,
+                ...(gpsCoords ?? {}),
+              }
+            : undefined;
 
-        console.log(`📤 Uploading photo ${i + 1}/${photosToUpload.length}:`, file.name, locationObj);
+        console.log(
+          `📤 Uploading photo ${i + 1}/${photosToUpload.length}:`,
+          file.name,
+          locationObj,
+        );
 
         // Compress image before upload to reduce storage and bandwidth
         const compressedFile = await compressImage(file);
 
-        await uploadPhoto(
-          compressedFile,
-          user.id,
-          projectId,
-          visitId,
-          {
-            tags: tags,
-            location: locationObj,
-          }
-        );
+        await uploadPhoto(compressedFile, user.id, projectId, visitId, {
+          tags: tags,
+          location: locationObj,
+        });
       }
-      
-      console.log('✅ All photos uploaded successfully');
+
+      console.log("✅ All photos uploaded successfully");
       toast.success(`${photosToUpload.length} photo(s) ajoutée(s) avec succès!`);
       navigate(`/app/projects/${projectId}/visits/${visitId}`);
     } catch (error) {
@@ -213,9 +220,9 @@ export default function PhotoUploadPage() {
 
   const getSelectedPhotosTags = () => {
     const allTags = new Set<string>();
-    selectedPhotoIndices.forEach(photoIndex => {
+    selectedPhotoIndices.forEach((photoIndex) => {
       const tags = photoTags[photoIndex.toString()] || [];
-      tags.forEach(tag => allTags.add(tag));
+      tags.forEach((tag) => allTags.add(tag));
     });
     return Array.from(allTags);
   };
@@ -253,9 +260,7 @@ export default function PhotoUploadPage() {
                 <Camera size={40} className="text-gray-600" />
               </div>
               <div className="text-center">
-                <p className="text-base text-[#1A1A1A] font-medium mb-2">
-                  Téléverser des photos
-                </p>
+                <p className="text-base text-[#1A1A1A] font-medium mb-2">Téléverser des photos</p>
                 <p className="text-sm text-gray-500">
                   Sélectionnez jusqu'à 20 photos de votre chantier
                 </p>
@@ -264,9 +269,9 @@ export default function PhotoUploadPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*';
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = "image/*";
                     input.multiple = true;
                     input.onchange = (e: any) => handleFileSelect(e.target.files);
                     input.click();
@@ -279,11 +284,11 @@ export default function PhotoUploadPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*';
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = "image/*";
                     input.multiple = true;
-                    input.setAttribute('capture', 'environment');
+                    input.setAttribute("capture", "environment");
                     input.onchange = (e: any) => handleFileSelect(e.target.files);
                     input.click();
                   }}
@@ -300,14 +305,16 @@ export default function PhotoUploadPage() {
             {/* Photo Count and Add More */}
             <div className="bg-white rounded-xl p-4 flex items-center justify-between">
               <h3 className="text-base font-semibold text-[#1A1A1A]">
-                {photosToUpload.length} photo{photosToUpload.length !== 1 ? 's' : ''} • {selectedPhotoIndices.length} sélectionnée{selectedPhotoIndices.length !== 1 ? 's' : ''}
+                {photosToUpload.length} photo{photosToUpload.length !== 1 ? "s" : ""} •{" "}
+                {selectedPhotoIndices.length} sélectionnée
+                {selectedPhotoIndices.length !== 1 ? "s" : ""}
               </h3>
               <button
                 type="button"
                 onClick={() => {
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = 'image/*';
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.accept = "image/*";
                   input.multiple = true;
                   input.onchange = (e: any) => handleAddMorePhotos(e.target.files);
                   input.click();
@@ -320,7 +327,6 @@ export default function PhotoUploadPage() {
               </button>
             </div>
 
-
             {/* Photo Grid */}
             <div className="bg-white rounded-xl p-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -332,13 +338,15 @@ export default function PhotoUploadPage() {
                       key={index}
                       onClick={() => {
                         if (isSelected) {
-                          setSelectedPhotoIndices(selectedPhotoIndices.filter(i => i !== index));
+                          setSelectedPhotoIndices(selectedPhotoIndices.filter((i) => i !== index));
                         } else {
                           setSelectedPhotoIndices([...selectedPhotoIndices, index]);
                         }
                       }}
                       className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all group ${
-                        isSelected ? 'border-[#E10600] ring-2 ring-[#E10600]/30' : 'border-gray-200 hover:border-gray-300 active:border-gray-400'
+                        isSelected
+                          ? "border-[#E10600] ring-2 ring-[#E10600]/30"
+                          : "border-gray-200 hover:border-gray-300 active:border-gray-400"
                       }`}
                     >
                       <img
@@ -346,14 +354,16 @@ export default function PhotoUploadPage() {
                         alt={`Photo ${index + 1}`}
                         className="w-full h-full object-cover"
                       />
-                      
+
                       {/* Selection Indicator */}
-                      <div className={`absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
-                        isSelected ? 'bg-[#E10600] border-[#E10600]' : 'bg-white/90 border-gray-300'
-                      }`}>
-                        {isSelected && (
-                          <Check size={18} className="text-white" strokeWidth={3} />
-                        )}
+                      <div
+                        className={`absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
+                          isSelected
+                            ? "bg-[#E10600] border-[#E10600]"
+                            : "bg-white/90 border-gray-300"
+                        }`}
+                      >
+                        {isSelected && <Check size={18} className="text-white" strokeWidth={3} />}
                       </div>
 
                       {/* Remove button */}
@@ -397,7 +407,10 @@ export default function PhotoUploadPage() {
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
                           <div className="flex gap-1 flex-wrap">
                             {tags.slice(0, 2).map((tag, tagIndex) => (
-                              <span key={tagIndex} className="px-1.5 py-0.5 bg-white/90 text-[#1A1A1A] rounded text-xs font-medium">
+                              <span
+                                key={tagIndex}
+                                className="px-1.5 py-0.5 bg-white/90 text-[#1A1A1A] rounded text-xs font-medium"
+                              >
                                 {tag}
                               </span>
                             ))}
@@ -438,7 +451,9 @@ export default function PhotoUploadPage() {
               <div className="bg-white rounded-xl p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-4">
                   <label className="block text-base font-semibold text-[#1A1A1A]">
-                    {selectedPhotoIndices.length} photo{selectedPhotoIndices.length !== 1 ? 's' : ''} sélectionnée{selectedPhotoIndices.length !== 1 ? 's' : ''}
+                    {selectedPhotoIndices.length} photo
+                    {selectedPhotoIndices.length !== 1 ? "s" : ""} sélectionnée
+                    {selectedPhotoIndices.length !== 1 ? "s" : ""}
                   </label>
                   <div className="flex gap-2">
                     <button
@@ -461,7 +476,7 @@ export default function PhotoUploadPage() {
                     value={currentTag}
                     onChange={(e) => setCurrentTag(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         e.preventDefault();
                         handleAddTag(currentTag);
                       }
@@ -484,16 +499,18 @@ export default function PhotoUploadPage() {
                 <div className="mb-4">
                   <p className="text-sm text-gray-600 mb-2 font-medium">Tags rapides :</p>
                   <div className="flex gap-2 flex-wrap">
-                    {['Fissure', 'Défaut', 'Conforme', 'À corriger', 'Urgent', 'Non-conforme'].map((tag) => (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => handleAddTag(tag)}
-                        className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-[#E10600] active:bg-gray-100 transition-colors text-sm font-medium min-h-[44px]"
-                      >
-                        + {tag}
-                      </button>
-                    ))}
+                    {["Fissure", "Défaut", "Conforme", "À corriger", "Urgent", "Non-conforme"].map(
+                      (tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => handleAddTag(tag)}
+                          className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-[#E10600] active:bg-gray-100 transition-colors text-sm font-medium min-h-[44px]"
+                        >
+                          + {tag}
+                        </button>
+                      ),
+                    )}
                   </div>
                 </div>
 
@@ -573,9 +590,7 @@ export default function PhotoUploadPage() {
             <div className="p-5 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MapPin size={20} className="text-[#E10600]" />
-                <h2 className="text-lg font-semibold text-[#1A1A1A]">
-                  Assigner une localisation
-                </h2>
+                <h2 className="text-lg font-semibold text-[#1A1A1A]">Assigner une localisation</h2>
               </div>
               <button
                 onClick={() => setShowLocationModal(false)}
@@ -589,7 +604,11 @@ export default function PhotoUploadPage() {
             <div className="p-5">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                 <p className="text-sm text-blue-800">
-                  <strong>{selectedPhotoIndices.length} photo{selectedPhotoIndices.length > 1 ? 's' : ''} sélectionnée{selectedPhotoIndices.length > 1 ? 's' : ''}</strong><br />
+                  <strong>
+                    {selectedPhotoIndices.length} photo{selectedPhotoIndices.length > 1 ? "s" : ""}{" "}
+                    sélectionnée{selectedPhotoIndices.length > 1 ? "s" : ""}
+                  </strong>
+                  <br />
                   La localisation sera appliquée à toutes les photos sélectionnées.
                 </p>
               </div>

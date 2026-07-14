@@ -38,10 +38,12 @@ git push -u origin main
 **Split files into 2 uploads:**
 
 **Step 1**: Upload Batch 1 (~40 files)
+
 - Core files: package.json, vite.config.ts, etc.
 - Guide: [UPLOAD-BATCH-1.md](./UPLOAD-BATCH-1.md)
 
-**Step 2**: Upload Batch 2 (~50 files)  
+**Step 2**: Upload Batch 2 (~50 files)
+
 - UI components and extras
 - Guide: [UPLOAD-BATCH-2.md](./UPLOAD-BATCH-2.md)
 
@@ -81,11 +83,13 @@ git push -u origin main
 ## ⚡ Quick Start (Right Now!)
 
 ### For Git Method:
+
 1. Open Terminal/Command Prompt
 2. Navigate to your redmark-app folder
 3. Follow [GIT-COMMAND-GUIDE.md](./GIT-COMMAND-GUIDE.md)
 
 ### For Web Method:
+
 1. Open [UPLOAD-BATCH-1.md](./UPLOAD-BATCH-1.md)
 2. Upload the files listed
 3. Then open [UPLOAD-BATCH-2.md](./UPLOAD-BATCH-2.md)

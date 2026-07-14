@@ -81,10 +81,7 @@ export async function deleteFloorPlan(id: string): Promise<void> {
   await jsonReq(`/floor-plans/${id}`, { method: "DELETE" });
 }
 
-export async function getFloorPlanSignedUrl(
-  bucket: string,
-  path: string,
-): Promise<string> {
+export async function getFloorPlanSignedUrl(bucket: string, path: string): Promise<string> {
   const data = await jsonReq<{ signedUrl: string }>(`/storage/signed-url`, {
     method: "POST",
     body: JSON.stringify({ bucket, path, expiresIn: 86400 }),

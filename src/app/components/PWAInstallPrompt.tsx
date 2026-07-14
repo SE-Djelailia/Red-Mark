@@ -15,16 +15,16 @@ export default function PWAInstallPrompt() {
     isStandalone: false,
     hasServiceWorker: false,
     canInstall: false,
-    userAgent: ""
+    userAgent: "",
   });
 
   useEffect(() => {
     // Gather debug info
     const info = {
       isStandalone: window.matchMedia("(display-mode: standalone)").matches,
-      hasServiceWorker: 'serviceWorker' in navigator,
+      hasServiceWorker: "serviceWorker" in navigator,
       canInstall: false,
-      userAgent: navigator.userAgent
+      userAgent: navigator.userAgent,
     };
     setDebugInfo(info);
 
@@ -41,12 +41,14 @@ export default function PWAInstallPrompt() {
       const dismissedDate = new Date(dismissed);
       const now = new Date();
       const daysSinceDismissed = Math.floor(
-        (now.getTime() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24)
+        (now.getTime() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       // Show again after 7 days
       if (daysSinceDismissed < 7) {
-        console.log(`ℹ️ PWA install prompt dismissed ${daysSinceDismissed} days ago, will show again in ${7 - daysSinceDismissed} days`);
+        console.log(
+          `ℹ️ PWA install prompt dismissed ${daysSinceDismissed} days ago, will show again in ${7 - daysSinceDismissed} days`,
+        );
         return;
       }
     }
@@ -55,8 +57,8 @@ export default function PWAInstallPrompt() {
       e.preventDefault();
       console.log("✅ beforeinstallprompt event fired - PWA is installable!");
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setDebugInfo(prev => ({ ...prev, canInstall: true }));
-      
+      setDebugInfo((prev) => ({ ...prev, canInstall: true }));
+
       // Show prompt after 5 seconds (reduced from 30 for testing)
       setTimeout(() => {
         setShowPrompt(true);
@@ -80,7 +82,7 @@ export default function PWAInstallPrompt() {
       console.log("beforeinstallprompt fired:", deferredPrompt !== null);
       console.log("User Agent:", info.userAgent);
       console.log("=====================");
-      
+
       // If not installable after 3 seconds, show debug mode
       if (!deferredPrompt && !info.isStandalone) {
         console.log("⚠️ PWA install prompt not available. This might be because:");
@@ -173,7 +175,9 @@ export default function PWAInstallPrompt() {
                 ) : (
                   <X size={16} className="text-red-500" />
                 )}
-                <span>Service Worker: {debugInfo.hasServiceWorker ? "Supported" : "Not Supported"}</span>
+                <span>
+                  Service Worker: {debugInfo.hasServiceWorker ? "Supported" : "Not Supported"}
+                </span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -187,11 +191,9 @@ export default function PWAInstallPrompt() {
 
               <div className="mt-3 pt-3 border-t border-gray-700">
                 <p className="text-xs text-gray-400">
-                  {deferredPrompt ? (
-                    "✅ PWA is installable! Prompt will appear in a few seconds."
-                  ) : (
-                    "⚠️ PWA install not available in this environment. Deploy to HTTPS domain to enable installation."
-                  )}
+                  {deferredPrompt
+                    ? "✅ PWA is installable! Prompt will appear in a few seconds."
+                    : "⚠️ PWA install not available in this environment. Deploy to HTTPS domain to enable installation."}
                 </p>
               </div>
             </div>

@@ -84,9 +84,7 @@ export default function IssueCreation({
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Issue["priority"]>("medium");
   const [assignedTo, setAssignedTo] = useState("Pierre Lafontaine");
-  const [assignedToEmail, setAssignedToEmail] = useState(
-    "p.lafontaine@pomerleau.ca"
-  );
+  const [assignedToEmail, setAssignedToEmail] = useState("p.lafontaine@pomerleau.ca");
   const [dueDate, setDueDate] = useState(getTodayForInput());
   const [selectedTags, setSelectedTags] = useState<string[]>(defaultTags);
   const [trade, setTrade] = useState<string>("Architecture");
@@ -128,7 +126,7 @@ export default function IssueCreation({
 
   const handleToggleTag = (tag: string) => {
     setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   };
 
@@ -163,15 +161,9 @@ export default function IssueCreation({
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 z-50 overflow-y-auto"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={onClose}>
       <div className="min-h-screen px-4 flex items-center justify-center py-8">
-        <div
-          className="bg-white rounded-xl max-w-2xl w-full"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="bg-white rounded-xl max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
           {/* Header - Sticky */}
           <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
             <h2 className="text-xl text-[#1A1A1A] font-medium">Créer une déficience</h2>
@@ -188,11 +180,7 @@ export default function IssueCreation({
             {/* Photo Preview */}
             {photoUrl && (
               <div className="rounded-lg overflow-hidden border border-gray-200">
-                <img
-                  src={photoUrl}
-                  alt="Photo de référence"
-                  className="w-full h-48 object-cover"
-                />
+                <img src={photoUrl} alt="Photo de référence" className="w-full h-48 object-cover" />
               </div>
             )}
 
@@ -220,9 +208,7 @@ export default function IssueCreation({
 
             {/* Title */}
             <div>
-              <label className="block text-sm text-[#1A1A1A] mb-2">
-                Titre de la déficience *
-              </label>
+              <label className="block text-sm text-[#1A1A1A] mb-2">Titre de la déficience *</label>
               <input
                 type="text"
                 value={title}
@@ -235,9 +221,7 @@ export default function IssueCreation({
 
             {/* Description */}
             <div>
-              <label className="block text-sm text-[#1A1A1A] mb-2">
-                Description détaillée *
-              </label>
+              <label className="block text-sm text-[#1A1A1A] mb-2">Description détaillée *</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -250,9 +234,7 @@ export default function IssueCreation({
 
             {/* Priority */}
             <div>
-              <label className="block text-sm text-[#1A1A1A] mb-2">
-                Priorité *
-              </label>
+              <label className="block text-sm text-[#1A1A1A] mb-2">Priorité *</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {(["low", "medium", "high", "critical"] as const).map((p) => (
                   <button
@@ -276,9 +258,7 @@ export default function IssueCreation({
 
             {/* Trade / Discipline */}
             <div>
-              <label className="block text-sm text-[#1A1A1A] mb-2">
-                Discipline *
-              </label>
+              <label className="block text-sm text-[#1A1A1A] mb-2">Discipline *</label>
               <select
                 value={trade}
                 onChange={(e) => setTrade(e.target.value)}
@@ -295,16 +275,16 @@ export default function IssueCreation({
 
             {/* Severity */}
             <div>
-              <label className="block text-sm text-[#1A1A1A] mb-2">
-                Sévérité *
-              </label>
+              <label className="block text-sm text-[#1A1A1A] mb-2">Sévérité *</label>
               <div className="grid grid-cols-4 gap-2">
-                {([
-                  { v: "minor", l: "Mineure" },
-                  { v: "moderate", l: "Modérée" },
-                  { v: "major", l: "Majeure" },
-                  { v: "critical", l: "Critique" },
-                ] as const).map((opt) => (
+                {(
+                  [
+                    { v: "minor", l: "Mineure" },
+                    { v: "moderate", l: "Modérée" },
+                    { v: "major", l: "Majeure" },
+                    { v: "critical", l: "Critique" },
+                  ] as const
+                ).map((opt) => (
                   <button
                     key={opt.v}
                     type="button"
@@ -323,9 +303,7 @@ export default function IssueCreation({
 
             {/* Assigned To */}
             <div>
-              <label className="block text-sm text-[#1A1A1A] mb-2">
-                Assigner à *
-              </label>
+              <label className="block text-sm text-[#1A1A1A] mb-2">Assigner à *</label>
               <select
                 value={assignedTo}
                 onChange={(e) => {
@@ -346,9 +324,7 @@ export default function IssueCreation({
 
             {/* Due Date */}
             <div>
-              <label className="block text-sm text-[#1A1A1A] mb-2">
-                Date d'échéance *
-              </label>
+              <label className="block text-sm text-[#1A1A1A] mb-2">Date d'échéance *</label>
               <input
                 type="date"
                 value={dueDate}
@@ -361,9 +337,7 @@ export default function IssueCreation({
 
             {/* Tags */}
             <div>
-              <label className="block text-sm text-[#1A1A1A] mb-2">
-                Catégories
-              </label>
+              <label className="block text-sm text-[#1A1A1A] mb-2">Catégories</label>
               <div className="flex flex-wrap gap-2">
                 {availableTags.map((tag) => (
                   <button

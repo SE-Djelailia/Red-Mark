@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { MessageSquare, Send, Reply, AtSign, X, Edit2, Trash2 } from "lucide-react";
-import { getCommentsForVisit, addVisitComment, updateComment, deleteComment, type Comment } from "../../lib/commentsApi";
+import {
+  getCommentsForVisit,
+  addVisitComment,
+  updateComment,
+  deleteComment,
+  type Comment,
+} from "../../lib/commentsApi";
 import { getMembersByProject, type ProjectMember } from "../../lib/projectMembersApi";
 import { useAuth } from "../../contexts/useAuth";
 
@@ -42,13 +48,13 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
 
     // Extract mentions from text (e.g., @Marie-Claude Bouchard)
     const mentionPattern = /@([\w\s-]+)/g;
-    const mentionedNames = [...newCommentText.matchAll(mentionPattern)].map(m => m[1]);
+    const mentionedNames = [...newCommentText.matchAll(mentionPattern)].map((m) => m[1]);
     const mentions = teamMembers
-      .filter(member => mentionedNames.some(name => member.name.includes(name)))
-      .map(member => member.id);
+      .filter((member) => mentionedNames.some((name) => member.name.includes(name)))
+      .map((member) => member.id);
 
     // Get author name from user metadata or email
-    const authorName = user.user_metadata?.name || user.email?.split('@')[0] || 'Utilisateur';
+    const authorName = user.user_metadata?.name || user.email?.split("@")[0] || "Utilisateur";
 
     const newComment = addVisitComment(
       visitId,
@@ -56,7 +62,7 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
       authorName,
       user.id,
       replyingTo || undefined,
-      mentions.length > 0 ? mentions : undefined
+      mentions.length > 0 ? mentions : undefined,
     );
 
     setComments([...comments, newComment]);
@@ -105,7 +111,7 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
 
     const updatedComment = updateComment(editingCommentId, editingCommentText);
     if (updatedComment) {
-      setComments(comments.map(c => c.id === editingCommentId ? updatedComment : c));
+      setComments(comments.map((c) => (c.id === editingCommentId ? updatedComment : c)));
       setEditingCommentId(null);
       setEditingCommentText("");
     }
@@ -120,19 +126,18 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
     if (window.confirm("Supprimer ce commentaire ?")) {
       const success = deleteComment(commentId);
       if (success) {
-        setComments(comments.filter(c => c.id !== commentId));
+        setComments(comments.filter((c) => c.id !== commentId));
       }
     }
   };
 
-  const filteredTeamMembers = teamMembers.filter(member =>
-    member.name.toLowerCase().includes(mentionSearchQuery.toLowerCase())
+  const filteredTeamMembers = teamMembers.filter((member) =>
+    member.name.toLowerCase().includes(mentionSearchQuery.toLowerCase()),
   );
 
   // Organize comments into threads
-  const topLevelComments = comments.filter(c => !c.parentCommentId);
-  const getReplies = (commentId: string) => 
-    comments.filter(c => c.parentCommentId === commentId);
+  const topLevelComments = comments.filter((c) => !c.parentCommentId);
+  const getReplies = (commentId: string) => comments.filter((c) => c.parentCommentId === commentId);
 
   const CommentCard = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => {
     const replies = getReplies(comment.id);
@@ -140,16 +145,23 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
     const isEditing = editingCommentId === comment.id;
 
     return (
-      <div className={`${isReply ? 'ml-12 mt-3' : 'mb-4'}`}>
+      <div className={`${isReply ? "ml-12 mt-3" : "mb-4"}`}>
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-full bg-[#E10600] text-white flex items-center justify-center text-xs font-medium flex-shrink-0">
-              {comment.author ? comment.author.split(' ').map(n => n[0]).join('') : '?'}
+              {comment.author
+                ? comment.author
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                : "?"}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-[#1A1A1A]">{comment.author || 'Anonyme'}</span>
+                  <span className="text-sm font-medium text-[#1A1A1A]">
+                    {comment.author || "Anonyme"}
+                  </span>
                   <span className="text-xs text-gray-500">
                     {(() => {
                       const date = new Date(comment.date);
@@ -164,14 +176,18 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
                       if (diffHours < 24) return `Il y a ${diffHours}h`;
                       if (diffDays < 7) return `Il y a ${diffDays}j`;
 
-                      return date.toLocaleDateString('fr-CA', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-                      }) + ' à ' + date.toLocaleTimeString('fr-CA', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      });
+                      return (
+                        date.toLocaleDateString("fr-CA", {
+                          month: "short",
+                          day: "numeric",
+                          year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+                        }) +
+                        " à " +
+                        date.toLocaleTimeString("fr-CA", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      );
                     })()}
                   </span>
                 </div>
@@ -240,7 +256,7 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
         {/* Nested replies */}
         {replies.length > 0 && (
           <div className="mt-3 space-y-3">
-            {replies.map(reply => (
+            {replies.map((reply) => (
               <CommentCard key={reply.id} comment={reply} isReply={true} />
             ))}
           </div>
@@ -260,9 +276,7 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
             <p className="text-gray-400 text-xs mt-1">Soyez le premier à commenter!</p>
           </div>
         ) : (
-          topLevelComments.map(comment => (
-            <CommentCard key={comment.id} comment={comment} />
-          ))
+          topLevelComments.map((comment) => <CommentCard key={comment.id} comment={comment} />)
         )}
       </div>
 
@@ -271,9 +285,7 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
         {replyingTo && (
           <div className="flex items-center gap-2 mb-2 text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded">
             <Reply size={14} />
-            <span>
-              Répondre à {comments.find(c => c.id === replyingTo)?.author}
-            </span>
+            <span>Répondre à {comments.find((c) => c.id === replyingTo)?.author}</span>
             <button
               onClick={() => setReplyingTo(null)}
               className="ml-auto text-gray-500 hover:text-[#E10600]"
@@ -295,14 +307,17 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
           {/* Mention Suggestions */}
           {showMentionSuggestions && filteredTeamMembers.length > 0 && (
             <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-10">
-              {filteredTeamMembers.map(member => (
+              {filteredTeamMembers.map((member) => (
                 <button
                   key={member.id}
                   onClick={() => handleMention(member.name)}
                   className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors flex items-center gap-2"
                 >
                   <div className="w-6 h-6 rounded-full bg-[#E10600] text-white flex items-center justify-center text-xs font-medium">
-                    {member.name.split(' ').map(n => n[0]).join('')}
+                    {member.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-[#1A1A1A]">{member.name}</div>

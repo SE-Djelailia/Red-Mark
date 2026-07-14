@@ -48,10 +48,8 @@ function describeError(e: any): string {
     return "Accès au microphone refusé. Autorisez l'accès dans les paramètres du navigateur.";
   if (name === "NotFoundError" || name === "OverconstrainedError")
     return "Aucun microphone détecté sur cet appareil.";
-  if (name === "NotReadableError")
-    return "Le microphone est utilisé par une autre application.";
-  if (name === "AbortError")
-    return "L'accès au microphone a été interrompu. Réessayez.";
+  if (name === "NotReadableError") return "Le microphone est utilisé par une autre application.";
+  if (name === "AbortError") return "L'accès au microphone a été interrompu. Réessayez.";
   return "Microphone indisponible : " + (e?.message || name || "erreur inconnue");
 }
 
@@ -87,27 +85,19 @@ export default function VoiceNotesSection({ visitId }: Props) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!window.isSecureContext) {
-      setCapabilityError(
-        "L'enregistrement audio nécessite HTTPS (ou localhost).",
-      );
+      setCapabilityError("L'enregistrement audio nécessite HTTPS (ou localhost).");
       return;
     }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setCapabilityError(
-        "Ce navigateur ne prend pas en charge l'enregistrement audio.",
-      );
+      setCapabilityError("Ce navigateur ne prend pas en charge l'enregistrement audio.");
       return;
     }
     if (typeof MediaRecorder === "undefined") {
-      setCapabilityError(
-        "MediaRecorder n'est pas disponible sur ce navigateur.",
-      );
+      setCapabilityError("MediaRecorder n'est pas disponible sur ce navigateur.");
       return;
     }
     if (!pickMime()) {
-      setCapabilityError(
-        "Aucun format audio compatible n'est supporté par ce navigateur.",
-      );
+      setCapabilityError("Aucun format audio compatible n'est supporté par ce navigateur.");
     }
   }, []);
 
@@ -238,9 +228,7 @@ export default function VoiceNotesSection({ visitId }: Props) {
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-sm font-medium text-[#1A1A1A]">Notes vocales</h3>
-          <p className="text-xs text-gray-500">
-            Transcription automatique à venir
-          </p>
+          <p className="text-xs text-gray-500">Transcription automatique à venir</p>
         </div>
         {!recording ? (
           <button
@@ -283,10 +271,7 @@ export default function VoiceNotesSection({ visitId }: Props) {
       ) : (
         <ul className="space-y-2">
           {notes.map((note) => (
-            <li
-              key={note.id}
-              className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg"
-            >
+            <li key={note.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
               <button
                 onClick={() => togglePlay(note)}
                 className="w-11 h-11 rounded-full bg-[#E10600] text-white flex items-center justify-center min-h-[44px]"
@@ -296,13 +281,10 @@ export default function VoiceNotesSection({ visitId }: Props) {
               </button>
               <div className="flex-1 min-w-0">
                 <div className="text-sm text-[#1A1A1A]">
-                  {fmt(note.duration_seconds)} ·{" "}
-                  {new Date(note.created_at).toLocaleString("fr-CA")}
+                  {fmt(note.duration_seconds)} · {new Date(note.created_at).toLocaleString("fr-CA")}
                 </div>
                 <div className="text-xs text-gray-500 truncate">
-                  {note.transcription
-                    ? note.transcription
-                    : "Transcription en attente"}
+                  {note.transcription ? note.transcription : "Transcription en attente"}
                 </div>
               </div>
               <audio

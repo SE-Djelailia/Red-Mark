@@ -9,6 +9,7 @@ Quick reference for all deployment and development commands.
 If you want to run RedMark locally before deploying:
 
 ### Prerequisites
+
 ```bash
 # Check if Node.js is installed
 node --version
@@ -20,6 +21,7 @@ npm --version
 ```
 
 ### Install Dependencies
+
 ```bash
 # Navigate to project folder
 cd redmark-app
@@ -29,6 +31,7 @@ npm install
 ```
 
 ### Run Development Server
+
 ```bash
 # Start dev server
 npm run dev
@@ -38,6 +41,7 @@ npm run dev
 ```
 
 ### Build for Production
+
 ```bash
 # Create production build
 npm run build
@@ -46,6 +50,7 @@ npm run build
 ```
 
 ### Preview Production Build
+
 ```bash
 # Preview built app locally
 npm run preview
@@ -58,6 +63,7 @@ npm run preview
 ## 📤 Git Commands (For GitHub)
 
 ### First Time Setup
+
 ```bash
 # Initialize git repository
 git init
@@ -78,6 +84,7 @@ git push -u origin main
 ```
 
 ### Update Existing Repository
+
 ```bash
 # Check status
 git status
@@ -101,16 +108,19 @@ git push
 You can use Vercel CLI instead of web interface:
 
 ### Install Vercel CLI
+
 ```bash
 npm install -g vercel
 ```
 
 ### Login to Vercel
+
 ```bash
 vercel login
 ```
 
 ### Deploy
+
 ```bash
 # First deployment
 vercel
@@ -120,11 +130,13 @@ vercel --prod
 ```
 
 ### Check Deployment Status
+
 ```bash
 vercel ls
 ```
 
 ### View Logs
+
 ```bash
 vercel logs YOUR_APP_URL
 ```
@@ -134,10 +146,10 @@ vercel logs YOUR_APP_URL
 ## 🔍 PWA Testing Commands
 
 ### Check Service Worker (Browser Console)
+
 ```javascript
 // Check if service worker is registered
-navigator.serviceWorker.getRegistrations()
-  .then(registrations => console.log(registrations));
+navigator.serviceWorker.getRegistrations().then((registrations) => console.log(registrations));
 
 // Check if offline-capable
 navigator.onLine; // true or false
@@ -147,18 +159,17 @@ navigator.serviceWorker.controller;
 ```
 
 ### Clear Cache (Browser Console)
+
 ```javascript
 // Clear all caches
-caches.keys()
-  .then(names => {
-    names.forEach(name => caches.delete(name));
-  });
+caches.keys().then((names) => {
+  names.forEach((name) => caches.delete(name));
+});
 
 // Unregister service worker
-navigator.serviceWorker.getRegistrations()
-  .then(registrations => {
-    registrations.forEach(registration => registration.unregister());
-  });
+navigator.serviceWorker.getRegistrations().then((registrations) => {
+  registrations.forEach((registration) => registration.unregister());
+});
 
 // Then hard refresh: Ctrl+Shift+R
 ```
@@ -168,6 +179,7 @@ navigator.serviceWorker.getRegistrations()
 ## 📊 Lighthouse Audit (Browser DevTools)
 
 ### Run Performance Audit
+
 ```bash
 # In Chrome DevTools:
 # 1. Press F12
@@ -177,6 +189,7 @@ navigator.serviceWorker.getRegistrations()
 ```
 
 ### Command Line Lighthouse
+
 ```bash
 # Install Lighthouse
 npm install -g lighthouse
@@ -193,6 +206,7 @@ lighthouse https://your-app.vercel.app --only-categories=pwa --view
 ## 🐛 Debugging Commands
 
 ### Check Build Locally
+
 ```bash
 # Build and check for errors
 npm run build
@@ -202,6 +216,7 @@ ls dist/
 ```
 
 ### Check Dependencies
+
 ```bash
 # List installed packages
 npm list --depth=0
@@ -214,6 +229,7 @@ npm audit
 ```
 
 ### Verify Configuration Files
+
 ```bash
 # Check if vercel.json exists
 cat vercel.json
@@ -230,6 +246,7 @@ npm pkg get name
 ## 🧹 Cleanup Commands
 
 ### Clear Node Modules
+
 ```bash
 # Remove node_modules folder
 rm -rf node_modules
@@ -242,6 +259,7 @@ npm install
 ```
 
 ### Clear Build Cache
+
 ```bash
 # Remove build outputs
 rm -rf dist
@@ -259,6 +277,7 @@ npm run build
 ## 📦 Package Management
 
 ### Add New Package
+
 ```bash
 # Install package
 npm install package-name
@@ -271,11 +290,13 @@ npm install -D package-name
 ```
 
 ### Remove Package
+
 ```bash
 npm uninstall package-name
 ```
 
 ### Update Package
+
 ```bash
 # Update specific package
 npm update package-name
@@ -289,6 +310,7 @@ npm update
 ## 🔐 Environment Variables (If Needed)
 
 ### Create .env File
+
 ```bash
 # Create environment file
 touch .env
@@ -298,12 +320,14 @@ echo "VITE_API_URL=https://api.example.com" >> .env
 ```
 
 ### Use in Code
+
 ```typescript
 // Access in Vite
 const apiUrl = import.meta.env.VITE_API_URL;
 ```
 
 ### Add to Vercel
+
 ```bash
 # Via Vercel dashboard:
 # Settings → Environment Variables → Add
@@ -319,6 +343,7 @@ vercel env add VITE_API_URL
 ### Test on Real Device
 
 #### iOS (Safari)
+
 ```bash
 # 1. Connect iPhone to Mac
 # 2. Enable Web Inspector:
@@ -328,6 +353,7 @@ vercel env add VITE_API_URL
 ```
 
 #### Android (Chrome)
+
 ```bash
 # 1. Enable USB Debugging on Android
 # 2. Connect to computer
@@ -341,6 +367,7 @@ vercel env add VITE_API_URL
 ## 🔄 Continuous Deployment
 
 ### Automatic Deploy on Git Push
+
 ```bash
 # After initial Vercel setup, every git push triggers deploy:
 
@@ -356,6 +383,7 @@ git push
 ```
 
 ### Preview Deployments
+
 ```bash
 # Create feature branch
 git checkout -b feature-name
@@ -374,6 +402,7 @@ git push origin feature-name
 ## 📊 Analytics Commands
 
 ### Vercel Analytics
+
 ```bash
 # Enable via dashboard:
 # Project → Analytics → Enable
@@ -387,6 +416,7 @@ vercel --prod --enable-analytics
 ## 🆘 Troubleshooting Commands
 
 ### Check if Port is in Use
+
 ```bash
 # Check port 5173 (Vite default)
 lsof -i :5173
@@ -396,6 +426,7 @@ kill -9 <PID>
 ```
 
 ### Check Node/npm Version
+
 ```bash
 node --version
 npm --version
@@ -405,11 +436,13 @@ npm install -g npm@latest
 ```
 
 ### Clear npm Cache
+
 ```bash
 npm cache clean --force
 ```
 
 ### Reset Everything
+
 ```bash
 # Nuclear option - start fresh
 rm -rf node_modules package-lock.json dist .vercel
@@ -438,6 +471,7 @@ alias clear-sw='rm -rf dist/.vite && npm run build'
 ## 🎯 Common Workflows
 
 ### Workflow 1: Make Changes & Deploy
+
 ```bash
 # 1. Make your changes in code
 # 2. Test locally
@@ -455,6 +489,7 @@ git push
 ```
 
 ### Workflow 2: Fix Bug
+
 ```bash
 # 1. Create bug fix branch
 git checkout -b fix-bug-name
@@ -481,6 +516,7 @@ git push
 ```
 
 ### Workflow 3: Emergency Rollback
+
 ```bash
 # Via Vercel dashboard:
 # 1. Go to Deployments
@@ -496,6 +532,7 @@ vercel rollback
 ## 📞 Getting Help
 
 ### Check Vercel Build Logs
+
 ```bash
 # Via dashboard:
 # Deployments → Click deployment → View logs
@@ -505,6 +542,7 @@ vercel logs
 ```
 
 ### Check Package Info
+
 ```bash
 # Get package details
 npm info package-name
@@ -517,20 +555,20 @@ npm list package-name
 
 ## ✅ Quick Reference Table
 
-| Task | Command |
-|------|---------|
-| **Install** | `npm install` |
-| **Dev Server** | `npm run dev` |
-| **Build** | `npm run build` |
-| **Preview** | `npm run preview` |
-| **Git Add** | `git add .` |
-| **Git Commit** | `git commit -m "message"` |
-| **Git Push** | `git push` |
-| **Deploy** | Push to GitHub → Auto-deploy |
-| **Check SW** | DevTools → Application → Service Workers |
-| **Clear Cache** | DevTools → Application → Clear storage |
-| **Hard Refresh** | `Ctrl + Shift + R` |
-| **Lighthouse** | DevTools → Lighthouse → Analyze |
+| Task             | Command                                  |
+| ---------------- | ---------------------------------------- |
+| **Install**      | `npm install`                            |
+| **Dev Server**   | `npm run dev`                            |
+| **Build**        | `npm run build`                          |
+| **Preview**      | `npm run preview`                        |
+| **Git Add**      | `git add .`                              |
+| **Git Commit**   | `git commit -m "message"`                |
+| **Git Push**     | `git push`                               |
+| **Deploy**       | Push to GitHub → Auto-deploy             |
+| **Check SW**     | DevTools → Application → Service Workers |
+| **Clear Cache**  | DevTools → Application → Clear storage   |
+| **Hard Refresh** | `Ctrl + Shift + R`                       |
+| **Lighthouse**   | DevTools → Lighthouse → Analyze          |
 
 ---
 

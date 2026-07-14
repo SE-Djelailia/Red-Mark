@@ -37,9 +37,7 @@ export default function ConfirmDialog({
         <div className="flex items-start gap-3 mb-4">
           <div
             className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-              destructive
-                ? "bg-red-100 text-[#E10600]"
-                : "bg-gray-100 text-[#1A1A1A]"
+              destructive ? "bg-red-100 text-[#E10600]" : "bg-gray-100 text-[#1A1A1A]"
             }`}
           >
             <AlertTriangle size={20} />
@@ -47,9 +45,7 @@ export default function ConfirmDialog({
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-medium text-[#1A1A1A]">{title}</h3>
             {description && (
-              <p className="text-sm text-gray-600 mt-1 leading-relaxed">
-                {description}
-              </p>
+              <p className="text-sm text-gray-600 mt-1 leading-relaxed">{description}</p>
             )}
           </div>
         </div>
@@ -63,9 +59,7 @@ export default function ConfirmDialog({
           <button
             onClick={onConfirm}
             className={`flex-1 py-3 rounded-lg font-medium min-h-[44px] text-white transition-colors ${
-              destructive
-                ? "bg-[#E10600] hover:bg-[#C00500]"
-                : "bg-[#1A1A1A] hover:bg-[#333]"
+              destructive ? "bg-[#E10600] hover:bg-[#C00500]" : "bg-[#1A1A1A] hover:bg-[#333]"
             }`}
           >
             {confirmLabel}

@@ -35,7 +35,7 @@ export default function RedMarkLogo({
           </defs>
           {/* Red gradient square background */}
           <rect width="100" height="100" fill="url(#redGradient)" rx="12" />
-          
+
           {/* White checkmark */}
           <path
             d="M25 50 L42 67 L75 30"
@@ -68,7 +68,7 @@ export default function RedMarkLogo({
           </defs>
           {/* Red gradient square background */}
           <rect width="100" height="100" fill="url(#redGradient)" rx="12" />
-          
+
           {/* White checkmark */}
           <path
             d="M25 50 L42 67 L75 30"
@@ -81,7 +81,8 @@ export default function RedMarkLogo({
         </svg>
       </div>
       <div className={`font-bold ${currentSize.text} leading-none`}>
-        <span style={{ color: '#E10600' }}>Red</span><span style={{ color: 'currentColor' }}>Mark</span>
+        <span style={{ color: "#E10600" }}>Red</span>
+        <span style={{ color: "currentColor" }}>Mark</span>
       </div>
     </div>
   );

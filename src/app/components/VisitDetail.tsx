@@ -15,9 +15,16 @@ import {
   Thermometer,
   AlertCircle,
   Check,
-  Pencil
-} from 'lucide-react';
-import { getSiteVisit, getProject, getPhotos, uploadPhoto, updateSiteVisit, deletePhoto } from "../../lib/supabaseApi";
+  Pencil,
+} from "lucide-react";
+import {
+  getSiteVisit,
+  getProject,
+  getPhotos,
+  uploadPhoto,
+  updateSiteVisit,
+  deletePhoto,
+} from "../../lib/supabaseApi";
 import { getIssuesByVisit, createIssue, updateIssue } from "../../lib/issuesApi";
 import type { SiteVisit } from "../../lib/supabase";
 import { supabase } from "../../lib/supabase";
@@ -118,17 +125,17 @@ export default function VisitDetail() {
           tags: [],
           photoCount: photos.length,
           notes: apiVisit.notes,
-          photos: photos.map(p => ({
+          photos: photos.map((p) => ({
             id: p.id,
-            url: p.file_url || '', // Deprecated, kept for backward compatibility
+            url: p.file_url || "", // Deprecated, kept for backward compatibility
             storage_path: p.storage_path,
             tags: p.tags || [],
-            location: p.location || undefined
+            location: p.location || undefined,
           })),
           weather: apiVisit.weather,
           temperature: apiVisit.temperature,
         };
-        
+
         setVisit(transformedVisit);
         setEditedNotes(transformedVisit.notes);
 
@@ -179,7 +186,7 @@ export default function VisitDetail() {
 
     if (!user?.id) {
       alert("Session expirée. Veuillez vous reconnecter.");
-      navigate('/');
+      navigate("/");
       return;
     }
 
@@ -191,42 +198,39 @@ export default function VisitDetail() {
         // Compress image before upload
         const compressedFile = await compressImage(file);
 
-        const uploadedPhoto = await uploadPhoto(
-          compressedFile,
-          user.id,
-          projectId,
-          visitId,
-          {
-            tags: [],
-          }
-        );
-        
+        const uploadedPhoto = await uploadPhoto(compressedFile, user.id, projectId, visitId, {
+          tags: [],
+        });
+
         // Add to local state
-        setVisit(prev => {
+        setVisit((prev) => {
           if (!prev) return prev;
           return {
             ...prev,
-            photos: [...prev.photos, {
-              id: uploadedPhoto.id,
-              url: uploadedPhoto.file_url || '',
-              storage_path: uploadedPhoto.storage_path,
-              tags: uploadedPhoto.tags || [],
-              location: uploadedPhoto.location || undefined
-            }],
-            photoCount: prev.photoCount + 1
+            photos: [
+              ...prev.photos,
+              {
+                id: uploadedPhoto.id,
+                url: uploadedPhoto.file_url || "",
+                storage_path: uploadedPhoto.storage_path,
+                tags: uploadedPhoto.tags || [],
+                location: uploadedPhoto.location || undefined,
+              },
+            ],
+            photoCount: prev.photoCount + 1,
           };
         });
       }
-      
+
       alert(`${files.length} photo(s) ajoutée(s) avec succès!`);
     } catch (error) {
       console.error("Error uploading photos:", error);
       alert("Erreur lors de l'ajout des photos");
     }
-    
+
     // Reset input
     if (e.target) {
-      e.target.value = '';
+      e.target.value = "";
     }
   };
 
@@ -274,7 +278,7 @@ export default function VisitDetail() {
       status: issue.status,
       assignedTo: issue.assignedTo,
     });
-    setSelectedIssuePhotoIds(issue.photos?.map(p => p.id) || []);
+    setSelectedIssuePhotoIds(issue.photos?.map((p) => p.id) || []);
     setShowIssueModal(true);
   };
 
@@ -287,9 +291,10 @@ export default function VisitDetail() {
     if (!visitId || !projectId) return;
 
     // Get selected photos data
-    const linkedPhotos = visit?.photos
-      .filter(p => selectedIssuePhotoIds.includes(p.id))
-      .map(p => ({ id: p.id, url: p.storage_path })) || [];
+    const linkedPhotos =
+      visit?.photos
+        .filter((p) => selectedIssuePhotoIds.includes(p.id))
+        .map((p) => ({ id: p.id, url: p.storage_path })) || [];
 
     if (editingIssue) {
       // Update existing issue
@@ -298,10 +303,8 @@ export default function VisitDetail() {
         photos: linkedPhotos,
       });
       if (updatedIssue) {
-        setIssues(prevIssues =>
-          prevIssues.map(issue =>
-            issue.id === editingIssue.id ? updatedIssue : issue
-          )
+        setIssues((prevIssues) =>
+          prevIssues.map((issue) => (issue.id === editingIssue.id ? updatedIssue : issue)),
         );
         toast.success("Déficience modifiée!");
       }
@@ -315,7 +318,7 @@ export default function VisitDetail() {
         tags: [],
         location: visit?.room || "Zone non spécifiée",
       });
-      setIssues(prevIssues => [...prevIssues, newIssue]);
+      setIssues((prevIssues) => [...prevIssues, newIssue]);
       toast.success(`Déficience créée avec ${linkedPhotos.length} photo(s)`);
     }
 
@@ -323,22 +326,26 @@ export default function VisitDetail() {
     setSelectedIssuePhotoIds([]);
   };
 
-  const handleQuickStatusChange = (issueId: string, newStatus: Issue["status"], e: React.MouseEvent) => {
+  const handleQuickStatusChange = (
+    issueId: string,
+    newStatus: Issue["status"],
+    e: React.MouseEvent,
+  ) => {
     e.stopPropagation();
-    setIssues(prevIssues =>
-      prevIssues.map(issue =>
-        issue.id === issueId
-          ? { ...issue, status: newStatus }
-          : issue
-      )
+    setIssues((prevIssues) =>
+      prevIssues.map((issue) => (issue.id === issueId ? { ...issue, status: newStatus } : issue)),
     );
   };
 
   // Photo delete handler for multiple photos
   const handleDeleteSelectedPhotos = async () => {
     if (selectedPhotoIds.length === 0) return;
-    
-    if (!window.confirm(`Voulez-vous vraiment supprimer ${selectedPhotoIds.length} photo${selectedPhotoIds.length !== 1 ? 's' : ''} ?`)) {
+
+    if (
+      !window.confirm(
+        `Voulez-vous vraiment supprimer ${selectedPhotoIds.length} photo${selectedPhotoIds.length !== 1 ? "s" : ""} ?`,
+      )
+    ) {
       return;
     }
 
@@ -348,18 +355,20 @@ export default function VisitDetail() {
         for (const photoId of selectedPhotoIds) {
           await deletePhoto(photoId);
         }
-        
+
         // Remove from local state
-        setVisit(prev => {
+        setVisit((prev) => {
           if (!prev) return prev;
           return {
             ...prev,
-            photos: prev.photos.filter(p => !selectedPhotoIds.includes(p.id)),
-            photoCount: prev.photoCount - selectedPhotoIds.length
+            photos: prev.photos.filter((p) => !selectedPhotoIds.includes(p.id)),
+            photoCount: prev.photoCount - selectedPhotoIds.length,
           };
         });
-        
-        alert(`${selectedPhotoIds.length} photo${selectedPhotoIds.length !== 1 ? 's' : ''} supprimée${selectedPhotoIds.length !== 1 ? 's' : ''} avec succès!`);
+
+        alert(
+          `${selectedPhotoIds.length} photo${selectedPhotoIds.length !== 1 ? "s" : ""} supprimée${selectedPhotoIds.length !== 1 ? "s" : ""} avec succès!`,
+        );
         setSelectedPhotoIds([]);
         setIsSelectionMode(false);
       }
@@ -373,12 +382,12 @@ export default function VisitDetail() {
     if (isSelectionMode) {
       e.stopPropagation();
       if (selectedPhotoIds.includes(photoId)) {
-        setSelectedPhotoIds(selectedPhotoIds.filter(id => id !== photoId));
+        setSelectedPhotoIds(selectedPhotoIds.filter((id) => id !== photoId));
       } else {
         setSelectedPhotoIds([...selectedPhotoIds, photoId]);
       }
     } else {
-      const photo = visit?.photos.find(p => p.id === photoId);
+      const photo = visit?.photos.find((p) => p.id === photoId);
       if (photo) setSelectedPhoto(photo);
     }
   };
@@ -396,7 +405,7 @@ export default function VisitDetail() {
     }
 
     try {
-      const originalPhoto = visit?.photos.find(p => p.id === photoId);
+      const originalPhoto = visit?.photos.find((p) => p.id === photoId);
       if (!originalPhoto) {
         toast.error("Photo introuvable");
         return;
@@ -404,7 +413,7 @@ export default function VisitDetail() {
 
       // Delete the old file from storage
       const { error: deleteError } = await supabase.storage
-        .from('project-photos')
+        .from("project-photos")
         .remove([originalPhoto.storage_path]);
 
       if (deleteError) {
@@ -414,10 +423,10 @@ export default function VisitDetail() {
 
       // Upload the new annotated image with the same path
       const { error: uploadError } = await supabase.storage
-        .from('project-photos')
+        .from("project-photos")
         .upload(originalPhoto.storage_path, annotatedImageBlob, {
-          contentType: 'image/jpeg',
-          upsert: true
+          contentType: "image/jpeg",
+          upsert: true,
         });
 
       if (uploadError) throw uploadError;
@@ -461,9 +470,7 @@ export default function VisitDetail() {
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <Calendar size={16} />
-                  <span>
-                    {formatDateLongWithWeekday(visit?.date || "")}
-                  </span>
+                  <span>{formatDateLongWithWeekday(visit?.date || "")}</span>
                 </div>
               </div>
             </div>
@@ -610,105 +617,118 @@ export default function VisitDetail() {
                 }}
                 className="py-2 px-3 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium min-h-[44px]"
               >
-                {isSelectionMode ? 'Annuler' : 'Sélectionner'}
+                {isSelectionMode ? "Annuler" : "Sélectionner"}
               </button>
             )}
           </div>
 
           {/* Filters Section */}
-          {visit && visit.photos.length > 0 && (() => {
-            const allTags = Array.from(new Set(visit.photos.flatMap(p => p.tags || [])));
-            const allLocations = Array.from(new Set(
-              visit.photos
-                .filter(p => p.location?.floor || p.location?.room)
-                .map(p => {
-                  const loc = p.location!;
-                  return loc.floor && loc.room ? `${loc.floor} - ${loc.room}` : loc.floor || loc.room || '';
-                })
-            ));
-
-            if (allTags.length > 0 || allLocations.length > 0) {
-              return (
-                <div className="mb-4 space-y-3">
-                  {/* Tag Filters */}
-                  {allTags.length > 0 && (
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
-                        <Tag size={14} />
-                        Filtrer par tag
-                      </label>
-                      <div className="flex gap-2 flex-wrap">
-                        <button
-                          onClick={() => setSelectedTagFilter(null)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                            selectedTagFilter === null
-                              ? 'bg-[#E10600] text-white'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          Tous
-                        </button>
-                        {allTags.map(tag => (
-                          <button
-                            key={tag}
-                            onClick={() => setSelectedTagFilter(tag === selectedTagFilter ? null : tag)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                              selectedTagFilter === tag
-                                ? 'bg-[#E10600] text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                          >
-                            {tag}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Location Filters */}
-                  {allLocations.length > 0 && (
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
-                        <MapPin size={14} />
-                        Filtrer par localisation
-                      </label>
-                      <div className="flex gap-2 flex-wrap">
-                        <button
-                          onClick={() => setSelectedLocationFilter(null)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                            selectedLocationFilter === null
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                          }`}
-                        >
-                          Toutes
-                        </button>
-                        {allLocations.map(location => (
-                          <button
-                            key={location}
-                            onClick={() => setSelectedLocationFilter(location === selectedLocationFilter ? null : location)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                              selectedLocationFilter === location
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                            }`}
-                          >
-                            {location}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+          {visit &&
+            visit.photos.length > 0 &&
+            (() => {
+              const allTags = Array.from(new Set(visit.photos.flatMap((p) => p.tags || [])));
+              const allLocations = Array.from(
+                new Set(
+                  visit.photos
+                    .filter((p) => p.location?.floor || p.location?.room)
+                    .map((p) => {
+                      const loc = p.location!;
+                      return loc.floor && loc.room
+                        ? `${loc.floor} - ${loc.room}`
+                        : loc.floor || loc.room || "";
+                    }),
+                ),
               );
-            }
-            return null;
-          })()}
+
+              if (allTags.length > 0 || allLocations.length > 0) {
+                return (
+                  <div className="mb-4 space-y-3">
+                    {/* Tag Filters */}
+                    {allTags.length > 0 && (
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
+                          <Tag size={14} />
+                          Filtrer par tag
+                        </label>
+                        <div className="flex gap-2 flex-wrap">
+                          <button
+                            onClick={() => setSelectedTagFilter(null)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              selectedTagFilter === null
+                                ? "bg-[#E10600] text-white"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            }`}
+                          >
+                            Tous
+                          </button>
+                          {allTags.map((tag) => (
+                            <button
+                              key={tag}
+                              onClick={() =>
+                                setSelectedTagFilter(tag === selectedTagFilter ? null : tag)
+                              }
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                selectedTagFilter === tag
+                                  ? "bg-[#E10600] text-white"
+                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                              }`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Location Filters */}
+                    {allLocations.length > 0 && (
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
+                          <MapPin size={14} />
+                          Filtrer par localisation
+                        </label>
+                        <div className="flex gap-2 flex-wrap">
+                          <button
+                            onClick={() => setSelectedLocationFilter(null)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              selectedLocationFilter === null
+                                ? "bg-blue-600 text-white"
+                                : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                            }`}
+                          >
+                            Toutes
+                          </button>
+                          {allLocations.map((location) => (
+                            <button
+                              key={location}
+                              onClick={() =>
+                                setSelectedLocationFilter(
+                                  location === selectedLocationFilter ? null : location,
+                                )
+                              }
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                selectedLocationFilter === location
+                                  ? "bg-blue-600 text-white"
+                                  : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                              }`}
+                            >
+                              {location}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
           {isSelectionMode && selectedPhotoIds.length > 0 && (
             <div className="mb-3 flex items-center justify-between bg-blue-50 border border-blue-200 p-3 rounded-lg">
               <span className="text-sm text-[#1A1A1A] font-medium">
-                {selectedPhotoIds.length} photo{selectedPhotoIds.length !== 1 ? 's' : ''} sélectionnée{selectedPhotoIds.length !== 1 ? 's' : ''}
+                {selectedPhotoIds.length} photo{selectedPhotoIds.length !== 1 ? "s" : ""}{" "}
+                sélectionnée{selectedPhotoIds.length !== 1 ? "s" : ""}
               </span>
               <div className="flex gap-2">
                 <button
@@ -731,16 +751,17 @@ export default function VisitDetail() {
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {visit?.photos
-              .filter(photo => {
+              .filter((photo) => {
                 // Filter by tag
                 if (selectedTagFilter && (!photo.tags || !photo.tags.includes(selectedTagFilter))) {
                   return false;
                 }
                 // Filter by location
                 if (selectedLocationFilter) {
-                  const photoLocation = photo.location?.floor && photo.location?.room
-                    ? `${photo.location.floor} - ${photo.location.room}`
-                    : photo.location?.floor || photo.location?.room || '';
+                  const photoLocation =
+                    photo.location?.floor && photo.location?.room
+                      ? `${photo.location.floor} - ${photo.location.room}`
+                      : photo.location?.floor || photo.location?.room || "";
                   if (photoLocation !== selectedLocationFilter) {
                     return false;
                   }
@@ -748,70 +769,80 @@ export default function VisitDetail() {
                 return true;
               })
               .map((photo) => {
-              const isSelected = selectedPhotoIds.includes(photo.id);
-              return (
-                <div
-                  key={photo.id}
-                  className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-gray-200 ${isSelected ? 'ring-2 ring-[#E10600]' : ''}`}
-                  onClick={(e) => handlePhotoClick(photo.id, e)}
-                >
-                  <SecureImage
-                    storagePath={photo.storage_path}
-                    alt="Site photo"
-                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                  />
-                  {!isSelectionMode && (
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="text-white text-sm font-medium">Voir</span>
-                    </div>
-                  )}
-
-                  {/* Location badge - top priority */}
-                  {photo.location && (photo.location.floor || photo.location.room) && (
-                    <div className="absolute top-2 left-2">
-                      <div className="px-2 py-1 bg-blue-600 text-white rounded text-xs font-bold flex items-center gap-1 shadow-lg">
-                        <MapPin size={12} />
-                        <span>
-                          {photo.location.floor && photo.location.room
-                            ? `${photo.location.floor} - ${photo.location.room}`
-                            : photo.location.floor || photo.location.room}
-                        </span>
+                const isSelected = selectedPhotoIds.includes(photo.id);
+                return (
+                  <div
+                    key={photo.id}
+                    className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-gray-200 ${isSelected ? "ring-2 ring-[#E10600]" : ""}`}
+                    onClick={(e) => handlePhotoClick(photo.id, e)}
+                  >
+                    <SecureImage
+                      storagePath={photo.storage_path}
+                      alt="Site photo"
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    />
+                    {!isSelectionMode && (
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="text-white text-sm font-medium">Voir</span>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Tags at bottom */}
-                  {photo.tags && photo.tags.length > 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
-                      <div className="flex gap-1 flex-wrap">
-                        {photo.tags.slice(0, 2).map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-0.5 bg-white/90 text-[#1A1A1A] rounded text-xs"
+                    {/* Location badge - top priority */}
+                    {photo.location && (photo.location.floor || photo.location.room) && (
+                      <div className="absolute top-2 left-2">
+                        <div className="px-2 py-1 bg-blue-600 text-white rounded text-xs font-bold flex items-center gap-1 shadow-lg">
+                          <MapPin size={12} />
+                          <span>
+                            {photo.location.floor && photo.location.room
+                              ? `${photo.location.floor} - ${photo.location.room}`
+                              : photo.location.floor || photo.location.room}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tags at bottom */}
+                    {photo.tags && photo.tags.length > 0 && (
+                      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
+                        <div className="flex gap-1 flex-wrap">
+                          {photo.tags.slice(0, 2).map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2 py-0.5 bg-white/90 text-[#1A1A1A] rounded text-xs"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {photo.tags.length > 2 && (
+                            <span className="px-2 py-0.5 bg-white/90 text-[#1A1A1A] rounded text-xs">
+                              +{photo.tags.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {isSelectionMode && (
+                      <div
+                        className={`absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all ${isSelected ? "bg-[#E10600] border-[#E10600]" : "bg-white/90 border-gray-300"}`}
+                      >
+                        {isSelected && (
+                          <svg
+                            className="w-4 h-4 text-white"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
                           >
-                            {tag}
-                          </span>
-                        ))}
-                        {photo.tags.length > 2 && (
-                          <span className="px-2 py-0.5 bg-white/90 text-[#1A1A1A] rounded text-xs">
-                            +{photo.tags.length - 2}
-                          </span>
+                            <path
+                              fillRule="evenodd"
+                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
                         )}
                       </div>
-                    </div>
-                  )}
-                  {isSelectionMode && (
-                    <div className={`absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all ${isSelected ? 'bg-[#E10600] border-[#E10600]' : 'bg-white/90 border-gray-300'}`}>
-                      {isSelected && (
-                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    )}
+                  </div>
+                );
+              })}
           </div>
         </div>
 
@@ -832,13 +863,17 @@ export default function VisitDetail() {
           </div>
 
           {issues.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-6">Aucune déficience pour cette visite.</p>
+            <p className="text-sm text-gray-500 text-center py-6">
+              Aucune déficience pour cette visite.
+            </p>
           ) : (
             <div className="space-y-3">
               {issues.map((issue) => (
                 <div
                   key={issue.id}
-                  onClick={() => navigate(`/app/projects/${projectId}/visits/${visitId}/issues/${issue.id}`)}
+                  onClick={() =>
+                    navigate(`/app/projects/${projectId}/visits/${visitId}/issues/${issue.id}`)
+                  }
                   className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -853,23 +888,39 @@ export default function VisitDetail() {
                   </div>
                   <p className="text-xs text-gray-600 mb-3 line-clamp-2">{issue.description}</p>
                   <div className="flex items-center gap-2 flex-wrap mb-2">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      issue.priority === 'critical' ? 'bg-red-100 text-red-700' :
-                      issue.priority === 'high' ? 'bg-orange-100 text-orange-700' :
-                      issue.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {issue.priority === 'critical' ? 'Critique' :
-                       issue.priority === 'high' ? 'Élevé' :
-                       issue.priority === 'medium' ? 'Moyen' : 'Faible'}
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-medium ${
+                        issue.priority === "critical"
+                          ? "bg-red-100 text-red-700"
+                          : issue.priority === "high"
+                            ? "bg-orange-100 text-orange-700"
+                            : issue.priority === "medium"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      {issue.priority === "critical"
+                        ? "Critique"
+                        : issue.priority === "high"
+                          ? "Élevé"
+                          : issue.priority === "medium"
+                            ? "Moyen"
+                            : "Faible"}
                     </span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      issue.status === 'open' ? 'bg-red-50 text-red-700' :
-                      issue.status === 'in_progress' ? 'bg-blue-50 text-blue-700' :
-                      'bg-green-50 text-green-700'
-                    }`}>
-                      {issue.status === 'open' ? 'Ouvert' :
-                       issue.status === 'in_progress' ? 'En cours' : 'Résolu'}
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-medium ${
+                        issue.status === "open"
+                          ? "bg-red-50 text-red-700"
+                          : issue.status === "in_progress"
+                            ? "bg-blue-50 text-blue-700"
+                            : "bg-green-50 text-green-700"
+                      }`}
+                    >
+                      {issue.status === "open"
+                        ? "Ouvert"
+                        : issue.status === "in_progress"
+                          ? "En cours"
+                          : "Résolu"}
                     </span>
                   </div>
 
@@ -879,12 +930,12 @@ export default function VisitDetail() {
                       <div className="flex items-center gap-1 mb-2">
                         <Camera size={12} className="text-gray-500" />
                         <span className="text-xs text-gray-500 font-medium">
-                          {issue.photos.length} photo{issue.photos.length > 1 ? 's' : ''}
+                          {issue.photos.length} photo{issue.photos.length > 1 ? "s" : ""}
                         </span>
                       </div>
                       <div className="flex gap-2 overflow-x-auto pb-1">
                         {issue.photos.slice(0, 4).map((photo) => {
-                          const fullPhoto = visit?.photos.find(p => p.id === photo.id);
+                          const fullPhoto = visit?.photos.find((p) => p.id === photo.id);
                           return (
                             <div
                               key={photo.id}
@@ -914,7 +965,8 @@ export default function VisitDetail() {
                   )}
 
                   <div className="text-xs text-gray-500">
-                    Assigné à : <span className="font-medium text-gray-700">{issue.assignedTo}</span>
+                    Assigné à :{" "}
+                    <span className="font-medium text-gray-700">{issue.assignedTo}</span>
                   </div>
                 </div>
               ))}
@@ -984,18 +1036,19 @@ export default function VisitDetail() {
             />
 
             {/* Location badge in fullscreen */}
-            {selectedPhoto.location && (selectedPhoto.location.floor || selectedPhoto.location.room) && (
-              <div className="absolute top-4 left-4">
-                <div className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 shadow-xl">
-                  <MapPin size={18} />
-                  <span>
-                    {selectedPhoto.location.floor && selectedPhoto.location.room
-                      ? `${selectedPhoto.location.floor} - ${selectedPhoto.location.room}`
-                      : selectedPhoto.location.floor || selectedPhoto.location.room}
-                  </span>
+            {selectedPhoto.location &&
+              (selectedPhoto.location.floor || selectedPhoto.location.room) && (
+                <div className="absolute top-4 left-4">
+                  <div className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 shadow-xl">
+                    <MapPin size={18} />
+                    <span>
+                      {selectedPhoto.location.floor && selectedPhoto.location.room
+                        ? `${selectedPhoto.location.floor} - ${selectedPhoto.location.room}`
+                        : selectedPhoto.location.floor || selectedPhoto.location.room}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Tags at bottom */}
             {selectedPhoto.tags && selectedPhoto.tags.length > 0 && (
@@ -1036,9 +1089,7 @@ export default function VisitDetail() {
             <div className="space-y-4">
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
-                  Titre *
-                </label>
+                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Titre *</label>
                 <input
                   type="text"
                   value={issueFormData.title}
@@ -1050,12 +1101,12 @@ export default function VisitDetail() {
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Description</label>
                 <textarea
                   value={issueFormData.description}
-                  onChange={(e) => setIssueFormData({ ...issueFormData, description: e.target.value })}
+                  onChange={(e) =>
+                    setIssueFormData({ ...issueFormData, description: e.target.value })
+                  }
                   placeholder="Détails de la déficience..."
                   rows={4}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent resize-none"
@@ -1064,12 +1115,15 @@ export default function VisitDetail() {
 
               {/* Priority */}
               <div>
-                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
-                  Priorité
-                </label>
+                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Priorité</label>
                 <select
                   value={issueFormData.priority}
-                  onChange={(e) => setIssueFormData({ ...issueFormData, priority: e.target.value as Issue["priority"] })}
+                  onChange={(e) =>
+                    setIssueFormData({
+                      ...issueFormData,
+                      priority: e.target.value as Issue["priority"],
+                    })
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
                 >
                   <option value="low">Faible</option>
@@ -1081,12 +1135,15 @@ export default function VisitDetail() {
 
               {/* Status */}
               <div>
-                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
-                  Statut
-                </label>
+                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Statut</label>
                 <select
                   value={issueFormData.status}
-                  onChange={(e) => setIssueFormData({ ...issueFormData, status: e.target.value as Issue["status"] })}
+                  onChange={(e) =>
+                    setIssueFormData({
+                      ...issueFormData,
+                      status: e.target.value as Issue["status"],
+                    })
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
                 >
                   <option value="open">Ouvert</option>
@@ -1097,13 +1154,13 @@ export default function VisitDetail() {
 
               {/* Assigned To */}
               <div>
-                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
-                  Assigné à
-                </label>
+                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Assigné à</label>
                 <input
                   type="text"
                   value={issueFormData.assignedTo}
-                  onChange={(e) => setIssueFormData({ ...issueFormData, assignedTo: e.target.value })}
+                  onChange={(e) =>
+                    setIssueFormData({ ...issueFormData, assignedTo: e.target.value })
+                  }
                   placeholder="Nom de la personne"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
                 />
@@ -1128,13 +1185,17 @@ export default function VisitDetail() {
                           key={photo.id}
                           onClick={() => {
                             if (isSelected) {
-                              setSelectedIssuePhotoIds(selectedIssuePhotoIds.filter(id => id !== photo.id));
+                              setSelectedIssuePhotoIds(
+                                selectedIssuePhotoIds.filter((id) => id !== photo.id),
+                              );
                             } else {
                               setSelectedIssuePhotoIds([...selectedIssuePhotoIds, photo.id]);
                             }
                           }}
                           className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
-                            isSelected ? 'border-[#E10600] ring-2 ring-[#E10600]/30' : 'border-gray-300 hover:border-gray-400'
+                            isSelected
+                              ? "border-[#E10600] ring-2 ring-[#E10600]/30"
+                              : "border-gray-300 hover:border-gray-400"
                           }`}
                         >
                           <SecureImage

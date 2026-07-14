@@ -1,5 +1,5 @@
-import { useAuth } from '../../contexts/useAuth';
-import NotificationBell from './NotificationBell';
+import { useAuth } from "../../contexts/useAuth";
+import NotificationBell from "./NotificationBell";
 
 export default function AppHeader() {
   const { user } = useAuth();
@@ -15,7 +15,7 @@ export default function AppHeader() {
               {user.user_metadata?.name || user.email}
             </span>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <NotificationBell userId={user.id} />
           </div>

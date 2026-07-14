@@ -39,12 +39,14 @@
 ## 🎖️ Method A: Git Commands
 
 ### ✅ Advantages
+
 - Upload everything in one command
 - No file counting or splitting
 - Easier for future updates
 - Professional workflow
 
 ### 📝 Quick Steps
+
 ```bash
 1. Open Terminal/Command Prompt
 2. cd path/to/redmark-app
@@ -56,6 +58,7 @@
 ```
 
 ### 📖 Full Guide
+
 **→ [GIT-COMMAND-GUIDE.md](./GIT-COMMAND-GUIDE.md)**
 
 ---
@@ -63,11 +66,13 @@
 ## 📤 Method B: Web Upload (2 Batches)
 
 ### ✅ Advantages
+
 - No terminal/command line needed
 - Visual drag-and-drop
 - Familiar web interface
 
 ### ❌ Disadvantages
+
 - Must split files into 2 batches
 - More manual work
 - Two separate uploads
@@ -75,6 +80,7 @@
 ### 📝 Quick Steps
 
 **Batch 1** (~40 files):
+
 ```
 1. Upload core files:
    - package.json, vite.config.ts, vercel.json
@@ -85,6 +91,7 @@
 ```
 
 **Batch 2** (~50 files):
+
 ```
 1. Upload remaining files:
    - /src/app/components/ui/* (all UI components)
@@ -93,6 +100,7 @@
 ```
 
 ### 📖 Full Guide
+
 **→ [UPLOAD-BATCH-1.md](./UPLOAD-BATCH-1.md)**  
 **→ [UPLOAD-BATCH-2.md](./UPLOAD-BATCH-2.md)**
 
@@ -101,12 +109,14 @@
 ## 🤔 Which Should I Choose?
 
 ### Choose Method A (Git) if:
+
 - ✅ You're comfortable with command line
 - ✅ You want the standard developer workflow
 - ✅ You want faster future updates
 - ✅ You want to upload everything at once
 
 ### Choose Method B (Web) if:
+
 - ✅ You've never used terminal/command line
 - ✅ You prefer visual drag-and-drop
 - ✅ You don't mind splitting files manually
@@ -119,6 +129,7 @@
 **🎖️ Use Method A (Git Commands)**
 
 **Why?**
+
 - Faster (5 min vs 10 min)
 - More reliable
 - Industry standard
@@ -131,19 +142,21 @@
 
 ## ⏱️ Time Comparison
 
-| Method | Setup | Upload | Total |
-|--------|-------|--------|-------|
-| **Git Commands** | 2 min | 3 min | **5 min** |
-| **Web Upload** | 0 min | 10 min | **10 min** |
+| Method           | Setup | Upload | Total      |
+| ---------------- | ----- | ------ | ---------- |
+| **Git Commands** | 2 min | 3 min  | **5 min**  |
+| **Web Upload**   | 0 min | 10 min | **10 min** |
 
 ---
 
 ## 🚀 Ready to Choose?
 
 ### 👉 **Method A (Recommended)**
+
 Open: **[GIT-COMMAND-GUIDE.md](./GIT-COMMAND-GUIDE.md)**
 
 ### 👉 **Method B (Alternative)**
+
 Open: **[UPLOAD-BATCH-1.md](./UPLOAD-BATCH-1.md)**
 
 ---
@@ -169,7 +182,7 @@ A: That's okay! Method B (Web upload) works perfectly fine.
 Once files are on GitHub:
 
 1. ✅ Go to Vercel.com
-2. ✅ Import your GitHub repository  
+2. ✅ Import your GitHub repository
 3. ✅ Click "Deploy"
 4. ✅ Wait 3 minutes
 5. ✅ **PWA is live!** 🎉

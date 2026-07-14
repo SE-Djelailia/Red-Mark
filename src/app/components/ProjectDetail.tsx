@@ -16,8 +16,8 @@ import {
   MessageSquare,
   Pencil,
   Image as ImageIcon,
-  AlertCircle
-} from 'lucide-react';
+  AlertCircle,
+} from "lucide-react";
 import { VisitCardSkeleton, PhotoGridSkeleton, CommentSkeleton } from "./LoadingStates";
 import { getSiteVisits, getProject, getPhotos, getPhotoSignedUrl } from "../../lib/supabaseApi";
 import { useAuth } from "../../contexts/useAuth";
@@ -79,22 +79,26 @@ export default function ProjectDetail() {
   const [commentText, setCommentText] = useState("");
   const [showPhotoMarkupModal, setShowPhotoMarkupModal] = useState(false);
   const [showIssueCreationModal, setShowIssueCreationModal] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; url: string; tags: string[] } | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<{
+    id: string;
+    url: string;
+    tags: string[];
+  } | null>(null);
   const [siteVisits, setSiteVisits] = useState<SiteVisit[]>([]);
   const [isLoadingVisits, setIsLoadingVisits] = useState(true);
-  
+
   // Photo filter states
   const [photoSearchQuery, setPhotoSearchQuery] = useState("");
   const [selectedPhotoTags, setSelectedPhotoTags] = useState<string[]>([]);
   const [selectedPhotoPhase, setSelectedPhotoPhase] = useState<string>("");
   const [showPhotoFilters, setShowPhotoFilters] = useState(false);
-  
+
   const [issues, setIssues] = useState<Issue[]>([]);
 
   // Project state
   const [project, setProject] = useState<any>(null);
   const [isLoadingProject, setIsLoadingProject] = useState(true);
-  
+
   // Edit form data
   const [editFormData, setEditFormData] = useState({
     name: "",
@@ -102,7 +106,7 @@ export default function ProjectDetail() {
     client: "",
     contractor: "",
     startDate: "",
-    status: "planning" as any
+    status: "planning" as any,
   });
 
   // Empty comments - will be populated from backend
@@ -127,14 +131,14 @@ export default function ProjectDetail() {
   // ];
 
   // Flatten all photos from all visits
-  const allPhotos = siteVisits.flatMap(visit => 
-    visit.photos.map(photo => ({
+  const allPhotos = siteVisits.flatMap((visit) =>
+    visit.photos.map((photo) => ({
       ...photo,
       date: visit.date,
       phase: visit.phase,
       room: visit.room,
       // Keep the photo's own tags, not visit tags
-    }))
+    })),
   );
 
   // Filter photos based on search and filters
@@ -145,15 +149,13 @@ export default function ProjectDetail() {
       const matchesSearch =
         photo.room.toLowerCase().includes(query) ||
         photo.phase.toLowerCase().includes(query) ||
-        (photo.tags &&photo.tags.some((tag) => tag.toLowerCase().includes(query)));
+        (photo.tags && photo.tags.some((tag) => tag.toLowerCase().includes(query)));
       if (!matchesSearch) return false;
     }
 
     // Tag filter (must have ALL selected tags)
     if (selectedPhotoTags.length > 0) {
-      const hasAllTags = selectedPhotoTags.every((tag) =>
-        photo.tags && photo.tags.includes(tag)
-      );
+      const hasAllTags = selectedPhotoTags.every((tag) => photo.tags && photo.tags.includes(tag));
       if (!hasAllTags) return false;
     }
 
@@ -166,21 +168,24 @@ export default function ProjectDetail() {
   });
 
   // Get all unique tags from all photos with counts
-  const allPhotoTags = allPhotos.reduce((acc, photo) => {
-    if (photo.tags) {
-      photo.tags.forEach((tag) => {
-        acc[tag] = (acc[tag] || 0) + 1;
-      });
-    }
-    return acc;
-  }, {} as Record<string, number>);
+  const allPhotoTags = allPhotos.reduce(
+    (acc, photo) => {
+      if (photo.tags) {
+        photo.tags.forEach((tag) => {
+          acc[tag] = (acc[tag] || 0) + 1;
+        });
+      }
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   // Get all unique phases from photos
   const allPhotoPhases = [...new Set(allPhotos.map((photo) => photo.phase))];
 
   const togglePhotoTag = (tag: string) => {
     setSelectedPhotoTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   };
 
@@ -194,22 +199,22 @@ export default function ProjectDetail() {
     const fetchData = async () => {
       // Don't fetch if still checking auth or no user
       if (authLoading) {
-        console.log('⏳ Still loading auth, waiting...');
+        console.log("⏳ Still loading auth, waiting...");
         return;
       }
-      
+
       if (!user) {
-        console.log('⚠️ No user logged in, redirecting to login...');
-        navigate('/');
+        console.log("⚠️ No user logged in, redirecting to login...");
+        navigate("/");
         return;
       }
-      
+
       if (!id) return;
 
       try {
         setIsLoadingVisits(true);
-        console.log('🔄 Fetching project and visits for user:', user.email);
-        
+        console.log("🔄 Fetching project and visits for user:", user.email);
+
         // Fetch project
         const proj = await getProject(id);
         setProject(proj);
@@ -217,7 +222,7 @@ export default function ProjectDetail() {
 
         // Fetch site visits
         const visits = await getSiteVisits(id);
-        
+
         // Transform visits and fetch photo counts for each
         const transformedVisits = await Promise.all(
           visits.map(async (visit) => {
@@ -225,7 +230,7 @@ export default function ProjectDetail() {
             const photos = await getPhotos(visit.id);
 
             // Collect all unique tags from photos in this visit
-            const visitTags = [...new Set(photos.flatMap(p => p.tags || []))];
+            const visitTags = [...new Set(photos.flatMap((p) => p.tags || []))];
 
             // Generate signed URLs for all photos
             const photosWithSignedUrls = await Promise.all(
@@ -234,10 +239,10 @@ export default function ProjectDetail() {
                   const signedUrl = await getPhotoSignedUrl(p.storage_path);
                   return { id: p.id, url: signedUrl, tags: p.tags || [] };
                 } catch (error) {
-                  console.error('Error generating signed URL for photo:', p.id, error);
-                  return { id: p.id, url: '', tags: p.tags || [] };
+                  console.error("Error generating signed URL for photo:", p.id, error);
+                  return { id: p.id, url: "", tags: p.tags || [] };
                 }
-              })
+              }),
             );
 
             return {
@@ -250,11 +255,11 @@ export default function ProjectDetail() {
               notes: visit.notes,
               photos: photosWithSignedUrls,
             };
-          })
+          }),
         );
-        
+
         setSiteVisits(transformedVisits);
-        console.log('✅ Loaded', transformedVisits.length, 'site visits');
+        console.log("✅ Loaded", transformedVisits.length, "site visits");
       } catch (error) {
         console.error("❌ Error fetching site visits:", error);
       } finally {
@@ -303,7 +308,7 @@ export default function ProjectDetail() {
                     client: project.client || "",
                     contractor: project.contractor || "",
                     startDate: project.startDate || "",
-                    status: project.status || "planning"
+                    status: project.status || "planning",
                   });
                   setShowEditModal(true);
                 }
@@ -372,7 +377,7 @@ export default function ProjectDetail() {
           <div className="flex items-center gap-3">
             <Users size={16} className="text-gray-500" />
             <span className="text-gray-500">Entrepreneur :</span>
-            <span className="text-gray-700">{(project as any)?.contractor || 'Non spécifié'}</span>
+            <span className="text-gray-700">{(project as any)?.contractor || "Non spécifié"}</span>
           </div>
           {(project as any)?.sharedWith && (project as any).sharedWith.length > 0 && (
             <div className="flex items-start gap-3">
@@ -392,9 +397,7 @@ export default function ProjectDetail() {
           <button
             onClick={() => setActiveTab("visits")}
             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === "visits"
-                ? "text-[#E10600]"
-                : "text-gray-600 hover:text-[#1A1A1A]"
+              activeTab === "visits" ? "text-[#E10600]" : "text-gray-600 hover:text-[#1A1A1A]"
             }`}
           >
             Visites ({siteVisits.length})
@@ -405,9 +408,7 @@ export default function ProjectDetail() {
           <button
             onClick={() => setActiveTab("gallery")}
             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === "gallery"
-                ? "text-[#E10600]"
-                : "text-gray-600 hover:text-[#1A1A1A]"
+              activeTab === "gallery" ? "text-[#E10600]" : "text-gray-600 hover:text-[#1A1A1A]"
             }`}
           >
             Galerie ({allPhotos.length})
@@ -418,9 +419,7 @@ export default function ProjectDetail() {
           <button
             onClick={() => setActiveTab("plans")}
             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === "plans"
-                ? "text-[#E10600]"
-                : "text-gray-600 hover:text-[#1A1A1A]"
+              activeTab === "plans" ? "text-[#E10600]" : "text-gray-600 hover:text-[#1A1A1A]"
             }`}
           >
             Plans
@@ -479,9 +478,7 @@ export default function ProjectDetail() {
                       <span>{visit.photoCount}</span>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 leading-relaxed mb-3">
-                    {visit.notes}
-                  </p>
+                  <p className="text-sm text-gray-600 leading-relaxed mb-3">{visit.notes}</p>
 
                   {/* Photo thumbnails */}
                   {visit.photos.length > 0 && (
@@ -546,7 +543,10 @@ export default function ProjectDetail() {
                 <div className="space-y-3">
                   {/* Search Bar */}
                   <div className="relative">
-                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Search
+                      size={18}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    />
                     <input
                       type="text"
                       value={photoSearchQuery}
@@ -559,12 +559,16 @@ export default function ProjectDetail() {
                   {/* Quick Phase Filters */}
                   {allPhotoPhases.length > 0 && (
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Phase</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+                        Phase
+                      </h3>
                       <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
                         {allPhotoPhases.map((phase) => (
                           <button
                             key={phase}
-                            onClick={() => setSelectedPhotoPhase(selectedPhotoPhase === phase ? "" : phase)}
+                            onClick={() =>
+                              setSelectedPhotoPhase(selectedPhotoPhase === phase ? "" : phase)
+                            }
                             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors min-h-[36px] whitespace-nowrap flex-shrink-0 ${
                               selectedPhotoPhase === phase
                                 ? "bg-[#E10600] text-white"
@@ -581,7 +585,9 @@ export default function ProjectDetail() {
                   {/* Quick Tag Filters */}
                   {Object.keys(allPhotoTags).length > 0 && (
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Catégories</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+                        Catégories
+                      </h3>
                       <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
                         {Object.entries(allPhotoTags)
                           .sort((a, b) => b[1] - a[1])
@@ -596,7 +602,9 @@ export default function ProjectDetail() {
                               }`}
                             >
                               <span>{tag}</span>
-                              <span className={`text-xs ${selectedPhotoTags.includes(tag) ? "opacity-75" : "text-gray-500"}`}>
+                              <span
+                                className={`text-xs ${selectedPhotoTags.includes(tag) ? "opacity-75" : "text-gray-500"}`}
+                              >
                                 ({count})
                               </span>
                             </button>
@@ -653,9 +661,11 @@ export default function ProjectDetail() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
                             <div className="text-xs mb-1">
-                              {parseLocalDate(photo.date).toLocaleDateString('fr-CA')}
+                              {parseLocalDate(photo.date).toLocaleDateString("fr-CA")}
                             </div>
-                            <div className="text-sm font-medium mb-1 line-clamp-1">{photo.room}</div>
+                            <div className="text-sm font-medium mb-1 line-clamp-1">
+                              {photo.room}
+                            </div>
                             <div className="flex items-center gap-1 flex-wrap">
                               <div className="text-xs px-2 py-0.5 bg-[#E10600] rounded inline-block">
                                 {photo.phase}
@@ -687,14 +697,15 @@ export default function ProjectDetail() {
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-[#E10600] text-white flex items-center justify-center text-sm font-medium">
-                          {issue.assignedTo.split(' ').map(n => n[0]).join('')}
+                          {issue.assignedTo
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-[#1A1A1A]">
-                            {issue.title}
-                          </div>
+                          <div className="text-sm font-medium text-[#1A1A1A]">{issue.title}</div>
                           <div className="text-xs text-gray-500">
-                            {parseLocalDate(issue.createdDate).toLocaleDateString('fr-CA')}
+                            {parseLocalDate(issue.createdDate).toLocaleDateString("fr-CA")}
                           </div>
                         </div>
                       </div>
@@ -703,23 +714,39 @@ export default function ProjectDetail() {
                       {issue.description}
                     </p>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <div className={`px-2 py-1 rounded-md text-xs font-medium ${
-                        issue.priority === 'critical' ? 'bg-red-100 text-red-700' :
-                        issue.priority === 'high' ? 'bg-orange-100 text-orange-700' :
-                        issue.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {issue.priority === 'critical' ? 'Critique' :
-                         issue.priority === 'high' ? 'Élevé' :
-                         issue.priority === 'medium' ? 'Moyen' : 'Faible'}
+                      <div
+                        className={`px-2 py-1 rounded-md text-xs font-medium ${
+                          issue.priority === "critical"
+                            ? "bg-red-100 text-red-700"
+                            : issue.priority === "high"
+                              ? "bg-orange-100 text-orange-700"
+                              : issue.priority === "medium"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {issue.priority === "critical"
+                          ? "Critique"
+                          : issue.priority === "high"
+                            ? "Élevé"
+                            : issue.priority === "medium"
+                              ? "Moyen"
+                              : "Faible"}
                       </div>
-                      <div className={`px-2 py-1 rounded-md text-xs font-medium ${
-                        issue.status === 'open' ? 'bg-red-50 text-red-700' :
-                        issue.status === 'in_progress' ? 'bg-blue-50 text-blue-700' :
-                        'bg-green-50 text-green-700'
-                      }`}>
-                        {issue.status === 'open' ? 'Ouvert' :
-                         issue.status === 'in_progress' ? 'En cours' : 'Résolu'}
+                      <div
+                        className={`px-2 py-1 rounded-md text-xs font-medium ${
+                          issue.status === "open"
+                            ? "bg-red-50 text-red-700"
+                            : issue.status === "in_progress"
+                              ? "bg-blue-50 text-blue-700"
+                              : "bg-green-50 text-green-700"
+                        }`}
+                      >
+                        {issue.status === "open"
+                          ? "Ouvert"
+                          : issue.status === "in_progress"
+                            ? "En cours"
+                            : "Résolu"}
                       </div>
                       <div className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs flex items-center gap-1">
                         <MapPin size={10} />
@@ -751,7 +778,9 @@ export default function ProjectDetail() {
                         ))}
                         {issue.photos.length > 3 && (
                           <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs text-gray-600">+{issue.photos.length - 3}</span>
+                            <span className="text-xs text-gray-600">
+                              +{issue.photos.length - 3}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -773,9 +802,7 @@ export default function ProjectDetail() {
         )}
 
         {/* Plans Tab */}
-        {activeTab === "plans" && id && (
-          <FloorPlanManager projectId={id} />
-        )}
+        {activeTab === "plans" && id && <FloorPlanManager projectId={id} />}
       </div>
 
       {/* Create New Site Visit Button */}
@@ -973,7 +1000,7 @@ export default function ProjectDetail() {
           >
             <div className="flex items-center gap-3 text-sm">
               <Calendar size={18} className="text-gray-400" />
-              <span>{parseLocalDate(selectedPhoto.date).toLocaleDateString('fr-CA')}</span>
+              <span>{parseLocalDate(selectedPhoto.date).toLocaleDateString("fr-CA")}</span>
             </div>
 
             <div className="flex items-center gap-3 text-sm">
@@ -992,10 +1019,7 @@ export default function ProjectDetail() {
                 </span>
                 {selectedPhoto.tags && selectedPhoto.tags.length > 0 ? (
                   selectedPhoto.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2 py-1 bg-gray-700 text-white rounded-md text-xs"
-                    >
+                    <span key={tag} className="px-2 py-1 bg-gray-700 text-white rounded-md text-xs">
                       {tag}
                     </span>
                   ))
@@ -1106,7 +1130,9 @@ export default function ProjectDetail() {
                 <Camera size={18} className="text-gray-500 mt-0.5" />
                 <div>
                   <div className="text-xs text-gray-500 mb-1">Photos capturées</div>
-                  <div className="text-sm text-[#1A1A1A] font-medium">{selectedVisit.photoCount} photos</div>
+                  <div className="text-sm text-[#1A1A1A] font-medium">
+                    {selectedVisit.photoCount} photos
+                  </div>
                 </div>
               </div>
 
@@ -1153,7 +1179,7 @@ export default function ProjectDetail() {
               )}
 
               {/* Related Comments */}
-              {comments.filter(c => c.visitId === selectedVisit.id).length > 0 && (
+              {comments.filter((c) => c.visitId === selectedVisit.id).length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <MessageSquare size={18} className="text-gray-500" />
@@ -1161,28 +1187,26 @@ export default function ProjectDetail() {
                   </div>
                   <div className="space-y-3">
                     {comments
-                      .filter(c => c.visitId === selectedVisit.id)
+                      .filter((c) => c.visitId === selectedVisit.id)
                       .map((comment) => (
-                        <div
-                          key={comment.id}
-                          className="bg-gray-50 rounded-lg p-4"
-                        >
+                        <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-6 h-6 rounded-full bg-[#E10600] text-white flex items-center justify-center text-xs font-medium">
-                              {comment.author.split(' ').map(n => n[0]).join('')}
+                              {comment.author
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
                             </div>
                             <div>
                               <div className="text-xs font-medium text-[#1A1A1A]">
                                 {comment.author}
                               </div>
                               <div className="text-xs text-gray-500">
-                                {new Date(comment.date).toLocaleDateString('fr-CA')}
+                                {new Date(comment.date).toLocaleDateString("fr-CA")}
                               </div>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-700 leading-relaxed">
-                            {comment.text}
-                          </p>
+                          <p className="text-sm text-gray-700 leading-relaxed">{comment.text}</p>
                         </div>
                       ))}
                   </div>
@@ -1215,10 +1239,7 @@ export default function ProjectDetail() {
 
       {/* Project Members Modal */}
       {showMembersModal && id && (
-        <ProjectMembersModal
-          projectId={id}
-          onClose={() => setShowMembersModal(false)}
-        />
+        <ProjectMembersModal projectId={id} onClose={() => setShowMembersModal(false)} />
       )}
 
       {/* Project Edit Modal */}

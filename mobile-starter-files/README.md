@@ -22,29 +22,33 @@ redmark-mobile/
 ## Step-by-Step Installation
 
 ### 1. Create the `lib` folder
+
 ```bash
 cd ~/Desktop/redmark-mobile
 mkdir lib
 ```
 
 ### 2. Create `lib/supabase.ts`
+
 Copy this content:
 
 ```typescript
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 // Get these from your Supabase dashboard
-const supabaseUrl = 'YOUR_SUPABASE_URL';
-const supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
+const supabaseUrl = "YOUR_SUPABASE_URL";
+const supabaseAnonKey = "YOUR_SUPABASE_ANON_KEY";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 ```
 
 **Replace:**
+
 - `YOUR_SUPABASE_URL` with your actual URL (e.g., `https://abc123.supabase.co`)
 - `YOUR_SUPABASE_ANON_KEY` with your actual anon key
 
 ### 3. Create the `screens` folder
+
 ```bash
 mkdir screens
 ```
@@ -54,16 +58,19 @@ mkdir screens
 **From this folder → To your project:**
 
 1. **App.tsx**
+
    ```bash
    cp /path/to/mobile-starter-files/App.tsx ~/Desktop/redmark-mobile/App.tsx
    ```
 
 2. **AuthScreen.tsx**
+
    ```bash
    cp /path/to/mobile-starter-files/screens/AuthScreen.tsx ~/Desktop/redmark-mobile/screens/AuthScreen.tsx
    ```
 
 3. **ProjectsListScreen.tsx**
+
    ```bash
    cp /path/to/mobile-starter-files/screens/ProjectsListScreen.tsx ~/Desktop/redmark-mobile/screens/ProjectsListScreen.tsx
    ```
@@ -78,16 +85,19 @@ mkdir screens
 Open `screens/AuthScreen.tsx` and update line 47:
 
 **Find:**
+
 ```typescript
 `https://YOUR_PROJECT_ID.supabase.co/functions/v1/make-server-9fe75696/signup`,
 ```
 
 **Replace with:**
+
 ```typescript
 `https://YOUR_ACTUAL_PROJECT_ID.supabase.co/functions/v1/make-server-9fe75696/signup`,
 ```
 
 And line 52:
+
 ```typescript
 'Authorization': `Bearer YOUR_SUPABASE_ANON_KEY`,
 ```
@@ -97,6 +107,7 @@ Replace `YOUR_SUPABASE_ANON_KEY` with your actual key.
 ## Test Your App
 
 ### Start the development server:
+
 ```bash
 cd ~/Desktop/redmark-mobile
 npx expo start
@@ -105,6 +116,7 @@ npx expo start
 ### Press `i` to open iOS Simulator
 
 You should see:
+
 1. ✅ RedMark login screen
 2. ✅ Can create account
 3. ✅ Can login
@@ -114,24 +126,28 @@ You should see:
 ## What Each File Does
 
 ### `App.tsx`
+
 - Main entry point
 - Handles authentication state
 - Sets up navigation between screens
 - Shows AuthScreen if not logged in, otherwise shows Projects
 
 ### `screens/AuthScreen.tsx`
+
 - Login and signup screen
 - Red RedMark branding
 - Connects to Supabase authentication
 - Validates email/password
 
 ### `screens/ProjectsListScreen.tsx`
+
 - Shows all your projects from database
 - Pull to refresh
 - Tap project to view details
 - Sign out button
 
 ### `screens/ProjectDetailScreen.tsx`
+
 - Shows project information
 - Lists all visits for the project
 - Displays visit dates, weather, notes
@@ -148,6 +164,7 @@ You should see:
 ## Next Features to Add 🚧
 
 Once this works, we'll add:
+
 1. **Camera integration** - Take photos of the site
 2. **Photo upload** - Save photos to Supabase
 3. **Photo annotation** - Draw on photos
@@ -158,19 +175,23 @@ Once this works, we'll add:
 ## Troubleshooting
 
 ### "Cannot find module './lib/supabase'"
+
 Make sure you created `lib/supabase.ts` with your credentials.
 
 ### "Failed to fetch" when signing up
+
 1. Check your Supabase URL in AuthScreen.tsx (line 47)
 2. Make sure your server is deployed and running
 3. Verify the endpoint path is correct
 
 ### "Invalid login credentials"
+
 1. Make sure you created an account first (use signup)
 2. Check your email/password are correct
 3. Verify Supabase is connected (check `lib/supabase.ts`)
 
 ### Projects list is empty
+
 1. Check you have projects in your Supabase database
 2. Pull down to refresh
 3. Check console for errors: `npx expo start` → press `j` to open debugger
@@ -178,6 +199,7 @@ Make sure you created `lib/supabase.ts` with your credentials.
 ## Need Help?
 
 After copying these files:
+
 1. Run `npx expo start`
 2. Press `i` for iOS simulator
 3. Tell me what you see or any error messages
@@ -186,12 +208,14 @@ After copying these files:
 ## What's Working vs What's Not Yet
 
 ### ✅ Working Now:
+
 - Authentication
 - Viewing existing data from database
 - Navigation between screens
 - Pull to refresh
 
 ### 🚧 Coming Soon:
+
 - Taking photos with camera
 - Uploading photos
 - Drawing annotations

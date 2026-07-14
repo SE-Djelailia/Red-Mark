@@ -5,35 +5,44 @@
 ### Causes possibles :
 
 #### 1️⃣ **Navigation privée / Incognito**
+
 - ❌ Le localStorage ne persiste PAS en mode navigation privée
 - ✅ **Solution** : Utilisez un navigateur en mode normal
 
 #### 2️⃣ **Paramètres du navigateur**
+
 - ❌ Certains navigateurs effacent le localStorage à la fermeture
 - ✅ **Solution** : Vérifiez les paramètres de confidentialité
 
 **Chrome/Edge:**
+
 - Paramètres → Confidentialité → Cookies → Décochez "Effacer les cookies à la fermeture"
 
 **Firefox:**
+
 - Paramètres → Vie privée → Historique → Choisir "Conserver l'historique"
 
 **Safari:**
+
 - Préférences → Confidentialité → Décochez "Bloquer tous les cookies"
 
 #### 3️⃣ **Extensions de navigateur**
+
 - ❌ Extensions de confidentialité (Privacy Badger, uBlock, etc.) peuvent bloquer localStorage
 - ✅ **Solution** : Désactivez temporairement ou ajoutez une exception pour localhost
 
 #### 4️⃣ **Navigateur en mode "Effacer à la fermeture"**
+
 - ❌ Le navigateur efface automatiquement les données
 - ✅ **Solution** : Changez les paramètres de nettoyage automatique
 
 #### 5️⃣ **Quota de stockage dépassé**
+
 - ❌ Le localStorage a une limite (généralement 5-10MB)
 - ✅ **Solution** : Utilisez le bouton Debug (🐛) pour voir et nettoyer
 
 #### 6️⃣ **Plusieurs onglets ouverts**
+
 - ⚠️ Parfois, plusieurs onglets peuvent créer des conflits
 - ✅ **Solution** : Fermez tous les onglets sauf un et rechargez
 
@@ -60,6 +69,7 @@ Un bouton violet avec une icône de bug (🐛) apparaît en bas à gauche de l'a
 ## ✅ Test rapide de persistance
 
 ### Étape 1 : Créer un compte
+
 ```
 1. Allez sur la page d'accueil
 2. Créez un compte avec :
@@ -70,6 +80,7 @@ Un bouton violet avec une icône de bug (🐛) apparaît en bas à gauche de l'a
 ```
 
 ### Étape 2 : Vérifier avec le Debug
+
 ```
 1. Cliquez sur 🐛
 2. Vérifiez :
@@ -78,6 +89,7 @@ Un bouton violet avec une icône de bug (🐛) apparaît en bas à gauche de l'a
 ```
 
 ### Étape 3 : Test de persistance
+
 ```
 1. Rafraîchissez la page (F5)
 2. Cliquez sur 🐛
@@ -85,6 +97,7 @@ Un bouton violet avec une icône de bug (🐛) apparaît en bas à gauche de l'a
 ```
 
 ### Étape 4 : Test de redémarrage
+
 ```
 1. Fermez complètement le navigateur
 2. Rouvrez-le et retournez sur l'app
@@ -99,6 +112,7 @@ Un bouton violet avec une icône de bug (🐛) apparaît en bas à gauche de l'a
 ### Dans la console du navigateur :
 
 **Ouvrir la console :**
+
 - Chrome/Edge : `F12` ou `Ctrl+Shift+I` (Windows) / `Cmd+Option+I` (Mac)
 - Firefox : `F12`
 - Safari : `Cmd+Option+C`
@@ -107,16 +121,16 @@ Un bouton violet avec une icône de bug (🐛) apparaît en bas à gauche de l'a
 
 ```javascript
 // Voir tous les utilisateurs
-console.log(JSON.parse(localStorage.getItem('redmark_users')));
+console.log(JSON.parse(localStorage.getItem("redmark_users")));
 
 // Voir la session actuelle
-console.log(JSON.parse(localStorage.getItem('redmark_session')));
+console.log(JSON.parse(localStorage.getItem("redmark_session")));
 
 // Voir tous les projets
-console.log(JSON.parse(localStorage.getItem('redmark_projects')));
+console.log(JSON.parse(localStorage.getItem("redmark_projects")));
 
 // Compter les clés RedMark
-console.log(Object.keys(localStorage).filter(k => k.startsWith('redmark_')));
+console.log(Object.keys(localStorage).filter((k) => k.startsWith("redmark_")));
 ```
 
 ---
@@ -126,6 +140,7 @@ console.log(Object.keys(localStorage).filter(k => k.startsWith('redmark_')));
 ### Si rien ne fonctionne :
 
 #### Option 1 : Nettoyer et recommencer
+
 ```javascript
 // Dans la console du navigateur
 localStorage.clear();
@@ -133,12 +148,14 @@ location.reload();
 ```
 
 #### Option 2 : Vérifier les erreurs
+
 ```javascript
 // Dans la console, recherchez les erreurs rouges
 // Elles pourraient indiquer un problème avec le code
 ```
 
 #### Option 3 : Utiliser un autre navigateur
+
 - Essayez Chrome, Firefox ou Edge
 - Assurez-vous d'être en mode normal (pas privé)
 
@@ -148,16 +165,16 @@ location.reload();
 
 ### Données stockées par RedMark :
 
-| Clé localStorage | Contenu | Taille approximative |
-|-----------------|---------|---------------------|
-| `redmark_users` | Comptes utilisateurs | ~1KB par utilisateur |
-| `redmark_session` | Session active | ~0.5KB |
-| `redmark_projects` | Liste des projets | ~2KB par projet |
-| `redmark_visits` | Visites de chantier | ~1KB par visite |
-| `redmark_photos` | Métadonnées photos | ~0.5KB par photo |
-| `redmark_project_members` | Membres des projets | ~0.5KB par membre |
-| `redmark_comments` | Commentaires | ~0.5KB par commentaire |
-| `redmark_issues` | Déficiences | ~1KB par déficience |
+| Clé localStorage          | Contenu              | Taille approximative   |
+| ------------------------- | -------------------- | ---------------------- |
+| `redmark_users`           | Comptes utilisateurs | ~1KB par utilisateur   |
+| `redmark_session`         | Session active       | ~0.5KB                 |
+| `redmark_projects`        | Liste des projets    | ~2KB par projet        |
+| `redmark_visits`          | Visites de chantier  | ~1KB par visite        |
+| `redmark_photos`          | Métadonnées photos   | ~0.5KB par photo       |
+| `redmark_project_members` | Membres des projets  | ~0.5KB par membre      |
+| `redmark_comments`        | Commentaires         | ~0.5KB par commentaire |
+| `redmark_issues`          | Déficiences          | ~1KB par déficience    |
 
 **Total typique pour un projet actif :** 5-20 MB
 

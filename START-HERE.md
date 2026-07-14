@@ -25,12 +25,14 @@
 **Choose ONE method**:
 
 ### 🎖️ **Method A: Git Commands (RECOMMENDED)**
+
 - ✅ Upload ALL files at once (140+ files)
 - ✅ No file limits
 - ✅ Faster and more reliable
 - → **Follow: [GIT-COMMAND-GUIDE.md](./GIT-COMMAND-GUIDE.md)**
 
 ### 📤 **Method B: Web Upload in 2 Batches**
+
 - Upload in 2 separate batches (each <100 files)
 - Takes longer but no terminal needed
 - → **Follow: [UPLOAD-BATCH-1.md](./UPLOAD-BATCH-1.md)** then **[UPLOAD-BATCH-2.md](./UPLOAD-BATCH-2.md)**
@@ -57,12 +59,15 @@ Your RedMark app is **100% complete** with:
 ## 🚀 Deploy in 3 Steps (15 minutes)
 
 ### Step 1: Export from Figma Make
+
 📁 Download all your files
 
 ### Step 2: Upload to GitHub
+
 📤 Create repo and upload files
 
 ### Step 3: Deploy on Vercel
+
 🌐 Connect GitHub and click Deploy
 
 **That's it!** Your PWA will be live.
@@ -72,19 +77,25 @@ Your RedMark app is **100% complete** with:
 ## 📖 Which Guide Should I Follow?
 
 ### 🏃 Fast Track (Experienced users)
+
 **→ [QUICK-START.md](./QUICK-START.md)**
+
 - 5-minute overview
 - Minimal explanation
 - Get it done fast
 
 ### 📚 Detailed Guide (First-time deployers)
+
 **→ [DEPLOYMENT.md](./DEPLOYMENT.md)**
+
 - Step-by-step instructions
 - Screenshots and explanations
 - Troubleshooting included
 
 ### ✅ Checklist Approach (Systematic)
+
 **→ [CHECKLIST.md](./CHECKLIST.md)**
+
 - Follow checkbox by checkbox
 - Verification at each step
 - Nothing missed
@@ -139,7 +150,7 @@ Your RedMark app is **100% complete** with:
 Before you start, make sure you have:
 
 - [ ] **Time**: 15-20 minutes free
-- [ ] **Accounts**: 
+- [ ] **Accounts**:
   - [ ] GitHub account (free)
   - [ ] Vercel account (free)
 - [ ] **Browser**: Chrome or Edge
@@ -154,12 +165,14 @@ Before you start, make sure you have:
 After successful deployment:
 
 ### Your Live App
+
 - **URL**: `https://redmark-app.vercel.app`
 - **HTTPS**: ✅ Automatic
 - **SSL**: ✅ Free certificate
 - **CDN**: ✅ Global distribution
 
 ### PWA Features
+
 - **Desktop**: Install button in Chrome
 - **Mobile**: Add to Home Screen
 - **Offline**: Works without internet
@@ -167,6 +180,7 @@ After successful deployment:
 - **Performance**: Lightning fast
 
 ### For Your Team
+
 - **Shareable**: URL works for everyone
 - **Installable**: On any device
 - **Professional**: No "figma.com" in URL
@@ -183,7 +197,7 @@ Share with your team after deployment:
 Email: architect@jlp.qc.ca
 Password: demo123
 
-🌐 App URL: 
+🌐 App URL:
 https://your-app.vercel.app
 (Replace after deployment)
 ```
@@ -193,12 +207,14 @@ https://your-app.vercel.app
 ## 🆘 If You Get Stuck
 
 ### Quick Fixes
+
 1. **Can't export?** → [EXPORT-GUIDE.md](./EXPORT-GUIDE.md)
 2. **Build fails?** → Check [DEPLOYMENT.md](./DEPLOYMENT.md) troubleshooting
 3. **Need commands?** → [COMMANDS.md](./COMMANDS.md)
 4. **Want to verify?** → [CHECKLIST.md](./CHECKLIST.md)
 
 ### Documentation Index
+
 **→ [INDEX.md](./INDEX.md)** - Find any doc instantly
 
 ---
@@ -206,12 +222,14 @@ https://your-app.vercel.app
 ## 💡 Pro Tips
 
 ### ✅ Do This:
+
 - Read the guide you chose fully before starting
 - Keep CHECKLIST.md open in another tab
 - Take your time - rushing causes errors
 - Test the PWA after deployment
 
 ### ❌ Avoid This:
+
 - Skipping steps
 - Editing config files
 - Deploying without verifying
@@ -224,6 +242,7 @@ https://your-app.vercel.app
 **RedMark** is a Construction Photo Intelligence tool built for architecture firms in Quebec.
 
 **Key Features**:
+
 - 📁 Project management
 - 📸 Photo documentation
 - 🏷️ Tag system (Non-conformité, Déficience, Observation)
@@ -254,15 +273,15 @@ https://your-app.vercel.app
 
 ## 📊 Time Breakdown
 
-| Step | Time | Guide Section |
-|------|------|---------------|
-| Export files | 2 min | Step 1 |
-| Create GitHub repo | 2 min | Step 2a |
-| Upload files | 3 min | Step 2b |
-| Connect Vercel | 2 min | Step 3a |
-| Deploy | 3 min | Step 3b |
-| Verify & test | 5 min | Step 4 |
-| **Total** | **~15 min** | - |
+| Step               | Time        | Guide Section |
+| ------------------ | ----------- | ------------- |
+| Export files       | 2 min       | Step 1        |
+| Create GitHub repo | 2 min       | Step 2a       |
+| Upload files       | 3 min       | Step 2b       |
+| Connect Vercel     | 2 min       | Step 3a       |
+| Deploy             | 3 min       | Step 3b       |
+| Verify & test      | 5 min       | Step 4        |
+| **Total**          | **~15 min** | -             |
 
 ---
 
@@ -302,6 +321,7 @@ git push
 🎨 **[UPDATE-VISUAL-FLOW.md](./UPDATE-VISUAL-FLOW.md)** - Visual diagrams & flowcharts
 
 **The Process:**
+
 1. Edit code in Figma Make
 2. Download changed files to your local folder
 3. Run `git push` (10 seconds)
@@ -338,22 +358,25 @@ You'll know it worked when:
 ✅ Can add to home screen (mobile)  
 ✅ Works offline (airplane mode test)  
 ✅ No console errors  
-✅ Lighthouse PWA score 90+  
+✅ Lighthouse PWA score 90+
 
 ---
 
 ## 🔗 Important Links
 
 ### Your Deployment Tools
+
 - **GitHub**: https://github.com
 - **Vercel**: https://vercel.com
 
 ### Your Project (After Deploy)
+
 - **GitHub Repo**: `github.com/YOUR_USERNAME/redmark-app`
 - **Live App**: `redmark-app.vercel.app`
 - **Vercel Dashboard**: `vercel.com/dashboard`
 
 ### Documentation
+
 - **Full Index**: [INDEX.md](./INDEX.md)
 - **Quick Start**: [QUICK-START.md](./QUICK-START.md)
 - **Full Guide**: [DEPLOYMENT.md](./DEPLOYMENT.md)
@@ -397,7 +420,7 @@ The app is solid, the docs are complete, and deployment is straightforward.
 
 ---
 
-*Built for: Jodoin Lamarre Pratte architectes*  
-*Location: Montreal, Quebec*  
-*Language: Français 🇫🇷*  
-*Version: 1.0.0*
+_Built for: Jodoin Lamarre Pratte architectes_  
+_Location: Montreal, Quebec_  
+_Language: Français 🇫🇷_  
+_Version: 1.0.0_

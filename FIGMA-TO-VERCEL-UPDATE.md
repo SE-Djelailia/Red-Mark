@@ -29,8 +29,9 @@
 ### **Step 1: Make Changes in Figma Make**
 
 Edit your files in Figma Make as usual:
+
 - ✅ Update components
-- ✅ Add new features  
+- ✅ Add new features
 - ✅ Fix bugs
 - ✅ Modify styles
 
@@ -50,6 +51,7 @@ Edit your files in Figma Make as usual:
 4. **Overwrite** the old files
 
 **Example**: If you only changed `Dashboard.tsx`:
+
 - Download just `Dashboard.tsx`
 - Replace the old file in `/src/app/components/Dashboard.tsx`
 
@@ -135,6 +137,7 @@ git push
 **You'll get an email**: "Your deployment is ready"
 
 **Check deployment status**:
+
 - Go to: https://vercel.com/dashboard
 - You'll see: "Building..." then "Ready ✓"
 
@@ -242,7 +245,8 @@ git push
 
 **Problem**: Git says "nothing to commit, working tree clean"
 
-**Solution**: 
+**Solution**:
+
 - You didn't download the updated files to your local folder
 - OR you downloaded to the wrong folder
 - Download files and make sure they're in the correct location
@@ -254,6 +258,7 @@ git push
 **Problem**: Someone else updated GitHub while you were working
 
 **Solution**:
+
 ```bash
 # Pull latest changes first
 git pull
@@ -269,6 +274,7 @@ git push
 **Problem**: Vercel build failed (syntax error, missing file, etc.)
 
 **Solution**:
+
 1. Check Vercel dashboard for error message
 2. Fix the error in Figma Make
 3. Download the fixed file
@@ -288,17 +294,21 @@ git push
 **Solutions**:
 
 **1. Hard refresh your browser:**
+
 - Windows: `Ctrl + Shift + R`
 - Mac: `Cmd + Shift + R`
 
 **2. Clear browser cache:**
+
 - Settings → Privacy → Clear browsing data
 
 **3. Check Vercel dashboard:**
+
 - Make sure deployment succeeded
 - Check deployment URL matches your site
 
 **4. Wait for PWA update:**
+
 - PWA service worker caches files
 - May take 1-2 minutes to update
 - Or close/reopen the app
@@ -326,12 +336,12 @@ git push
 
 ## 📊 Update Speed Comparison
 
-| Method | Download | Upload | Deploy | Total |
-|--------|----------|--------|--------|-------|
-| **Git (1 file)** | 10 sec | 10 sec | 30 sec | **50 sec** |
-| **Git (many files)** | 30 sec | 20 sec | 60 sec | **110 sec** |
-| **Web (1 file)** | 10 sec | 60 sec | 30 sec | **100 sec** |
-| **Web (many files)** | 30 sec | 300 sec | 60 sec | **390 sec** |
+| Method               | Download | Upload  | Deploy | Total       |
+| -------------------- | -------- | ------- | ------ | ----------- |
+| **Git (1 file)**     | 10 sec   | 10 sec  | 30 sec | **50 sec**  |
+| **Git (many files)** | 30 sec   | 20 sec  | 60 sec | **110 sec** |
+| **Web (1 file)**     | 10 sec   | 60 sec  | 30 sec | **100 sec** |
+| **Web (many files)** | 30 sec   | 300 sec | 60 sec | **390 sec** |
 
 **Git commands are 3-4x faster!** ⚡
 
@@ -362,6 +372,7 @@ git push
 **Create a shortcut for super-fast updates:**
 
 **Windows** (save as `update.bat`):
+
 ```batch
 @echo off
 git add .
@@ -373,6 +384,7 @@ echo Check: https://vercel.com/dashboard
 ```
 
 **Mac/Linux** (save as `update.sh`):
+
 ```bash
 #!/bin/bash
 git add .
@@ -384,6 +396,7 @@ echo "Check: https://vercel.com/dashboard"
 ```
 
 **Usage**:
+
 ```bash
 # Windows:
 update.bat "Fixed dashboard bug"

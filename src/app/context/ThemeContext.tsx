@@ -14,12 +14,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Check localStorage first
     const saved = localStorage.getItem("redmark-theme");
     if (saved === "light" || saved === "dark") return saved;
-    
+
     // Check system preference
     if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
       return "dark";
     }
-    
+
     return "light";
   });
 
@@ -28,17 +28,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(theme);
-    
+
     // Save to localStorage
     localStorage.setItem("redmark-theme", theme);
-    
+
     // Update meta theme-color for mobile browsers
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      metaThemeColor.setAttribute(
-        "content",
-        theme === "dark" ? "#1A1A1A" : "#FFFFFF"
-      );
+      metaThemeColor.setAttribute("content", theme === "dark" ? "#1A1A1A" : "#FFFFFF");
     }
   }, [theme]);
 
@@ -46,11 +43,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
 
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

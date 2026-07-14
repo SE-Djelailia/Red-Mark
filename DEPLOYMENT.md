@@ -113,12 +113,13 @@ Vercel should auto-detect everything, but verify:
 3. **Look for**:
    - Install icon in address bar (⊕ or ⬇ icon)
    - Or automatic install prompt
-4. **Click** "Install" 
+4. **Click** "Install"
 5. **RedMark opens** as standalone app! 🎉
 
 ### 4.2 Test on Mobile
 
 #### iPhone/iPad (Safari):
+
 1. **Open** Vercel URL in Safari
 2. **Tap** Share button (square with arrow)
 3. **Scroll** down, tap "Add to Home Screen"
@@ -126,6 +127,7 @@ Vercel should auto-detect everything, but verify:
 5. **Icon appears** on home screen!
 
 #### Android (Chrome):
+
 1. **Open** Vercel URL in Chrome
 2. **Tap** menu (⋮)
 3. **Select** "Install app" or "Add to Home Screen"
@@ -172,7 +174,7 @@ After successful deployment:
 ✅ **Auto-Updates**: App updates automatically  
 ✅ **App Shortcuts**: Long-press icon shows shortcuts  
 ✅ **Standalone Mode**: Opens without browser UI  
-✅ **Fast Loading**: Instant start from cache  
+✅ **Fast Loading**: Instant start from cache
 
 ---
 
@@ -181,6 +183,7 @@ After successful deployment:
 ### "Install button doesn't appear"
 
 **Check**:
+
 - URL is HTTPS (Vercel always uses HTTPS ✅)
 - Service worker registered (check DevTools → Application)
 - Manifest detected (check DevTools → Application → Manifest)
@@ -191,6 +194,7 @@ After successful deployment:
 ### "Service Worker not found"
 
 **Check**:
+
 - `vite.config.ts` has VitePWA plugin
 - `vercel.json` exists with correct config
 - Build completed successfully
@@ -200,6 +204,7 @@ After successful deployment:
 ### "App won't work offline"
 
 **Check**:
+
 - Service worker is "activated and running"
 - Cache storage has files
 - You opened the app at least once while online
@@ -231,6 +236,7 @@ When you make changes:
 ### Analytics (Optional)
 
 Add Vercel Analytics:
+
 1. In Vercel dashboard → Your project
 2. Click "Analytics" tab
 3. Click "Enable"
@@ -240,9 +246,10 @@ Add Vercel Analytics:
 
 ## 🎉 Success!
 
-Your RedMark PWA is now live and installable! 
+Your RedMark PWA is now live and installable!
 
 **Share your URL**:
+
 - Desktop: `https://redmark-app.vercel.app`
 - Direct install link for team members
 - Add custom domain (optional)
@@ -252,11 +259,13 @@ Your RedMark PWA is now live and installable!
 ## 📞 Need Help?
 
 **Common Issues**:
+
 - Build fails → Check package.json dependencies
 - 404 errors → Check vercel.json rewrites
 - PWA not installable → Check manifest + service worker
 
 **Vercel Support**:
+
 - Documentation: https://vercel.com/docs
 - Community: https://github.com/vercel/vercel/discussions
 

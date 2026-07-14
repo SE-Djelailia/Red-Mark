@@ -17,6 +17,7 @@ Cette migration permet à RedMark de passer de localStorage (stockage local) à 
 ### 1.1 Créer le projet Supabase
 
 Ton projet Supabase existe déjà avec les identifiants suivants :
+
 - **Project ID**: `kcaxzgomyzuvsghnzufo`
 - **URL**: `https://kcaxzgomyzuvsghnzufo.supabase.co`
 
@@ -31,6 +32,7 @@ Ton projet Supabase existe déjà avec les identifiants suivants :
 7. Attends que toutes les tables soient créées (tu verras "Success" en vert)
 
 **✅ Vérifie que ces tables ont été créées :**
+
 - `profiles`
 - `projects`
 - `project_members`
@@ -55,16 +57,18 @@ Ton projet Supabase existe déjà avec les identifiants suivants :
 3. Clique sur **"New policy"**
 
 **Politique 1 : Upload (INSERT)**
+
 ```sql
 CREATE POLICY "Users can upload their own photos"
 ON storage.objects FOR INSERT
 WITH CHECK (
-  bucket_id = 'project-photos' 
+  bucket_id = 'project-photos'
   AND auth.uid()::text = (storage.foldername(name))[1]
 );
 ```
 
 **Politique 2 : View (SELECT)**
+
 ```sql
 CREATE POLICY "Users can view their own photos"
 ON storage.objects FOR SELECT
@@ -75,6 +79,7 @@ USING (
 ```
 
 **Politique 3 : Delete (DELETE)**
+
 ```sql
 CREATE POLICY "Users can delete their own photos"
 ON storage.objects FOR DELETE
@@ -126,6 +131,7 @@ Une fois que tu as configuré Supabase :
 
 1. **Ouvre la console du navigateur** (F12)
 2. Tu devrais voir des logs comme :
+
    ```
    ✅ User created: votre@email.com
    🔄 Migrating X projects to Supabase...
@@ -172,6 +178,7 @@ Le plan gratuit de Supabase inclut :
 - ✅ **2 GB** de bande passante
 
 **Pour monitorer ton utilisation :**
+
 1. Va dans **"Settings" → "Billing"**
 2. Tu verras ton usage actuel en temps réel
 
@@ -180,23 +187,27 @@ Le plan gratuit de Supabase inclut :
 ## 🐛 Dépannage
 
 ### Problème : "Invalid API key"
+
 - ✅ Vérifie que les variables d'environnement sont correctes dans `/utils/supabase/info.tsx`
 
 ### Problème : "Row Level Security policy violation"
+
 - ✅ Vérifie que les RLS policies sont bien créées (voir étape 1.2)
 - ✅ Exécute à nouveau le script `/supabase-schema.sql`
 
 ### Problème : "Storage bucket not found"
+
 - ✅ Crée le bucket `project-photos` (voir étape 1.3)
 - ✅ Vérifie que les policies de storage sont créées
 
 ### Problème : Migration ne démarre pas
+
 - ✅ Ouvre la console (F12) et cherche les erreurs
 - ✅ Vérifie que tu es bien connecté
 - ✅ Essaie de réinitialiser le flag de migration :
   ```javascript
   // Dans la console du navigateur
-  localStorage.removeItem('migration_completed_VOTRE_USER_ID');
+  localStorage.removeItem("migration_completed_VOTRE_USER_ID");
   ```
 
 ---
@@ -231,6 +242,7 @@ Si tu rencontres des problèmes :
 Une fois toutes ces étapes complétées, RedMark utilisera Supabase comme backend !
 
 **Avantages immédiats :**
+
 - 🔒 Données sécurisées dans le cloud
 - 🌍 Accessibles de n'importe où
 - 👥 Collaboration possible

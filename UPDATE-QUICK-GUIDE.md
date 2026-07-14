@@ -37,6 +37,7 @@ git push
 ## 🎯 Complete Workflow
 
 ### **STEP 1: Make Changes**
+
 - Edit files in Figma Make
 - Test your changes
 - Ready to deploy? → Step 2
@@ -79,12 +80,14 @@ git push
 #### **Option B: Web Upload**
 
 **For single file:**
+
 1. GitHub → Find file → Click file name
 2. Click ✏️ pencil icon (Edit)
 3. Copy/paste new content
 4. "Commit changes"
 
 **For multiple files:**
+
 1. GitHub → "Add file" → "Upload files"
 2. Drag new files
 3. "Commit changes"
@@ -119,6 +122,7 @@ git push
 ## 🔥 Super Quick Commands
 
 ### **Standard Update**
+
 ```bash
 git add .
 git commit -m "Update: your message here"
@@ -126,6 +130,7 @@ git push
 ```
 
 ### **Quick Bug Fix**
+
 ```bash
 git add .
 git commit -m "Fix: describe the bug fixed"
@@ -133,6 +138,7 @@ git push
 ```
 
 ### **New Feature**
+
 ```bash
 git add .
 git commit -m "Feature: describe new feature"
@@ -140,6 +146,7 @@ git push
 ```
 
 ### **Style Changes**
+
 ```bash
 git add .
 git commit -m "Style: describe visual changes"
@@ -151,6 +158,7 @@ git push
 ## 🎯 Common Scenarios
 
 ### **"I fixed a typo"**
+
 ```bash
 # Download the file with the fix
 cd redmark-app
@@ -163,6 +171,7 @@ git push
 ---
 
 ### **"I added a new component"**
+
 ```bash
 # Download the new component file(s)
 cd redmark-app
@@ -175,6 +184,7 @@ git push
 ---
 
 ### **"I changed colors/styles"**
+
 ```bash
 # Download updated style files
 cd redmark-app
@@ -187,6 +197,7 @@ git push
 ---
 
 ### **"I changed multiple files"**
+
 ```bash
 # Download all changed files (or all files to be safe)
 cd redmark-app
@@ -201,16 +212,20 @@ git push
 ## 🐛 Quick Troubleshooting
 
 ### **"Changes not showing"**
+
 → Hard refresh: `Ctrl + Shift + R` (Win) or `Cmd + Shift + R` (Mac)
 
 ### **"Nothing to commit"**
+
 → You forgot to download files from Figma Make
 
 ### **"Deployment failed"**
+
 → Check Vercel dashboard for error
 → Fix in Figma Make → Download → Push again
 
 ### **"Merge conflict"**
+
 ```bash
 git pull
 git push
@@ -223,8 +238,9 @@ git push
 ✅ **Test first**: Always test in Figma Make before deploying
 
 ✅ **Descriptive messages**: Use clear commit messages
-   - Good: "Fix: Photo upload validation error"
-   - Bad: "update" or "changes"
+
+- Good: "Fix: Photo upload validation error"
+- Bad: "update" or "changes"
 
 ✅ **One feature at a time**: Easier to debug if something breaks
 
@@ -236,12 +252,12 @@ git push
 
 ## 📊 Time Comparison
 
-| Update Method | Time |
-|---------------|------|
+| Update Method         | Time   |
+| --------------------- | ------ |
 | **Git (single file)** | 50 sec |
-| **Git (many files)** | 2 min |
-| **Web (single file)** | 2 min |
-| **Web (many files)** | 6+ min |
+| **Git (many files)**  | 2 min  |
+| **Web (single file)** | 2 min  |
+| **Web (many files)**  | 6+ min |
 
 **Git is 3-4x faster!** ⚡
 
@@ -285,6 +301,7 @@ git push
 **For PWA users:**
 
 After deployment, the app will auto-update:
+
 - ✅ App detects new version
 - ✅ Shows update notification
 - ✅ User clicks "Update"

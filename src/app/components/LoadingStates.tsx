@@ -71,10 +71,7 @@ export function PhotoGridSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
       {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="aspect-square bg-gray-200 rounded-lg animate-pulse"
-        />
+        <div key={i} className="aspect-square bg-gray-200 rounded-lg animate-pulse" />
       ))}
     </div>
   );
@@ -105,9 +102,7 @@ export function FullPageLoader({ message }: { message?: string }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
       <LoadingSpinner size="lg" />
-      {message && (
-        <p className="mt-4 text-sm text-gray-600">{message}</p>
-      )}
+      {message && <p className="mt-4 text-sm text-gray-600">{message}</p>}
     </div>
   );
 }
@@ -116,9 +111,7 @@ export function InlineLoader({ message }: { message?: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-8">
       <LoadingSpinner size="md" />
-      {message && (
-        <p className="mt-3 text-sm text-gray-600">{message}</p>
-      )}
+      {message && <p className="mt-3 text-sm text-gray-600">{message}</p>}
     </div>
   );
 }

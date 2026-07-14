@@ -125,21 +125,15 @@ export default function FloorPlanManager({ projectId }: Props) {
               className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 hover:border-[#E10600] hover:shadow-md transition-all"
             >
               <button
-                onClick={() =>
-                  navigate(`/app/projects/${projectId}/floor-plans/${plan.id}`)
-                }
+                onClick={() => navigate(`/app/projects/${projectId}/floor-plans/${plan.id}`)}
                 className="flex-1 flex items-center gap-3 text-left min-w-0"
               >
                 <div className="w-12 h-12 rounded-lg bg-[#E10600]/10 text-[#E10600] flex items-center justify-center flex-shrink-0">
                   <FileImage size={22} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-[#1A1A1A] font-medium truncate">
-                    {plan.name}
-                  </div>
-                  {plan.level && (
-                    <div className="text-xs text-gray-500 truncate">{plan.level}</div>
-                  )}
+                  <div className="text-sm text-[#1A1A1A] font-medium truncate">{plan.name}</div>
+                  {plan.level && <div className="text-xs text-gray-500 truncate">{plan.level}</div>}
                 </div>
                 <ChevronRight size={18} className="text-gray-400 flex-shrink-0" />
               </button>

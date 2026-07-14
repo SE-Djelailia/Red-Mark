@@ -1,7 +1,7 @@
 export interface Notification {
   id: string;
   userId: string; // User who receives the notification
-  type: 'mention' | 'reply';
+  type: "mention" | "reply";
   message: string;
   commentId: string;
   issueId: string;
@@ -13,7 +13,7 @@ export interface Notification {
   read: boolean;
 }
 
-const STORAGE_KEY = 'redmark_notifications';
+const STORAGE_KEY = "redmark_notifications";
 
 // Get all notifications from localStorage
 function getAllNotifications(): Notification[] {
@@ -21,7 +21,7 @@ function getAllNotifications(): Notification[] {
     const data = localStorage.getItem(STORAGE_KEY);
     return data ? JSON.parse(data) : [];
   } catch (error) {
-    console.error('Error loading notifications:', error);
+    console.error("Error loading notifications:", error);
     return [];
   }
 }
@@ -31,7 +31,7 @@ function saveAllNotifications(notifications: Notification[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
   } catch (error) {
-    console.error('Error saving notifications:', error);
+    console.error("Error saving notifications:", error);
   }
 }
 
@@ -39,30 +39,30 @@ function saveAllNotifications(notifications: Notification[]): void {
 export function getUserNotifications(userId: string): Notification[] {
   const allNotifications = getAllNotifications();
   return allNotifications
-    .filter(notif => notif.userId === userId)
+    .filter((notif) => notif.userId === userId)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 // Get unread count for a user
 export function getUnreadCount(userId: string): number {
   const notifications = getUserNotifications(userId);
-  return notifications.filter(n => !n.read).length;
+  return notifications.filter((n) => !n.read).length;
 }
 
 // Create a notification
 export function createNotification(
   userId: string,
-  type: Notification['type'],
+  type: Notification["type"],
   message: string,
   commentId: string,
   issueId: string,
   projectId: string,
   fromUserId: string,
   fromUserName: string,
-  visitId?: string
+  visitId?: string,
 ): Notification {
-  console.log('🔔 Creating notification:', { userId, type, fromUserName, message });
-  
+  console.log("🔔 Creating notification:", { userId, type, fromUserName, message });
+
   const notification: Notification = {
     id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     userId,
@@ -81,9 +81,9 @@ export function createNotification(
   const allNotifications = getAllNotifications();
   allNotifications.push(notification);
   saveAllNotifications(allNotifications);
-  
-  console.log('✅ Notification saved to localStorage:', notification);
-  console.log('📊 Total notifications in storage:', allNotifications.length);
+
+  console.log("✅ Notification saved to localStorage:", notification);
+  console.log("📊 Total notifications in storage:", allNotifications.length);
 
   return notification;
 }
@@ -91,8 +91,8 @@ export function createNotification(
 // Mark notification as read
 export function markAsRead(notificationId: string): boolean {
   const allNotifications = getAllNotifications();
-  const index = allNotifications.findIndex(n => n.id === notificationId);
-  
+  const index = allNotifications.findIndex((n) => n.id === notificationId);
+
   if (index === -1) return false;
 
   allNotifications[index].read = true;
@@ -105,7 +105,7 @@ export function markAllAsRead(userId: string): boolean {
   const allNotifications = getAllNotifications();
   let updated = false;
 
-  allNotifications.forEach(notif => {
+  allNotifications.forEach((notif) => {
     if (notif.userId === userId && !notif.read) {
       notif.read = true;
       updated = true;
@@ -122,8 +122,8 @@ export function markAllAsRead(userId: string): boolean {
 // Delete a notification
 export function deleteNotification(notificationId: string): boolean {
   const allNotifications = getAllNotifications();
-  const filtered = allNotifications.filter(n => n.id !== notificationId);
-  
+  const filtered = allNotifications.filter((n) => n.id !== notificationId);
+
   if (filtered.length === allNotifications.length) return false;
 
   saveAllNotifications(filtered);
@@ -133,14 +133,14 @@ export function deleteNotification(notificationId: string): boolean {
 // Get all users (for mention suggestions)
 export function getAllUsers(): Array<{ id: string; name: string; email: string }> {
   try {
-    const users = JSON.parse(localStorage.getItem('redmark_users') || '[]');
+    const users = JSON.parse(localStorage.getItem("redmark_users") || "[]");
     return users.map((u: any) => ({
       id: u.id,
       name: u.user_metadata?.name || u.email,
       email: u.email,
     }));
   } catch (error) {
-    console.error('Error loading users:', error);
+    console.error("Error loading users:", error);
     return [];
   }
 }

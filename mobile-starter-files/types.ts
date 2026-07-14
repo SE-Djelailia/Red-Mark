@@ -47,8 +47,8 @@ export interface Issue {
   visit_id: string;
   title: string;
   description: string | null;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority: "low" | "medium" | "high" | "critical";
+  status: "open" | "in_progress" | "resolved" | "closed";
   created_at: string;
   updated_at: string;
 }
@@ -105,11 +105,11 @@ export interface CreateIssueForm {
   visit_id: string;
   title: string;
   description: string;
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  priority: "low" | "medium" | "high" | "critical";
 }
 
 // Utility Types
-export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
+export type LoadingState = "idle" | "loading" | "success" | "error";
 
 export interface PaginatedResponse<T> {
   data: T[];

@@ -1,10 +1,6 @@
 import { useNavigate } from "react-router";
 import { useAuth } from "../../contexts/useAuth";
-import {
-  getDashboardStats,
-  getAllUserIssues,
-  type DashboardStats,
-} from "../../lib/supabaseApi";
+import { getDashboardStats, getAllUserIssues, type DashboardStats } from "../../lib/supabaseApi";
 import { supabase } from "../../lib/supabase";
 import { formatDateShort } from "../../lib/dateUtils";
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -56,7 +52,7 @@ export default function Dashboard() {
         if (showSpinner) setRefreshing(false);
       }
     },
-    [user?.id]
+    [user?.id],
   );
 
   // Chargement initial + rechargement quand l'onglet redevient visible
@@ -84,7 +80,11 @@ export default function Dashboard() {
     const channel = supabase
       .channel("dashboard-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, scheduleRefresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "site_visits" }, scheduleRefresh)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "site_visits" },
+        scheduleRefresh,
+      )
       .on("postgres_changes", { event: "*", schema: "public", table: "photos" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "issues" }, scheduleRefresh)
       .subscribe();
@@ -243,7 +243,9 @@ export default function Dashboard() {
                 <AlertCircle size={16} className="text-red-600" />
                 <span className="text-xs text-red-600 font-medium">Ouvert</span>
               </div>
-              <div className="text-xl font-semibold text-red-700">{loading ? "—" : stats.openIssues}</div>
+              <div className="text-xl font-semibold text-red-700">
+                {loading ? "—" : stats.openIssues}
+              </div>
             </div>
 
             <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
@@ -251,7 +253,9 @@ export default function Dashboard() {
                 <Clock size={16} className="text-blue-600" />
                 <span className="text-xs text-blue-600 font-medium">En cours</span>
               </div>
-              <div className="text-xl font-semibold text-blue-700">{loading ? "—" : stats.inProgressIssues}</div>
+              <div className="text-xl font-semibold text-blue-700">
+                {loading ? "—" : stats.inProgressIssues}
+              </div>
             </div>
 
             <div className="bg-green-50 rounded-lg p-3 border border-green-200">
@@ -259,7 +263,9 @@ export default function Dashboard() {
                 <CheckCircle size={16} className="text-green-600" />
                 <span className="text-xs text-green-600 font-medium">Résolu</span>
               </div>
-              <div className="text-xl font-semibold text-green-700">{loading ? "—" : stats.resolvedIssues}</div>
+              <div className="text-xl font-semibold text-green-700">
+                {loading ? "—" : stats.resolvedIssues}
+              </div>
             </div>
           </div>
         </div>
@@ -295,7 +301,7 @@ export default function Dashboard() {
                     <div className="flex-shrink-0">
                       <span
                         className={`px-2 py-1 rounded text-xs font-medium border ${getPriorityColor(
-                          issue.priority
+                          issue.priority,
                         )}`}
                       >
                         {getPriorityLabel(issue.priority)}

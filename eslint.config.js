@@ -6,13 +6,17 @@ import tseslint from "typescript-eslint";
 import eslintConfigPrettier from "eslint-config-prettier";
 
 export default tseslint.config(
-  { ignores: ["dist", "dev-dist", "node_modules", "src/imports"] },
+  { ignores: ["dist", "dev-dist", "node_modules", "src/imports", "supabase/functions"] },
   {
-    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.browser,
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
     plugins: {
       "react-hooks": reactHooks,
@@ -20,10 +24,7 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      "react-refresh/only-export-components": [
-        "warn",
-        { allowConstantExport: true },
-      ],
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": [
         "warn",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },

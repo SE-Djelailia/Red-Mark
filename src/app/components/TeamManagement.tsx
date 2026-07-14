@@ -52,7 +52,7 @@ export default function TeamManagement({ onClose }: TeamManagementProps) {
       return;
     }
 
-    if (teamMembers.some(m => m.email === inviteEmail)) {
+    if (teamMembers.some((m) => m.email === inviteEmail)) {
       toast.error("Ce membre fait déjà partie de l'équipe");
       return;
     }
@@ -72,17 +72,15 @@ export default function TeamManagement({ onClose }: TeamManagementProps) {
   };
 
   const handleRemoveMember = (memberId: string) => {
-    const member = teamMembers.find(m => m.id === memberId);
+    const member = teamMembers.find((m) => m.id === memberId);
     if (member) {
-      saveTeamMembers(teamMembers.filter(m => m.id !== memberId));
+      saveTeamMembers(teamMembers.filter((m) => m.id !== memberId));
       toast.success(`${member.email} retiré de l'équipe`);
     }
   };
 
   const handleChangeRole = (memberId: string, newRole: "admin" | "member" | "viewer") => {
-    saveTeamMembers(
-      teamMembers.map(m => m.id === memberId ? { ...m, role: newRole } : m)
-    );
+    saveTeamMembers(teamMembers.map((m) => (m.id === memberId ? { ...m, role: newRole } : m)));
     toast.success("Rôle mis à jour");
   };
 
@@ -202,9 +200,15 @@ export default function TeamManagement({ onClose }: TeamManagementProps) {
             <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="text-sm font-medium text-blue-900 mb-2">À propos des rôles</h4>
               <ul className="text-xs text-blue-800 space-y-1">
-                <li><strong>Admin:</strong> Accès complet, peut gérer l'équipe</li>
-                <li><strong>Membre:</strong> Peut créer et modifier des projets partagés</li>
-                <li><strong>Observateur:</strong> Peut seulement consulter les projets</li>
+                <li>
+                  <strong>Admin:</strong> Accès complet, peut gérer l'équipe
+                </li>
+                <li>
+                  <strong>Membre:</strong> Peut créer et modifier des projets partagés
+                </li>
+                <li>
+                  <strong>Observateur:</strong> Peut seulement consulter les projets
+                </li>
               </ul>
             </div>
           </div>

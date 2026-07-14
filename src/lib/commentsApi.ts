@@ -10,7 +10,7 @@ export interface Comment {
   mentions?: string[]; // User IDs mentioned in the comment
 }
 
-const STORAGE_KEY = 'redmark_comments';
+const STORAGE_KEY = "redmark_comments";
 
 // Get all comments from localStorage
 function getAllComments(): Comment[] {
@@ -18,7 +18,7 @@ function getAllComments(): Comment[] {
     const data = localStorage.getItem(STORAGE_KEY);
     return data ? JSON.parse(data) : [];
   } catch (error) {
-    console.error('Error loading comments:', error);
+    console.error("Error loading comments:", error);
     return [];
   }
 }
@@ -28,20 +28,20 @@ function saveAllComments(comments: Comment[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(comments));
   } catch (error) {
-    console.error('Error saving comments:', error);
+    console.error("Error saving comments:", error);
   }
 }
 
 // Get comments for a specific issue
 export function getCommentsForIssue(issueId: string): Comment[] {
   const allComments = getAllComments();
-  return allComments.filter(comment => comment.issueId === issueId);
+  return allComments.filter((comment) => comment.issueId === issueId);
 }
 
 // Get comments for a specific visit
 export function getCommentsForVisit(visitId: string): Comment[] {
   const allComments = getAllComments();
-  return allComments.filter(comment => comment.visitId === visitId);
+  return allComments.filter((comment) => comment.visitId === visitId);
 }
 
 // Add a new comment for an issue
@@ -51,7 +51,7 @@ export function addComment(
   author: string,
   authorId: string,
   parentCommentId?: string,
-  mentions?: string[]
+  mentions?: string[],
 ): Comment {
   const newComment: Comment = {
     id: Date.now().toString(),
@@ -61,7 +61,7 @@ export function addComment(
     date: new Date().toISOString(), // Store full ISO string with time
     text,
     parentCommentId,
-    mentions
+    mentions,
   };
 
   const allComments = getAllComments();
@@ -78,7 +78,7 @@ export function addVisitComment(
   author: string,
   authorId: string,
   parentCommentId?: string,
-  mentions?: string[]
+  mentions?: string[],
 ): Comment {
   const newComment: Comment = {
     id: Date.now().toString(),
@@ -88,7 +88,7 @@ export function addVisitComment(
     date: new Date().toISOString(), // Store full ISO string with time
     text,
     parentCommentId,
-    mentions
+    mentions,
   };
 
   const allComments = getAllComments();
@@ -101,13 +101,13 @@ export function addVisitComment(
 // Update a comment
 export function updateComment(commentId: string, text: string): Comment | null {
   const allComments = getAllComments();
-  const index = allComments.findIndex(c => c.id === commentId);
-  
+  const index = allComments.findIndex((c) => c.id === commentId);
+
   if (index === -1) return null;
 
   allComments[index] = {
     ...allComments[index],
-    text
+    text,
   };
 
   saveAllComments(allComments);
@@ -117,8 +117,8 @@ export function updateComment(commentId: string, text: string): Comment | null {
 // Delete a comment
 export function deleteComment(commentId: string): boolean {
   const allComments = getAllComments();
-  const filtered = allComments.filter(c => c.id !== commentId);
-  
+  const filtered = allComments.filter((c) => c.id !== commentId);
+
   if (filtered.length === allComments.length) return false;
 
   saveAllComments(filtered);
