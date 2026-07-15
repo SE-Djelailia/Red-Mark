@@ -23,6 +23,14 @@ export interface QueuedUpload {
 
 let db: IDBDatabase | null = null;
 
+// Fired on window whenever the queue's contents change (add/remove/status update),
+// so UI like OfflineIndicator can refresh its pending count without polling.
+export const UPLOAD_QUEUE_CHANGED_EVENT = "uploadqueue:change";
+
+const notifyQueueChanged = (): void => {
+  window.dispatchEvent(new Event(UPLOAD_QUEUE_CHANGED_EVENT));
+};
+
 // IDBRequest.error is nullable even when onerror fires; fall back to a generic Error.
 const requestError = (error: DOMException | null): Error => error ?? new Error("IndexedDB request failed");
 
@@ -80,6 +88,7 @@ export const addToQueue = async (
 
     request.onsuccess = () => {
       console.log("✅ Photo added to upload queue:", queuedItem.id);
+      notifyQueueChanged();
       resolve(queuedItem.id);
     };
 
@@ -121,6 +130,7 @@ export const removeFromQueue = async (id: string): Promise<void> => {
 
     request.onsuccess = () => {
       console.log("✅ Item removed from upload queue:", id);
+      notifyQueueChanged();
       resolve();
     };
 
@@ -155,6 +165,7 @@ export const updateQueueItemStatus = async (
 
       putRequest.onsuccess = () => {
         console.log(`✅ Upload queue item ${id} status updated to "${status}"`);
+        notifyQueueChanged();
         resolve();
       };
 
