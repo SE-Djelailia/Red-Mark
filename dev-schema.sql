@@ -123,7 +123,8 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "role" "text" DEFAULT 'architect'::"text",
     "avatar_url" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "org_role" "text" DEFAULT 'member'::"text" NOT NULL
 );
 
 
@@ -191,6 +192,11 @@ ALTER TABLE ONLY "public"."photos"
 
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_email_key" UNIQUE ("email");
+
+
+
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_org_role_check" CHECK (("org_role" = ANY (ARRAY['admin'::"text", 'member'::"text"])));
 
 
 
