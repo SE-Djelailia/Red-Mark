@@ -29,6 +29,34 @@ interface IssueExtras {
   photos?: { id: string; url: string }[];
 }
 
+// Thrown by updateIssue/deleteIssue on failure, carrying the Postgres/PostgREST
+// error code so callers can distinguish "blocked by RLS" from other failures.
+export class IssueUpdateError extends Error {
+  code?: string;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = "IssueUpdateError";
+    this.code = code;
+  }
+}
+
+// PGRST116 = PostgREST's "0 rows" error. For an UPDATE/DELETE with .select(),
+// that specific signature means RLS silently excluded the row from the write
+// (the row exists and is readable, but the current user isn't allowed to
+// modify it) rather than the row simply not existing.
+function isPermissionError(err: unknown): boolean {
+  return err instanceof IssueUpdateError && err.code === "PGRST116";
+}
+
+// Map an error from updateIssue/deleteIssue to a user-facing message.
+export function getIssueErrorMessage(err: unknown, fallback: string): string {
+  if (isPermissionError(err)) {
+    return "Seul le créateur ou un administrateur peut modifier cette déficience.";
+  }
+  return fallback;
+}
+
 // Get current user ID from Supabase
 async function getCurrentUserId(): Promise<string | null> {
   try {
@@ -169,7 +197,7 @@ export async function createIssue(
 // Update an existing issue
 export async function updateIssue(
   issueId: string,
-  updates: Partial<Omit<Issue, "id" | "createdBy" | "createdDate">>,
+  updates: Partial<Omit<Issue, "id" | "createdBy">>,
 ): Promise<Issue | null> {
   // Fetch the current issue so we can merge the JSONB extras
   const current = await getIssue(issueId);
@@ -186,6 +214,9 @@ export async function updateIssue(
     payload.resolved_at = updates.status === "resolved" ? new Date().toISOString() : null;
   }
   if (updates.visitId !== undefined) payload.visit_id = updates.visitId || null;
+  if (updates.createdDate !== undefined) {
+    payload.created_at = new Date(`${updates.createdDate}T00:00:00.000Z`).toISOString();
+  }
 
   // Rebuild extras JSONB if any of its constituent fields changed
   if (
@@ -206,17 +237,24 @@ export async function updateIssue(
 
   if (error) {
     console.error("Error updating issue:", error);
-    return null;
+    throw new IssueUpdateError(error.message, error.code);
   }
   return rowToIssue(data);
 }
 
 // Delete an issue
 export async function deleteIssue(issueId: string): Promise<boolean> {
-  const { error } = await supabase.from("issues").delete().eq("id", issueId);
+  // .select() forces PostgREST to return the deleted row(s); an empty array
+  // means RLS silently excluded the row from the delete (0 rows affected),
+  // which otherwise reports no error at all for a plain DELETE.
+  const { data, error } = await supabase.from("issues").delete().eq("id", issueId).select();
+
   if (error) {
     console.error("Error deleting issue:", error);
-    return false;
+    throw new IssueUpdateError(error.message, error.code);
+  }
+  if (!data || data.length === 0) {
+    throw new IssueUpdateError("No rows deleted", "PGRST116");
   }
   return true;
 }

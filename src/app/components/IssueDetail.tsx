@@ -14,11 +14,16 @@ import {
   Edit,
   Trash2,
 } from "lucide-react";
-import { getIssue, updateIssue, deleteIssue } from "../../lib/issuesApi";
+import {
+  getIssue,
+  updateIssue,
+  deleteIssue,
+  getIssueErrorMessage,
+  type Issue,
+} from "../../lib/issuesApi";
 import { getCommentsForIssue } from "../../lib/commentsApi";
 import { parseLocalDate, formatDateLongWithWeekday, formatDateForInput } from "../../lib/dateUtils";
 import CommentThread from "./CommentThread";
-import type { Issue } from "./IssueCreation";
 import type { Comment } from "../../lib/commentsApi";
 
 export default function IssueDetail() {
@@ -29,23 +34,50 @@ export default function IssueDetail() {
 
   const [comments, setComments] = useState<Comment[]>([]);
 
-  // Load issue from localStorage and manage editable state
+  // Issue data and editable state
   const [issue, setIssue] = useState<Issue | null>(null);
+  const [isLoadingIssue, setIsLoadingIssue] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [isEditingLocation, setIsEditingLocation] = useState(false);
   const [isEditingDate, setIsEditingDate] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [isEditingAssignedTo, setIsEditingAssignedTo] = useState(false);
   const [editedLocation, setEditedLocation] = useState("");
   const [editedDate, setEditedDate] = useState("");
   const [editedDescription, setEditedDescription] = useState("");
+  const [editedAssignedTo, setEditedAssignedTo] = useState("");
 
   useEffect(() => {
-    const loadedIssue = getIssue(issueId || "");
-    if (loadedIssue) {
-      setIssue(loadedIssue);
-      setEditedLocation(loadedIssue.location);
-      setEditedDate(loadedIssue.createdDate);
-      setEditedDescription(loadedIssue.description);
-    }
+    let cancelled = false;
+    setIsLoadingIssue(true);
+    setLoadError(null);
+
+    getIssue(issueId || "")
+      .then((loadedIssue) => {
+        if (cancelled) return;
+        if (loadedIssue) {
+          setIssue(loadedIssue);
+          setEditedLocation(loadedIssue.location);
+          setEditedDate(loadedIssue.createdDate);
+          setEditedDescription(loadedIssue.description);
+          setEditedAssignedTo(loadedIssue.assignedTo);
+        } else {
+          setLoadError("Déficience introuvable.");
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("Error loading issue:", err);
+        setLoadError("Impossible de charger la déficience.");
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingIssue(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [issueId]);
 
   useEffect(() => {
@@ -55,12 +87,14 @@ export default function IssueDetail() {
   // Empty issue data - will be populated from backend
   const defaultIssue: Issue = {
     id: issueId || "1",
+    visitId: visitId || "",
     projectId: "1",
     title: "Chargement...",
     description: "",
     priority: "medium",
     status: "open",
     assignedTo: "",
+    createdBy: "",
     photos: [],
     location: "",
     createdDate: new Date().toISOString().split("T")[0],
@@ -135,55 +169,96 @@ export default function IssueDetail() {
   const PriorityIcon = priorityConfig.icon;
   const StatusIcon = statusConfig.icon;
 
-  const handleSaveLocation = () => {
-    if (issue && issueId) {
-      const updated = updateIssue(issueId, { location: editedLocation });
-      if (updated) {
-        setIssue(updated);
-        setIsEditingLocation(false);
-      }
+  // Applies a successful updateIssue() result, or surfaces a message if the
+  // issue no longer exists (e.g. deleted by someone else since page load —
+  // distinct from a permission error, which updateIssue throws instead).
+  const applyIssueUpdate = (updated: Issue | null): boolean => {
+    if (!updated) {
+      setSaveError("Cette déficience n'existe plus.");
+      return false;
+    }
+    setIssue(updated);
+    return true;
+  };
+
+  const handleSaveLocation = async () => {
+    if (!issue || !issueId) return;
+    setSaveError(null);
+    try {
+      const updated = await updateIssue(issueId, { location: editedLocation });
+      if (applyIssueUpdate(updated)) setIsEditingLocation(false);
+    } catch (err) {
+      console.error("Error saving location:", err);
+      setSaveError(getIssueErrorMessage(err, "Impossible de sauvegarder l'emplacement. Réessayez."));
     }
   };
 
-  const handleSaveDate = () => {
-    if (issue && issueId) {
-      const updated = updateIssue(issueId, { createdDate: editedDate });
-      if (updated) {
-        setIssue(updated);
-        setIsEditingDate(false);
-      }
+  const handleSaveDate = async () => {
+    if (!issue || !issueId) return;
+    setSaveError(null);
+    try {
+      const updated = await updateIssue(issueId, { createdDate: editedDate });
+      if (applyIssueUpdate(updated)) setIsEditingDate(false);
+    } catch (err) {
+      console.error("Error saving date:", err);
+      setSaveError(getIssueErrorMessage(err, "Impossible de sauvegarder la date. Réessayez."));
     }
   };
 
-  const handleSaveDescription = () => {
-    if (issue && issueId) {
-      const updated = updateIssue(issueId, { description: editedDescription });
-      if (updated) {
-        setIssue(updated);
-        setIsEditingDescription(false);
-      }
+  const handleSaveDescription = async () => {
+    if (!issue || !issueId) return;
+    setSaveError(null);
+    try {
+      const updated = await updateIssue(issueId, { description: editedDescription });
+      if (applyIssueUpdate(updated)) setIsEditingDescription(false);
+    } catch (err) {
+      console.error("Error saving description:", err);
+      setSaveError(
+        getIssueErrorMessage(err, "Impossible de sauvegarder la description. Réessayez."),
+      );
     }
   };
 
-  const handleStatusChange = (newStatus: Issue["status"]) => {
-    if (issue && issueId) {
-      const updated = updateIssue(issueId, { status: newStatus });
-      if (updated) {
-        setIssue(updated);
-      }
+  const handleSaveAssignedTo = async () => {
+    if (!issue || !issueId) return;
+    setSaveError(null);
+    try {
+      const updated = await updateIssue(issueId, { assignedTo: editedAssignedTo });
+      if (applyIssueUpdate(updated)) setIsEditingAssignedTo(false);
+    } catch (err) {
+      console.error("Error saving assignedTo:", err);
+      setSaveError(
+        getIssueErrorMessage(err, "Impossible de sauvegarder l'assignation. Réessayez."),
+      );
     }
   };
 
-  const handleDeleteIssue = () => {
-    if (confirm("Supprimer cette déficience?")) {
-      const success = deleteIssue(issueId || "");
-      if (success) {
-        if (visitId) {
-          navigate(`/app/projects/${projectId}/visits/${visitId}`);
-        } else {
-          navigate(`/app/projects/${projectId}`);
-        }
+  const handleStatusChange = async (newStatus: Issue["status"]) => {
+    if (!issue || !issueId) return;
+    setSaveError(null);
+    try {
+      const updated = await updateIssue(issueId, { status: newStatus });
+      applyIssueUpdate(updated);
+    } catch (err) {
+      console.error("Error changing status:", err);
+      setSaveError(getIssueErrorMessage(err, "Impossible de changer le statut. Réessayez."));
+    }
+  };
+
+  const handleDeleteIssue = async () => {
+    if (!issueId || !confirm("Supprimer cette déficience?")) return;
+
+    setSaveError(null);
+    try {
+      await deleteIssue(issueId);
+      if (visitId) {
+        navigate(`/app/projects/${projectId}/visits/${visitId}`);
+      } else {
+        navigate(`/app/projects/${projectId}`);
       }
+    } catch (err) {
+      console.error("Error deleting issue:", err);
+      setSaveError(getIssueErrorMessage(err, "Impossible de supprimer la déficience. Réessayez."));
     }
   };
 
@@ -250,15 +325,75 @@ export default function IssueDetail() {
 
       {/* Content */}
       <div className="px-4 py-6 max-w-2xl mx-auto space-y-6">
+        {isLoadingIssue && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4 text-sm text-gray-500 text-center">
+            Chargement de la déficience...
+          </div>
+        )}
+
+        {loadError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+            {loadError}
+          </div>
+        )}
+
+        {saveError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 flex items-center justify-between gap-3">
+            <span>{saveError}</span>
+            <button
+              onClick={() => setSaveError(null)}
+              className="text-red-700 hover:text-red-900 font-medium flex-shrink-0"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Meta Information */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
           <div className="flex items-start gap-3">
             <User size={18} className="text-gray-500 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
               <div className="text-xs text-gray-500 mb-1">Assigné à</div>
-              <div className="text-sm text-[#1A1A1A] font-medium">
-                {issue?.assignedTo || defaultIssue.assignedTo}
-              </div>
+              {isEditingAssignedTo ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editedAssignedTo}
+                    onChange={(e) => setEditedAssignedTo(e.target.value)}
+                    placeholder="Nom de la personne assignée"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent text-sm"
+                  />
+                  <button
+                    onClick={handleSaveAssignedTo}
+                    className="px-3 py-2 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors font-medium text-xs"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditingAssignedTo(false);
+                      setEditedAssignedTo(issue?.assignedTo || "");
+                    }}
+                    className="px-3 py-2 bg-gray-200 text-[#1A1A1A] rounded-lg hover:bg-gray-300 transition-colors font-medium text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-[#1A1A1A] font-medium">
+                    {issue?.assignedTo || defaultIssue.assignedTo}
+                  </div>
+                  <button
+                    onClick={() => setIsEditingAssignedTo(true)}
+                    className="p-2 text-gray-400 hover:text-[#E10600] transition-colors"
+                    title="Modifier"
+                  >
+                    <Edit size={16} />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

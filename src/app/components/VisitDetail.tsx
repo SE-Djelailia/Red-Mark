@@ -26,7 +26,7 @@ import {
   updateSiteVisit,
   deletePhoto,
 } from "../../lib/supabaseApi";
-import { getIssuesByVisit, createIssue, updateIssue } from "../../lib/issuesApi";
+import { getIssuesByVisit, createIssue, updateIssue, getIssueErrorMessage } from "../../lib/issuesApi";
 import { getCommentsForIssue, type Comment } from "../../lib/commentsApi";
 import type { SiteVisit } from "../../lib/supabase";
 import { supabase } from "../../lib/supabase";
@@ -308,34 +308,42 @@ export default function VisitDetail() {
         .filter((p) => selectedIssuePhotoIds.includes(p.id))
         .map((p) => ({ id: p.id, url: p.storage_path })) || [];
 
-    if (editingIssue) {
-      // Update existing issue
-      const updatedIssue = await updateIssue(editingIssue.id, {
-        ...issueFormData,
-        photos: linkedPhotos,
-      });
-      if (updatedIssue) {
-        setIssues((prevIssues) =>
-          prevIssues.map((issue) => (issue.id === editingIssue.id ? updatedIssue : issue)),
-        );
-        toast.success("Déficience modifiée!");
+    try {
+      if (editingIssue) {
+        // Update existing issue
+        const updatedIssue = await updateIssue(editingIssue.id, {
+          ...issueFormData,
+          photos: linkedPhotos,
+        });
+        if (updatedIssue) {
+          setIssues((prevIssues) =>
+            prevIssues.map((issue) => (issue.id === editingIssue.id ? updatedIssue : issue)),
+          );
+          toast.success("Déficience modifiée!");
+        } else {
+          toast.error("Cette déficience n'existe plus.");
+          return;
+        }
+      } else {
+        // Create new issue
+        const newIssue = await createIssue({
+          visitId,
+          projectId,
+          ...issueFormData,
+          photos: linkedPhotos,
+          tags: [],
+          location: visit?.room || "Zone non spécifiée",
+        });
+        setIssues((prevIssues) => [...prevIssues, newIssue]);
+        toast.success(`Déficience créée avec ${linkedPhotos.length} photo(s)`);
       }
-    } else {
-      // Create new issue
-      const newIssue = await createIssue({
-        visitId,
-        projectId,
-        ...issueFormData,
-        photos: linkedPhotos,
-        tags: [],
-        location: visit?.room || "Zone non spécifiée",
-      });
-      setIssues((prevIssues) => [...prevIssues, newIssue]);
-      toast.success(`Déficience créée avec ${linkedPhotos.length} photo(s)`);
-    }
 
-    setShowIssueModal(false);
-    setSelectedIssuePhotoIds([]);
+      setShowIssueModal(false);
+      setSelectedIssuePhotoIds([]);
+    } catch (err) {
+      console.error("Error saving issue:", err);
+      toast.error(getIssueErrorMessage(err, "Impossible d'enregistrer la déficience."));
+    }
   };
 
   const handleQuickStatusChange = (
