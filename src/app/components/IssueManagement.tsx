@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Search, AlertCircle, Clock, CheckCircle2, X, MapPin, Loader2 } from "lucide-react";
+import { Search, AlertCircle, Clock, CheckCircle2, X, MapPin, Loader2, MessageSquare } from "lucide-react";
 import { getAllUserIssues } from "../../lib/supabaseApi";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/useAuth";
 import type { Issue } from "../../lib/supabase";
+import { getCommentsForIssue, type Comment } from "../../lib/commentsApi";
+import CommentThread from "./CommentThread";
 
 type IssueWithProject = Issue & { projectName: string };
 
@@ -16,7 +18,16 @@ export default function IssueManagement() {
   const [statusFilter, setStatusFilter] = useState<Issue["status"] | "all">("all");
   const [priorityFilter, setPriorityFilter] = useState<Issue["priority"] | "all">("all");
   const [selectedIssue, setSelectedIssue] = useState<IssueWithProject | null>(null);
+  const [issueComments, setIssueComments] = useState<Comment[]>([]);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!selectedIssue) {
+      setIssueComments([]);
+      return;
+    }
+    getCommentsForIssue(selectedIssue.id).then(setIssueComments);
+  }, [selectedIssue]);
 
   const loadIssues = useCallback(async () => {
     if (!user?.id) return;
@@ -270,6 +281,20 @@ export default function IssueManagement() {
                           {new Date(selectedIssue.created_at).toLocaleDateString("fr-CA")}
                         </p>
                       </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-200">
+                      <h4 className="text-sm font-semibold text-[#1A1A1A] mb-3 flex items-center gap-2">
+                        <MessageSquare size={18} className="text-gray-500" />
+                        Commentaires
+                      </h4>
+                      <CommentThread
+                        comments={issueComments}
+                        issueId={selectedIssue.id}
+                        projectId={selectedIssue.project_id}
+                        visitId={selectedIssue.visit_id || undefined}
+                        onCommentsUpdate={setIssueComments}
+                      />
                     </div>
                   </div>
 

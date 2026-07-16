@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Check,
   Pencil,
+  MessageSquare,
 } from "lucide-react";
 import {
   getSiteVisit,
@@ -26,10 +27,12 @@ import {
   deletePhoto,
 } from "../../lib/supabaseApi";
 import { getIssuesByVisit, createIssue, updateIssue } from "../../lib/issuesApi";
+import { getCommentsForIssue, type Comment } from "../../lib/commentsApi";
 import type { SiteVisit } from "../../lib/supabase";
 import { supabase } from "../../lib/supabase";
 import { formatDateLongWithWeekday } from "../../lib/dateUtils";
 import VisitComments from "./VisitComments";
+import CommentThread from "./CommentThread";
 import VoiceNotesSection from "./VoiceNotesSection";
 import { useAuth } from "../../contexts/useAuth";
 import { compressImage } from "../../lib/imageCompression";
@@ -102,6 +105,7 @@ export default function VisitDetail() {
   // Issue creation/edition modal
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null);
+  const [issueComments, setIssueComments] = useState<Comment[]>([]);
   const [issueFormData, setIssueFormData] = useState({
     title: "",
     description: "",
@@ -110,6 +114,14 @@ export default function VisitDetail() {
     assignedTo: "",
   });
   const [selectedIssuePhotoIds, setSelectedIssuePhotoIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!editingIssue) {
+      setIssueComments([]);
+      return;
+    }
+    getCommentsForIssue(editingIssue.id).then(setIssueComments);
+  }, [editingIssue]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -1220,6 +1232,23 @@ export default function VisitDetail() {
                   </div>
                 )}
               </div>
+
+              {/* Comments (existing issues only — a new issue has no id yet) */}
+              {editingIssue && (
+                <div className="pt-4 border-t border-gray-200">
+                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-3 flex items-center gap-2">
+                    <MessageSquare size={18} className="text-gray-500" />
+                    Commentaires
+                  </h3>
+                  <CommentThread
+                    comments={issueComments}
+                    issueId={editingIssue.id}
+                    projectId={projectId || ""}
+                    visitId={visitId}
+                    onCommentsUpdate={setIssueComments}
+                  />
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
