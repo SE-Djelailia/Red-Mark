@@ -21,9 +21,11 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
 
-  const loadNotifications = () => {
-    const userNotifications = getUserNotifications(userId);
-    const unread = getUnreadCount(userId);
+  const loadNotifications = async () => {
+    const [userNotifications, unread] = await Promise.all([
+      getUserNotifications(userId),
+      getUnreadCount(userId),
+    ]);
     setNotifications(userNotifications);
     setUnreadCount(unread);
   };
@@ -36,28 +38,32 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
     return () => clearInterval(interval);
   }, [userId]);
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = async (notification: Notification) => {
     // Mark as read
-    markAsRead(notification.id);
+    await markAsRead(notification.id);
     setShowPanel(false);
     loadNotifications();
 
-    // Navigate to the issue with the comment
-    const path = notification.visitId
-      ? `/app/projects/${notification.projectId}/visits/${notification.visitId}/issues/${notification.issueId}?commentId=${notification.commentId}`
-      : `/app/projects/${notification.projectId}/issues/${notification.issueId}?commentId=${notification.commentId}`;
+    // Navigate to the issue with the comment (or the visit, for visit-level comments)
+    const path = notification.issueId
+      ? notification.visitId
+        ? `/app/projects/${notification.projectId}/visits/${notification.visitId}/issues/${notification.issueId}?commentId=${notification.commentId}`
+        : `/app/projects/${notification.projectId}/issues/${notification.issueId}?commentId=${notification.commentId}`
+      : notification.visitId
+        ? `/app/projects/${notification.projectId}/visits/${notification.visitId}`
+        : `/app/projects/${notification.projectId}`;
 
     navigate(path);
   };
 
-  const handleMarkAllRead = () => {
-    markAllAsRead(userId);
+  const handleMarkAllRead = async () => {
+    await markAllAsRead(userId);
     loadNotifications();
   };
 
-  const handleDeleteNotification = (e: React.MouseEvent, notificationId: string) => {
+  const handleDeleteNotification = async (e: React.MouseEvent, notificationId: string) => {
     e.stopPropagation();
-    deleteNotification(notificationId);
+    await deleteNotification(notificationId);
     loadNotifications();
   };
 

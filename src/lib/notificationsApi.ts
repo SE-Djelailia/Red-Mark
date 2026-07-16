@@ -1,3 +1,11 @@
+// Client-side API for managing notifications.
+// Backed by Supabase (table `notifications`). The rich client-facing fields
+// that have no dedicated column (commentId, issueId, projectId, visitId,
+// fromUserId, fromUserName) are packed into the `data` JSONB column so we
+// don't need a schema migration.
+
+import { supabase } from "./supabase";
+
 export interface Notification {
   id: string;
   userId: string; // User who receives the notification
@@ -13,44 +21,70 @@ export interface Notification {
   read: boolean;
 }
 
-const STORAGE_KEY = "redmark_notifications";
-
-// Get all notifications from localStorage
-function getAllNotifications(): Notification[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch (error) {
-    console.error("Error loading notifications:", error);
-    return [];
-  }
+interface NotificationData {
+  commentId?: string;
+  issueId?: string;
+  projectId?: string;
+  visitId?: string;
+  fromUserId?: string;
+  fromUserName?: string;
 }
 
-// Save all notifications to localStorage
-function saveAllNotifications(notifications: Notification[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
-  } catch (error) {
-    console.error("Error saving notifications:", error);
-  }
+const TITLES: Record<Notification["type"], string> = {
+  mention: "Mention",
+  reply: "Réponse",
+};
+
+function rowToNotification(row: any): Notification {
+  const data: NotificationData = row.data || {};
+  return {
+    id: row.id,
+    userId: row.user_id,
+    type: row.type,
+    message: row.message || "",
+    commentId: data.commentId || "",
+    issueId: data.issueId || "",
+    projectId: data.projectId || "",
+    visitId: data.visitId || undefined,
+    fromUserId: data.fromUserId || "",
+    fromUserName: data.fromUserName || "",
+    createdAt: row.created_at,
+    read: row.read ?? false,
+  };
 }
 
 // Get notifications for a specific user
-export function getUserNotifications(userId: string): Notification[] {
-  const allNotifications = getAllNotifications();
-  return allNotifications
-    .filter((notif) => notif.userId === userId)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+export async function getUserNotifications(userId: string): Promise<Notification[]> {
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error loading notifications:", error);
+    return [];
+  }
+  return (data || []).map(rowToNotification);
 }
 
 // Get unread count for a user
-export function getUnreadCount(userId: string): number {
-  const notifications = getUserNotifications(userId);
-  return notifications.filter((n) => !n.read).length;
+export async function getUnreadCount(userId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("notifications")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("read", false);
+
+  if (error) {
+    console.error("Error counting unread notifications:", error);
+    return 0;
+  }
+  return count ?? 0;
 }
 
 // Create a notification
-export function createNotification(
+export async function createNotification(
   userId: string,
   type: Notification["type"],
   message: string,
@@ -60,87 +94,58 @@ export function createNotification(
   fromUserId: string,
   fromUserName: string,
   visitId?: string,
-): Notification {
-  console.log("🔔 Creating notification:", { userId, type, fromUserName, message });
+): Promise<Notification | null> {
+  const data: NotificationData = { commentId, issueId, projectId, visitId, fromUserId, fromUserName };
 
-  const notification: Notification = {
-    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-    userId,
-    type,
-    message,
-    commentId,
-    issueId,
-    projectId,
-    visitId,
-    fromUserId,
-    fromUserName,
-    createdAt: new Date().toISOString(),
-    read: false,
-  };
+  const { data: row, error } = await supabase
+    .from("notifications")
+    .insert([{ user_id: userId, type, title: TITLES[type], message, data }])
+    .select()
+    .single();
 
-  const allNotifications = getAllNotifications();
-  allNotifications.push(notification);
-  saveAllNotifications(allNotifications);
-
-  console.log("✅ Notification saved to localStorage:", notification);
-  console.log("📊 Total notifications in storage:", allNotifications.length);
-
-  return notification;
+  if (error) {
+    console.error("Error creating notification:", error);
+    return null;
+  }
+  return rowToNotification(row);
 }
 
 // Mark notification as read
-export function markAsRead(notificationId: string): boolean {
-  const allNotifications = getAllNotifications();
-  const index = allNotifications.findIndex((n) => n.id === notificationId);
+export async function markAsRead(notificationId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("id", notificationId);
 
-  if (index === -1) return false;
-
-  allNotifications[index].read = true;
-  saveAllNotifications(allNotifications);
+  if (error) {
+    console.error("Error marking notification as read:", error);
+    return false;
+  }
   return true;
 }
 
 // Mark all notifications as read for a user
-export function markAllAsRead(userId: string): boolean {
-  const allNotifications = getAllNotifications();
-  let updated = false;
+export async function markAllAsRead(userId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("user_id", userId)
+    .eq("read", false);
 
-  allNotifications.forEach((notif) => {
-    if (notif.userId === userId && !notif.read) {
-      notif.read = true;
-      updated = true;
-    }
-  });
-
-  if (updated) {
-    saveAllNotifications(allNotifications);
+  if (error) {
+    console.error("Error marking all notifications as read:", error);
+    return false;
   }
-
-  return updated;
-}
-
-// Delete a notification
-export function deleteNotification(notificationId: string): boolean {
-  const allNotifications = getAllNotifications();
-  const filtered = allNotifications.filter((n) => n.id !== notificationId);
-
-  if (filtered.length === allNotifications.length) return false;
-
-  saveAllNotifications(filtered);
   return true;
 }
 
-// Get all users (for mention suggestions)
-export function getAllUsers(): Array<{ id: string; name: string; email: string }> {
-  try {
-    const users = JSON.parse(localStorage.getItem("redmark_users") || "[]");
-    return users.map((u: any) => ({
-      id: u.id,
-      name: u.user_metadata?.name || u.email,
-      email: u.email,
-    }));
-  } catch (error) {
-    console.error("Error loading users:", error);
-    return [];
+// Delete a notification
+export async function deleteNotification(notificationId: string): Promise<boolean> {
+  const { error } = await supabase.from("notifications").delete().eq("id", notificationId);
+
+  if (error) {
+    console.error("Error deleting notification:", error);
+    return false;
   }
+  return true;
 }

@@ -91,8 +91,18 @@ export interface Issue {
 export interface Comment {
   id: string;
   user_id: string;
-  photo_id: string;
+  photo_id?: string;
+  issue_id?: string;
+  visit_id?: string;
+  parent_comment_id?: string;
   content: string;
+  created_at: string;
+}
+
+export interface CommentMention {
+  id: string;
+  comment_id: string;
+  user_id: string;
   created_at: string;
 }
 

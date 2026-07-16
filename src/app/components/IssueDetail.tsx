@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import {
   ArrowLeft,
@@ -13,42 +13,21 @@ import {
   Camera,
   Edit,
   Trash2,
-  Reply,
-  AtSign,
 } from "lucide-react";
 import { getIssue, updateIssue, deleteIssue } from "../../lib/issuesApi";
-import {
-  getCommentsForIssue,
-  addComment,
-  updateComment,
-  deleteComment,
-} from "../../lib/commentsApi";
-import { getAllUsers, createNotification } from "../../lib/notificationsApi";
+import { getCommentsForIssue } from "../../lib/commentsApi";
 import { parseLocalDate, formatDateLongWithWeekday, formatDateForInput } from "../../lib/dateUtils";
 import CommentThread from "./CommentThread";
-import { useAuth } from "../../contexts/useAuth";
 import type { Issue } from "./IssueCreation";
 import type { Comment } from "../../lib/commentsApi";
 
 export default function IssueDetail() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { projectId, visitId, issueId } = useParams();
   const [searchParams] = useSearchParams();
   const highlightCommentId = searchParams.get("commentId");
 
-  const [showCommentForm, setShowCommentForm] = useState(false);
-  const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editingCommentText, setEditingCommentText] = useState("");
-  const [replyingToId, setReplyingToId] = useState<string | null>(null);
-  const [mentionSuggestions, setMentionSuggestions] = useState<Array<{ id: string; name: string }>>(
-    [],
-  );
-  const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
-  const [mentionSearchQuery, setMentionSearchQuery] = useState("");
-  const commentRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   // Load issue from localStorage and manage editable state
   const [issue, setIssue] = useState<Issue | null>(null);
@@ -70,10 +49,7 @@ export default function IssueDetail() {
   }, [issueId]);
 
   useEffect(() => {
-    const loadedComments = getCommentsForIssue(issueId || "");
-    if (loadedComments) {
-      setComments(loadedComments);
-    }
+    getCommentsForIssue(issueId || "").then(setComments);
   }, [issueId]);
 
   // Empty issue data - will be populated from backend
@@ -159,51 +135,6 @@ export default function IssueDetail() {
   const PriorityIcon = priorityConfig.icon;
   const StatusIcon = statusConfig.icon;
 
-  const handleAddComment = () => {
-    if (commentText.trim()) {
-      // Get current user from Supabase auth (single source of truth)
-      const userName = user?.user_metadata?.name || user?.email || "Utilisateur";
-      const userId = user?.id || "anonymous";
-
-      const newComment = addComment(issueId || "", commentText, userName, userId);
-      if (newComment) {
-        setComments([...comments, newComment]);
-        setCommentText("");
-        setShowCommentForm(false);
-      }
-    }
-  };
-
-  const handleEditComment = (commentId: string) => {
-    setEditingCommentId(commentId);
-    const commentToEdit = comments.find((c) => c.id === commentId);
-    if (commentToEdit) {
-      setEditingCommentText(commentToEdit.text);
-    }
-  };
-
-  const handleSaveComment = () => {
-    if (editingCommentId && editingCommentText.trim()) {
-      const updatedComment = updateComment(editingCommentId, editingCommentText);
-      if (updatedComment) {
-        setComments(comments.map((c) => (c.id === editingCommentId ? updatedComment : c)));
-        setEditingCommentId(null);
-        setEditingCommentText("");
-        alert("Commentaire mis à jour!");
-      }
-    }
-  };
-
-  const handleDeleteComment = (commentId: string) => {
-    if (confirm("Supprimer ce commentaire?")) {
-      const success = deleteComment(commentId);
-      if (success) {
-        setComments(comments.filter((c) => c.id !== commentId));
-        alert("Commentaire supprimé!");
-      }
-    }
-  };
-
   const handleSaveLocation = () => {
     if (issue && issueId) {
       const updated = updateIssue(issueId, { location: editedLocation });
@@ -254,30 +185,6 @@ export default function IssueDetail() {
         }
       }
     }
-  };
-
-  const handleMentionSearch = (query: string) => {
-    setMentionSearchQuery(query);
-    if (query.length > 0) {
-      getAllUsers().then((users) => {
-        const filteredUsers = users.filter((user) =>
-          user.name.toLowerCase().includes(query.toLowerCase()),
-        );
-        setMentionSuggestions(filteredUsers.map((user) => ({ id: user.id, name: user.name })));
-        setShowMentionSuggestions(true);
-      });
-    } else {
-      setShowMentionSuggestions(false);
-    }
-  };
-
-  const handleMentionSelect = (userId: string, userName: string) => {
-    const currentText = commentText;
-    const mention = `@${userName}`;
-    const newText = currentText + mention;
-    setCommentText(newText);
-    setMentionSearchQuery("");
-    setShowMentionSuggestions(false);
   };
 
   return (

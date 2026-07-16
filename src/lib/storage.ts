@@ -51,15 +51,6 @@ export interface Tag {
   created_at: string;
 }
 
-export interface Comment {
-  id: string;
-  site_visit_id: string;
-  author: string;
-  author_id: string;
-  text: string;
-  created_at: string;
-}
-
 // Projects
 export const getProjects = (userId: string): Project[] => {
   const key = `projects:${userId}`;
@@ -315,43 +306,4 @@ export const saveTag = (tag: Tag): void => {
   }
 
   localStorage.setItem("tags", JSON.stringify(tags));
-};
-
-// Comments
-export const getComments = (userId: string, visitId: string): Comment[] => {
-  const key = `comments:${userId}:${visitId}`;
-  const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : [];
-};
-
-export const saveComment = (userId: string, comment: Comment): void => {
-  const comments = getComments(userId, comment.site_visit_id);
-  const index = comments.findIndex((c) => c.id === comment.id);
-
-  if (index >= 0) {
-    comments[index] = comment;
-  } else {
-    comments.push(comment);
-  }
-
-  localStorage.setItem(`comments:${userId}:${comment.site_visit_id}`, JSON.stringify(comments));
-};
-
-export const deleteComment = (userId: string, commentId: string): void => {
-  // This is inefficient but works for prototype
-  const allProjects = getProjects(userId);
-
-  for (const project of allProjects) {
-    const visits = getSiteVisits(userId, project.id);
-
-    for (const visit of visits) {
-      const comments = getComments(userId, visit.id);
-      const filtered = comments.filter((c) => c.id !== commentId);
-
-      if (filtered.length !== comments.length) {
-        localStorage.setItem(`comments:${userId}:${visit.id}`, JSON.stringify(filtered));
-        return;
-      }
-    }
-  }
 };

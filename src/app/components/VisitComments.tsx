@@ -5,9 +5,11 @@ import {
   addVisitComment,
   updateComment,
   deleteComment,
+  getProjectTeammates,
   type Comment,
+  type Teammate,
 } from "../../lib/commentsApi";
-import { getMembersByProject, type ProjectMember } from "../../lib/projectMembersApi";
+import { createNotification } from "../../lib/notificationsApi";
 import { useAuth } from "../../contexts/useAuth";
 
 interface VisitCommentsProps {
@@ -18,6 +20,9 @@ interface VisitCommentsProps {
 export default function VisitComments({ visitId, projectId }: VisitCommentsProps) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [newCommentText, setNewCommentText] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
@@ -25,26 +30,28 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentText, setEditingCommentText] = useState("");
 
-  // Mock team members for mentions - In production, this would come from the project's team
-  const [teamMembers, setTeamMembers] = useState<ProjectMember[]>([]);
+  // Real project roster for @-mentions
+  const [teamMembers, setTeamMembers] = useState<Teammate[]>([]);
 
   useEffect(() => {
     loadComments();
     loadTeamMembers();
   }, [visitId, projectId]);
 
-  const loadComments = () => {
-    const visitComments = getCommentsForVisit(visitId);
+  const loadComments = async () => {
+    setIsLoading(true);
+    const visitComments = await getCommentsForVisit(visitId);
     setComments(visitComments);
+    setIsLoading(false);
   };
 
-  const loadTeamMembers = () => {
-    const members = getMembersByProject(projectId);
+  const loadTeamMembers = async () => {
+    const members = await getProjectTeammates(projectId);
     setTeamMembers(members);
   };
 
-  const handleSubmitComment = () => {
-    if (!newCommentText.trim() || !user) return;
+  const handleSubmitComment = async () => {
+    if (!newCommentText.trim() || !user || isSubmitting) return;
 
     // Extract mentions from text (e.g., @Marie-Claude Bouchard)
     const mentionPattern = /@([\w\s-]+)/g;
@@ -56,18 +63,65 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
     // Get author name from user metadata or email
     const authorName = user.user_metadata?.name || user.email?.split("@")[0] || "Utilisateur";
 
-    const newComment = addVisitComment(
-      visitId,
-      newCommentText,
-      authorName,
-      user.id,
-      replyingTo || undefined,
-      mentions.length > 0 ? mentions : undefined,
-    );
+    setIsSubmitting(true);
+    setError(null);
 
-    setComments([...comments, newComment]);
-    setNewCommentText("");
-    setReplyingTo(null);
+    try {
+      const newComment = await addVisitComment(
+        visitId,
+        newCommentText,
+        authorName,
+        user.id,
+        replyingTo || undefined,
+        mentions.length > 0 ? mentions : undefined,
+      );
+
+      // Notify mentioned users
+      await Promise.all(
+        mentions
+          .filter((userId) => userId !== user.id)
+          .map((userId) =>
+            createNotification(
+              userId,
+              "mention",
+              "vous a mentionné dans un commentaire",
+              newComment.id,
+              "",
+              projectId,
+              user.id,
+              authorName,
+              visitId,
+            ),
+          ),
+      );
+
+      // Notify the parent comment's author, if replying
+      if (replyingTo) {
+        const parentComment = comments.find((c) => c.id === replyingTo);
+        if (parentComment && parentComment.authorId !== user.id) {
+          await createNotification(
+            parentComment.authorId,
+            "reply",
+            "a répondu à votre commentaire",
+            newComment.id,
+            "",
+            projectId,
+            user.id,
+            authorName,
+            visitId,
+          );
+        }
+      }
+
+      setComments([...comments, newComment]);
+      setNewCommentText("");
+      setReplyingTo(null);
+    } catch (err) {
+      console.error("Error posting visit comment:", err);
+      setError("Impossible d'ajouter le commentaire. Réessayez.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleMention = (memberName: string) => {
@@ -106,15 +160,22 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
     setEditingCommentText(comment.text);
   };
 
-  const handleSaveEdit = () => {
-    if (!editingCommentId || !editingCommentText.trim()) return;
+  const handleSaveEdit = async () => {
+    if (!editingCommentId || !editingCommentText.trim() || isSubmitting) return;
 
-    const updatedComment = updateComment(editingCommentId, editingCommentText);
-    if (updatedComment) {
-      setComments(comments.map((c) => (c.id === editingCommentId ? updatedComment : c)));
+    setIsSubmitting(true);
+    setError(null);
+
+    const success = await updateComment(editingCommentId, editingCommentText);
+    if (success) {
+      const editedText = editingCommentText;
+      setComments(comments.map((c) => (c.id === editingCommentId ? { ...c, text: editedText } : c)));
       setEditingCommentId(null);
       setEditingCommentText("");
+    } else {
+      setError("Impossible de modifier le commentaire. Réessayez.");
     }
+    setIsSubmitting(false);
   };
 
   const handleCancelEdit = () => {
@@ -122,12 +183,15 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
     setEditingCommentText("");
   };
 
-  const handleDeleteComment = (commentId: string) => {
-    if (window.confirm("Supprimer ce commentaire ?")) {
-      const success = deleteComment(commentId);
-      if (success) {
-        setComments(comments.filter((c) => c.id !== commentId));
-      }
+  const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm("Supprimer ce commentaire ?")) return;
+
+    setError(null);
+    const success = await deleteComment(commentId);
+    if (success) {
+      setComments(comments.filter((c) => c.id !== commentId));
+    } else {
+      setError("Impossible de supprimer le commentaire. Réessayez.");
     }
   };
 
@@ -223,7 +287,8 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
                   <div className="flex gap-2">
                     <button
                       onClick={handleSaveEdit}
-                      className="px-3 py-1.5 bg-[#E10600] text-white rounded-lg text-xs hover:bg-[#C00500] transition-colors"
+                      disabled={isSubmitting}
+                      className="px-3 py-1.5 bg-[#E10600] text-white rounded-lg text-xs hover:bg-[#C00500] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Enregistrer
                     </button>
@@ -269,7 +334,9 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
     <div className="space-y-4">
       {/* Comments List */}
       <div className="space-y-4">
-        {topLevelComments.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-8 text-gray-500 text-sm">Chargement des commentaires...</div>
+        ) : topLevelComments.length === 0 ? (
           <div className="text-center py-8">
             <MessageSquare size={48} className="mx-auto text-gray-300 mb-3" />
             <p className="text-gray-500 text-sm">Aucun commentaire pour cette visite</p>
@@ -329,6 +396,8 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
           )}
         </div>
 
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+
         <div className="flex items-center justify-between mt-3">
           <button
             onClick={() => setShowMentionSuggestions(!showMentionSuggestions)}
@@ -340,11 +409,11 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
 
           <button
             onClick={handleSubmitComment}
-            disabled={!newCommentText.trim()}
+            disabled={!newCommentText.trim() || isSubmitting}
             className="px-4 py-2 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-h-[40px]"
           >
             <Send size={16} />
-            <span>Publier</span>
+            <span>{isSubmitting ? "Envoi..." : "Publier"}</span>
           </button>
         </div>
       </div>

@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { Edit, Trash2, Reply, AtSign, Send, MoreVertical } from "lucide-react";
-import { getMembersByProject } from "../../lib/projectMembersApi";
+import { Edit, Trash2, Reply, AtSign } from "lucide-react";
 import { formatRelativeDate } from "../../lib/dateUtils";
-import { addComment, updateComment, deleteComment } from "../../lib/commentsApi";
+import { addComment, updateComment, deleteComment, getProjectTeammates } from "../../lib/commentsApi";
 import { createNotification } from "../../lib/notificationsApi";
 import { useAuth } from "../../contexts/useAuth";
-import type { Comment } from "../../lib/commentsApi";
+import type { Comment, Teammate } from "../../lib/commentsApi";
 
 interface CommentThreadProps {
   comments: Comment[];
@@ -34,6 +33,9 @@ export default function CommentThread({
     [],
   );
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [teammates, setTeammates] = useState<Teammate[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const commentRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
@@ -42,6 +44,12 @@ export default function CommentThread({
     id: user?.id || "anonymous",
     name: user?.user_metadata?.name || user?.email || "Utilisateur",
   });
+
+  // Load the real project roster once, for @-mention suggestions
+  useEffect(() => {
+    if (!projectId) return;
+    getProjectTeammates(projectId).then(setTeammates);
+  }, [projectId]);
 
   // Scroll to highlighted comment
   useEffect(() => {
@@ -58,11 +66,10 @@ export default function CommentThread({
   // Detect @mentions in text
   const detectMentions = (text: string) => {
     // Match @UserName or @"User Name" (with quotes for names with spaces)
-    const allUsers = getMembersByProject(projectId);
     const mentionedUserIds: string[] = [];
 
     // Try to find all users mentioned in the text
-    allUsers.forEach((user) => {
+    teammates.forEach((user) => {
       // Check if user name appears after @
       const patterns = [
         new RegExp(`@${user.name.replace(/\s+/g, "\\s+")}(?=\\s|$)`, "gi"),
@@ -94,8 +101,7 @@ export default function CommentThread({
       const searchQuery = textBeforeCursor.substring(lastAtIndex + 1);
       if (!searchQuery.includes(" ")) {
         // Show mention suggestions
-        const users = getMembersByProject(projectId);
-        const filtered = users.filter((u) =>
+        const filtered = teammates.filter((u) =>
           u.name.toLowerCase().includes(searchQuery.toLowerCase()),
         );
         setMentionSuggestions(filtered.slice(0, 5));
@@ -131,54 +137,49 @@ export default function CommentThread({
   };
 
   // Add comment with mentions and replies
-  const handleAddComment = () => {
-    if (!commentText.trim()) return;
+  const handleAddComment = async () => {
+    if (!commentText.trim() || isSubmitting) return;
 
     const currentUser = getCurrentUser();
-    console.log("🔵 Current user:", currentUser);
-
     const mentionedUserIds = detectMentions(commentText);
-    console.log("🔵 Detected mentions:", mentionedUserIds);
-    console.log("🔵 Comment text:", commentText);
 
-    // Create comment
-    const newComment = addComment(
-      issueId,
-      commentText,
-      currentUser.name,
-      currentUser.id,
-      replyingToId || undefined,
-      mentionedUserIds.length > 0 ? mentionedUserIds : undefined,
-    );
+    setIsSubmitting(true);
+    setError(null);
 
-    if (newComment) {
-      console.log("✅ Comment created:", newComment);
+    try {
+      const newComment = await addComment(
+        issueId,
+        commentText,
+        currentUser.name,
+        currentUser.id,
+        replyingToId || undefined,
+        mentionedUserIds.length > 0 ? mentionedUserIds : undefined,
+      );
 
       // Create notifications for mentioned users
-      mentionedUserIds.forEach((userId) => {
-        if (userId !== currentUser.id) {
-          console.log("📧 Creating notification for user:", userId);
-          createNotification(
-            userId,
-            "mention",
-            `vous a mentionné dans un commentaire`,
-            newComment.id,
-            issueId,
-            projectId,
-            currentUser.id,
-            currentUser.name,
-            visitId,
-          );
-          console.log("✅ Notification created for:", userId);
-        }
-      });
+      await Promise.all(
+        mentionedUserIds
+          .filter((userId) => userId !== currentUser.id)
+          .map((userId) =>
+            createNotification(
+              userId,
+              "mention",
+              `vous a mentionné dans un commentaire`,
+              newComment.id,
+              issueId,
+              projectId,
+              currentUser.id,
+              currentUser.name,
+              visitId,
+            ),
+          ),
+      );
 
       // Create notification for parent comment author (if replying)
       if (replyingToId) {
         const parentComment = comments.find((c) => c.id === replyingToId);
         if (parentComment && parentComment.authorId !== currentUser.id) {
-          console.log("📧 Creating reply notification for:", parentComment.authorId);
-          createNotification(
+          await createNotification(
             parentComment.authorId,
             "reply",
             `a répondu à votre commentaire`,
@@ -189,7 +190,6 @@ export default function CommentThread({
             currentUser.name,
             visitId,
           );
-          console.log("✅ Reply notification created");
         }
       }
 
@@ -197,6 +197,11 @@ export default function CommentThread({
       onCommentsUpdate([...comments, newComment]);
       setCommentText("");
       setReplyingToId(null);
+    } catch (err) {
+      console.error("Error posting comment:", err);
+      setError("Impossible d'ajouter le commentaire. Réessayez.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -208,23 +213,34 @@ export default function CommentThread({
     }
   };
 
-  const handleSaveComment = () => {
-    if (editingCommentId && editingCommentText.trim()) {
-      const updatedComment = updateComment(editingCommentId, editingCommentText);
-      if (updatedComment) {
-        onCommentsUpdate(comments.map((c) => (c.id === editingCommentId ? updatedComment : c)));
-        setEditingCommentId(null);
-        setEditingCommentText("");
-      }
+  const handleSaveComment = async () => {
+    if (!editingCommentId || !editingCommentText.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    const success = await updateComment(editingCommentId, editingCommentText);
+    if (success) {
+      onCommentsUpdate(
+        comments.map((c) => (c.id === editingCommentId ? { ...c, text: editingCommentText } : c)),
+      );
+      setEditingCommentId(null);
+      setEditingCommentText("");
+    } else {
+      setError("Impossible de modifier le commentaire. Réessayez.");
     }
+    setIsSubmitting(false);
   };
 
-  const handleDeleteComment = (commentId: string) => {
-    if (confirm("Supprimer ce commentaire?")) {
-      const success = deleteComment(commentId);
-      if (success) {
-        onCommentsUpdate(comments.filter((c) => c.id !== commentId));
-      }
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm("Supprimer ce commentaire?")) return;
+
+    setError(null);
+    const success = await deleteComment(commentId);
+    if (success) {
+      onCommentsUpdate(comments.filter((c) => c.id !== commentId));
+    } else {
+      setError("Impossible de supprimer le commentaire. Réessayez.");
     }
   };
 
@@ -282,7 +298,8 @@ export default function CommentThread({
                   <div className="flex gap-2">
                     <button
                       onClick={handleSaveComment}
-                      className="px-4 py-2 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors font-medium text-sm"
+                      disabled={isSubmitting}
+                      className="px-4 py-2 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Sauvegarder
                     </button>
@@ -395,13 +412,15 @@ export default function CommentThread({
           )}
         </div>
 
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
         <div className="flex gap-3">
           <button
             onClick={handleAddComment}
-            disabled={!commentText.trim()}
+            disabled={!commentText.trim() || isSubmitting}
             className="flex-1 py-2.5 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
           >
-            {replyingToId ? "Répondre" : "Publier"}
+            {isSubmitting ? "Envoi..." : replyingToId ? "Répondre" : "Publier"}
           </button>
         </div>
       </div>

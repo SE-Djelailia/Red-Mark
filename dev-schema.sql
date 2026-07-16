@@ -83,17 +83,52 @@ CREATE OR REPLACE FUNCTION "public"."has_project_role"("p_project_id" "uuid", "p
   );
 $$;
 
+
+CREATE OR REPLACE FUNCTION "public"."comment_project_id"("p_photo_id" "uuid", "p_issue_id" "uuid", "p_visit_id" "uuid") RETURNS "uuid"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT COALESCE(
+    (SELECT project_id FROM public.photos WHERE id = p_photo_id),
+    (SELECT project_id FROM public.issues WHERE id = p_issue_id),
+    (SELECT project_id FROM public.site_visits WHERE id = p_visit_id)
+  );
+$$;
+
+
+CREATE OR REPLACE FUNCTION "public"."shares_project_with"("p_user_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.project_members pm1
+    JOIN public.project_members pm2 ON pm1.project_id = pm2.project_id
+    WHERE pm1.user_id = auth.uid() AND pm2.user_id = p_user_id
+  );
+$$;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
 
 
+CREATE TABLE IF NOT EXISTS "public"."comment_mentions" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "comment_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
 CREATE TABLE IF NOT EXISTS "public"."comments" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "user_id" "uuid" NOT NULL,
-    "photo_id" "uuid" NOT NULL,
+    "photo_id" "uuid",
     "content" "text" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"()
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "issue_id" "uuid",
+    "visit_id" "uuid",
+    "parent_comment_id" "uuid"
 );
 
 
@@ -197,8 +232,23 @@ CREATE TABLE IF NOT EXISTS "public"."site_visits" (
 );
 
 
+ALTER TABLE ONLY "public"."comment_mentions"
+    ADD CONSTRAINT "comment_mentions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."comment_mentions"
+    ADD CONSTRAINT "comment_mentions_comment_id_user_id_key" UNIQUE ("comment_id", "user_id");
+
+
+
 ALTER TABLE ONLY "public"."comments"
     ADD CONSTRAINT "comments_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."comments"
+    ADD CONSTRAINT "comments_exactly_one_target_check" CHECK (("num_nonnulls"("photo_id", "issue_id", "visit_id") = 1));
 
 
 
@@ -262,11 +312,31 @@ ALTER TABLE ONLY "public"."site_visits"
 
 
 
+CREATE INDEX "idx_comment_mentions_comment_id" ON "public"."comment_mentions" USING "btree" ("comment_id");
+
+
+
+CREATE INDEX "idx_comment_mentions_user_id" ON "public"."comment_mentions" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "idx_comments_issue_id" ON "public"."comments" USING "btree" ("issue_id");
+
+
+
+CREATE INDEX "idx_comments_parent_comment_id" ON "public"."comments" USING "btree" ("parent_comment_id");
+
+
+
 CREATE INDEX "idx_comments_photo_id" ON "public"."comments" USING "btree" ("photo_id");
 
 
 
 CREATE INDEX "idx_comments_user_id" ON "public"."comments" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "idx_comments_visit_id" ON "public"."comments" USING "btree" ("visit_id");
 
 
 
@@ -358,6 +428,26 @@ CREATE OR REPLACE TRIGGER "on_project_created" AFTER INSERT ON "public"."project
 
 
 
+ALTER TABLE ONLY "public"."comment_mentions"
+    ADD CONSTRAINT "comment_mentions_comment_id_fkey" FOREIGN KEY ("comment_id") REFERENCES "public"."comments"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."comment_mentions"
+    ADD CONSTRAINT "comment_mentions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."comments"
+    ADD CONSTRAINT "comments_issue_id_fkey" FOREIGN KEY ("issue_id") REFERENCES "public"."issues"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."comments"
+    ADD CONSTRAINT "comments_parent_comment_id_fkey" FOREIGN KEY ("parent_comment_id") REFERENCES "public"."comments"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."comments"
     ADD CONSTRAINT "comments_photo_id_fkey" FOREIGN KEY ("photo_id") REFERENCES "public"."photos"("id") ON DELETE CASCADE;
 
@@ -365,6 +455,11 @@ ALTER TABLE ONLY "public"."comments"
 
 ALTER TABLE ONLY "public"."comments"
     ADD CONSTRAINT "comments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."comments"
+    ADD CONSTRAINT "comments_visit_id_fkey" FOREIGN KEY ("visit_id") REFERENCES "public"."site_visits"("id") ON DELETE CASCADE;
 
 
 
@@ -448,6 +543,10 @@ ALTER TABLE ONLY "public"."site_visits"
 
 
 
+CREATE POLICY "Admins have full access to comment_mentions" ON "public"."comment_mentions" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
+
+
+
 CREATE POLICY "Admins have full access to comments" ON "public"."comments" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
@@ -469,6 +568,18 @@ CREATE POLICY "Admins have full access to site_visits" ON "public"."site_visits"
 
 
 CREATE POLICY "Authenticated users can create notifications" ON "public"."notifications" FOR INSERT WITH CHECK (("auth"."uid"() IS NOT NULL));
+
+
+
+CREATE POLICY "Comment authors can create mentions" ON "public"."comment_mentions" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."comments"
+  WHERE (("comments"."id" = "comment_mentions"."comment_id") AND ("comments"."user_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "Comment authors can delete mentions" ON "public"."comment_mentions" FOR DELETE USING ((EXISTS ( SELECT 1
+   FROM "public"."comments"
+  WHERE (("comments"."id" = "comment_mentions"."comment_id") AND ("comments"."user_id" = "auth"."uid"())))));
 
 
 
@@ -508,9 +619,7 @@ CREATE POLICY "Editors and owners can create issues" ON "public"."issues" FOR IN
 
 
 
-CREATE POLICY "Members can create comments" ON "public"."comments" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
-   FROM "public"."photos"
-  WHERE (("photos"."id" = "comments"."photo_id") AND "public"."is_project_member"("photos"."project_id")))));
+CREATE POLICY "Members can create comments" ON "public"."comments" FOR INSERT WITH CHECK ((("auth"."uid"() = "user_id") AND "public"."is_project_member"("public"."comment_project_id"("photo_id", "issue_id", "visit_id"))));
 
 
 
@@ -522,9 +631,7 @@ CREATE POLICY "Members can upload photos" ON "public"."photos" FOR INSERT WITH C
 
 
 
-CREATE POLICY "Members can view comments" ON "public"."comments" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."photos"
-  WHERE (("photos"."id" = "comments"."photo_id") AND "public"."is_project_member"("photos"."project_id")))));
+CREATE POLICY "Members can view comments" ON "public"."comments" FOR SELECT USING ("public"."is_project_member"("public"."comment_project_id"("photo_id", "issue_id", "visit_id")));
 
 
 
@@ -532,7 +639,17 @@ CREATE POLICY "Members can view issues" ON "public"."issues" FOR SELECT USING ("
 
 
 
+CREATE POLICY "Members can view mentions on visible comments" ON "public"."comment_mentions" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."comments"
+  WHERE (("comments"."id" = "comment_mentions"."comment_id") AND "public"."is_project_member"("public"."comment_project_id"("comments"."photo_id", "comments"."issue_id", "comments"."visit_id"))))));
+
+
+
 CREATE POLICY "Members can view photos" ON "public"."photos" FOR SELECT USING ("public"."is_project_member"("project_id"));
+
+
+
+CREATE POLICY "Members can view their project roster" ON "public"."project_members" FOR SELECT USING ("public"."is_project_member"("project_id"));
 
 
 
@@ -546,11 +663,19 @@ CREATE POLICY "Project owners can manage members" ON "public"."project_members" 
 
 
 
+CREATE POLICY "Project teammates can view each other's profiles" ON "public"."profiles" FOR SELECT USING ("public"."shares_project_with"("id"));
+
+
+
 CREATE POLICY "Users can create their own projects" ON "public"."projects" FOR INSERT WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 
 CREATE POLICY "Users can delete their own comments" ON "public"."comments" FOR DELETE USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users can delete their own notifications" ON "public"."notifications" FOR DELETE USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -566,18 +691,15 @@ CREATE POLICY "Users can update their own profile" ON "public"."profiles" FOR UP
 
 
 
-CREATE POLICY "Users can view members of their projects" ON "public"."project_members" FOR SELECT USING (((EXISTS ( SELECT 1
-   FROM "public"."projects"
-  WHERE (("projects"."id" = "project_members"."project_id") AND ("projects"."user_id" = "auth"."uid"())))) OR ("user_id" = "auth"."uid"())));
-
-
-
 CREATE POLICY "Users can view their own notifications" ON "public"."notifications" FOR SELECT USING (("auth"."uid"() = "user_id"));
 
 
 
 CREATE POLICY "Users can view their own profile" ON "public"."profiles" FOR SELECT USING (("auth"."uid"() = "id"));
 
+
+
+ALTER TABLE "public"."comment_mentions" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."comments" ENABLE ROW LEVEL SECURITY;
