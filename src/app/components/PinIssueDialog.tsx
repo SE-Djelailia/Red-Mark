@@ -13,7 +13,12 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { createIssue, getIssuesByProject, updateIssue } from "../../lib/issuesApi";
+import {
+  createIssue,
+  getIssuesByProject,
+  updateIssue,
+  getIssueErrorMessage,
+} from "../../lib/issuesApi";
 import { ISSUE_TRADES } from "./IssueCreation";
 import { saveIssueExtras, updatePin } from "../../lib/floorPlansApi";
 import type { FloorPlanPin } from "../../lib/floorPlansApi";
@@ -272,8 +277,9 @@ export default function PinIssueDialog({
         severity: "moderate",
       });
       toast.success("Pin lié à la déficience existante");
-    } catch (e: any) {
-      toast.error("Liaison échouée : " + e.message);
+    } catch (e) {
+      console.error("Error linking pin to issue:", e);
+      toast.error(getIssueErrorMessage(e, "Liaison échouée."));
     } finally {
       setSaving(false);
     }
