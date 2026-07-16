@@ -87,6 +87,47 @@ $$;
 
 ALTER FUNCTION "public"."handle_new_project"() OWNER TO "postgres";
 
+
+CREATE OR REPLACE FUNCTION "public"."is_admin"() RETURNS boolean
+    LANGUAGE "sql" STABLE
+    AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND org_role = 'admin'
+  );
+$$;
+
+
+ALTER FUNCTION "public"."is_admin"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."is_project_member"("p_project_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.project_members
+    WHERE project_id = p_project_id AND user_id = auth.uid()
+  );
+$$;
+
+
+ALTER FUNCTION "public"."is_project_member"("p_project_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."has_project_role"("p_project_id" "uuid", "p_roles" "text"[]) RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.project_members
+    WHERE project_id = p_project_id AND user_id = auth.uid() AND role = ANY (p_roles)
+  );
+$$;
+
+
+ALTER FUNCTION "public"."has_project_role"("p_project_id" "uuid", "p_roles" "text"[]) OWNER TO "postgres";
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
@@ -579,29 +620,101 @@ ALTER TABLE ONLY "public"."site_visits"
 
 
 
+CREATE POLICY "Admins have full access to comments" ON "public"."comments" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
+
+
+
+CREATE POLICY "Admins have full access to issues" ON "public"."issues" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
+
+
+
+CREATE POLICY "Admins have full access to photos" ON "public"."photos" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
+
+
+
+CREATE POLICY "Admins have full access to projects" ON "public"."projects" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
+
+
+
+CREATE POLICY "Admins have full access to site_visits" ON "public"."site_visits" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
+
+
+
+CREATE POLICY "Authenticated users can create notifications" ON "public"."notifications" FOR INSERT WITH CHECK (("auth"."uid"() IS NOT NULL));
+
+
+
+CREATE POLICY "Creator can delete their issues" ON "public"."issues" FOR DELETE USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Creator can delete their photos" ON "public"."photos" FOR DELETE USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Creator can delete their projects" ON "public"."projects" FOR DELETE USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Creator can delete their visits" ON "public"."site_visits" FOR DELETE USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Creator can update their issues" ON "public"."issues" FOR UPDATE USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Creator can update their photos" ON "public"."photos" FOR UPDATE USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Creator can update their projects" ON "public"."projects" FOR UPDATE USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Creator can update their visits" ON "public"."site_visits" FOR UPDATE USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Editors and owners can create issues" ON "public"."issues" FOR INSERT WITH CHECK ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
+
+
+
+CREATE POLICY "Members can create comments" ON "public"."comments" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."photos"
+  WHERE (("photos"."id" = "comments"."photo_id") AND "public"."is_project_member"("photos"."project_id")))));
+
+
+
+CREATE POLICY "Members can create visits" ON "public"."site_visits" FOR INSERT WITH CHECK ("public"."is_project_member"("project_id"));
+
+
+
+CREATE POLICY "Members can upload photos" ON "public"."photos" FOR INSERT WITH CHECK ((("auth"."uid"() = "user_id") AND "public"."is_project_member"("project_id")));
+
+
+
+CREATE POLICY "Members can view comments" ON "public"."comments" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."photos"
+  WHERE (("photos"."id" = "comments"."photo_id") AND "public"."is_project_member"("photos"."project_id")))));
+
+
+
+CREATE POLICY "Members can view issues" ON "public"."issues" FOR SELECT USING ("public"."is_project_member"("project_id"));
+
+
+
+CREATE POLICY "Members can view photos" ON "public"."photos" FOR SELECT USING ("public"."is_project_member"("project_id"));
+
+
+
+CREATE POLICY "Members can view their projects" ON "public"."projects" FOR SELECT USING ("public"."is_project_member"("id"));
+
+
+
 CREATE POLICY "Project owners can manage members" ON "public"."project_members" USING ((EXISTS ( SELECT 1
    FROM "public"."projects"
   WHERE (("projects"."id" = "project_members"."project_id") AND ("projects"."user_id" = "auth"."uid"())))));
-
-
-
-CREATE POLICY "Users can create comments on accessible photos" ON "public"."comments" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
-   FROM "public"."photos"
-  WHERE (("photos"."id" = "comments"."photo_id") AND (("photos"."user_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
-           FROM "public"."project_members"
-          WHERE (("project_members"."project_id" = "photos"."project_id") AND ("project_members"."user_id" = "auth"."uid"())))))))));
-
-
-
-CREATE POLICY "Users can create issues for their projects" ON "public"."issues" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
-   FROM "public"."projects"
-  WHERE (("projects"."id" = "issues"."project_id") AND (("projects"."user_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
-           FROM "public"."project_members"
-          WHERE (("project_members"."project_id" = "issues"."project_id") AND ("project_members"."user_id" = "auth"."uid"())))))))));
-
-
-
-CREATE POLICY "Users can create photos for their visits" ON "public"."photos" FOR INSERT WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 
@@ -609,35 +722,7 @@ CREATE POLICY "Users can create their own projects" ON "public"."projects" FOR I
 
 
 
-CREATE POLICY "Users can create visits for their projects" ON "public"."site_visits" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
-   FROM "public"."projects"
-  WHERE (("projects"."id" = "site_visits"."project_id") AND (("projects"."user_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
-           FROM "public"."project_members"
-          WHERE (("project_members"."project_id" = "site_visits"."project_id") AND ("project_members"."user_id" = "auth"."uid"())))))))));
-
-
-
-CREATE POLICY "Users can delete issues they created" ON "public"."issues" FOR DELETE USING (("auth"."uid"() = "user_id"));
-
-
-
 CREATE POLICY "Users can delete their own comments" ON "public"."comments" FOR DELETE USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can delete their own photos" ON "public"."photos" FOR DELETE USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can delete their own projects" ON "public"."projects" FOR DELETE USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can delete their own visits" ON "public"."site_visits" FOR DELETE USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can update issues they created" ON "public"."issues" FOR UPDATE USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -649,33 +734,7 @@ CREATE POLICY "Users can update their own notifications" ON "public"."notificati
 
 
 
-CREATE POLICY "Users can update their own photos" ON "public"."photos" FOR UPDATE USING (("auth"."uid"() = "user_id"));
-
-
-
 CREATE POLICY "Users can update their own profile" ON "public"."profiles" FOR UPDATE USING (("auth"."uid"() = "id"));
-
-
-
-CREATE POLICY "Users can update their own projects" ON "public"."projects" FOR UPDATE USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can update their own visits" ON "public"."site_visits" FOR UPDATE USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can view comments on photos they can access" ON "public"."comments" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."photos"
-  WHERE (("photos"."id" = "comments"."photo_id") AND (("photos"."user_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
-           FROM "public"."project_members"
-          WHERE (("project_members"."project_id" = "photos"."project_id") AND ("project_members"."user_id" = "auth"."uid"())))))))));
-
-
-
-CREATE POLICY "Users can view issues of their projects" ON "public"."issues" FOR SELECT USING ((("auth"."uid"() = "user_id") OR (EXISTS ( SELECT 1
-   FROM "public"."project_members"
-  WHERE (("project_members"."project_id" = "issues"."project_id") AND ("project_members"."user_id" = "auth"."uid"()))))));
 
 
 
@@ -685,27 +744,11 @@ CREATE POLICY "Users can view members of their projects" ON "public"."project_me
 
 
 
-CREATE POLICY "Users can view photos of their projects" ON "public"."photos" FOR SELECT USING ((("auth"."uid"() = "user_id") OR (EXISTS ( SELECT 1
-   FROM "public"."project_members"
-  WHERE (("project_members"."project_id" = "photos"."project_id") AND ("project_members"."user_id" = "auth"."uid"()))))));
-
-
-
 CREATE POLICY "Users can view their own notifications" ON "public"."notifications" FOR SELECT USING (("auth"."uid"() = "user_id"));
 
 
 
 CREATE POLICY "Users can view their own profile" ON "public"."profiles" FOR SELECT USING (("auth"."uid"() = "id"));
-
-
-
-CREATE POLICY "Users can view their own projects" ON "public"."projects" FOR SELECT USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can view visits of their projects" ON "public"."site_visits" FOR SELECT USING ((("auth"."uid"() = "user_id") OR (EXISTS ( SELECT 1
-   FROM "public"."project_members"
-  WHERE (("project_members"."project_id" = "site_visits"."project_id") AND ("project_members"."user_id" = "auth"."uid"()))))));
 
 
 
@@ -914,6 +957,24 @@ GRANT ALL ON FUNCTION "public"."handle_updated_at"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."handle_new_project"() TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_new_project"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_new_project"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."is_admin"() TO "anon";
+GRANT ALL ON FUNCTION "public"."is_admin"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_admin"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."is_project_member"("p_project_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."is_project_member"("p_project_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_project_member"("p_project_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."has_project_role"("p_project_id" "uuid", "p_roles" "text"[]) TO "anon";
+GRANT ALL ON FUNCTION "public"."has_project_role"("p_project_id" "uuid", "p_roles" "text"[]) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."has_project_role"("p_project_id" "uuid", "p_roles" "text"[]) TO "service_role";
 
 
 
