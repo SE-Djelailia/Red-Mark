@@ -72,6 +72,21 @@ $$;
 
 ALTER FUNCTION "public"."handle_updated_at"() OWNER TO "postgres";
 
+
+CREATE OR REPLACE FUNCTION "public"."handle_new_project"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+  INSERT INTO public.project_members (project_id, user_id, role)
+  VALUES (NEW.id, NEW.user_id, 'owner')
+  ON CONFLICT (project_id, user_id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."handle_new_project"() OWNER TO "postgres";
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
@@ -254,6 +269,11 @@ ALTER TABLE ONLY "public"."project_members"
 
 ALTER TABLE ONLY "public"."project_members"
     ADD CONSTRAINT "project_members_project_id_user_id_key" UNIQUE ("project_id", "user_id");
+
+
+
+ALTER TABLE ONLY "public"."project_members"
+    ADD CONSTRAINT "project_members_role_check" CHECK (("role" = ANY (ARRAY['owner'::"text", 'editor'::"text", 'commenter'::"text", 'viewer'::"text"])));
 
 
 
@@ -456,6 +476,10 @@ CREATE OR REPLACE TRIGGER "set_updated_at_projects" BEFORE UPDATE ON "public"."p
 
 
 CREATE OR REPLACE TRIGGER "set_updated_at_site_visits" BEFORE UPDATE ON "public"."site_visits" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "on_project_created" AFTER INSERT ON "public"."projects" FOR EACH ROW EXECUTE FUNCTION "public"."handle_new_project"();
 
 
 
@@ -878,6 +902,12 @@ GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."handle_updated_at"() TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_updated_at"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_new_project"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_new_project"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_new_project"() TO "service_role";
 
 
 

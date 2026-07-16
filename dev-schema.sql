@@ -39,6 +39,18 @@ BEGIN
 END;
 $$;
 
+
+CREATE OR REPLACE FUNCTION "public"."handle_new_project"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+  INSERT INTO public.project_members (project_id, user_id, role)
+  VALUES (NEW.id, NEW.user_id, 'owner')
+  ON CONFLICT (project_id, user_id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
@@ -197,6 +209,11 @@ ALTER TABLE ONLY "public"."project_members"
 
 
 
+ALTER TABLE ONLY "public"."project_members"
+    ADD CONSTRAINT "project_members_role_check" CHECK (("role" = ANY (ARRAY['owner'::"text", 'editor'::"text", 'commenter'::"text", 'viewer'::"text"])));
+
+
+
 ALTER TABLE ONLY "public"."projects"
     ADD CONSTRAINT "projects_pkey" PRIMARY KEY ("id");
 
@@ -296,6 +313,10 @@ CREATE OR REPLACE TRIGGER "set_updated_at_projects" BEFORE UPDATE ON "public"."p
 
 
 CREATE OR REPLACE TRIGGER "set_updated_at_site_visits" BEFORE UPDATE ON "public"."site_visits" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "on_project_created" AFTER INSERT ON "public"."projects" FOR EACH ROW EXECUTE FUNCTION "public"."handle_new_project"();
 
 
 
