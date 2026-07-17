@@ -7,6 +7,7 @@ import { useAuth } from "../../contexts/useAuth";
 import { compressImage } from "../../lib/imageCompression";
 import { addToQueue } from "../../lib/uploadQueue";
 import { useProjectRole } from "../../hooks/useProjectRole";
+import { notifyProjectOwner } from "../../lib/notificationsApi";
 
 // Network failures surface as TypeError (fetch's own error type) rather than the
 // PostgrestError/StorageError objects Supabase throws for validation/permission failures.
@@ -247,6 +248,19 @@ export default function PhotoUploadPage() {
       }
       if (successCount > 0) {
         toast.success(`${successCount} photo(s) ajoutée(s) avec succès!`);
+
+        const actorName = user.user_metadata?.name || user.email?.split("@")[0] || "Utilisateur";
+        notifyProjectOwner({
+          projectId,
+          actorId: user.id,
+          actorName,
+          type: "photo_created",
+          message:
+            successCount === 1
+              ? "a ajouté une nouvelle photo"
+              : `a ajouté ${successCount} nouvelles photos`,
+          visitId,
+        });
       }
       navigate(`/app/projects/${projectId}/visits/${visitId}`);
     } catch (error) {

@@ -1,20 +1,21 @@
 // Client-side API for managing notifications.
 // Backed by Supabase (table `notifications`). The rich client-facing fields
 // that have no dedicated column (commentId, issueId, projectId, visitId,
-// fromUserId, fromUserName) are packed into the `data` JSONB column so we
-// don't need a schema migration.
+// photoId, fromUserId, fromUserName) are packed into the `data` JSONB column
+// so we don't need a schema migration.
 
 import { supabase } from "./supabase";
 
 export interface Notification {
   id: string;
   userId: string; // User who receives the notification
-  type: "mention" | "reply";
+  type: "mention" | "reply" | "issue_comment" | "visit_created" | "issue_created" | "photo_created";
   message: string;
-  commentId: string;
-  issueId: string;
+  commentId?: string;
+  issueId?: string;
   projectId: string;
   visitId?: string;
+  photoId?: string;
   fromUserId: string;
   fromUserName: string;
   createdAt: string;
@@ -26,6 +27,7 @@ interface NotificationData {
   issueId?: string;
   projectId?: string;
   visitId?: string;
+  photoId?: string;
   fromUserId?: string;
   fromUserName?: string;
 }
@@ -33,6 +35,10 @@ interface NotificationData {
 const TITLES: Record<Notification["type"], string> = {
   mention: "Mention",
   reply: "Réponse",
+  issue_comment: "Commentaire",
+  visit_created: "Nouvelle visite",
+  issue_created: "Nouvelle déficience",
+  photo_created: "Nouvelles photos",
 };
 
 function rowToNotification(row: any): Notification {
@@ -42,10 +48,11 @@ function rowToNotification(row: any): Notification {
     userId: row.user_id,
     type: row.type,
     message: row.message || "",
-    commentId: data.commentId || "",
-    issueId: data.issueId || "",
+    commentId: data.commentId || undefined,
+    issueId: data.issueId || undefined,
     projectId: data.projectId || "",
     visitId: data.visitId || undefined,
+    photoId: data.photoId || undefined,
     fromUserId: data.fromUserId || "",
     fromUserName: data.fromUserName || "",
     createdAt: row.created_at,
@@ -83,23 +90,44 @@ export async function getUnreadCount(userId: string): Promise<number> {
   return count ?? 0;
 }
 
+export interface CreateNotificationParams {
+  userId: string; // Recipient
+  type: Notification["type"];
+  message: string;
+  fromUserId: string;
+  fromUserName: string;
+  projectId: string;
+  issueId?: string;
+  visitId?: string;
+  photoId?: string;
+  commentId?: string;
+}
+
 // Create a notification
 export async function createNotification(
-  userId: string,
-  type: Notification["type"],
-  message: string,
-  commentId: string,
-  issueId: string,
-  projectId: string,
-  fromUserId: string,
-  fromUserName: string,
-  visitId?: string,
+  params: CreateNotificationParams,
 ): Promise<Notification | null> {
-  const data: NotificationData = { commentId, issueId, projectId, visitId, fromUserId, fromUserName };
+  const data: NotificationData = {
+    commentId: params.commentId,
+    issueId: params.issueId,
+    projectId: params.projectId,
+    visitId: params.visitId,
+    photoId: params.photoId,
+    fromUserId: params.fromUserId,
+    fromUserName: params.fromUserName,
+  };
 
   const { data: row, error } = await supabase
     .from("notifications")
-    .insert([{ user_id: userId, type, title: TITLES[type], message, data }])
+    .insert([
+      {
+        user_id: params.userId,
+        type: params.type,
+        title: TITLES[params.type],
+        message: params.message,
+        data,
+      },
+    ])
     .select()
     .single();
 
@@ -108,6 +136,54 @@ export async function createNotification(
     return null;
   }
   return rowToNotification(row);
+}
+
+// The current owner of a project (project_members.role = 'owner'). Every
+// project has exactly one, set once at creation and never reassignable via
+// the UI, so a single row is always the right answer.
+export async function getProjectOwnerId(projectId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("project_members")
+    .select("user_id")
+    .eq("project_id", projectId)
+    .eq("role", "owner")
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error resolving project owner:", error);
+    return null;
+  }
+  return data?.user_id || null;
+}
+
+export interface NotifyProjectOwnerParams {
+  projectId: string;
+  actorId: string; // Person who performed the action - never notified about their own action
+  actorName: string;
+  type: "visit_created" | "issue_created" | "photo_created";
+  message: string;
+  issueId?: string;
+  visitId?: string;
+  photoId?: string;
+}
+
+// Notify the project owner of a new visit/issue/photo, unless they're the
+// one who created it.
+export async function notifyProjectOwner(params: NotifyProjectOwnerParams): Promise<void> {
+  const ownerId = await getProjectOwnerId(params.projectId);
+  if (!ownerId || ownerId === params.actorId) return;
+
+  await createNotification({
+    userId: ownerId,
+    type: params.type,
+    message: params.message,
+    fromUserId: params.actorId,
+    fromUserName: params.actorName,
+    projectId: params.projectId,
+    issueId: params.issueId,
+    visitId: params.visitId,
+    photoId: params.photoId,
+  });
 }
 
 // Mark notification as read

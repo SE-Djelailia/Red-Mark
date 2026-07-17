@@ -293,6 +293,7 @@ export default function IssueManagement() {
                         issueId={selectedIssue.id}
                         projectId={selectedIssue.project_id}
                         visitId={selectedIssue.visit_id || undefined}
+                        issueCreatedBy={selectedIssue.user_id}
                         onCommentsUpdate={setIssueComments}
                       />
                     </div>

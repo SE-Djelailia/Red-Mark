@@ -11,6 +11,7 @@ interface CommentThreadProps {
   issueId: string;
   projectId: string;
   visitId?: string;
+  issueCreatedBy?: string;
   onCommentsUpdate: (comments: Comment[]) => void;
   highlightCommentId?: string | null;
 }
@@ -20,6 +21,7 @@ export default function CommentThread({
   issueId,
   projectId,
   visitId,
+  issueCreatedBy,
   onCommentsUpdate,
   highlightCommentId,
 }: CommentThreadProps) {
@@ -156,42 +158,73 @@ export default function CommentThread({
         mentionedUserIds.length > 0 ? mentionedUserIds : undefined,
       );
 
+      const mentionedSet = new Set(mentionedUserIds);
+      const parentComment = replyingToId
+        ? comments.find((c) => c.id === replyingToId)
+        : undefined;
+
       // Create notifications for mentioned users
       await Promise.all(
         mentionedUserIds
           .filter((userId) => userId !== currentUser.id)
           .map((userId) =>
-            createNotification(
+            createNotification({
               userId,
-              "mention",
-              `vous a mentionné dans un commentaire`,
-              newComment.id,
+              type: "mention",
+              message: `vous a mentionné dans un commentaire`,
+              commentId: newComment.id,
               issueId,
               projectId,
-              currentUser.id,
-              currentUser.name,
               visitId,
-            ),
+              fromUserId: currentUser.id,
+              fromUserName: currentUser.name,
+            }),
           ),
       );
 
       // Create notification for parent comment author (if replying)
-      if (replyingToId) {
-        const parentComment = comments.find((c) => c.id === replyingToId);
-        if (parentComment && parentComment.authorId !== currentUser.id) {
-          await createNotification(
-            parentComment.authorId,
-            "reply",
-            `a répondu à votre commentaire`,
-            newComment.id,
+      if (parentComment && parentComment.authorId !== currentUser.id) {
+        await createNotification({
+          userId: parentComment.authorId,
+          type: "reply",
+          message: `a répondu à votre commentaire`,
+          commentId: newComment.id,
+          issueId,
+          projectId,
+          visitId,
+          fromUserId: currentUser.id,
+          fromUserName: currentUser.name,
+        });
+      }
+
+      // Notify the issue creator and everyone else who has commented on this
+      // issue — except the poster, anyone already @mentioned above (they get
+      // only the mention notification), and the reply's parent author
+      // (already notified above via "reply").
+      const issueParticipants = new Set<string>();
+      if (issueCreatedBy) issueParticipants.add(issueCreatedBy);
+      comments.forEach((c) => {
+        if (c.authorId) issueParticipants.add(c.authorId);
+      });
+      issueParticipants.delete(currentUser.id);
+      mentionedSet.forEach((id) => issueParticipants.delete(id));
+      if (parentComment) issueParticipants.delete(parentComment.authorId);
+
+      await Promise.all(
+        Array.from(issueParticipants).map((userId) =>
+          createNotification({
+            userId,
+            type: "issue_comment",
+            message: `a commenté une déficience que vous suivez`,
+            commentId: newComment.id,
             issueId,
             projectId,
-            currentUser.id,
-            currentUser.name,
             visitId,
-          );
-        }
-      }
+            fromUserId: currentUser.id,
+            fromUserName: currentUser.name,
+          }),
+        ),
+      );
 
       // Update comments list
       onCommentsUpdate([...comments, newComment]);

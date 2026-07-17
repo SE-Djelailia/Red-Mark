@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, Calendar, Cloud, Thermometer, ChevronDown, Plus } from "lucide-react";
 import { ButtonLoader } from "./LoadingStates";
 import { createSiteVisit } from "../../lib/supabaseApi";
+import { notifyProjectOwner } from "../../lib/notificationsApi";
 import { useAuth } from "../../contexts/useAuth";
 
 const DEFAULT_PHASES = ["Fondation", "Charpente", "ÉMÉ", "Finitions", "Extérieur"];
@@ -120,6 +121,16 @@ export default function SiteVisitCreation() {
       });
 
       console.log("✅ Site visit created successfully", newVisit.id);
+
+      const actorName = user.user_metadata?.name || user.email?.split("@")[0] || "Utilisateur";
+      notifyProjectOwner({
+        projectId: id || "",
+        actorId: user.id,
+        actorName,
+        type: "visit_created",
+        message: "a ajouté une nouvelle visite",
+        visitId: newVisit.id,
+      });
 
       navigate(`/app/projects/${id}`);
     } catch (error) {

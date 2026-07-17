@@ -36,6 +36,7 @@ import CommentThread from "./CommentThread";
 import VoiceNotesSection from "./VoiceNotesSection";
 import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole, canEditIssue, canManagePhoto } from "../../hooks/useProjectRole";
+import { notifyProjectOwner } from "../../lib/notificationsApi";
 import { compressImage } from "../../lib/imageCompression";
 import SecureImage from "./SecureImage";
 import { toast } from "sonner";
@@ -341,6 +342,19 @@ export default function VisitDetail() {
         });
         setIssues((prevIssues) => [...prevIssues, newIssue]);
         toast.success(`Déficience créée avec ${linkedPhotos.length} photo(s)`);
+
+        if (user) {
+          const actorName = user.user_metadata?.name || user.email?.split("@")[0] || "Utilisateur";
+          notifyProjectOwner({
+            projectId,
+            actorId: user.id,
+            actorName,
+            type: "issue_created",
+            message: "a créé une nouvelle déficience",
+            issueId: newIssue.id,
+            visitId,
+          });
+        }
       }
 
       setShowIssueModal(false);
@@ -1268,6 +1282,7 @@ export default function VisitDetail() {
                     issueId={editingIssue.id}
                     projectId={projectId || ""}
                     visitId={visitId}
+                    issueCreatedBy={editingIssue.createdBy}
                     onCommentsUpdate={setIssueComments}
                   />
                 </div>

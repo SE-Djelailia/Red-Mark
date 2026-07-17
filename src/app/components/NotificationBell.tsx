@@ -38,22 +38,29 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
     return () => clearInterval(interval);
   }, [userId]);
 
+  // Route to the most specific place the notification refers to: the issue
+  // (with the triggering comment highlighted, if any), else the visit, else
+  // just the project.
+  const getNotificationPath = (notification: Notification): string => {
+    if (notification.issueId) {
+      const base = notification.visitId
+        ? `/app/projects/${notification.projectId}/visits/${notification.visitId}/issues/${notification.issueId}`
+        : `/app/projects/${notification.projectId}/issues/${notification.issueId}`;
+      return notification.commentId ? `${base}?commentId=${notification.commentId}` : base;
+    }
+    if (notification.visitId) {
+      return `/app/projects/${notification.projectId}/visits/${notification.visitId}`;
+    }
+    return `/app/projects/${notification.projectId}`;
+  };
+
   const handleNotificationClick = async (notification: Notification) => {
     // Mark as read
     await markAsRead(notification.id);
     setShowPanel(false);
     loadNotifications();
 
-    // Navigate to the issue with the comment (or the visit, for visit-level comments)
-    const path = notification.issueId
-      ? notification.visitId
-        ? `/app/projects/${notification.projectId}/visits/${notification.visitId}/issues/${notification.issueId}?commentId=${notification.commentId}`
-        : `/app/projects/${notification.projectId}/issues/${notification.issueId}?commentId=${notification.commentId}`
-      : notification.visitId
-        ? `/app/projects/${notification.projectId}/visits/${notification.visitId}`
-        : `/app/projects/${notification.projectId}`;
-
-    navigate(path);
+    navigate(getNotificationPath(notification));
   };
 
   const handleMarkAllRead = async () => {
@@ -73,6 +80,14 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
         return "👤";
       case "reply":
         return "💬";
+      case "issue_comment":
+        return "🗨️";
+      case "visit_created":
+        return "📅";
+      case "issue_created":
+        return "⚠️";
+      case "photo_created":
+        return "📷";
       default:
         return "🔔";
     }

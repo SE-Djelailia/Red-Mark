@@ -23,6 +23,7 @@ import { ISSUE_TRADES } from "./IssueCreation";
 import { saveIssueExtras, updatePin } from "../../lib/floorPlansApi";
 import type { FloorPlanPin } from "../../lib/floorPlansApi";
 import { getSiteVisits, getPhotos } from "../../lib/supabaseApi";
+import { notifyProjectOwner } from "../../lib/notificationsApi";
 import { supabase } from "../../lib/supabase";
 import { compressImage } from "../../lib/imageCompression";
 import { useAuth } from "../../contexts/useAuth";
@@ -256,6 +257,19 @@ export default function PinIssueDialog({
         severity,
       });
       toast.success("Déficience créée et liée au pin");
+
+      if (user) {
+        const actorName = user.user_metadata?.name || user.email?.split("@")[0] || "Utilisateur";
+        notifyProjectOwner({
+          projectId,
+          actorId: user.id,
+          actorName,
+          type: "issue_created",
+          message: "a créé une nouvelle déficience",
+          issueId: issue.id,
+          visitId: visitId || undefined,
+        });
+      }
     } catch (e: any) {
       toast.error("Création échouée : " + e.message);
     } finally {

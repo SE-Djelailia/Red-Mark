@@ -258,17 +258,16 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
         mentions
           .filter((userId) => userId !== user.id)
           .map((userId) =>
-            createNotification(
+            createNotification({
               userId,
-              "mention",
-              "vous a mentionné dans un commentaire",
-              newComment.id,
-              "",
+              type: "mention",
+              message: "vous a mentionné dans un commentaire",
+              commentId: newComment.id,
               projectId,
-              user.id,
-              authorName,
               visitId,
-            ),
+              fromUserId: user.id,
+              fromUserName: authorName,
+            }),
           ),
       );
 
@@ -276,17 +275,16 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
       if (replyingTo) {
         const parentComment = comments.find((c) => c.id === replyingTo);
         if (parentComment && parentComment.authorId !== user.id) {
-          await createNotification(
-            parentComment.authorId,
-            "reply",
-            "a répondu à votre commentaire",
-            newComment.id,
-            "",
+          await createNotification({
+            userId: parentComment.authorId,
+            type: "reply",
+            message: "a répondu à votre commentaire",
+            commentId: newComment.id,
             projectId,
-            user.id,
-            authorName,
             visitId,
-          );
+            fromUserId: user.id,
+            fromUserName: authorName,
+          });
         }
       }
 

@@ -617,6 +617,7 @@ export default function IssueDetail() {
             issueId={issueId || ""}
             projectId={projectId || ""}
             visitId={visitId}
+            issueCreatedBy={issue?.createdBy}
             onCommentsUpdate={setComments}
             highlightCommentId={highlightCommentId}
           />
