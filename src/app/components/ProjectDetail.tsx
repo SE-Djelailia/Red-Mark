@@ -810,13 +810,15 @@ export default function ProjectDetail() {
       </div>
 
       {/* Create New Site Visit Button */}
-      <button
-        onClick={() => navigate(`/app/projects/${id}/visit/new`)}
-        className="fixed bottom-24 md:bottom-28 right-4 sm:right-6 w-14 h-14 md:w-16 md:h-16 bg-[#E10600] text-white rounded-full shadow-lg hover:bg-[#C00500] active:scale-95 transition-all flex items-center justify-center z-40 touch-manipulation"
-        aria-label="Créer une nouvelle visite"
-      >
-        <Plus size={28} />
-      </button>
+      {projectRole.canCreateIssues && (
+        <button
+          onClick={() => navigate(`/app/projects/${id}/visit/new`)}
+          className="fixed bottom-24 md:bottom-28 right-4 sm:right-6 w-14 h-14 md:w-16 md:h-16 bg-[#E10600] text-white rounded-full shadow-lg hover:bg-[#C00500] active:scale-95 transition-all flex items-center justify-center z-40 touch-manipulation"
+          aria-label="Créer une nouvelle visite"
+        >
+          <Plus size={28} />
+        </button>
+      )}
 
       {/* Share Modal */}
       {showShareModal && (

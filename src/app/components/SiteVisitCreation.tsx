@@ -5,6 +5,7 @@ import { ButtonLoader } from "./LoadingStates";
 import { createSiteVisit } from "../../lib/supabaseApi";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
 import { useAuth } from "../../contexts/useAuth";
+import { useProjectRole } from "../../hooks/useProjectRole";
 
 const DEFAULT_PHASES = ["Fondation", "Charpente", "ÉMÉ", "Finitions", "Extérieur"];
 const CUSTOM_PHASES_KEY = "redmark_custom_phases";
@@ -13,6 +14,7 @@ export default function SiteVisitCreation() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { user } = useAuth();
+  const projectRole = useProjectRole(id);
 
   const [visitDate, setVisitDate] = useState(new Date().toISOString().split("T")[0]);
   const [notes, setNotes] = useState("");
@@ -155,7 +157,19 @@ export default function SiteVisitCreation() {
         <h1 className="text-2xl md:text-3xl">Nouvelle visite de chantier</h1>
       </div>
 
-      {/* Form */}
+      {!projectRole.loading && !projectRole.canCreateIssues ? (
+        <div className="px-4 py-6 max-w-2xl mx-auto">
+          <div className="bg-white rounded-xl p-8 border border-gray-200 text-center">
+            <p className="text-base text-[#1A1A1A] font-medium mb-2">
+              Vous n'avez pas la permission de créer une visite sur ce projet.
+            </p>
+            <p className="text-sm text-gray-500">
+              Contactez le propriétaire du projet ou un administrateur pour obtenir cet accès.
+            </p>
+          </div>
+        </div>
+      ) : (
+      /* Form */
       <form onSubmit={handleSubmit} className="px-4 py-6 max-w-2xl mx-auto pb-32">
         <div className="space-y-5">
           {/* Visit Date */}
@@ -324,6 +338,7 @@ export default function SiteVisitCreation() {
           </div>
         </div>
       </form>
+      )}
     </div>
   );
 }
