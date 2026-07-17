@@ -81,6 +81,7 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
       case "reply":
         return "💬";
       case "issue_comment":
+      case "visit_comment":
         return "🗨️";
       case "visit_created":
         return "📅";

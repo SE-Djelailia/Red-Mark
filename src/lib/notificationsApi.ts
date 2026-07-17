@@ -9,7 +9,14 @@ import { supabase } from "./supabase";
 export interface Notification {
   id: string;
   userId: string; // User who receives the notification
-  type: "mention" | "reply" | "issue_comment" | "visit_created" | "issue_created" | "photo_created";
+  type:
+    | "mention"
+    | "reply"
+    | "issue_comment"
+    | "visit_comment"
+    | "visit_created"
+    | "issue_created"
+    | "photo_created";
   message: string;
   commentId?: string;
   issueId?: string;
@@ -36,6 +43,7 @@ const TITLES: Record<Notification["type"], string> = {
   mention: "Mention",
   reply: "Réponse",
   issue_comment: "Commentaire",
+  visit_comment: "Commentaire",
   visit_created: "Nouvelle visite",
   issue_created: "Nouvelle déficience",
   photo_created: "Nouvelles photos",
@@ -103,10 +111,13 @@ export interface CreateNotificationParams {
   commentId?: string;
 }
 
-// Create a notification
-export async function createNotification(
-  params: CreateNotificationParams,
-): Promise<Notification | null> {
+// Create a notification. Deliberately doesn't .select() the inserted row
+// back: the recipient is usually someone other than the caller, and the
+// "view your own notifications" SELECT policy blocks the caller from
+// reading a row that isn't theirs — chaining .select().single() onto the
+// insert made PostgREST require that (failing) read as part of the same
+// request, so the insert itself was rejected even though it was valid.
+export async function createNotification(params: CreateNotificationParams): Promise<boolean> {
   const data: NotificationData = {
     commentId: params.commentId,
     issueId: params.issueId,
@@ -117,25 +128,21 @@ export async function createNotification(
     fromUserName: params.fromUserName,
   };
 
-  const { data: row, error } = await supabase
-    .from("notifications")
-    .insert([
-      {
-        user_id: params.userId,
-        type: params.type,
-        title: TITLES[params.type],
-        message: params.message,
-        data,
-      },
-    ])
-    .select()
-    .single();
+  const { error } = await supabase.from("notifications").insert([
+    {
+      user_id: params.userId,
+      type: params.type,
+      title: TITLES[params.type],
+      message: params.message,
+      data,
+    },
+  ]);
 
   if (error) {
     console.error("Error creating notification:", error);
-    return null;
+    return false;
   }
-  return rowToNotification(row);
+  return true;
 }
 
 // The current owner of a project (project_members.role = 'owner'). Every

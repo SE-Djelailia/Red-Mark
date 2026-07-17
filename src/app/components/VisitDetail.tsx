@@ -76,6 +76,7 @@ interface VisitDisplay {
   photos: Photo[];
   weather?: string;
   temperature?: string;
+  createdBy: string;
 }
 
 export default function VisitDetail() {
@@ -150,6 +151,7 @@ export default function VisitDetail() {
           })),
           weather: apiVisit.weather,
           temperature: apiVisit.temperature,
+          createdBy: apiVisit.user_id,
         };
 
         setVisit(transformedVisit);
@@ -1025,7 +1027,11 @@ export default function VisitDetail() {
         {visitId && <VoiceNotesSection visitId={visitId} />}
 
         {/* Comments */}
-        <VisitComments visitId={visitId || ""} projectId={projectId || ""} />
+        <VisitComments
+          visitId={visitId || ""}
+          projectId={projectId || ""}
+          visitCreatedBy={visit?.createdBy}
+        />
 
         {/* Quick Actions */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">

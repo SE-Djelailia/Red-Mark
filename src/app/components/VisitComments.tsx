@@ -15,6 +15,7 @@ import { useAuth } from "../../contexts/useAuth";
 interface VisitCommentsProps {
   visitId: string;
   projectId: string;
+  visitCreatedBy?: string;
 }
 
 interface CommentCardProps {
@@ -194,7 +195,7 @@ function CommentCard({
   );
 }
 
-export default function VisitComments({ visitId, projectId }: VisitCommentsProps) {
+export default function VisitComments({ visitId, projectId, visitCreatedBy }: VisitCommentsProps) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -227,15 +228,29 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
     setTeamMembers(members);
   };
 
+  // Detect @mentions in text by checking, for each teammate, whether their
+  // full name or first name appears right after an "@" (matches
+  // CommentThread.tsx's approach — a bare regex capture + .includes() check
+  // used here previously matched in the wrong direction and broke on any
+  // trailing text after the mentioned name).
+  const detectMentions = (text: string): string[] => {
+    const mentionedUserIds: string[] = [];
+    teamMembers.forEach((member) => {
+      const patterns = [
+        new RegExp(`@${member.name.replace(/\s+/g, "\\s+")}(?=\\s|$)`, "gi"),
+        new RegExp(`@${member.name.split(" ")[0]}(?=\\s|$)`, "gi"),
+      ];
+      if (patterns.some((pattern) => pattern.test(text)) && !mentionedUserIds.includes(member.id)) {
+        mentionedUserIds.push(member.id);
+      }
+    });
+    return mentionedUserIds;
+  };
+
   const handleSubmitComment = async () => {
     if (!newCommentText.trim() || !user || isSubmitting) return;
 
-    // Extract mentions from text (e.g., @Marie-Claude Bouchard)
-    const mentionPattern = /@([\w\s-]+)/g;
-    const mentionedNames = [...newCommentText.matchAll(mentionPattern)].map((m) => m[1]);
-    const mentions = teamMembers
-      .filter((member) => mentionedNames.some((name) => member.name.includes(name)))
-      .map((member) => member.id);
+    const mentions = detectMentions(newCommentText);
 
     // Get author name from user metadata or email
     const authorName = user.user_metadata?.name || user.email?.split("@")[0] || "Utilisateur";
@@ -252,6 +267,9 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
         replyingTo || undefined,
         mentions.length > 0 ? mentions : undefined,
       );
+
+      const mentionedSet = new Set(mentions);
+      const parentComment = replyingTo ? comments.find((c) => c.id === replyingTo) : undefined;
 
       // Notify mentioned users
       await Promise.all(
@@ -272,21 +290,46 @@ export default function VisitComments({ visitId, projectId }: VisitCommentsProps
       );
 
       // Notify the parent comment's author, if replying
-      if (replyingTo) {
-        const parentComment = comments.find((c) => c.id === replyingTo);
-        if (parentComment && parentComment.authorId !== user.id) {
-          await createNotification({
-            userId: parentComment.authorId,
-            type: "reply",
-            message: "a répondu à votre commentaire",
+      if (parentComment && parentComment.authorId !== user.id) {
+        await createNotification({
+          userId: parentComment.authorId,
+          type: "reply",
+          message: "a répondu à votre commentaire",
+          commentId: newComment.id,
+          projectId,
+          visitId,
+          fromUserId: user.id,
+          fromUserName: authorName,
+        });
+      }
+
+      // Notify the visit creator and everyone else who has commented on this
+      // visit — except the poster, anyone already @mentioned above (they get
+      // only the mention notification), and the reply's parent author
+      // (already notified above via "reply").
+      const visitParticipants = new Set<string>();
+      if (visitCreatedBy) visitParticipants.add(visitCreatedBy);
+      comments.forEach((c) => {
+        if (c.authorId) visitParticipants.add(c.authorId);
+      });
+      visitParticipants.delete(user.id);
+      mentionedSet.forEach((id) => visitParticipants.delete(id));
+      if (parentComment) visitParticipants.delete(parentComment.authorId);
+
+      await Promise.all(
+        Array.from(visitParticipants).map((userId) =>
+          createNotification({
+            userId,
+            type: "visit_comment",
+            message: "a commenté une visite que vous suivez",
             commentId: newComment.id,
             projectId,
             visitId,
             fromUserId: user.id,
             fromUserName: authorName,
-          });
-        }
-      }
+          }),
+        ),
+      );
 
       setComments([...comments, newComment]);
       setNewCommentText("");
