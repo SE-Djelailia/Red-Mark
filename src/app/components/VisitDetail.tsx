@@ -35,6 +35,7 @@ import VisitComments from "./VisitComments";
 import CommentThread from "./CommentThread";
 import VoiceNotesSection from "./VoiceNotesSection";
 import { useAuth } from "../../contexts/useAuth";
+import { useProjectRole, canEditIssue } from "../../hooks/useProjectRole";
 import { compressImage } from "../../lib/imageCompression";
 import SecureImage from "./SecureImage";
 import { toast } from "sonner";
@@ -191,6 +192,7 @@ export default function VisitDetail() {
   };
 
   const currentUserId = user?.id || null;
+  const projectRole = useProjectRole(projectId);
 
   // Photo upload handler
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -751,13 +753,15 @@ export default function VisitDetail() {
                 sélectionnée{selectedPhotoIds.length !== 1 ? "s" : ""}
               </span>
               <div className="flex gap-2">
-                <button
-                  onClick={handleCreateIssueFromPhotos}
-                  className="py-2 px-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
-                >
-                  <AlertCircle size={16} />
-                  Créer déficience
-                </button>
+                {projectRole.canCreateIssues && (
+                  <button
+                    onClick={handleCreateIssueFromPhotos}
+                    className="py-2 px-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
+                  >
+                    <AlertCircle size={16} />
+                    Créer déficience
+                  </button>
+                )}
                 <button
                   onClick={handleDeleteSelectedPhotos}
                   className="py-2 px-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
@@ -873,13 +877,15 @@ export default function VisitDetail() {
               <AlertCircle size={18} className="text-gray-500" />
               Déficiences ({issues.length})
             </h2>
-            <button
-              onClick={handleCreateIssue}
-              className="py-2.5 px-4 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 transition-colors font-medium flex items-center gap-2 min-h-[44px]"
-            >
-              <Edit size={16} />
-              <span>Ajouter une déficience</span>
-            </button>
+            {projectRole.canCreateIssues && (
+              <button
+                onClick={handleCreateIssue}
+                className="py-2.5 px-4 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 transition-colors font-medium flex items-center gap-2 min-h-[44px]"
+              >
+                <Edit size={16} />
+                <span>Ajouter une déficience</span>
+              </button>
+            )}
           </div>
 
           {issues.length === 0 ? (
@@ -898,13 +904,15 @@ export default function VisitDetail() {
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="text-sm font-medium text-[#1A1A1A] flex-1">{issue.title}</h3>
-                    <button
-                      onClick={(e) => handleEditIssue(issue, e)}
-                      className="ml-2 w-8 h-8 flex items-center justify-center bg-white text-gray-600 rounded-full hover:bg-gray-200 transition-colors"
-                      title="Modifier"
-                    >
-                      <Edit size={14} />
-                    </button>
+                    {canEditIssue(projectRole, issue.createdBy) && (
+                      <button
+                        onClick={(e) => handleEditIssue(issue, e)}
+                        className="ml-2 w-8 h-8 flex items-center justify-center bg-white text-gray-600 rounded-full hover:bg-gray-200 transition-colors"
+                        title="Modifier"
+                      >
+                        <Edit size={14} />
+                      </button>
+                    )}
                   </div>
                   <p className="text-xs text-gray-600 mb-3 line-clamp-2">{issue.description}</p>
                   <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -1011,13 +1019,15 @@ export default function VisitDetail() {
               <FileText size={18} />
               <span className="text-sm font-medium">Générer rapport</span>
             </button>
-            <button
-              onClick={() => navigate(`/app/projects/${projectId}/visits/${visitId}/add-photos`)}
-              className="py-3 px-4 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 min-h-[48px]"
-            >
-              <Camera size={18} />
-              <span className="text-sm font-medium">Ajouter photos</span>
-            </button>
+            {projectRole.canUploadPhotos && (
+              <button
+                onClick={() => navigate(`/app/projects/${projectId}/visits/${visitId}/add-photos`)}
+                className="py-3 px-4 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+              >
+                <Camera size={18} />
+                <span className="text-sm font-medium">Ajouter photos</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

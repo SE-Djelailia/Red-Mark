@@ -21,6 +21,7 @@ import {
 import { VisitCardSkeleton, PhotoGridSkeleton, CommentSkeleton } from "./LoadingStates";
 import { getSiteVisits, getProject, getPhotos, getPhotoSignedUrl } from "../../lib/supabaseApi";
 import { useAuth } from "../../contexts/useAuth";
+import { useProjectRole } from "../../hooks/useProjectRole";
 import { getIssuesByProject } from "../../lib/issuesApi";
 import { parseLocalDate } from "../../lib/dateUtils";
 import PhotoMarkup from "./PhotoMarkup";
@@ -67,6 +68,7 @@ export default function ProjectDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { user, loading: authLoading } = useAuth();
+  const projectRole = useProjectRole(id);
   const [activeTab, setActiveTab] = useState<"visits" | "gallery" | "plans">("visits");
   const [gallerySubTab, setGallerySubTab] = useState<"photos" | "issues">("photos");
   const [showShareModal, setShowShareModal] = useState(false);
@@ -789,13 +791,15 @@ export default function ProjectDetail() {
                 ))}
 
                 {/* Add Issue Button */}
-                <button
-                  onClick={() => setShowIssueCreationModal(true)}
-                  className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-[#E10600] hover:text-[#E10600] transition-colors flex items-center justify-center gap-2 min-h-[48px]"
-                >
-                  <AlertCircle size={18} />
-                  <span>Créer une déficience</span>
-                </button>
+                {projectRole.canCreateIssues && (
+                  <button
+                    onClick={() => setShowIssueCreationModal(true)}
+                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-[#E10600] hover:text-[#E10600] transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+                  >
+                    <AlertCircle size={18} />
+                    <span>Créer une déficience</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -984,13 +988,15 @@ export default function ProjectDetail() {
               <Pencil size={18} />
               <span>Annoter</span>
             </button>
-            <button
-              onClick={() => setShowIssueCreationModal(true)}
-              className="flex-1 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
-            >
-              <AlertCircle size={18} />
-              <span>Créer déficience</span>
-            </button>
+            {projectRole.canCreateIssues && (
+              <button
+                onClick={() => setShowIssueCreationModal(true)}
+                className="flex-1 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <AlertCircle size={18} />
+                <span>Créer déficience</span>
+              </button>
+            )}
           </div>
 
           {/* Metadata */}

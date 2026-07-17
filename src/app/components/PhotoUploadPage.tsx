@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
 import { compressImage } from "../../lib/imageCompression";
 import { addToQueue } from "../../lib/uploadQueue";
+import { useProjectRole } from "../../hooks/useProjectRole";
 
 // Network failures surface as TypeError (fetch's own error type) rather than the
 // PostgrestError/StorageError objects Supabase throws for validation/permission failures.
@@ -17,6 +18,7 @@ export default function PhotoUploadPage() {
   const navigate = useNavigate();
   const { projectId, visitId } = useParams();
   const { user } = useAuth();
+  const projectRole = useProjectRole(projectId);
 
   const [photosToUpload, setPhotosToUpload] = useState<File[]>([]);
   const [photoTags, setPhotoTags] = useState<{ [key: string]: string[] }>({});
@@ -289,6 +291,17 @@ export default function PhotoUploadPage() {
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6 flex-1">
+        {!projectRole.loading && !projectRole.canUploadPhotos ? (
+          <div className="bg-white rounded-xl p-8 border border-gray-200 text-center">
+            <p className="text-base text-[#1A1A1A] font-medium mb-2">
+              Vous n'avez pas la permission d'ajouter des photos à ce projet.
+            </p>
+            <p className="text-sm text-gray-500">
+              Contactez le propriétaire du projet ou un administrateur pour obtenir cet accès.
+            </p>
+          </div>
+        ) : (
+        <>
         {/* Upload Area */}
         {photosToUpload.length === 0 ? (
           <div className="bg-white rounded-xl p-8 border-2 border-dashed border-gray-300 hover:border-[#E10600] transition-colors">
@@ -608,6 +621,8 @@ export default function PhotoUploadPage() {
               </div>
             </div>
           </>
+        )}
+        </>
         )}
       </div>
 

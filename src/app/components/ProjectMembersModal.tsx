@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { X, UserPlus, Shield, Trash2, Loader2, Mail } from "lucide-react";
-import { useAuth } from "../../contexts/useAuth";
 import { supabase } from "../../lib/supabase";
 import { toast } from "sonner";
+import { useProjectRole } from "../../hooks/useProjectRole";
 
 type ProjectRole = "owner" | "editor" | "commenter";
 
@@ -21,10 +21,10 @@ interface ProjectMembersModalProps {
 }
 
 export default function ProjectMembersModal({ projectId, onClose }: ProjectMembersModalProps) {
-  const { user } = useAuth();
+  const projectRole = useProjectRole(projectId);
+  const canManage = projectRole.canManageMembers;
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
-  const [canManage, setCanManage] = useState(false);
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"editor" | "commenter">("editor");
@@ -64,26 +64,13 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
           };
         }),
       );
-
-      // Determine whether the current user can manage this roster: admin,
-      // or their own project_members row for this project has role 'owner'.
-      if (user) {
-        const { data: profileRow } = await supabase
-          .from("profiles")
-          .select("org_role")
-          .eq("id", user.id)
-          .single();
-        const isAdmin = profileRow?.org_role === "admin";
-        const myRow = (memberRows || []).find((m) => m.user_id === user.id);
-        setCanManage(isAdmin || myRow?.role === "owner");
-      }
     } catch (e: any) {
       console.error("Load members error:", e);
       toast.error("Impossible de charger les membres");
     } finally {
       setLoading(false);
     }
-  }, [projectId, user]);
+  }, [projectId]);
 
   useEffect(() => {
     loadMembers();

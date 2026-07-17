@@ -25,12 +25,14 @@ import { getCommentsForIssue } from "../../lib/commentsApi";
 import { parseLocalDate, formatDateLongWithWeekday, formatDateForInput } from "../../lib/dateUtils";
 import CommentThread from "./CommentThread";
 import type { Comment } from "../../lib/commentsApi";
+import { useProjectRole, canEditIssue } from "../../hooks/useProjectRole";
 
 export default function IssueDetail() {
   const navigate = useNavigate();
   const { projectId, visitId, issueId } = useParams();
   const [searchParams] = useSearchParams();
   const highlightCommentId = searchParams.get("commentId");
+  const projectRole = useProjectRole(projectId);
 
   const [comments, setComments] = useState<Comment[]>([]);
 
@@ -304,22 +306,24 @@ export default function IssueDetail() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 ml-4">
-            <button
-              onClick={() => navigate(`/app/projects/${projectId}/issues/${issueId}/edit`)}
-              className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors"
-              title="Modifier"
-            >
-              <Edit size={20} />
-            </button>
-            <button
-              onClick={handleDeleteIssue}
-              className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors"
-              title="Supprimer"
-            >
-              <Trash2 size={20} />
-            </button>
-          </div>
+          {canEditIssue(projectRole, issue?.createdBy) && (
+            <div className="flex items-center gap-2 ml-4">
+              <button
+                onClick={() => navigate(`/app/projects/${projectId}/issues/${issueId}/edit`)}
+                className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors"
+                title="Modifier"
+              >
+                <Edit size={20} />
+              </button>
+              <button
+                onClick={handleDeleteIssue}
+                className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors"
+                title="Supprimer"
+              >
+                <Trash2 size={20} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -385,13 +389,15 @@ export default function IssueDetail() {
                   <div className="text-sm text-[#1A1A1A] font-medium">
                     {issue?.assignedTo || defaultIssue.assignedTo}
                   </div>
-                  <button
-                    onClick={() => setIsEditingAssignedTo(true)}
-                    className="p-2 text-gray-400 hover:text-[#E10600] transition-colors"
-                    title="Modifier"
-                  >
-                    <Edit size={16} />
-                  </button>
+                  {canEditIssue(projectRole, issue?.createdBy) && (
+                    <button
+                      onClick={() => setIsEditingAssignedTo(true)}
+                      className="p-2 text-gray-400 hover:text-[#E10600] transition-colors"
+                      title="Modifier"
+                    >
+                      <Edit size={16} />
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -432,13 +438,15 @@ export default function IssueDetail() {
                       parseLocalDate(issue?.createdDate || defaultIssue.createdDate),
                     )}
                   </div>
-                  <button
-                    onClick={() => setIsEditingDate(true)}
-                    className="p-2 text-gray-400 hover:text-[#E10600] transition-colors"
-                    title="Modifier"
-                  >
-                    <Edit size={16} />
-                  </button>
+                  {canEditIssue(projectRole, issue?.createdBy) && (
+                    <button
+                      onClick={() => setIsEditingDate(true)}
+                      className="p-2 text-gray-400 hover:text-[#E10600] transition-colors"
+                      title="Modifier"
+                    >
+                      <Edit size={16} />
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -478,13 +486,15 @@ export default function IssueDetail() {
                   <div className="text-sm text-[#1A1A1A] font-medium">
                     {issue?.location || defaultIssue.location}
                   </div>
-                  <button
-                    onClick={() => setIsEditingLocation(true)}
-                    className="p-2 text-gray-400 hover:text-[#E10600] transition-colors"
-                    title="Modifier"
-                  >
-                    <Edit size={16} />
-                  </button>
+                  {canEditIssue(projectRole, issue?.createdBy) && (
+                    <button
+                      onClick={() => setIsEditingLocation(true)}
+                      className="p-2 text-gray-400 hover:text-[#E10600] transition-colors"
+                      title="Modifier"
+                    >
+                      <Edit size={16} />
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -517,7 +527,7 @@ export default function IssueDetail() {
               <AlertCircle size={18} className="text-gray-500" />
               Description
             </h2>
-            {!isEditingDescription && (
+            {!isEditingDescription && canEditIssue(projectRole, issue?.createdBy) && (
               <button
                 onClick={() => setIsEditingDescription(true)}
                 className="p-2 text-gray-400 hover:text-[#E10600] transition-colors"
@@ -613,6 +623,7 @@ export default function IssueDetail() {
         </div>
 
         {/* Change Status */}
+        {canEditIssue(projectRole, issue?.createdBy) && (
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-[#1A1A1A] mb-3">Changer le statut</h2>
           <div className="grid grid-cols-3 gap-3">
@@ -662,6 +673,7 @@ export default function IssueDetail() {
             </button>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
