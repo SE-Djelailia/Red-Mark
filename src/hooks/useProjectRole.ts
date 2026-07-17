@@ -111,3 +111,15 @@ export function canEditIssue(
   if (role.isAdmin || role.isOwner) return true;
   return role.projectRole === "editor" && !!issueCreatedBy && issueCreatedBy === role.userId;
 }
+
+/**
+ * Whether the current user can select/delete a specific photo: admin, project
+ * owner, or the editor who uploaded it. Commenters never manage photos.
+ */
+export function canManagePhoto(
+  role: Pick<ProjectRoleInfo, "isAdmin" | "isOwner" | "projectRole" | "userId">,
+  photoUploadedBy: string | undefined,
+): boolean {
+  if (role.isAdmin || role.isOwner) return true;
+  return role.projectRole === "editor" && !!photoUploadedBy && photoUploadedBy === role.userId;
+}

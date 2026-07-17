@@ -35,7 +35,7 @@ import VisitComments from "./VisitComments";
 import CommentThread from "./CommentThread";
 import VoiceNotesSection from "./VoiceNotesSection";
 import { useAuth } from "../../contexts/useAuth";
-import { useProjectRole, canEditIssue } from "../../hooks/useProjectRole";
+import { useProjectRole, canEditIssue, canManagePhoto } from "../../hooks/useProjectRole";
 import { compressImage } from "../../lib/imageCompression";
 import SecureImage from "./SecureImage";
 import { toast } from "sonner";
@@ -45,6 +45,7 @@ interface Photo {
   id: string;
   url: string; // Deprecated - kept for compatibility
   storage_path: string; // Secure storage path for signed URLs
+  user_id: string; // Uploader, used for per-photo manage permission
   tags?: string[];
   location?: { floor?: string; room?: string };
 }
@@ -142,6 +143,7 @@ export default function VisitDetail() {
             id: p.id,
             url: p.file_url || "", // Deprecated, kept for backward compatibility
             storage_path: p.storage_path,
+            user_id: p.user_id,
             tags: p.tags || [],
             location: p.location || undefined,
           })),
@@ -227,6 +229,7 @@ export default function VisitDetail() {
                 id: uploadedPhoto.id,
                 url: uploadedPhoto.file_url || "",
                 storage_path: uploadedPhoto.storage_path,
+                user_id: uploadedPhoto.user_id,
                 tags: uploadedPhoto.tags || [],
                 location: uploadedPhoto.location || undefined,
               },
@@ -403,6 +406,8 @@ export default function VisitDetail() {
   const handlePhotoClick = (photoId: string, e: React.MouseEvent) => {
     if (isSelectionMode) {
       e.stopPropagation();
+      const photo = visit?.photos.find((p) => p.id === photoId);
+      if (!photo || !canManagePhoto(projectRole, photo.user_id)) return;
       if (selectedPhotoIds.includes(photoId)) {
         setSelectedPhotoIds(selectedPhotoIds.filter((id) => id !== photoId));
       } else {
@@ -631,7 +636,7 @@ export default function VisitDetail() {
               <Camera size={18} className="text-gray-500" />
               Photos ({visit?.photos.length})
             </h2>
-            {visit && visit.photos.length > 0 && (
+            {visit && visit.photos.length > 0 && projectRole.canCreateIssues && (
               <button
                 onClick={() => {
                   setIsSelectionMode(!isSelectionMode);
@@ -845,7 +850,7 @@ export default function VisitDetail() {
                         </div>
                       </div>
                     )}
-                    {isSelectionMode && (
+                    {isSelectionMode && canManagePhoto(projectRole, photo.user_id) && (
                       <div
                         className={`absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all ${isSelected ? "bg-[#E10600] border-[#E10600]" : "bg-white/90 border-gray-300"}`}
                       >
