@@ -6,7 +6,6 @@ import {
   Building2,
   LogOut,
   Download,
-  Users,
   Settings,
   FileText,
   Bell,
@@ -15,7 +14,6 @@ import {
 import { useAuth } from "../../contexts/useAuth";
 import { getProfileStats } from "../../lib/supabaseApi";
 import { toast } from "sonner";
-import TeamManagement from "./TeamManagement";
 import NotificationSettings from "./NotificationSettings";
 import ReportTemplates from "./ReportTemplates";
 import GeneralSettings from "./GeneralSettings";
@@ -25,7 +23,6 @@ export default function Profile() {
   const navigate = useNavigate();
   const { user, session, signOut } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [showTeamManagement, setShowTeamManagement] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showReportTemplates, setShowReportTemplates] = useState(false);
   const [showGeneralSettings, setShowGeneralSettings] = useState(false);
@@ -155,20 +152,6 @@ export default function Profile() {
           <h2 className="text-lg text-[#1A1A1A] mb-3">Paramètres</h2>
 
           <button
-            onClick={() => setShowTeamManagement(true)}
-            className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between hover:border-[#E10600] transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Users size={20} className="text-gray-600" />
-              <div className="text-left">
-                <div className="text-sm text-[#1A1A1A]">Équipe & Collaboration</div>
-                <div className="text-xs text-gray-500">Gérer les collègues et partages</div>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </button>
-
-          <button
             onClick={() => setShowNotifications(true)}
             className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between hover:border-[#E10600] transition-colors"
           >
@@ -278,7 +261,6 @@ export default function Profile() {
       )}
 
       {/* Settings Modals */}
-      {showTeamManagement && <TeamManagement onClose={() => setShowTeamManagement(false)} />}
       {showNotifications && <NotificationSettings onClose={() => setShowNotifications(false)} />}
       {showReportTemplates && <ReportTemplates onClose={() => setShowReportTemplates(false)} />}
       {showGeneralSettings && <GeneralSettings onClose={() => setShowGeneralSettings(false)} />}
