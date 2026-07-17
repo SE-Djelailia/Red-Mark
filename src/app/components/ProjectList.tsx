@@ -8,7 +8,6 @@ import {
   type Project,
 } from "../../lib/supabaseApi";
 import { supabase } from "../../lib/supabase";
-import { initializeProjectOwner } from "../../lib/projectMembersApi";
 import { getTodayForInput, formatDateShort } from "../../lib/dateUtils";
 import { toast } from "sonner";
 
@@ -82,14 +81,8 @@ export default function ProjectList() {
         start_date: formData.startDate,
       });
 
-      // Initialize owner as first project member
-      initializeProjectOwner(
-        newProject.id,
-        user.id,
-        user.user_metadata?.name || user.email,
-        user.email,
-      );
-
+      // The handle_new_project DB trigger auto-enrolls the creator as
+      // project_members owner — no client-side seeding needed.
       await loadProjects();
 
       // Reset form

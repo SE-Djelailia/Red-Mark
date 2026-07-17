@@ -439,7 +439,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      find_invitable_user: {
+        Args: {
+          p_email: string
+        }
+        Returns: {
+          id: string
+          name: string | null
+          email: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

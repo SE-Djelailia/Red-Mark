@@ -107,6 +107,23 @@ CREATE OR REPLACE FUNCTION "public"."shares_project_with"("p_user_id" "uuid") RE
   );
 $$;
 
+
+CREATE OR REPLACE FUNCTION "public"."find_invitable_user"("p_email" "text") RETURNS TABLE("id" "uuid", "name" "text", "email" "text")
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT p.id, p.name, p.email
+  FROM public.profiles p
+  WHERE p.email = p_email
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.project_members pm
+        WHERE pm.user_id = auth.uid() AND pm.role = 'owner'
+      )
+    );
+$$;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
@@ -649,7 +666,7 @@ CREATE POLICY "Members can view photos" ON "public"."photos" FOR SELECT USING ("
 
 
 
-CREATE POLICY "Members can view their project roster" ON "public"."project_members" FOR SELECT USING ("public"."is_project_member"("project_id"));
+CREATE POLICY "Members can view their project roster" ON "public"."project_members" FOR SELECT USING (("public"."is_admin"() OR "public"."is_project_member"("project_id")));
 
 
 
@@ -657,9 +674,15 @@ CREATE POLICY "Members can view their projects" ON "public"."projects" FOR SELEC
 
 
 
-CREATE POLICY "Project owners can manage members" ON "public"."project_members" USING ((EXISTS ( SELECT 1
-   FROM "public"."projects"
-  WHERE (("projects"."id" = "project_members"."project_id") AND ("projects"."user_id" = "auth"."uid"())))));
+CREATE POLICY "Owners and admins can add members" ON "public"."project_members" FOR INSERT WITH CHECK (("public"."is_admin"() OR "public"."has_project_role"("project_id", ARRAY['owner'::"text"])));
+
+
+
+CREATE POLICY "Owners and admins can remove members" ON "public"."project_members" FOR DELETE USING (("public"."is_admin"() OR "public"."has_project_role"("project_id", ARRAY['owner'::"text"])));
+
+
+
+CREATE POLICY "Owners and admins can update members" ON "public"."project_members" FOR UPDATE USING (("public"."is_admin"() OR "public"."has_project_role"("project_id", ARRAY['owner'::"text"])));
 
 
 

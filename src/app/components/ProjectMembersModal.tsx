@@ -2,16 +2,16 @@ import { useState, useEffect, useCallback } from "react";
 import { X, UserPlus, Shield, Trash2, Loader2, Mail } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import { supabase } from "../../lib/supabase";
-import { projectId as supabaseProjectId, publicAnonKey } from "../../../utils/supabase/info";
 import { toast } from "sonner";
 
+type ProjectRole = "owner" | "editor" | "commenter";
+
 interface Member {
-  id: string;
+  id: string; // project_members.id
   user_id: string;
-  role: "owner" | "collaborator" | "viewer";
+  role: ProjectRole;
   name: string;
   email: string;
-  status: "active" | "pending";
   created_at: string;
 }
 
@@ -20,48 +20,74 @@ interface ProjectMembersModalProps {
   onClose: () => void;
 }
 
-const SERVER = `https://${supabaseProjectId}.supabase.co/functions/v1/make-server-9fe75696`;
-
 export default function ProjectMembersModal({ projectId, onClose }: ProjectMembersModalProps) {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const [canManage, setCanManage] = useState(false);
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<"collaborator" | "viewer">("collaborator");
+  const [inviteRole, setInviteRole] = useState<"editor" | "commenter">("editor");
   const [inviting, setInviting] = useState(false);
-  const [projectName, setProjectName] = useState("");
-
-  const token = session?.access_token ?? publicAnonKey;
 
   const loadMembers = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await fetch(`${SERVER}/projects/${projectId}/members-list`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setMembers(data);
+      const { data: memberRows, error: membersError } = await supabase
+        .from("project_members")
+        .select("id, user_id, role, created_at")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: true });
+      if (membersError) throw membersError;
+
+      const userIds = (memberRows || []).map((m) => m.user_id);
+      let profilesById = new Map<string, { name: string | null; email: string }>();
+      if (userIds.length > 0) {
+        const { data: profileRows, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, name, email")
+          .in("id", userIds);
+        if (profilesError) throw profilesError;
+        profilesById = new Map((profileRows || []).map((p) => [p.id, { name: p.name, email: p.email }]));
+      }
+
+      setMembers(
+        (memberRows || []).map((m) => {
+          const profile = profilesById.get(m.user_id);
+          return {
+            id: m.id,
+            user_id: m.user_id,
+            role: m.role as ProjectRole,
+            name: profile?.name || profile?.email || "Utilisateur",
+            email: profile?.email || "",
+            created_at: m.created_at || "",
+          };
+        }),
+      );
+
+      // Determine whether the current user can manage this roster: admin,
+      // or their own project_members row for this project has role 'owner'.
+      if (user) {
+        const { data: profileRow } = await supabase
+          .from("profiles")
+          .select("org_role")
+          .eq("id", user.id)
+          .single();
+        const isAdmin = profileRow?.org_role === "admin";
+        const myRow = (memberRows || []).find((m) => m.user_id === user.id);
+        setCanManage(isAdmin || myRow?.role === "owner");
+      }
     } catch (e: any) {
       console.error("Load members error:", e);
       toast.error("Impossible de charger les membres");
     } finally {
       setLoading(false);
     }
-  }, [projectId, token]);
+  }, [projectId, user]);
 
   useEffect(() => {
     loadMembers();
-    // Get project name for the invitation email
-    supabase
-      .from("projects")
-      .select("name")
-      .eq("id", projectId)
-      .single()
-      .then(({ data }) => {
-        if (data) setProjectName(data.name);
-      });
-  }, [loadMembers, projectId]);
+  }, [loadMembers]);
 
   async function handleInvite() {
     if (!inviteEmail.trim()) {
@@ -73,37 +99,47 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
       toast.error("Adresse courriel invalide");
       return;
     }
-    if (members.some((m) => m.email === inviteEmail)) {
+    if (members.some((m) => m.email.toLowerCase() === inviteEmail.trim().toLowerCase())) {
       toast.error("Ce membre fait déjà partie du projet");
       return;
     }
 
     setInviting(true);
     try {
-      const res = await fetch(`${SERVER}/projects/${projectId}/invite`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: inviteEmail,
-          role: inviteRole,
-          projectName,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erreur serveur");
+      const { data: matches, error: lookupError } = (await supabase.rpc("find_invitable_user", {
+        p_email: inviteEmail.trim(),
+      })) as { data: { id: string; name: string | null; email: string }[] | null; error: any };
+      if (lookupError) throw lookupError;
 
-      if (data.existing) {
-        toast.success(`${inviteEmail} a été ajouté au projet et a reçu une notification`);
-      } else {
-        toast.success(`Invitation envoyée à ${inviteEmail} par courriel`);
+      if (!matches || matches.length === 0) {
+        toast.error(
+          "Aucun compte RedMark n'est associé à cette adresse. Les invitations par courriel pour créer un compte arrivent bientôt.",
+        );
+        return;
       }
 
+      const invitee = matches[0];
+      const { data: newMember, error: insertError } = await supabase
+        .from("project_members")
+        .insert([{ project_id: projectId, user_id: invitee.id, role: inviteRole }])
+        .select("id, user_id, role, created_at")
+        .single();
+      if (insertError) throw insertError;
+
+      setMembers((prev) => [
+        ...prev,
+        {
+          id: newMember.id,
+          user_id: newMember.user_id,
+          role: newMember.role as ProjectRole,
+          name: invitee.name || invitee.email,
+          email: invitee.email,
+          created_at: newMember.created_at || "",
+        },
+      ]);
+      toast.success(`${invitee.name || invitee.email} a été ajouté au projet`);
       setInviteEmail("");
       setShowInviteForm(false);
-      await loadMembers();
     } catch (e: any) {
       console.error("Invite error:", e);
       toast.error(e.message || "Erreur lors de l'invitation");
@@ -124,41 +160,39 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
     }
   }
 
-  async function handleUpdateRole(memberId: string, newRole: string) {
+  async function handleUpdateRole(memberId: string, newRole: ProjectRole) {
     try {
       const { error } = await supabase
         .from("project_members")
         .update({ role: newRole })
         .eq("id", memberId);
       if (error) throw error;
-      setMembers((prev) =>
-        prev.map((m) => (m.id === memberId ? { ...m, role: newRole as any } : m)),
-      );
+      setMembers((prev) => prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m)));
       toast.success("Rôle mis à jour");
     } catch (e: any) {
       toast.error("Erreur : " + e.message);
     }
   }
 
-  const getRoleBadgeColor = (role: string) => {
+  const getRoleBadgeColor = (role: ProjectRole) => {
     switch (role) {
       case "owner":
         return "bg-purple-100 text-purple-700";
-      case "collaborator":
+      case "editor":
         return "bg-blue-100 text-blue-700";
       default:
         return "bg-gray-100 text-gray-700";
     }
   };
 
-  const getRoleLabel = (role: string) => {
+  const getRoleLabel = (role: ProjectRole) => {
     switch (role) {
       case "owner":
         return "Propriétaire";
-      case "collaborator":
-        return "Collaborateur";
+      case "editor":
+        return "Éditeur";
       default:
-        return "Observateur";
+        return "Commentateur";
     }
   };
 
@@ -188,8 +222,8 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Invite button */}
-          {!showInviteForm && (
+          {/* Invite button (owner/admin only) */}
+          {canManage && !showInviteForm && (
             <button
               onClick={() => setShowInviteForm(true)}
               className="w-full py-3 px-4 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors flex items-center justify-center gap-2 font-medium"
@@ -200,15 +234,15 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
           )}
 
           {/* Invite form */}
-          {showInviteForm && (
+          {canManage && showInviteForm && (
             <div className="bg-gray-50 rounded-lg p-4 space-y-4">
               <h3 className="text-sm font-semibold text-[#1A1A1A] flex items-center gap-2">
                 <Mail size={16} />
                 Inviter par courriel
               </h3>
               <p className="text-xs text-gray-500">
-                Si la personne a déjà un compte RedMark, elle recevra une notification dans l'app.
-                Sinon, elle recevra un courriel d'invitation pour créer son compte.
+                La personne doit déjà avoir un compte RedMark. Les invitations par courriel pour
+                créer un compte arrivent bientôt.
               </p>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -227,11 +261,11 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                 <label className="block text-xs font-medium text-gray-700 mb-1">Rôle</label>
                 <select
                   value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value as any)}
+                  onChange={(e) => setInviteRole(e.target.value as "editor" | "commenter")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
                 >
-                  <option value="collaborator">Collaborateur — peut créer et modifier</option>
-                  <option value="viewer">Observateur — lecture seule</option>
+                  <option value="editor">Éditeur — peut créer et modifier</option>
+                  <option value="commenter">Commentateur — peut commenter seulement</option>
                 </select>
               </div>
               <div className="flex gap-2">
@@ -254,7 +288,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                       <Loader2 size={16} className="animate-spin" /> Envoi…
                     </>
                   ) : (
-                    "Envoyer l'invitation"
+                    "Ajouter au projet"
                   )}
                 </button>
               </div>
@@ -296,22 +330,26 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                         </span>
                       </div>
                       <div className="text-xs text-gray-500 truncate">{member.email}</div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        Ajouté le {new Date(member.created_at).toLocaleDateString("fr-CA")}
-                      </div>
+                      {member.created_at && (
+                        <div className="text-xs text-gray-400 mt-1">
+                          Ajouté le {new Date(member.created_at).toLocaleDateString("fr-CA")}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {member.role !== "owner" && (
+                    {canManage && member.role !== "owner" && (
                       <>
                         <select
                           value={member.role}
-                          onChange={(e) => handleUpdateRole(member.id, e.target.value)}
+                          onChange={(e) =>
+                            handleUpdateRole(member.id, e.target.value as ProjectRole)
+                          }
                           className="text-xs px-2 py-1 border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-[#E10600]"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <option value="collaborator">Collaborateur</option>
-                          <option value="viewer">Observateur</option>
+                          <option value="editor">Éditeur</option>
+                          <option value="commenter">Commentateur</option>
                         </select>
                         <button
                           onClick={() => handleRemoveMember(member.id, member.name)}
@@ -324,7 +362,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                     {member.role === "owner" && (
                       <div className="text-xs text-gray-500 flex items-center gap-1">
                         <Shield size={12} />
-                        <span>Admin</span>
+                        <span>Propriétaire</span>
                       </div>
                     )}
                   </div>
@@ -340,11 +378,10 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                 <strong>Propriétaire :</strong> Contrôle total du projet et des membres
               </li>
               <li>
-                <strong>Collaborateur :</strong> Peut créer et modifier visites, photos et
-                déficiences
+                <strong>Éditeur :</strong> Peut créer et modifier visites, photos et déficiences
               </li>
               <li>
-                <strong>Observateur :</strong> Peut uniquement consulter le projet
+                <strong>Commentateur :</strong> Peut consulter le projet et commenter
               </li>
             </ul>
           </div>
