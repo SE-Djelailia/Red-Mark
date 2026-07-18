@@ -19,6 +19,7 @@ export interface Issue {
   photos: { id: string; url: string }[];
   tags: string[];
   location: string;
+  locationId?: string | null;
 }
 
 // Shape stored inside the issues.location JSONB column
@@ -89,6 +90,7 @@ function rowToIssue(row: any): Issue {
     photos: Array.isArray(extras.photos) ? extras.photos : [],
     tags: Array.isArray(extras.tags) ? extras.tags : [],
     location: extras.label || "",
+    locationId: row.location_id || null,
   };
 }
 
@@ -153,6 +155,22 @@ export async function getIssuesByProject(projectId: string): Promise<Issue[]> {
   return (data || []).map(rowToIssue);
 }
 
+// Get issues attached to a specific location (via issues.location_id), for the
+// flat "existing issues here" list shown on a pin's location panel.
+export async function getIssuesByLocation(locationId: string): Promise<Issue[]> {
+  if (!locationId) return [];
+  const { data, error } = await supabase
+    .from("issues")
+    .select("*")
+    .eq("location_id", locationId)
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("Error fetching issues by location:", error);
+    return [];
+  }
+  return (data || []).map(rowToIssue);
+}
+
 // Get a single issue by ID
 export async function getIssue(issueId: string): Promise<Issue | null> {
   const { data, error } = await supabase.from("issues").select("*").eq("id", issueId).single();
@@ -182,6 +200,7 @@ export async function createIssue(
         priority: issueData.priority,
         status: issueData.status,
         location: buildExtras(issueData),
+        location_id: issueData.locationId || null,
       },
     ])
     .select()

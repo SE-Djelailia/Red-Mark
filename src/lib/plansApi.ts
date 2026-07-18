@@ -34,6 +34,28 @@ export interface Plan {
   createdAt: string;
 }
 
+export interface PinPlacement {
+  id: string;
+  projectId: string;
+  locationId: string;
+  planId: string;
+  x: number;
+  y: number;
+  createdAt: string;
+}
+
+function rowToPinPlacement(row: any): PinPlacement {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    locationId: row.location_id,
+    planId: row.plan_id,
+    x: row.x,
+    y: row.y,
+    createdAt: row.created_at,
+  };
+}
+
 function rowToPlanFile(row: any): PlanFile {
   return {
     id: row.id,
@@ -234,4 +256,42 @@ export async function deletePlan(id: string): Promise<void> {
     console.error("Error deleting plan:", error);
     throw error;
   }
+}
+
+export async function getPinPlacements(planId: string): Promise<PinPlacement[]> {
+  const { data, error } = await supabase.from("pin_placements").select("*").eq("plan_id", planId);
+
+  if (error) {
+    console.error("Error fetching pin placements:", error);
+    throw error;
+  }
+  return (data || []).map(rowToPinPlacement);
+}
+
+export async function createPinPlacement(input: {
+  projectId: string;
+  locationId: string;
+  planId: string;
+  x: number;
+  y: number;
+}): Promise<PinPlacement> {
+  const { data, error } = await supabase
+    .from("pin_placements")
+    .insert([
+      {
+        project_id: input.projectId,
+        location_id: input.locationId,
+        plan_id: input.planId,
+        x: input.x,
+        y: input.y,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating pin placement:", error);
+    throw error;
+  }
+  return rowToPinPlacement(data);
 }

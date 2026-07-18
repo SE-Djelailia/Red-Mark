@@ -1,9 +1,29 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus, Maximize2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Minus,
+  Plus,
+  Maximize2,
+  MapPin,
+} from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { useModalOpen } from "../../hooks/useModalOpen";
-import { getPlanFile, getPlanFileSignedUrl, type PlanFile } from "../../lib/plansApi";
+import { useProjectRole } from "../../hooks/useProjectRole";
+import {
+  getPlanFile,
+  getPlanFileSignedUrl,
+  getPlansForFile,
+  createPlan,
+  getPinPlacements,
+  createPinPlacement,
+  type PlanFile,
+  type Plan,
+  type PinPlacement,
+} from "../../lib/plansApi";
+import { getLevels, getLocations, type Level, type Location } from "../../lib/locationsApi";
 import {
   openPdfFromUrl,
   renderPageToCanvas,
@@ -11,6 +31,8 @@ import {
   type OpenedPdf,
   type RenderPageHandle,
 } from "../../lib/pdfUtils";
+import LocationPickerSheet from "./LocationPickerSheet";
+import LocationPinPanel from "./LocationPinPanel";
 
 // The zoom/pan gesture layer below (pointer handling, pinch math, drag,
 // wheel zoom, +/-/reset) is carried over verbatim from FloorPlanViewer.tsx —
@@ -49,6 +71,27 @@ export default function PlanFileViewer() {
   const [loading, setLoading] = useState(true);
   const [pageRendering, setPageRendering] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Stage 4: pin placements. `plans` holds the page-to-level assignment rows
+  // for this file (one per assigned page) — pin_placements.plan_id points at
+  // one of these, not at the plan_file directly, so a page must be assigned
+  // before it can be pinned. `pins` holds the placements for whichever plan
+  // row matches `currentPage` (recomputed below as `currentPlan`).
+  const projectRole = useProjectRole(planFile?.projectId);
+  const canManagePins = projectRole.canCreateIssues; // matches pin_placements RLS insert bar
+  const [levels, setLevels] = useState<Level[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [pins, setPins] = useState<PinPlacement[]>([]);
+  const [assignLevelId, setAssignLevelId] = useState("");
+  const [assigning, setAssigning] = useState(false);
+  const [placementMode, setPlacementMode] = useState(false);
+  const [pendingPinCoords, setPendingPinCoords] = useState<{ x: number; y: number } | null>(null);
+  const [openedLocationId, setOpenedLocationId] = useState<string | null>(null);
+  const canvasWrapperRef = useRef<HTMLDivElement>(null);
+
+  const currentPlan = plans.find((p) => p.pageNumber === currentPage) || null;
+  const openedLocation = locations.find((l) => l.id === openedLocationId) || null;
 
   // scale = the zoom level the user has interactively requested (1 = fit).
   // renderedScale = the zoom level the canvas bitmap was actually rendered
@@ -122,6 +165,100 @@ export default function PlanFileViewer() {
       pdfRef.current = null;
     };
   }, [planFileId]);
+
+  // Load the project's levels/locations (for the picker + assign banner) and
+  // this file's page-to-level assignments once the plan file itself loads.
+  useEffect(() => {
+    if (!planFile) return;
+    let cancelled = false;
+    getLevels(planFile.projectId)
+      .then((l) => !cancelled && setLevels(l))
+      .catch((e) => console.error("Error loading levels:", e));
+    getLocations(planFile.projectId)
+      .then((l) => !cancelled && setLocations(l))
+      .catch((e) => console.error("Error loading locations:", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [planFile]);
+
+  useEffect(() => {
+    if (!planFileId) return;
+    let cancelled = false;
+    getPlansForFile(planFileId)
+      .then((p) => !cancelled && setPlans(p))
+      .catch((e) => console.error("Error loading plans:", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [planFileId]);
+
+  useEffect(() => {
+    setAssignLevelId("");
+    if (!currentPlan) {
+      setPins([]);
+      return;
+    }
+    let cancelled = false;
+    getPinPlacements(currentPlan.id)
+      .then((p) => !cancelled && setPins(p))
+      .catch((e) => console.error("Error loading pin placements:", e));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPlan?.id]);
+
+  async function handleAssignPage() {
+    if (!planFile || !assignLevelId) return;
+    setAssigning(true);
+    try {
+      const plan = await createPlan({
+        projectId: planFile.projectId,
+        planFileId: planFile.id,
+        levelId: assignLevelId,
+        pageNumber: currentPage,
+      });
+      setPlans((prev) => [...prev, plan]);
+      toast.success("Page assignée au niveau");
+    } catch (e: any) {
+      toast.error("Assignation échouée : " + e.message);
+    } finally {
+      setAssigning(false);
+    }
+  }
+
+  function handlePlacementTap(clientX: number, clientY: number) {
+    const wrapper = canvasWrapperRef.current;
+    if (!wrapper) return;
+    const rect = wrapper.getBoundingClientRect();
+    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
+      return; // tapped outside the rendered page (e.g. in the surrounding margin)
+    }
+    setPendingPinCoords({
+      x: (clientX - rect.left) / rect.width,
+      y: (clientY - rect.top) / rect.height,
+    });
+  }
+
+  async function handlePinLocationSelected(location: Location) {
+    if (!currentPlan || !planFile || !pendingPinCoords) return;
+    try {
+      const pin = await createPinPlacement({
+        projectId: planFile.projectId,
+        locationId: location.id,
+        planId: currentPlan.id,
+        x: pendingPinCoords.x,
+        y: pendingPinCoords.y,
+      });
+      setPins((prev) => [...prev, pin]);
+      toast.success("Pin placé");
+    } catch (e: any) {
+      toast.error("Placement échoué : " + e.message);
+    } finally {
+      setPendingPinCoords(null);
+    }
+  }
 
   // Renders `page` fit to the current container size, resetting zoom/pan.
   // Shared by the page-change effect and the resize handler below.
@@ -288,9 +425,18 @@ export default function PlanFileViewer() {
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
+    // A tap (as opposed to a drag-release) is a single pointer that barely
+    // moved — checked before deleting it below, same threshold the pan
+    // logic already uses to tell taps from drags.
+    const wasTap = pointers.current.size === 1 && movedDistance.current < 8;
+
     pointers.current.delete(e.pointerId);
     if (pointers.current.size < 2) pinchStart.current = null;
     if (pointers.current.size === 0) dragStart.current = null;
+
+    if (wasTap && placementMode && currentPlan) {
+      handlePlacementTap(e.clientX, e.clientY);
+    }
   };
 
   const applyScale = (newScale: number) => {
@@ -356,6 +502,8 @@ export default function PlanFileViewer() {
     if (clamped === currentPage) return;
     setCurrentPage(clamped);
     setPageInput(String(clamped));
+    setPlacementMode(false);
+    setPendingPinCoords(null);
   };
 
   const submitPageInput = () => {
@@ -382,7 +530,57 @@ export default function PlanFileViewer() {
             </div>
           )}
         </div>
+        {canManagePins && currentPlan && (
+          <button
+            onClick={() => {
+              setPlacementMode((v) => !v);
+              setPendingPinCoords(null);
+            }}
+            className={`inline-flex items-center gap-2 px-3 h-11 rounded-lg text-sm font-medium min-h-[44px] ${
+              placementMode ? "bg-[#E10600] text-white" : "bg-white/10 text-white hover:bg-white/20"
+            }`}
+          >
+            <MapPin size={16} />
+            {placementMode ? "Terminer" : "Ajouter des pins"}
+          </button>
+        )}
       </div>
+
+      {currentPlan === null && !loading && !error && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-3">
+          {canManagePins ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-amber-900">
+                Cette page n'est pas encore assignée à un niveau — assignez-la pour pouvoir y placer des pins.
+              </span>
+              <select
+                value={assignLevelId}
+                onChange={(e) => setAssignLevelId(e.target.value)}
+                className="px-3 py-2 bg-white border border-amber-300 rounded-lg text-sm min-h-[44px]"
+              >
+                <option value="">Choisir un niveau…</option>
+                {levels.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleAssignPage}
+                disabled={!assignLevelId || assigning}
+                className="px-4 h-11 bg-[#1A1A1A] text-white rounded-lg text-sm font-medium disabled:opacity-50 min-h-[44px]"
+              >
+                {assigning ? "Assignation…" : "Assigner"}
+              </button>
+            </div>
+          ) : (
+            <span className="text-sm text-amber-900">
+              Cette page n'est pas encore assignée à un niveau — un administrateur ou éditeur doit
+              l'assigner avant que des pins puissent y être placés.
+            </span>
+          )}
+        </div>
+      )}
 
       <div
         ref={containerRef}
@@ -418,7 +616,32 @@ export default function PlanFileViewer() {
                   : "none",
             }}
           >
-            <canvas ref={canvasRef} className="pointer-events-none" />
+            {/* inline-block shrink-wraps to the canvas's own CSS size (set
+                programmatically in renderPageToCanvas), so pins positioned
+                by percentage inside it land exactly on the rendered page
+                regardless of zoom — this wrapper shares the same transform
+                as the canvas, so pins pan/zoom with the plan for free. */}
+            <div ref={canvasWrapperRef} className="relative inline-block">
+              <canvas ref={canvasRef} className="pointer-events-none block" />
+              {currentPlan &&
+                pins.map((pin) => (
+                  <button
+                    key={pin.id}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenedLocationId(pin.locationId);
+                    }}
+                    style={{ left: `${pin.x * 100}%`, top: `${pin.y * 100}%` }}
+                    className="absolute -translate-x-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center"
+                    aria-label="Ouvrir ce local"
+                  >
+                    <span className="w-6 h-6 rounded-full bg-[#E10600] border-2 border-white shadow-md flex items-center justify-center">
+                      <MapPin size={13} className="text-white" fill="currentColor" />
+                    </span>
+                  </button>
+                ))}
+            </div>
           </div>
         )}
       </div>
@@ -447,6 +670,12 @@ export default function PlanFileViewer() {
           <Maximize2 size={20} />
         </button>
       </div>
+
+      {placementMode && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-[#1A1A1A]/90 text-white text-xs px-3 py-2 rounded-full pointer-events-none">
+          Touchez le plan pour placer un pin
+        </div>
+      )}
 
       {/* Page navigation */}
       {numPages > 1 && (
@@ -481,6 +710,26 @@ export default function PlanFileViewer() {
             <ChevronRight size={22} />
           </button>
         </div>
+      )}
+
+      <LocationPickerSheet
+        open={!!pendingPinCoords && !!currentPlan}
+        locations={locations.filter(
+          (l) => l.levelId === currentPlan?.levelId && !pins.some((p) => p.locationId === l.id),
+        )}
+        onSelect={(location) => {
+          handlePinLocationSelected(location);
+        }}
+        onCancel={() => setPendingPinCoords(null)}
+      />
+
+      {planFile && (
+        <LocationPinPanel
+          open={!!openedLocationId}
+          projectId={planFile.projectId}
+          location={openedLocation}
+          onClose={() => setOpenedLocationId(null)}
+        />
       )}
     </div>
   );
