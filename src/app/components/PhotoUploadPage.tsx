@@ -7,6 +7,7 @@ import { useAuth } from "../../contexts/useAuth";
 import { compressImage } from "../../lib/imageCompression";
 import { addToQueue } from "../../lib/uploadQueue";
 import { useProjectRole } from "../../hooks/useProjectRole";
+import { useModalOpen } from "../../hooks/useModalOpen";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
 
 // Network failures surface as TypeError (fetch's own error type) rather than the
@@ -30,6 +31,7 @@ export default function PhotoUploadPage() {
   const [currentTag, setCurrentTag] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  useModalOpen(showLocationModal);
   const [tempLevel, setTempLevel] = useState("");
   const [tempRoom, setTempRoom] = useState("");
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);

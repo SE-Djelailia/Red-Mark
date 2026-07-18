@@ -3,12 +3,14 @@ import { X, Download, CheckCircle, FileText, Image, Database, Loader } from "luc
 import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
 import { getProjects, getSiteVisits, getPhotos, getIssues } from "../../lib/supabaseApi";
+import { useModalOpen } from "../../hooks/useModalOpen";
 
 interface DataExportProps {
   onClose: () => void;
 }
 
 export default function DataExport({ onClose }: DataExportProps) {
+  useModalOpen();
   const { user } = useAuth();
   const [exporting, setExporting] = useState(false);
   const [exportType, setExportType] = useState<"json" | "csv">("json");
@@ -124,7 +126,7 @@ export default function DataExport({ onClose }: DataExportProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={onClose}>
-      <div className="min-h-screen px-4 flex items-center justify-center py-8">
+      <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
         <div className="bg-white rounded-xl max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div className="p-6 border-b border-gray-200 flex items-center justify-between">

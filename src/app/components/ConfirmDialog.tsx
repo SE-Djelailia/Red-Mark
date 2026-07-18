@@ -1,4 +1,5 @@
 import { AlertTriangle } from "lucide-react";
+import { useModalOpen } from "../../hooks/useModalOpen";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -21,6 +22,8 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  useModalOpen(open);
+
   if (!open) return null;
 
   return (

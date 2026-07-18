@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Globe, HardDrive, Shield, Trash2, AlertTriangle, Database } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
+import { useModalOpen } from "../../hooks/useModalOpen";
 
 interface GeneralSettingsData {
   language: "fr" | "en";
@@ -24,6 +25,7 @@ const DEFAULT_SETTINGS: GeneralSettingsData = {
 };
 
 export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
+  useModalOpen();
   const { user } = useAuth();
   const [settings, setSettings] = useState<GeneralSettingsData>(DEFAULT_SETTINGS);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -86,7 +88,7 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={onClose}>
-      <div className="min-h-screen px-4 flex items-center justify-center py-8">
+      <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
         <div
           className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { Issue } from "./IssueCreation";
 import { ButtonLoader } from "./LoadingStates";
+import { useModalOpen } from "../../hooks/useModalOpen";
 
 interface ReportTemplate {
   id: string;
@@ -31,6 +32,7 @@ export default function ReportTemplateSelector({
   projectName,
   onClose,
 }: ReportGeneratorProps) {
+  useModalOpen();
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [includePhotos, setIncludePhotos] = useState(true);
   const [includeIssues, setIncludeIssues] = useState(true);
@@ -134,7 +136,7 @@ export default function ReportTemplateSelector({
 
   return (
     <div className="fixed inset-0 bg-black/60 z-[60] overflow-y-auto" onClick={onClose}>
-      <div className="min-h-screen px-4 flex items-center justify-center py-8">
+      <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
         <div
           className="bg-white rounded-xl max-w-4xl w-full shadow-2xl"
           onClick={(e) => e.stopPropagation()}

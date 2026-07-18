@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, FileText, Image, Type, Palette, Layout, Save, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
+import { useModalOpen } from "../../hooks/useModalOpen";
 
 interface ReportTemplate {
   logoUrl: string;
@@ -36,6 +37,7 @@ const DEFAULT_TEMPLATE: ReportTemplate = {
 };
 
 export default function ReportTemplates({ onClose }: ReportTemplatesProps) {
+  useModalOpen();
   const { user } = useAuth();
   const [template, setTemplate] = useState<ReportTemplate>(DEFAULT_TEMPLATE);
   const [hasChanges, setHasChanges] = useState(false);

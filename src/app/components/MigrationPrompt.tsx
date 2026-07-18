@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Database, Upload, X, CheckCircle, AlertCircle } from "lucide-react";
 import { migrateLocalDataToSupabase, needsMigration } from "../../lib/migrationToSupabase";
 import { useSupabaseAuth } from "../../contexts/SupabaseAuthContext";
+import { useModalOpen } from "../../hooks/useModalOpen";
 import { toast } from "sonner";
 
 export default function MigrationPrompt() {
@@ -9,6 +10,7 @@ export default function MigrationPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [migrating, setMigrating] = useState(false);
   const [migrationComplete, setMigrationComplete] = useState(false);
+  useModalOpen(showPrompt);
 
   useEffect(() => {
     if (user?.id) {

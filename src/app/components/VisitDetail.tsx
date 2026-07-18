@@ -36,6 +36,7 @@ import CommentThread from "./CommentThread";
 import VoiceNotesSection from "./VoiceNotesSection";
 import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole, canEditIssue, canManagePhoto } from "../../hooks/useProjectRole";
+import { useModalOpen } from "../../hooks/useModalOpen";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
 import { compressImage } from "../../lib/imageCompression";
 import SecureImage from "./SecureImage";
@@ -108,6 +109,8 @@ export default function VisitDetail() {
 
   // Issue creation/edition modal
   const [showIssueModal, setShowIssueModal] = useState(false);
+  useModalOpen(!!selectedPhoto);
+  useModalOpen(showIssueModal);
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null);
   const [issueComments, setIssueComments] = useState<Comment[]>([]);
   const [issueFormData, setIssueFormData] = useState({

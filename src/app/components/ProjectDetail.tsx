@@ -22,6 +22,7 @@ import { VisitCardSkeleton, PhotoGridSkeleton, CommentSkeleton } from "./Loading
 import { getSiteVisits, getProject, getPhotos, getPhotoSignedUrl } from "../../lib/supabaseApi";
 import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole } from "../../hooks/useProjectRole";
+import { useModalOpen } from "../../hooks/useModalOpen";
 import { getIssuesByProject } from "../../lib/issuesApi";
 import { parseLocalDate } from "../../lib/dateUtils";
 import PhotoMarkup from "./PhotoMarkup";
@@ -88,6 +89,10 @@ export default function ProjectDetail() {
   } | null>(null);
   const [siteVisits, setSiteVisits] = useState<SiteVisit[]>([]);
   const [isLoadingVisits, setIsLoadingVisits] = useState(true);
+  useModalOpen(showShareModal);
+  useModalOpen(showCommentModal);
+  useModalOpen(!!selectedPhoto && !showPhotoMarkupModal && !showIssueCreationModal);
+  useModalOpen(showVisitModal && !!selectedVisit);
 
   // Photo filter states
   const [photoSearchQuery, setPhotoSearchQuery] = useState("");
@@ -826,7 +831,7 @@ export default function ProjectDetail() {
           className="fixed inset-0 bg-black/50 z-50 overflow-y-auto"
           onClick={() => setShowShareModal(false)}
         >
-          <div className="min-h-screen px-4 flex items-center justify-center py-8">
+          <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
             <div
               className="bg-white rounded-xl w-full max-w-md"
               onClick={(e) => e.stopPropagation()}
@@ -883,7 +888,7 @@ export default function ProjectDetail() {
           className="fixed inset-0 bg-black/50 z-50 overflow-y-auto"
           onClick={() => setShowCommentModal(false)}
         >
-          <div className="min-h-screen px-4 flex items-center justify-center py-8">
+          <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
             <div
               className="bg-white rounded-xl w-full max-w-md"
               onClick={(e) => e.stopPropagation()}
@@ -980,7 +985,7 @@ export default function ProjectDetail() {
 
           {/* Action Buttons */}
           <div
-            className="px-6 py-3 bg-[#1A1A1A] border-b border-gray-800 flex gap-3"
+            className="px-6 py-3 bg-[#1A1A1A] border-b border-gray-800 flex gap-3 safe-area-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -1223,7 +1228,7 @@ export default function ProjectDetail() {
             </div>
 
             {/* Footer Actions */}
-            <div className="bg-white border-t border-gray-200 px-6 py-4 flex gap-3 flex-shrink-0 md:rounded-b-xl">
+            <div className="bg-white border-t border-gray-200 px-6 py-4 flex gap-3 flex-shrink-0 safe-area-bottom md:rounded-b-xl">
               <button
                 onClick={() => setShowVisitModal(false)}
                 className="flex-1 py-3 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 transition-colors font-medium"

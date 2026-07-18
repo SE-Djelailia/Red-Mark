@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, Check } from "lucide-react";
 import { updateProject, type Project } from "../../lib/supabaseApi";
 import { useAuth } from "../../contexts/useAuth";
+import { useModalOpen } from "../../hooks/useModalOpen";
 import { toast } from "sonner";
 
 interface ProjectEditModalProps {
@@ -11,6 +12,7 @@ interface ProjectEditModalProps {
 }
 
 export default function ProjectEditModal({ project, onClose, onSave }: ProjectEditModalProps) {
+  useModalOpen();
   const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -73,7 +75,7 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={onClose}>
-      <div className="min-h-screen px-4 py-4 sm:py-8 flex items-center justify-center">
+      <div className="min-h-screen px-4 py-4 sm:py-8 pb-20 flex items-center justify-center safe-area-bottom">
         <div
           className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 my-4"
           onClick={(e) => e.stopPropagation()}

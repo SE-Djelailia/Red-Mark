@@ -1,9 +1,12 @@
+import { useContext } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { FolderKanban, LayoutDashboard, User } from "lucide-react";
+import { ModalOpenContext } from "../../contexts/ModalOpenContext";
 
 export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
+  const modalCtx = useContext(ModalOpenContext);
 
   const navItems = [
     { label: "Projets", icon: FolderKanban, path: "/app/projects" },
@@ -13,8 +16,12 @@ export default function BottomNav() {
 
   const isActive = (path: string) => location.pathname.startsWith(path);
 
+  // Hidden while any modal is open so its action buttons are never covered
+  // by (or lose taps to) the fixed nav bar — see useModalOpen().
+  if (modalCtx?.isModalOpen) return null;
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-[#1A1A1A] border-t border-gray-800 safe-area-inset-bottom z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-[#1A1A1A] border-t border-gray-800 safe-area-bottom z-50">
       <div className="max-w-2xl mx-auto grid grid-cols-3 h-16 md:h-20">
         {navItems.map((item) => {
           const Icon = item.icon;

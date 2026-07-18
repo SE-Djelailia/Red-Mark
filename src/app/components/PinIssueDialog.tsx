@@ -27,6 +27,7 @@ import { notifyProjectOwner } from "../../lib/notificationsApi";
 import { supabase } from "../../lib/supabase";
 import { compressImage } from "../../lib/imageCompression";
 import { useAuth } from "../../contexts/useAuth";
+import { useModalOpen } from "../../hooks/useModalOpen";
 
 type Severity = "minor" | "moderate" | "major" | "critical";
 
@@ -51,6 +52,7 @@ export default function PinIssueDialog({
   onLinked,
 }: Props) {
   const { user } = useAuth();
+  useModalOpen(open && !!pin);
   const [mode, setMode] = useState<"choose" | "create" | "link">("choose");
 
   const [title, setTitle] = useState("");

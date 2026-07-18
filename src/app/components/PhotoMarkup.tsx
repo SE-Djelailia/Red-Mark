@@ -12,6 +12,7 @@ import {
   Trash2,
   Eraser,
 } from "lucide-react";
+import { useModalOpen } from "../../hooks/useModalOpen";
 
 interface PhotoMarkupProps {
   imageUrl: string;
@@ -35,6 +36,7 @@ type DrawingElement = {
 };
 
 export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupProps) {
+  useModalOpen();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [tool, setTool] = useState<Tool>("pencil");
   const [color, setColor] = useState("#E10600");

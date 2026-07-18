@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Upload, FileImage } from "lucide-react";
+import { useModalOpen } from "../../hooks/useModalOpen";
 
 interface Props {
   open: boolean;
@@ -18,6 +19,7 @@ export default function FloorPlanUploadModal({
   onConfirm,
   saving,
 }: Props) {
+  useModalOpen(open && !!file);
   const [name, setName] = useState("");
   const [level, setLevel] = useState("");
   const [description, setDescription] = useState("");
@@ -48,7 +50,7 @@ export default function FloorPlanUploadModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[60] overflow-y-auto" onClick={onCancel}>
-      <div className="min-h-screen flex items-center justify-center py-8 px-4">
+      <div className="min-h-screen flex items-center justify-center py-8 pb-20 px-4 safe-area-bottom">
         <div
           className="bg-white rounded-xl w-full max-w-md shadow-xl"
           onClick={(e) => e.stopPropagation()}

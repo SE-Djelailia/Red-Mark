@@ -6,6 +6,7 @@ import { useAuth } from "../../contexts/useAuth";
 import type { Issue } from "../../lib/supabase";
 import { getCommentsForIssue, type Comment } from "../../lib/commentsApi";
 import CommentThread from "./CommentThread";
+import { useModalOpen } from "../../hooks/useModalOpen";
 
 type IssueWithProject = Issue & { projectName: string };
 
@@ -18,6 +19,7 @@ export default function IssueManagement() {
   const [statusFilter, setStatusFilter] = useState<Issue["status"] | "all">("all");
   const [priorityFilter, setPriorityFilter] = useState<Issue["priority"] | "all">("all");
   const [selectedIssue, setSelectedIssue] = useState<IssueWithProject | null>(null);
+  useModalOpen(!!selectedIssue);
   const [issueComments, setIssueComments] = useState<Comment[]>([]);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -224,7 +226,7 @@ export default function IssueManagement() {
               className="fixed inset-0 bg-black/50 z-50 overflow-y-auto"
               onClick={() => setSelectedIssue(null)}
             >
-              <div className="min-h-screen px-4 flex items-center justify-center py-8">
+              <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
                 <div
                   className="bg-white rounded-xl max-w-2xl w-full"
                   onClick={(e) => e.stopPropagation()}

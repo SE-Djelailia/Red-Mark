@@ -18,11 +18,13 @@ import NotificationSettings from "./NotificationSettings";
 import ReportTemplates from "./ReportTemplates";
 import GeneralSettings from "./GeneralSettings";
 import DataExport from "./DataExport";
+import { useModalOpen } from "../../hooks/useModalOpen";
 
 export default function Profile() {
   const navigate = useNavigate();
   const { user, session, signOut } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  useModalOpen(showLogoutConfirm);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showReportTemplates, setShowReportTemplates] = useState(false);
   const [showGeneralSettings, setShowGeneralSettings] = useState(false);
@@ -229,7 +231,7 @@ export default function Profile() {
           className="fixed inset-0 bg-black/50 z-50 overflow-y-auto"
           onClick={() => setShowLogoutConfirm(false)}
         >
-          <div className="min-h-screen px-4 flex items-center justify-center py-8">
+          <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
             <div
               className="bg-white rounded-xl max-w-sm w-full"
               onClick={(e) => e.stopPropagation()}

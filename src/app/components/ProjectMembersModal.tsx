@@ -3,6 +3,7 @@ import { X, UserPlus, Shield, Trash2, Loader2, Mail } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { toast } from "sonner";
 import { useProjectRole } from "../../hooks/useProjectRole";
+import { useModalOpen } from "../../hooks/useModalOpen";
 
 type ProjectRole = "owner" | "editor" | "commenter";
 
@@ -21,6 +22,7 @@ interface ProjectMembersModalProps {
 }
 
 export default function ProjectMembersModal({ projectId, onClose }: ProjectMembersModalProps) {
+  useModalOpen();
   const projectRole = useProjectRole(projectId);
   const canManage = projectRole.canManageMembers;
   const [members, setMembers] = useState<Member[]>([]);

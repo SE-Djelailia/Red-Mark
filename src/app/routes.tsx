@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router";
 import { SupabaseAuthProvider } from "../contexts/SupabaseAuthContext"; // ✅ Using Supabase Auth
+import { ModalOpenProvider } from "../contexts/ModalOpenContext";
 import Layout from "./components/Layout";
 import Login from "./components/Login";
 import ProjectList from "./components/ProjectList";
@@ -24,8 +25,10 @@ import MigrationPrompt from "./components/MigrationPrompt"; // ✅ Migration pro
 function RootLayout() {
   return (
     <SupabaseAuthProvider>
-      <MigrationPrompt />
-      <Outlet />
+      <ModalOpenProvider>
+        <MigrationPrompt />
+        <Outlet />
+      </ModalOpenProvider>
     </SupabaseAuthProvider>
   );
 }

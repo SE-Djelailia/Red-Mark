@@ -10,6 +10,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { getTodayForInput } from "../../lib/dateUtils";
+import { useModalOpen } from "../../hooks/useModalOpen";
 
 export interface Issue {
   id: string;
@@ -80,6 +81,7 @@ export default function IssueCreation({
   onClose,
   onSave,
 }: IssueCreationProps) {
+  useModalOpen();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Issue["priority"]>("medium");
@@ -162,7 +164,7 @@ export default function IssueCreation({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={onClose}>
-      <div className="min-h-screen px-4 flex items-center justify-center py-8">
+      <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
         <div className="bg-white rounded-xl max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
           {/* Header - Sticky */}
           <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">

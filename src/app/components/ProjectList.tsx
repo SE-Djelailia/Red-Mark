@@ -10,11 +10,13 @@ import {
 import { supabase } from "../../lib/supabase";
 import { getTodayForInput, formatDateShort } from "../../lib/dateUtils";
 import { toast } from "sonner";
+import { useModalOpen } from "../../hooks/useModalOpen";
 
 export default function ProjectList() {
   const { user, loading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  useModalOpen(showCreateModal);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<Project["status"] | "all">("all");
   const [formData, setFormData] = useState({
@@ -378,7 +380,8 @@ export default function ProjectList() {
 
       {/* Create Project Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
+          <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <h2 className="text-2xl font-bold text-[#1A1A1A] mb-6">Nouveau Projet</h2>
 
@@ -475,6 +478,7 @@ export default function ProjectList() {
                 </button>
               </div>
             </form>
+          </div>
           </div>
         </div>
       )}

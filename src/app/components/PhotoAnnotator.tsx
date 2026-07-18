@@ -14,6 +14,7 @@ import {
   Move,
   Palette,
 } from "lucide-react";
+import { useModalOpen } from "../../hooks/useModalOpen";
 
 interface PhotoAnnotatorProps {
   photo: {
@@ -44,6 +45,7 @@ interface Annotation {
 }
 
 export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) {
+  useModalOpen();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
