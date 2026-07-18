@@ -75,6 +75,16 @@ export async function getPlanFiles(projectId: string): Promise<PlanFile[]> {
   return (data || []).map(rowToPlanFile);
 }
 
+export async function getPlanFile(id: string): Promise<PlanFile | null> {
+  const { data, error } = await supabase.from("plan_files").select("*").eq("id", id).maybeSingle();
+
+  if (error) {
+    console.error("Error fetching plan file:", error);
+    throw error;
+  }
+  return data ? rowToPlanFile(data) : null;
+}
+
 export async function createPlanFile(input: {
   projectId: string;
   name: string;

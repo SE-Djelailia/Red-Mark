@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Upload, FileText, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router";
+import { Upload, FileText, Trash2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/useAuth";
@@ -34,6 +35,7 @@ interface Props {
 }
 
 export default function PlanFilesManager({ projectId }: Props) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const projectRole = useProjectRole(projectId);
   const [planFiles, setPlanFiles] = useState<PlanFile[]>([]);
@@ -185,18 +187,24 @@ export default function PlanFilesManager({ projectId }: Props) {
               key={planFile.id}
               className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 hover:border-[#E10600] hover:shadow-md transition-all"
             >
-              <div className="w-12 h-12 rounded-lg bg-[#E10600]/10 text-[#E10600] flex items-center justify-center flex-shrink-0">
-                <FileText size={22} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm text-[#1A1A1A] font-medium truncate">{planFile.name}</div>
-                <div className="text-xs text-gray-500">
-                  {planFile.pageCount ?? "?"} page{planFile.pageCount !== 1 ? "s" : ""}
-                  {planFile.fileSizeBytes
-                    ? ` · ${(planFile.fileSizeBytes / (1024 * 1024)).toFixed(1)} Mo`
-                    : ""}
+              <button
+                onClick={() => navigate(`/app/projects/${projectId}/plan-files/${planFile.id}`)}
+                className="flex-1 flex items-center gap-3 text-left min-w-0"
+              >
+                <div className="w-12 h-12 rounded-lg bg-[#E10600]/10 text-[#E10600] flex items-center justify-center flex-shrink-0">
+                  <FileText size={22} />
                 </div>
-              </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-[#1A1A1A] font-medium truncate">{planFile.name}</div>
+                  <div className="text-xs text-gray-500">
+                    {planFile.pageCount ?? "?"} page{planFile.pageCount !== 1 ? "s" : ""}
+                    {planFile.fileSizeBytes
+                      ? ` · ${(planFile.fileSizeBytes / (1024 * 1024)).toFixed(1)} Mo`
+                      : ""}
+                  </div>
+                </div>
+                <ChevronRight size={18} className="text-gray-400 flex-shrink-0" />
+              </button>
               {canManage && (
                 <button
                   onClick={() => setDeleteTarget(planFile)}

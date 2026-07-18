@@ -19,6 +19,7 @@ import IconGenerator from "./components/IconGenerator";
 import SecurityPrivacy from "./components/SecurityPrivacy";
 import PhotoUploadPage from "./components/PhotoUploadPage";
 import FloorPlanViewer from "./components/FloorPlanViewer";
+import PlanFileViewer from "./components/PlanFileViewer";
 import MigrationPrompt from "./components/MigrationPrompt"; // ✅ Migration prompt
 
 // Root component that provides SupabaseAuthContext to all routes
@@ -61,6 +62,7 @@ export const router = createBrowserRouter([
           { path: "projects/:projectId/visits/:visitId/issues/:issueId", Component: IssueDetail },
           { path: "projects/:projectId/issues/:issueId", Component: IssueDetail },
           { path: "projects/:projectId/floor-plans/:floorPlanId", Component: FloorPlanViewer },
+          { path: "projects/:projectId/plan-files/:planFileId", Component: PlanFileViewer },
           { path: "projects/:id/visit/new", Component: SiteVisitCreation },
           { path: "projects/:id/report", Component: ReportGenerator },
           { path: "new-visit", Component: QuickVisit },
