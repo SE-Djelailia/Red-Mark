@@ -17,6 +17,7 @@ import {
   Pencil,
   Image as ImageIcon,
   AlertCircle,
+  Upload,
 } from "lucide-react";
 import { VisitCardSkeleton, PhotoGridSkeleton, CommentSkeleton } from "./LoadingStates";
 import { getSiteVisits, getProject, getPhotos, getPhotoSignedUrl } from "../../lib/supabaseApi";
@@ -31,6 +32,7 @@ import ReportTemplateSelector from "./ReportTemplateSelector";
 import ProjectMembersModal from "./ProjectMembersModal";
 import ProjectEditModal from "./ProjectEditModal";
 import FloorPlanManager from "./FloorPlanManager";
+import LocationsImportModal from "./LocationsImportModal";
 
 interface Issue {
   id: string;
@@ -76,6 +78,7 @@ export default function ProjectDetail() {
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
+  const [showLocationsImportModal, setShowLocationsImportModal] = useState(false);
   const [showVisitModal, setShowVisitModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<SiteVisit | null>(null);
@@ -93,6 +96,7 @@ export default function ProjectDetail() {
   useModalOpen(showCommentModal);
   useModalOpen(!!selectedPhoto && !showPhotoMarkupModal && !showIssueCreationModal);
   useModalOpen(showVisitModal && !!selectedVisit);
+  useModalOpen(showLocationsImportModal);
 
   // Photo filter states
   const [photoSearchQuery, setPhotoSearchQuery] = useState("");
@@ -332,6 +336,15 @@ export default function ProjectDetail() {
             >
               <Users size={20} />
             </button>
+            {projectRole.canCreateIssues && (
+              <button
+                onClick={() => setShowLocationsImportModal(true)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                title="Importer les emplacements"
+              >
+                <Upload size={20} />
+              </button>
+            )}
             <button
               onClick={() => setShowShareModal(true)}
               className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -1253,6 +1266,15 @@ export default function ProjectDetail() {
       {/* Project Members Modal */}
       {showMembersModal && id && (
         <ProjectMembersModal projectId={id} onClose={() => setShowMembersModal(false)} />
+      )}
+
+      {/* Locations Import Modal */}
+      {showLocationsImportModal && id && (
+        <LocationsImportModal
+          projectId={id}
+          onClose={() => setShowLocationsImportModal(false)}
+          onImported={() => {}}
+        />
       )}
 
       {/* Project Edit Modal */}
