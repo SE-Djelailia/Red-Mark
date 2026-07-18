@@ -31,7 +31,7 @@ import IssueCreation from "./IssueCreation";
 import ReportTemplateSelector from "./ReportTemplateSelector";
 import ProjectMembersModal from "./ProjectMembersModal";
 import ProjectEditModal from "./ProjectEditModal";
-import FloorPlanManager from "./FloorPlanManager";
+import PlanFilesManager from "./PlanFilesManager";
 import LocationsImportModal from "./LocationsImportModal";
 
 interface Issue {
@@ -824,7 +824,7 @@ export default function ProjectDetail() {
         )}
 
         {/* Plans Tab */}
-        {activeTab === "plans" && id && <FloorPlanManager projectId={id} />}
+        {activeTab === "plans" && id && <PlanFilesManager projectId={id} />}
       </div>
 
       {/* Create New Site Visit Button */}
