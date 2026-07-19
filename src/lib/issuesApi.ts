@@ -195,7 +195,7 @@ export async function getIssueStatusesByLocations(
 
   const hasOpenIssue: Record<string, boolean> = {};
   for (const row of data || []) {
-    if (row.status !== "resolved") hasOpenIssue[row.location_id] = true;
+    if (row.location_id && row.status !== "resolved") hasOpenIssue[row.location_id] = true;
   }
   return hasOpenIssue;
 }

@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -112,6 +112,7 @@ export type Database = {
           description: string | null
           id: string
           location: Json | null
+          location_id: string | null
           photo_id: string | null
           priority: string | null
           project_id: string
@@ -128,6 +129,7 @@ export type Database = {
           description?: string | null
           id?: string
           location?: Json | null
+          location_id?: string | null
           photo_id?: string | null
           priority?: string | null
           project_id: string
@@ -144,6 +146,7 @@ export type Database = {
           description?: string | null
           id?: string
           location?: Json | null
+          location_id?: string | null
           photo_id?: string | null
           priority?: string | null
           project_id?: string
@@ -155,6 +158,13 @@ export type Database = {
           visit_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "issues_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "issues_photo_id_fkey"
             columns: ["photo_id"]
@@ -192,6 +202,102 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      levels: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          project_id: string
+          sort_order: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          project_id: string
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "levels_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locations: {
+        Row: {
+          created_at: string | null
+          discipline: string | null
+          id: string
+          level_id: string
+          location_number: string
+          name: string | null
+          parent_location_id: string | null
+          project_id: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          discipline?: string | null
+          id?: string
+          level_id: string
+          location_number: string
+          name?: string | null
+          parent_location_id?: string | null
+          project_id: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          discipline?: string | null
+          id?: string
+          level_id?: string
+          location_number?: string
+          name?: string | null
+          parent_location_id?: string | null
+          project_id?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locations_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_parent_location_id_fkey"
+            columns: ["parent_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -233,6 +339,7 @@ export type Database = {
           file_url: string
           id: string
           location: Json | null
+          location_id: string | null
           project_id: string
           storage_path: string
           tags: string[] | null
@@ -245,6 +352,7 @@ export type Database = {
           file_url: string
           id?: string
           location?: Json | null
+          location_id?: string | null
           project_id: string
           storage_path: string
           tags?: string[] | null
@@ -257,6 +365,7 @@ export type Database = {
           file_url?: string
           id?: string
           location?: Json | null
+          location_id?: string | null
           project_id?: string
           storage_path?: string
           tags?: string[] | null
@@ -264,6 +373,13 @@ export type Database = {
           visit_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "photos_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "photos_project_id_fkey"
             columns: ["project_id"]
@@ -276,6 +392,157 @@ export type Database = {
             columns: ["visit_id"]
             isOneToOne: false
             referencedRelation: "site_visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pin_placements: {
+        Row: {
+          created_at: string | null
+          id: string
+          location_id: string
+          plan_id: string
+          project_id: string
+          x: number
+          y: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          location_id: string
+          plan_id: string
+          project_id: string
+          x: number
+          y: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          location_id?: string
+          plan_id?: string
+          project_id?: string
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pin_placements_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pin_placements_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pin_placements_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_files: {
+        Row: {
+          bucket: string
+          created_at: string | null
+          file_size_bytes: number | null
+          id: string
+          name: string
+          page_count: number | null
+          project_id: string
+          storage_path: string
+          uploaded_by: string
+        }
+        Insert: {
+          bucket?: string
+          created_at?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          name: string
+          page_count?: number | null
+          project_id: string
+          storage_path: string
+          uploaded_by: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          name?: string
+          page_count?: number | null
+          project_id?: string
+          storage_path?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          created_at: string | null
+          id: string
+          level_id: string
+          name: string | null
+          page_number: number
+          plan_file_id: string
+          project_id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          level_id: string
+          name?: string | null
+          page_number: number
+          plan_file_id: string
+          project_id: string
+          type?: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          level_id?: string
+          name?: string | null
+          page_number?: number
+          plan_file_id?: string
+          project_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plans_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plans_plan_file_id_fkey"
+            columns: ["plan_file_id"]
+            isOneToOne: false
+            referencedRelation: "plan_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plans_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -439,16 +706,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      comment_project_id: {
+        Args: { p_issue_id: string; p_photo_id: string; p_visit_id: string }
+        Returns: string
+      }
       find_invitable_user: {
-        Args: {
-          p_email: string
-        }
+        Args: { p_email: string }
         Returns: {
-          id: string
-          name: string | null
           email: string
+          id: string
+          name: string
         }[]
       }
+      has_project_role: {
+        Args: { p_project_id: string; p_roles: string[] }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
+      is_project_member: { Args: { p_project_id: string }; Returns: boolean }
+      shares_project_with: { Args: { p_user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
