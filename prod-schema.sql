@@ -615,6 +615,10 @@ CREATE INDEX "idx_issues_status" ON "public"."issues" USING "btree" ("status");
 
 
 
+CREATE INDEX "idx_issues_user_id" ON "public"."issues" USING "btree" ("user_id");
+
+
+
 CREATE INDEX "idx_levels_project_id" ON "public"."levels" USING "btree" ("project_id");
 
 

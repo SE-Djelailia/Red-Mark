@@ -69,13 +69,19 @@ function rowToNotification(row: any): Notification {
   };
 }
 
-// Get notifications for a specific user
+// Get notifications for a specific user — capped to the most recent 50.
+// Old notification history isn't something users page through in practice;
+// this is what turns "fetch every notification ever, every 5s" into a
+// bounded fetch made only when the panel is actually opened (see
+// NotificationBell.tsx, which now polls just the cheap unread count on a
+// timer and only calls this on open).
 export async function getUserNotifications(userId: string): Promise<Notification[]> {
   const { data, error } = await supabase
     .from("notifications")
     .select("*")
     .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(0, 49);
 
   if (error) {
     console.error("Error loading notifications:", error);

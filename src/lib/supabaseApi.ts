@@ -158,6 +158,52 @@ export async function getSiteVisits(projectId: string): Promise<SiteVisit[]> {
   }
 }
 
+// Paginated visits fetch, most recent first, with each visit's photo count
+// embedded in the same query (PostgREST's `photos(count)` syntax) — avoids
+// a separate photos query per visit just to show the camera-icon count.
+// `hasMore` is inferred from whether a full page came back, so no extra
+// count query is needed just to paginate.
+export async function getSiteVisitsPage(
+  projectId: string,
+  { offset, limit }: { offset: number; limit: number },
+): Promise<{ visits: (SiteVisit & { photoCount: number })[]; hasMore: boolean }> {
+  try {
+    const { data, error } = await supabase
+      .from("site_visits")
+      .select("*, photos(count)")
+      .eq("project_id", projectId)
+      .order("visit_date", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+    const rows = data || [];
+    const visits = rows.map((row: any) => ({
+      ...row,
+      photoCount: row.photos?.[0]?.count ?? 0,
+    }));
+    return { visits, hasMore: rows.length === limit };
+  } catch (error) {
+    console.error("❌ Error fetching visits page:", error);
+    throw error;
+  }
+}
+
+// Cheap total-count query for the "N visites" header stat and tab badge —
+// kept separate from getSiteVisitsPage so the visits list itself can stay
+// paginated without that count silently becoming "just what's loaded".
+export async function getVisitsCount(projectId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("site_visits")
+    .select("*", { count: "exact", head: true })
+    .eq("project_id", projectId);
+
+  if (error) {
+    console.error("❌ Error counting visits:", error);
+    return 0;
+  }
+  return count ?? 0;
+}
+
 export async function getSiteVisit(visitId: string): Promise<SiteVisit | null> {
   try {
     const { data, error } = await supabase
@@ -240,6 +286,54 @@ export async function getPhotos(visitId: string): Promise<Photo[]> {
     console.error("❌ Error fetching photos:", error);
     throw error;
   }
+}
+
+// A photo row plus the phase/room/date of the visit it belongs to — the
+// Gallery tab's search and phase filters key off the *visit's* phase/room,
+// not anything stored directly on the photo, so that gets embedded in the
+// same query (PostgREST `site_visits(...)`) rather than joined client-side.
+export interface ProjectGalleryPhotoRow extends Photo {
+  site_visits: { phase: string | null; attendees: string[] | null; visit_date: string } | null;
+}
+
+// All photos across a project, for the Gallery tab — its own dedicated
+// query rather than being derived from whatever the Visits tab happens to
+// have loaded (which, now that visits are paginated and lazy-load their own
+// photos, wouldn't reliably include every photo in the project). Unbounded
+// for now (field-test scale) — full pagination deferred alongside the
+// other larger-scale-only fixes; this is still a single query + a single
+// batched signed-URL call, replacing what used to be one query and one
+// signed-URL call per visit.
+export async function getPhotosByProject(projectId: string): Promise<ProjectGalleryPhotoRow[]> {
+  try {
+    const { data, error } = await supabase
+      .from("photos")
+      .select("*, site_visits(phase, attendees, visit_date)")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return (data as unknown as ProjectGalleryPhotoRow[]) || [];
+  } catch (error) {
+    console.error("❌ Error fetching photos by project:", error);
+    throw error;
+  }
+}
+
+// Cheap total-count query for the "N photos" header stat and Gallery tab
+// badge — same reasoning as getVisitsCount: those numbers are shown before
+// the Gallery tab's own (now-lazy) photo fetch has necessarily happened.
+export async function getPhotosCount(projectId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("photos")
+    .select("*", { count: "exact", head: true })
+    .eq("project_id", projectId);
+
+  if (error) {
+    console.error("❌ Error counting photos:", error);
+    return 0;
+  }
+  return count ?? 0;
 }
 
 // Get photos attached to a specific location (via photos.location_id), for
@@ -410,14 +504,25 @@ export async function getPhotoSignedUrl(storagePath: string): Promise<string> {
 }
 
 /**
- * Get signed URLs for multiple photos at once (more efficient)
+ * Get signed URLs for multiple photos in a single request (Supabase Storage's
+ * plural `createSignedUrls` — not just `createSignedUrl` called in a loop).
+ * Order of the returned array matches `storagePaths`, matching a caller's
+ * ability to zip results back to the photos it asked about.
  * @param storagePaths - Array of storage paths
  * @returns Array of signed URLs
  */
 export async function getPhotosSignedUrls(storagePaths: string[]): Promise<string[]> {
+  if (storagePaths.length === 0) return [];
   try {
-    const signedUrls = await Promise.all(storagePaths.map((path) => getPhotoSignedUrl(path)));
-    return signedUrls;
+    const { data, error } = await supabase.storage
+      .from("project-photos")
+      .createSignedUrls(storagePaths, 86400); // 24 hours, matches getPhotoSignedUrl
+
+    if (error) throw error;
+    return data.map((d) => {
+      if (d.error || !d.signedUrl) throw new Error(d.error || "Failed to generate signed URL");
+      return d.signedUrl;
+    });
   } catch (error) {
     console.error("❌ Error generating signed URLs:", error);
     throw error;

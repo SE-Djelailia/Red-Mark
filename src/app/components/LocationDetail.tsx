@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, MapPin, Layers, AlertCircle, Image as ImageIcon, X } from "lucide-react";
 import { getLocation, getLevels, type Location, type Level } from "../../lib/locationsApi";
 import { getIssuesByLocation, type Issue } from "../../lib/issuesApi";
-import { getPhotosByLocation, getPhotoSignedUrl } from "../../lib/supabaseApi";
+import { getPhotosByLocation, getPhotosSignedUrls } from "../../lib/supabaseApi";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { useSmartBack } from "../../hooks/useSmartBack";
 
@@ -92,18 +92,16 @@ export default function LocationDetail() {
     setPhotosLoadError(false);
     try {
       const rows = await getPhotosByLocation(locationId);
-      const withUrls = await Promise.all(
-        rows.map(async (p) => {
-          try {
-            const url = await getPhotoSignedUrl(p.storage_path);
-            return { id: p.id, url, description: p.description ?? null };
-          } catch (e) {
-            console.error("Error generating signed URL for photo:", p.id, e);
-            return { id: p.id, url: "", description: p.description ?? null };
-          }
-        }),
-      );
-      setPhotos(withUrls);
+      let urls: string[] = [];
+      if (rows.length > 0) {
+        try {
+          urls = await getPhotosSignedUrls(rows.map((p) => p.storage_path));
+        } catch (e) {
+          console.error("Error generating signed URLs for location photos:", e);
+          urls = rows.map(() => ""); // graceful degrade — broken images, not a failed section
+        }
+      }
+      setPhotos(rows.map((p, i) => ({ id: p.id, url: urls[i] || "", description: p.description ?? null })));
     } catch (e) {
       console.error("Error loading photos for location:", e);
       setPhotosLoadError(true);

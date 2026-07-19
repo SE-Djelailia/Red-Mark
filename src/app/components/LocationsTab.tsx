@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Search, MapPin, AlertCircle } from "lucide-react";
 import type { Location, Level } from "../../lib/locationsApi";
@@ -31,12 +31,21 @@ export default function LocationsTab({
 }: Props) {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState("");
+
+  // The input stays instantly responsive (bound to `search`); filtering (and
+  // the re-render of however many hundred location rows) only happens once
+  // typing pauses for 250ms, via `debouncedSearch`.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const filtered = locations.filter((loc) => {
     if (levelFilter && loc.levelId !== levelFilter) return false;
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.trim().toLowerCase();
       if (!loc.locationNumber.toLowerCase().includes(q) && !(loc.name || "").toLowerCase().includes(q)) {
         return false;
       }

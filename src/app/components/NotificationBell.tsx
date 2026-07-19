@@ -23,7 +23,16 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
 
-  const loadNotifications = async () => {
+  // The full (capped-50) list is only ever fetched when the panel is
+  // actually open — see the effect below. The 5s poll only checks the
+  // cheap unread count (a `head:true` query, no rows transferred), so a
+  // closed panel no longer re-downloads the user's entire notification
+  // history every 5 seconds.
+  const loadUnreadCount = async () => {
+    setUnreadCount(await getUnreadCount(userId));
+  };
+
+  const loadFullList = async () => {
     const [userNotifications, unread] = await Promise.all([
       getUserNotifications(userId),
       getUnreadCount(userId),
@@ -33,12 +42,15 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
   };
 
   useEffect(() => {
-    loadNotifications();
-
-    // Poll for new notifications every 5 seconds
-    const interval = setInterval(loadNotifications, 5000);
+    loadUnreadCount();
+    const interval = setInterval(loadUnreadCount, 5000);
     return () => clearInterval(interval);
   }, [userId]);
+
+  useEffect(() => {
+    if (showPanel) loadFullList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPanel]);
 
   // Route to the most specific place the notification refers to: the issue
   // (with the triggering comment highlighted, if any), else the visit, else
@@ -60,21 +72,21 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
     // Mark as read
     await markAsRead(notification.id);
     setShowPanel(false);
-    loadNotifications();
+    loadFullList();
 
     navigate(getNotificationPath(notification));
   };
 
   const handleMarkAllRead = async () => {
     await markAllAsRead(userId);
-    loadNotifications();
+    loadFullList();
   };
 
   const handleDeleteNotification = async (e: React.MouseEvent, notificationId: string) => {
     e.stopPropagation();
     try {
       await deleteNotification(notificationId);
-      loadNotifications();
+      loadFullList();
     } catch (err) {
       toast.error(getRlsErrorMessage(err, "Impossible de supprimer cette notification."));
     }

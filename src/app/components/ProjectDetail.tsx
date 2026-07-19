@@ -21,7 +21,16 @@ import {
   Upload,
 } from "lucide-react";
 import { VisitCardSkeleton, PhotoGridSkeleton, CommentSkeleton } from "./LoadingStates";
-import { getSiteVisits, getProject, getPhotos, getPhotoSignedUrl } from "../../lib/supabaseApi";
+import {
+  getSiteVisitsPage,
+  getVisitsCount,
+  getProject,
+  getPhotosByProject,
+  getPhotosCount,
+  getPhotosSignedUrls,
+  type ProjectGalleryPhotoRow,
+} from "../../lib/supabaseApi";
+import VisitCard from "./VisitCard";
 import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole } from "../../hooks/useProjectRole";
 import { useModalOpen } from "../../hooks/useModalOpen";
@@ -61,6 +70,11 @@ interface SiteVisit {
   tags: string[];
   photoCount: number;
   notes: string;
+  // Always [] now — visits are paginated and each VisitCard lazy-loads and
+  // owns its own photos (see VisitCard.tsx) rather than this array being
+  // populated eagerly. Kept on the type only because the (currently
+  // unreachable — see the dead "Visit Detail Modal" below) selectedVisit
+  // state still reads it.
   photos: { id: string; url: string; tags: string[] }[];
 }
 
@@ -70,6 +84,24 @@ interface Comment {
   date: string;
   text: string;
   visitId?: string;
+}
+
+// Shared by the initial fetch and "load more" — both page through
+// getSiteVisitsPage the same way. `any` here rather than fighting the raw
+// DB row type: same pre-existing hand-written-type-vs-raw-row mismatch as
+// the rest of this file (see e.g. supabaseApi.ts's SiteVisit/Photo/Issue
+// interfaces not matching generated DB types), not something new.
+function mapVisitRow(visit: any): SiteVisit {
+  return {
+    id: visit.id,
+    date: visit.visit_date,
+    phase: visit.phase.charAt(0).toUpperCase() + visit.phase.slice(1), // Capitalize
+    room: visit.attendees?.[0] || "Zone non spécifiée",
+    tags: [], // dead-code compat only — see SiteVisit.photos' comment
+    photoCount: visit.photoCount,
+    notes: visit.notes,
+    photos: [],
+  };
 }
 
 export default function ProjectDetail() {
@@ -101,6 +133,21 @@ export default function ProjectDetail() {
   } | null>(null);
   const [siteVisits, setSiteVisits] = useState<SiteVisit[]>([]);
   const [isLoadingVisits, setIsLoadingVisits] = useState(true);
+  const [visitsHasMore, setVisitsHasMore] = useState(false);
+  const [loadingMoreVisits, setLoadingMoreVisits] = useState(false);
+  const [totalVisitsCount, setTotalVisitsCount] = useState(0);
+  const VISITS_PAGE_SIZE = 20;
+
+  // Gallery tab's own state — no longer derived from siteVisits (see
+  // VisitCard.tsx's comment: visits are paginated and no longer carry every
+  // photo eagerly). Loaded lazily, the first time the Gallery/Photos tab is
+  // actually opened, same pattern as the Locations tab below.
+  const [galleryPhotos, setGalleryPhotos] = useState<ProjectGalleryPhotoRow[]>([]);
+  const [galleryPhotoUrls, setGalleryPhotoUrls] = useState<Record<string, string>>({});
+  const [loadingGalleryPhotos, setLoadingGalleryPhotos] = useState(false);
+  const [galleryPhotosLoadError, setGalleryPhotosLoadError] = useState<string | null>(null);
+  const [galleryPhotosFetchStarted, setGalleryPhotosFetchStarted] = useState(false);
+  const [totalPhotosCount, setTotalPhotosCount] = useState(0);
   useModalOpen(showShareModal);
   useModalOpen(showCommentModal);
   useModalOpen(!!selectedPhoto && !showPhotoMarkupModal && !showIssueCreationModal);
@@ -142,16 +189,19 @@ export default function ProjectDetail() {
   // Empty comments - will be populated from backend
   const comments: Comment[] = [];
 
-  // Flatten all photos from all visits
-  const allPhotos = siteVisits.flatMap((visit) =>
-    visit.photos.map((photo) => ({
-      ...photo,
-      date: visit.date,
-      phase: visit.phase,
-      room: visit.room,
-      // Keep the photo's own tags, not visit tags
-    })),
-  );
+  // Display shape for the Gallery tab, derived from its own dedicated
+  // fetch (galleryPhotos + galleryPhotoUrls) — see the lazy-load effect
+  // below, not from siteVisits (which no longer carries photos eagerly).
+  const allPhotos = galleryPhotos.map((p) => ({
+    id: p.id,
+    url: galleryPhotoUrls[p.id] || "",
+    tags: p.tags || [],
+    date: p.site_visits?.visit_date || p.created_at || "",
+    phase: p.site_visits?.phase
+      ? p.site_visits.phase.charAt(0).toUpperCase() + p.site_visits.phase.slice(1)
+      : "",
+    room: p.site_visits?.attendees?.[0] || "Zone non spécifiée",
+  }));
 
   // Filter photos based on search and filters
   const filteredPhotos = allPhotos.filter((photo) => {
@@ -257,57 +307,81 @@ export default function ProjectDetail() {
     try {
       setIsLoadingVisits(true);
 
-      // Fetch site visits
-      const visits = await getSiteVisits(id);
+      // First page only (most recent 20) — photos are no longer fetched
+      // eagerly here at all; each VisitCard lazy-loads its own once it's
+      // actually on/near screen (see VisitCard.tsx). The total count is a
+      // separate cheap query so the header stat/tab badge show the real
+      // total, not just what's been paged in so far.
+      const [{ visits, hasMore }, total, totalPhotos] = await Promise.all([
+        getSiteVisitsPage(id, { offset: 0, limit: VISITS_PAGE_SIZE }),
+        getVisitsCount(id),
+        getPhotosCount(id),
+      ]);
 
-      // Transform visits and fetch photo counts for each
-      const transformedVisits = await Promise.all(
-        visits.map(async (visit) => {
-          // Fetch photos for this visit
-          const photos = await getPhotos(visit.id);
-
-          // Collect all unique tags from photos in this visit
-          const visitTags = [...new Set(photos.flatMap((p) => p.tags || []))];
-
-          // Generate signed URLs for all photos
-          const photosWithSignedUrls = await Promise.all(
-            photos.map(async (p) => {
-              try {
-                const signedUrl = await getPhotoSignedUrl(p.storage_path);
-                return { id: p.id, url: signedUrl, tags: p.tags || [] };
-              } catch (error) {
-                console.error("Error generating signed URL for photo:", p.id, error);
-                return { id: p.id, url: "", tags: p.tags || [] };
-              }
-            }),
-          );
-
-          return {
-            id: visit.id,
-            date: visit.visit_date,
-            phase: visit.phase.charAt(0).toUpperCase() + visit.phase.slice(1), // Capitalize
-            room: visit.attendees?.[0] || "Zone non spécifiée",
-            tags: visitTags, // Tags collected from all photos in this visit
-            photoCount: photos.length, // Actual photo count
-            notes: visit.notes,
-            photos: photosWithSignedUrls,
-          };
-        }),
-      );
-
-      setSiteVisits(transformedVisits);
-      } catch (error) {
-        console.error("❌ Error fetching site visits:", error);
-        toast.error("Erreur lors du chargement des visites.");
-      } finally {
-        setIsLoadingVisits(false);
-      }
+      setSiteVisits(visits.map(mapVisitRow));
+      setVisitsHasMore(hasMore);
+      setTotalVisitsCount(total);
+      setTotalPhotosCount(totalPhotos);
+    } catch (error) {
+      console.error("❌ Error fetching site visits:", error);
+      toast.error("Erreur lors du chargement des visites.");
+    } finally {
+      setIsLoadingVisits(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, authLoading, navigate]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const loadMoreVisits = useCallback(async () => {
+    if (!id || loadingMoreVisits) return;
+    setLoadingMoreVisits(true);
+    try {
+      const { visits, hasMore } = await getSiteVisitsPage(id, {
+        offset: siteVisits.length,
+        limit: VISITS_PAGE_SIZE,
+      });
+      setSiteVisits((prev) => [...prev, ...visits.map(mapVisitRow)]);
+      setVisitsHasMore(hasMore);
+    } catch (error) {
+      console.error("❌ Error loading more visits:", error);
+      toast.error("Erreur lors du chargement des visites supplémentaires.");
+    } finally {
+      setLoadingMoreVisits(false);
+    }
+  }, [id, siteVisits.length, loadingMoreVisits]);
+
+  const loadGalleryPhotos = useCallback(async () => {
+    if (!id) return;
+    setLoadingGalleryPhotos(true);
+    setGalleryPhotosLoadError(null);
+    try {
+      const rows = await getPhotosByProject(id);
+      setGalleryPhotos(rows);
+      if (rows.length > 0) {
+        const urls = await getPhotosSignedUrls(rows.map((r) => r.storage_path));
+        const urlMap: Record<string, string> = {};
+        rows.forEach((r, i) => {
+          urlMap[r.id] = urls[i] || "";
+        });
+        setGalleryPhotoUrls(urlMap);
+      }
+    } catch (error: any) {
+      console.error("❌ Error loading gallery photos:", error);
+      setGalleryPhotosLoadError(error.message || "Impossible de charger les photos.");
+    } finally {
+      setLoadingGalleryPhotos(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (activeTab === "gallery" && gallerySubTab === "photos" && !galleryPhotosFetchStarted) {
+      setGalleryPhotosFetchStarted(true);
+      loadGalleryPhotos();
+    }
+  }, [activeTab, gallerySubTab, galleryPhotosFetchStarted, loadGalleryPhotos]);
 
   useEffect(() => {
     const fetchIssues = async () => {
@@ -454,11 +528,11 @@ export default function ProjectDetail() {
         <div className="flex items-center gap-4 text-sm flex-wrap">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-[#E10600]" />
-            <span>{siteVisits.length} visites</span>
+            <span>{totalVisitsCount} visites</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-gray-400" />
-            <span>{allPhotos.length} photos</span>
+            <span>{totalPhotosCount} photos</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-blue-400" />
@@ -509,7 +583,7 @@ export default function ProjectDetail() {
               activeTab === "visits" ? "text-[#E10600]" : "text-gray-600 hover:text-[#1A1A1A]"
             }`}
           >
-            Visites ({siteVisits.length})
+            Visites ({totalVisitsCount})
             {activeTab === "visits" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E10600]" />
             )}
@@ -520,7 +594,7 @@ export default function ProjectDetail() {
               activeTab === "gallery" ? "text-[#E10600]" : "text-gray-600 hover:text-[#1A1A1A]"
             }`}
           >
-            Galerie ({allPhotos.length})
+            Galerie ({totalPhotosCount})
             {activeTab === "gallery" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E10600]" />
             )}
@@ -558,67 +632,25 @@ export default function ProjectDetail() {
             {isLoadingVisits ? (
               <VisitCardSkeleton />
             ) : (
-              siteVisits.map((visit) => (
-                <div
-                  key={visit.id}
-                  onClick={() => navigate(`/app/projects/${id}/visits/${visit.id}`)}
-                  className="bg-white rounded-xl border border-gray-200 p-5 cursor-pointer hover:border-[#E10600] hover:shadow-md transition-all"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="text-sm text-[#1A1A1A] mb-2">
-                        {parseLocalDate(visit.date).toLocaleDateString("fr-CA", {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap mb-2">
-                        <span className="px-2 py-1 bg-[#E10600]/10 text-[#E10600] rounded-md text-xs">
-                          {visit.phase}
-                        </span>
-                        {visit.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs flex items-center gap-1"
-                          >
-                            <Tag size={10} />
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
-                        <MapPin size={14} />
-                        <span>{visit.room}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <Camera size={16} />
-                      <span>{visit.photoCount}</span>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 leading-relaxed mb-3">{visit.notes}</p>
-
-                  {/* Photo thumbnails */}
-                  {visit.photos.length > 0 && (
-                    <div className="flex gap-2 overflow-x-auto pb-2">
-                      {visit.photos.map((photo) => (
-                        <img
-                          key={photo.id}
-                          src={photo.url}
-                          alt="Site photo"
-                          className="w-20 h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedPhoto(photo);
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))
+              <>
+                {siteVisits.map((visit) => (
+                  <VisitCard
+                    key={visit.id}
+                    visit={visit}
+                    onOpen={() => navigate(`/app/projects/${id}/visits/${visit.id}`)}
+                    onPhotoClick={setSelectedPhoto}
+                  />
+                ))}
+                {visitsHasMore && (
+                  <button
+                    onClick={loadMoreVisits}
+                    disabled={loadingMoreVisits}
+                    className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-[#1A1A1A] hover:border-[#E10600] hover:text-[#E10600] disabled:opacity-50 transition-colors min-h-[48px]"
+                  >
+                    {loadingMoreVisits ? "Chargement…" : "Charger plus de visites"}
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}
@@ -636,7 +668,7 @@ export default function ProjectDetail() {
                     : "text-gray-600 hover:text-[#1A1A1A]"
                 }`}
               >
-                Photos ({allPhotos.length})
+                Photos ({totalPhotosCount})
                 {gallerySubTab === "photos" && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E10600]" />
                 )}
@@ -657,7 +689,21 @@ export default function ProjectDetail() {
             </div>
 
             {/* Photos Sub Tab */}
-            {gallerySubTab === "photos" && (
+            {gallerySubTab === "photos" && loadingGalleryPhotos ? (
+              <PhotoGridSkeleton />
+            ) : gallerySubTab === "photos" && galleryPhotosLoadError ? (
+              <div className="text-center py-12">
+                <Camera size={48} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500 mb-2">{galleryPhotosLoadError}</p>
+                <button
+                  onClick={loadGalleryPhotos}
+                  className="text-sm text-[#E10600] hover:text-[#C00500] font-medium"
+                >
+                  Réessayer
+                </button>
+              </div>
+            ) : (
+              gallerySubTab === "photos" && (
               <div className="space-y-4">
                 {/* Search and Filters */}
                 <div className="space-y-3">
@@ -803,6 +849,7 @@ export default function ProjectDetail() {
                   </div>
                 )}
               </div>
+              )
             )}
 
             {/* Issues Sub Tab */}
