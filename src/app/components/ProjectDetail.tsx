@@ -34,6 +34,8 @@ import ProjectMembersModal from "./ProjectMembersModal";
 import ProjectEditModal from "./ProjectEditModal";
 import PlanFilesManager from "./PlanFilesManager";
 import LocationsImportModal from "./LocationsImportModal";
+import LocationsTab from "./LocationsTab";
+import { getLocations, getLevels, type Location, type Level } from "../../lib/locationsApi";
 
 interface Issue {
   id: string;
@@ -47,6 +49,7 @@ interface Issue {
   photos: { id: string; url: string }[];
   tags?: string[];
   location: string;
+  locationId?: string | null;
 }
 
 interface SiteVisit {
@@ -73,8 +76,11 @@ export default function ProjectDetail() {
   const { id } = useParams();
   const { user, loading: authLoading } = useAuth();
   const projectRole = useProjectRole(id);
-  const [activeTab, setActiveTab] = useState<"visits" | "gallery" | "plans">("visits");
+  const [activeTab, setActiveTab] = useState<"visits" | "gallery" | "plans" | "locations">(
+    "visits",
+  );
   const [gallerySubTab, setGallerySubTab] = useState<"photos" | "issues">("photos");
+  const [issueLocationFilter, setIssueLocationFilter] = useState("");
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -106,6 +112,15 @@ export default function ProjectDetail() {
   const [showPhotoFilters, setShowPhotoFilters] = useState(false);
 
   const [issues, setIssues] = useState<Issue[]>([]);
+
+  // Shared by the Locations tab and the Issues sub-tab's location filter —
+  // loaded once, lazily, the first time either is actually visited (not on
+  // every project visit), so users who never look at locations pay nothing.
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [levels, setLevels] = useState<Level[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+  const [locationsLoadError, setLocationsLoadError] = useState<string | null>(null);
+  const [locationsFetchStarted, setLocationsFetchStarted] = useState(false);
 
   // Project state
   const [project, setProject] = useState<any>(null);
@@ -188,6 +203,21 @@ export default function ProjectDetail() {
     setPhotoSearchQuery("");
     setSelectedPhotoTags([]);
     setSelectedPhotoPhase("");
+  };
+
+  const filteredIssues = issueLocationFilter
+    ? issues.filter((issue) => issue.locationId === issueLocationFilter)
+    : issues;
+
+  // Prefers the resolved location (locationId -> "202 — Salle mécanique")
+  // over the free-text `location` field, which predates the Plans &
+  // Locations feature and is all older issues have.
+  const resolveLocationLabel = (issue: Issue): string => {
+    if (issue.locationId) {
+      const loc = locations.find((l) => l.id === issue.locationId);
+      if (loc) return loc.locationNumber + (loc.name ? ` — ${loc.name}` : "");
+    }
+    return issue.location;
   };
 
   const fetchData = useCallback(async () => {
@@ -291,6 +321,31 @@ export default function ProjectDetail() {
 
     fetchIssues();
   }, [id]);
+
+  const loadLocationsAndLevels = useCallback(async () => {
+    if (!id) return;
+    setLoadingLocations(true);
+    setLocationsLoadError(null);
+    try {
+      const [locs, lvls] = await Promise.all([getLocations(id), getLevels(id)]);
+      setLocations(locs);
+      setLevels(lvls);
+    } catch (e: any) {
+      console.error("❌ Error loading locations:", e);
+      setLocationsLoadError(e.message || "Impossible de charger les locaux.");
+    } finally {
+      setLoadingLocations(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    const needsLocations =
+      activeTab === "locations" || (activeTab === "gallery" && gallerySubTab === "issues");
+    if (needsLocations && !locationsFetchStarted) {
+      setLocationsFetchStarted(true);
+      loadLocationsAndLevels();
+    }
+  }, [activeTab, gallerySubTab, locationsFetchStarted, loadLocationsAndLevels]);
 
   if (projectLoadError) {
     return (
@@ -476,6 +531,17 @@ export default function ProjectDetail() {
           >
             Plans
             {activeTab === "plans" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E10600]" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("locations")}
+            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+              activeTab === "locations" ? "text-[#E10600]" : "text-gray-600 hover:text-[#1A1A1A]"
+            }`}
+          >
+            Locaux
+            {activeTab === "locations" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E10600]" />
             )}
           </button>
@@ -740,7 +806,37 @@ export default function ProjectDetail() {
             {/* Issues Sub Tab */}
             {gallerySubTab === "issues" && (
               <div className="space-y-4">
-                {issues.map((issue) => (
+                {locations.length > 0 && (
+                  <select
+                    value={issueLocationFilter}
+                    onChange={(e) => setIssueLocationFilter(e.target.value)}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-sm min-h-[48px]"
+                  >
+                    <option value="">Tous les locaux</option>
+                    {locations.map((loc) => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.locationNumber}
+                        {loc.name ? ` — ${loc.name}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {filteredIssues.length === 0 && issueLocationFilter ? (
+                  <div className="text-center py-8">
+                    <MapPin size={40} className="mx-auto text-gray-300 mb-3" />
+                    <p className="text-gray-500 text-sm mb-2">
+                      Aucune déficience pour ce local
+                    </p>
+                    <button
+                      onClick={() => setIssueLocationFilter("")}
+                      className="text-sm text-[#E10600] hover:text-[#C00500]"
+                    >
+                      Effacer le filtre
+                    </button>
+                  </div>
+                ) : (
+                  filteredIssues.map((issue) => (
                   <div
                     key={issue.id}
                     onClick={() => navigate(`/app/projects/${id}/issues/${issue.id}`)}
@@ -802,7 +898,7 @@ export default function ProjectDetail() {
                       </div>
                       <div className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs flex items-center gap-1">
                         <MapPin size={10} />
-                        {issue.location}
+                        {resolveLocationLabel(issue)}
                       </div>
                     </div>
                     {issue.tags && issue.tags.length > 0 && (
@@ -838,7 +934,8 @@ export default function ProjectDetail() {
                       </div>
                     )}
                   </div>
-                ))}
+                  ))
+                )}
 
                 {/* Add Issue Button */}
                 {projectRole.canCreateIssues && (
@@ -857,6 +954,18 @@ export default function ProjectDetail() {
 
         {/* Plans Tab */}
         {activeTab === "plans" && id && <PlanFilesManager projectId={id} />}
+
+        {/* Locations Tab */}
+        {activeTab === "locations" && id && (
+          <LocationsTab
+            projectId={id}
+            locations={locations}
+            levels={levels}
+            loading={loadingLocations}
+            error={locationsLoadError}
+            onRetry={loadLocationsAndLevels}
+          />
+        )}
       </div>
 
       {/* Create New Site Visit Button */}

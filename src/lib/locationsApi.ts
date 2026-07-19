@@ -90,6 +90,16 @@ export async function getLocations(projectId: string): Promise<Location[]> {
   return (data || []).map(rowToLocation);
 }
 
+export async function getLocation(id: string): Promise<Location | null> {
+  const { data, error } = await supabase.from("locations").select("*").eq("id", id).maybeSingle();
+
+  if (error) {
+    console.error("Error fetching location:", error);
+    throw error;
+  }
+  return data ? rowToLocation(data) : null;
+}
+
 export async function createLocation(input: {
   projectId: string;
   levelId: string;

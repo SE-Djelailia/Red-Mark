@@ -242,6 +242,27 @@ export async function getPhotos(visitId: string): Promise<Photo[]> {
   }
 }
 
+// Get photos attached to a specific location (via photos.location_id), for
+// the "everything recorded here" Location Detail view. Throws on failure
+// (unlike getPhotos below) so the caller can distinguish "failed to load"
+// from "genuinely no photos here" — same reasoning as issuesApi.ts's
+// getIssuesByLocation.
+export async function getPhotosByLocation(locationId: string): Promise<Photo[]> {
+  try {
+    const { data, error } = await supabase
+      .from("photos")
+      .select("*")
+      .eq("location_id", locationId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error("❌ Error fetching photos by location:", error);
+    throw error;
+  }
+}
+
 export async function getPhoto(photoId: string): Promise<Photo | null> {
   try {
     const { data, error } = await supabase
