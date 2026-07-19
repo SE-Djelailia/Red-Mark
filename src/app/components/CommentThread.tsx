@@ -3,6 +3,7 @@ import { Edit, Trash2, Reply, AtSign } from "lucide-react";
 import { formatRelativeDate } from "../../lib/dateUtils";
 import { addComment, updateComment, deleteComment, getProjectTeammates } from "../../lib/commentsApi";
 import { createNotification } from "../../lib/notificationsApi";
+import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import { useAuth } from "../../contexts/useAuth";
 import type { Comment, Teammate } from "../../lib/commentsApi";
 
@@ -252,15 +253,21 @@ export default function CommentThread({
     setIsSubmitting(true);
     setError(null);
 
-    const success = await updateComment(editingCommentId, editingCommentText);
-    if (success) {
+    try {
+      await updateComment(editingCommentId, editingCommentText);
       onCommentsUpdate(
         comments.map((c) => (c.id === editingCommentId ? { ...c, text: editingCommentText } : c)),
       );
       setEditingCommentId(null);
       setEditingCommentText("");
-    } else {
-      setError("Impossible de modifier le commentaire. Réessayez.");
+    } catch (e) {
+      setError(
+        getRlsErrorMessage(
+          e,
+          "Impossible de modifier le commentaire. Réessayez.",
+          "Seul l'auteur ou un administrateur peut modifier ce commentaire.",
+        ),
+      );
     }
     setIsSubmitting(false);
   };
@@ -269,11 +276,17 @@ export default function CommentThread({
     if (!confirm("Supprimer ce commentaire?")) return;
 
     setError(null);
-    const success = await deleteComment(commentId);
-    if (success) {
+    try {
+      await deleteComment(commentId);
       onCommentsUpdate(comments.filter((c) => c.id !== commentId));
-    } else {
-      setError("Impossible de supprimer le commentaire. Réessayez.");
+    } catch (e) {
+      setError(
+        getRlsErrorMessage(
+          e,
+          "Impossible de supprimer le commentaire. Réessayez.",
+          "Seul l'auteur ou un administrateur peut supprimer ce commentaire.",
+        ),
+      );
     }
   };
 

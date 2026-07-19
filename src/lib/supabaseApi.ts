@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { RlsWriteError } from "./rlsErrors";
 import type {
   Project,
   SiteVisit,
@@ -8,6 +9,10 @@ import type {
   Notification,
   ProjectMember,
 } from "./supabase";
+// Re-exported so callers that already import functions from this module
+// (e.g. `updateProject`) can pull the matching type from the same import
+// instead of a second import from "./supabase".
+export type { Project, SiteVisit, Photo, Issue, Comment, Notification, ProjectMember };
 
 // Resolves a Supabase head-count query (or `null` when the query is skipped),
 // returning a plain number instead of the raw PostgREST response.
@@ -119,9 +124,14 @@ export async function updateProject(
 
 export async function deleteProject(projectId: string): Promise<void> {
   try {
-    const { error } = await supabase.from("projects").delete().eq("id", projectId);
+    const { data, error } = await supabase.from("projects").delete().eq("id", projectId).select();
 
     if (error) throw error;
+    if (!data || data.length === 0) {
+      // No error, but nothing came back — RLS excluded the row from the
+      // delete (owner/admin-only) rather than it not existing.
+      throw new RlsWriteError("No rows deleted", "PGRST116");
+    }
   } catch (error) {
     console.error("❌ Error deleting project:", error);
     throw error;
@@ -200,9 +210,12 @@ export async function updateSiteVisit(
 
 export async function deleteSiteVisit(visitId: string): Promise<void> {
   try {
-    const { error } = await supabase.from("site_visits").delete().eq("id", visitId);
+    const { data, error } = await supabase.from("site_visits").delete().eq("id", visitId).select();
 
     if (error) throw error;
+    if (!data || data.length === 0) {
+      throw new RlsWriteError("No rows deleted", "PGRST116");
+    }
   } catch (error) {
     console.error("❌ Error deleting visit:", error);
     throw error;
@@ -335,9 +348,17 @@ export async function deletePhoto(photoId: string): Promise<void> {
     }
 
     // 2. Delete from database (even if not found in storage)
-    const { error } = await supabase.from("photos").delete().eq("id", photoId);
+    const { data, error } = await supabase.from("photos").delete().eq("id", photoId).select();
 
     if (error) throw error;
+    if (!data || data.length === 0) {
+      // Unambiguous when `photo` above was found (SELECT RLS already
+      // confirmed it exists and is visible, so a 0-row delete here can only
+      // mean the DELETE policy blocked it) — but if `photo` was already
+      // null, this is the same "blocked vs. already gone" ambiguity as
+      // elsewhere in this pass, since we never confirmed the row existed.
+      throw new RlsWriteError("No rows deleted", "PGRST116");
+    }
   } catch (error) {
     console.error("❌ Error deleting photo:", error);
     throw error;

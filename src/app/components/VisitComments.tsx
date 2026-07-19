@@ -9,6 +9,7 @@ import {
   type Comment,
   type Teammate,
 } from "../../lib/commentsApi";
+import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import { createNotification } from "../../lib/notificationsApi";
 import { useAuth } from "../../contexts/useAuth";
 
@@ -384,14 +385,20 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
     setIsSubmitting(true);
     setError(null);
 
-    const success = await updateComment(editingCommentId, editingCommentText);
-    if (success) {
+    try {
+      await updateComment(editingCommentId, editingCommentText);
       const editedText = editingCommentText;
       setComments(comments.map((c) => (c.id === editingCommentId ? { ...c, text: editedText } : c)));
       setEditingCommentId(null);
       setEditingCommentText("");
-    } else {
-      setError("Impossible de modifier le commentaire. Réessayez.");
+    } catch (e) {
+      setError(
+        getRlsErrorMessage(
+          e,
+          "Impossible de modifier le commentaire. Réessayez.",
+          "Seul l'auteur ou un administrateur peut modifier ce commentaire.",
+        ),
+      );
     }
     setIsSubmitting(false);
   };
@@ -405,11 +412,17 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
     if (!window.confirm("Supprimer ce commentaire ?")) return;
 
     setError(null);
-    const success = await deleteComment(commentId);
-    if (success) {
+    try {
+      await deleteComment(commentId);
       setComments(comments.filter((c) => c.id !== commentId));
-    } else {
-      setError("Impossible de supprimer le commentaire. Réessayez.");
+    } catch (e) {
+      setError(
+        getRlsErrorMessage(
+          e,
+          "Impossible de supprimer le commentaire. Réessayez.",
+          "Seul l'auteur ou un administrateur peut supprimer ce commentaire.",
+        ),
+      );
     }
   };
 

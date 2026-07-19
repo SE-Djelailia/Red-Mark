@@ -8,6 +8,7 @@ import {
   type Project,
 } from "../../lib/supabaseApi";
 import { supabase } from "../../lib/supabase";
+import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import { getTodayForInput, formatDateShort } from "../../lib/dateUtils";
 import { toast } from "sonner";
 import { useModalOpen } from "../../hooks/useModalOpen";
@@ -115,7 +116,13 @@ export default function ProjectList() {
         toast.success("Projet supprimé");
       } catch (error) {
         console.error("❌ Error deleting project:", error);
-        toast.error("Erreur lors de la suppression");
+        toast.error(
+          getRlsErrorMessage(
+            error,
+            "Erreur lors de la suppression",
+            "Seul le propriétaire ou un administrateur peut supprimer ce projet.",
+          ),
+        );
       }
     }
   }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Bell, X } from "lucide-react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import {
   getUserNotifications,
   getUnreadCount,
@@ -9,6 +10,7 @@ import {
   deleteNotification,
 } from "../../lib/notificationsApi";
 import type { Notification } from "../../lib/notificationsApi";
+import { getRlsErrorMessage } from "../../lib/rlsErrors";
 
 interface NotificationBellProps {
   userId: string;
@@ -70,8 +72,12 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
 
   const handleDeleteNotification = async (e: React.MouseEvent, notificationId: string) => {
     e.stopPropagation();
-    await deleteNotification(notificationId);
-    loadNotifications();
+    try {
+      await deleteNotification(notificationId);
+      loadNotifications();
+    } catch (err) {
+      toast.error(getRlsErrorMessage(err, "Impossible de supprimer cette notification."));
+    }
   };
 
   const getNotificationIcon = (type: Notification["type"]) => {

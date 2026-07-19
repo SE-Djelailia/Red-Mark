@@ -30,6 +30,7 @@ import {
 import { getIssuesByVisit, createIssue, updateIssue, getIssueErrorMessage } from "../../lib/issuesApi";
 import { getCommentsForIssue, type Comment } from "../../lib/commentsApi";
 import PlanFilesManager from "./PlanFilesManager";
+import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import type { SiteVisit } from "../../lib/supabase";
 import { supabase } from "../../lib/supabase";
 import { formatDateLongWithWeekday } from "../../lib/dateUtils";
@@ -420,7 +421,13 @@ export default function VisitDetail() {
       }
     } catch (error) {
       console.error("Error deleting photos:", error);
-      alert("Erreur lors de la suppression des photos");
+      alert(
+        getRlsErrorMessage(
+          error,
+          "Erreur lors de la suppression des photos",
+          "Seul le créateur ou un administrateur peut supprimer cette photo.",
+        ),
+      );
     }
   };
 

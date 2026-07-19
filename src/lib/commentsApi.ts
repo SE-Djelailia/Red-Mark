@@ -2,6 +2,7 @@
 // Backed by Supabase (tables `comments` and `comment_mentions`).
 
 import { supabase } from "./supabase";
+import { RlsWriteError } from "./rlsErrors";
 
 export interface Comment {
   id: string;
@@ -199,24 +200,34 @@ export async function addPhotoComment(
   return createComment({ photoId }, text, author, authorId, parentCommentId, mentions);
 }
 
-// Update a comment's text
-export async function updateComment(commentId: string, text: string): Promise<boolean> {
-  const { error } = await supabase.from("comments").update({ content: text }).eq("id", commentId);
+// Update a comment's text. Throws (rather than returning false) on failure,
+// including when RLS silently blocks the write — see rlsErrors.ts.
+export async function updateComment(commentId: string, text: string): Promise<void> {
+  const { data, error } = await supabase
+    .from("comments")
+    .update({ content: text })
+    .eq("id", commentId)
+    .select();
   if (error) {
     console.error("Error updating comment:", error);
-    return false;
+    throw new RlsWriteError(error.message, error.code);
   }
-  return true;
+  if (!data || data.length === 0) {
+    throw new RlsWriteError("No rows updated", "PGRST116");
+  }
 }
 
-// Delete a comment (cascades to its mentions and replies)
-export async function deleteComment(commentId: string): Promise<boolean> {
-  const { error } = await supabase.from("comments").delete().eq("id", commentId);
+// Delete a comment (cascades to its mentions and replies). Throws on
+// failure, including an RLS-blocked delete — see rlsErrors.ts.
+export async function deleteComment(commentId: string): Promise<void> {
+  const { data, error } = await supabase.from("comments").delete().eq("id", commentId).select();
   if (error) {
     console.error("Error deleting comment:", error);
-    return false;
+    throw new RlsWriteError(error.message, error.code);
   }
-  return true;
+  if (!data || data.length === 0) {
+    throw new RlsWriteError("No rows deleted", "PGRST116");
+  }
 }
 
 // Real project roster for @-mention suggestions and author lookups.

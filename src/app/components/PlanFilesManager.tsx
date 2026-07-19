@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole } from "../../hooks/useProjectRole";
 import { getPdfPageCount } from "../../lib/pdfUtils";
+import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import {
   getPlanFiles,
   createPlanFile,
@@ -137,7 +138,7 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
       toast.success("Plan supprimé");
       setDeleteTarget(null);
     } catch (e: any) {
-      toast.error("Suppression échouée : " + e.message);
+      toast.error(getRlsErrorMessage(e, "Suppression échouée : " + e.message));
     } finally {
       setDeleting(false);
     }

@@ -6,6 +6,7 @@
 // entirely through the legacy Edge Function + kv_store, bypassing RLS.
 
 import { supabase } from "./supabase";
+import { RlsWriteError } from "./rlsErrors";
 
 export const PLAN_FILES_BUCKET = "project-plans";
 
@@ -152,10 +153,21 @@ export async function deletePlanFile(id: string): Promise<void> {
     throw fetchError;
   }
 
-  const { error: deleteRowError } = await supabase.from("plan_files").delete().eq("id", id);
+  const { data: deletedRows, error: deleteRowError } = await supabase
+    .from("plan_files")
+    .delete()
+    .eq("id", id)
+    .select();
   if (deleteRowError) {
     console.error("Error deleting plan file row:", deleteRowError);
     throw deleteRowError;
+  }
+  if (!deletedRows || deletedRows.length === 0) {
+    // Unlike most of the other deletes in this file, this one IS
+    // unambiguous: the lookup just above already confirmed the row exists
+    // and is visible under SELECT RLS, so zero rows here can only mean the
+    // DELETE policy (owner/editor) blocked it — not "already gone".
+    throw new RlsWriteError("No rows deleted", "PGRST116");
   }
 
   if (existing?.storage_path) {
@@ -251,10 +263,17 @@ export async function updatePlan(
 }
 
 export async function deletePlan(id: string): Promise<void> {
-  const { error } = await supabase.from("plans").delete().eq("id", id);
+  const { data, error } = await supabase.from("plans").delete().eq("id", id).select();
   if (error) {
     console.error("Error deleting plan:", error);
     throw error;
+  }
+  if (!data || data.length === 0) {
+    // No error, but nothing came back — RLS excluded the row from the
+    // delete (owner/admin-only per plans' policy) rather than it not
+    // existing; a plain 404-style "not found" would have surfaced as a
+    // PostgREST error above instead of a silent empty success.
+    throw new RlsWriteError("No rows deleted", "PGRST116");
   }
 }
 

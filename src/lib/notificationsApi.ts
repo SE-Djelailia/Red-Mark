@@ -5,6 +5,7 @@
 // so we don't need a schema migration.
 
 import { supabase } from "./supabase";
+import { RlsWriteError } from "./rlsErrors";
 
 export interface Notification {
   id: string;
@@ -222,13 +223,21 @@ export async function markAllAsRead(userId: string): Promise<boolean> {
   return true;
 }
 
-// Delete a notification
-export async function deleteNotification(notificationId: string): Promise<boolean> {
-  const { error } = await supabase.from("notifications").delete().eq("id", notificationId);
+// Delete a notification. Throws on failure, including an RLS-blocked
+// delete (e.g. trying to delete someone else's notification) — see
+// rlsErrors.ts.
+export async function deleteNotification(notificationId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from("notifications")
+    .delete()
+    .eq("id", notificationId)
+    .select();
 
   if (error) {
     console.error("Error deleting notification:", error);
-    return false;
+    throw new RlsWriteError(error.message, error.code);
   }
-  return true;
+  if (!data || data.length === 0) {
+    throw new RlsWriteError("No rows deleted", "PGRST116");
+  }
 }
