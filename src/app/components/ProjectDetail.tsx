@@ -125,24 +125,6 @@ export default function ProjectDetail() {
   // Empty comments - will be populated from backend
   const comments: Comment[] = [];
 
-  // Mock site visit history with photos
-  // const comments: Comment[] = [
-  //   {
-  //     id: "c1",
-  //     author: "Marie-Claude Bouchard",
-  //     date: "2026-02-19",
-  //     text: "Excellent suivi! Les photos de l'armature montrent bien la qualité du travail. As-tu vérifié l'espacement des barres selon le plan?",
-  //     visitId: "1",
-  //   },
-  //   {
-  //     id: "c2",
-  //     author: "Pierre Lafontaine",
-  //     date: "2026-02-18",
-  //     text: "Attention au problème ÉMÉ mentionné. Il faudrait coordonner avec l'ingénieur en mécanique avant de couler le béton.",
-  //     visitId: "3",
-  //   },
-  // ];
-
   // Flatten all photos from all visits
   const allPhotos = siteVisits.flatMap((visit) =>
     visit.photos.map((photo) => ({

@@ -3,11 +3,11 @@ import { Mic, Square, Trash2, Play, Pause, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   deleteVoiceNote,
-  getFloorPlanSignedUrl,
+  getSignedUrl,
   listVoiceNotes,
   uploadVoiceNote,
-} from "../../lib/floorPlansApi";
-import type { VoiceNote } from "../../lib/floorPlansApi";
+} from "../../lib/voiceNotesApi";
+import type { VoiceNote } from "../../lib/voiceNotesApi";
 import ConfirmDialog from "./ConfirmDialog";
 
 interface Props {
@@ -193,7 +193,7 @@ export default function VoiceNotesSection({ visitId }: Props) {
 
   const ensureUrl = async (note: VoiceNote) => {
     if (urls[note.id]) return urls[note.id];
-    const u = await getFloorPlanSignedUrl(note.bucket, note.storage_path);
+    const u = await getSignedUrl(note.bucket, note.storage_path);
     setUrls((m) => ({ ...m, [note.id]: u }));
     return u;
   };

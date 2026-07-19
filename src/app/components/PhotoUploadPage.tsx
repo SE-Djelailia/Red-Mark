@@ -162,12 +162,6 @@ export default function PhotoUploadPage() {
   };
 
   const handleSubmit = async () => {
-    console.log("🚀 handleSubmit called", {
-      visitId,
-      projectId,
-      photoCount: photosToUpload.length,
-    });
-
     if (!visitId || !projectId) {
       console.error("❌ Missing IDs:", { visitId, projectId });
       toast.error("Erreur : ID de projet ou visite manquant");
@@ -206,12 +200,6 @@ export default function PhotoUploadPage() {
               }
             : undefined;
 
-        console.log(
-          `📤 Uploading photo ${i + 1}/${photosToUpload.length}:`,
-          file.name,
-          locationObj,
-        );
-
         // Compress image before upload to reduce storage and bandwidth
         const compressedFile = await compressImage(file);
 
@@ -240,8 +228,6 @@ export default function PhotoUploadPage() {
           queuedCount++;
         }
       }
-
-      console.log("✅ Batch finished", { successCount, queuedCount });
 
       if (queuedCount > 0) {
         toast.info(

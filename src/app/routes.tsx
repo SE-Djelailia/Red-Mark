@@ -11,14 +11,12 @@ import SearchView from "./components/SearchView";
 import Profile from "./components/Profile";
 import ReportGenerator from "./components/ReportGenerator";
 import IssueManagement from "./components/IssueManagement";
-import PhotoGallery from "./components/PhotoGallery";
 import Dashboard from "./components/Dashboard";
 import IssueDetail from "./components/IssueDetail";
 import VisitDetail from "./components/VisitDetail";
 import IconGenerator from "./components/IconGenerator";
 import SecurityPrivacy from "./components/SecurityPrivacy";
 import PhotoUploadPage from "./components/PhotoUploadPage";
-import FloorPlanViewer from "./components/FloorPlanViewer";
 import PlanFileViewer from "./components/PlanFileViewer";
 import MigrationPrompt from "./components/MigrationPrompt"; // ✅ Migration prompt
 
@@ -61,7 +59,6 @@ export const router = createBrowserRouter([
           { path: "projects/:projectId/visits/:visitId/add-photos", Component: PhotoUploadPage },
           { path: "projects/:projectId/visits/:visitId/issues/:issueId", Component: IssueDetail },
           { path: "projects/:projectId/issues/:issueId", Component: IssueDetail },
-          { path: "projects/:projectId/floor-plans/:floorPlanId", Component: FloorPlanViewer },
           { path: "projects/:projectId/plan-files/:planFileId", Component: PlanFileViewer },
           { path: "projects/:id/visit/new", Component: SiteVisitCreation },
           { path: "projects/:id/report", Component: ReportGenerator },
@@ -70,7 +67,6 @@ export const router = createBrowserRouter([
           { path: "issues", Component: IssueManagement }, // Legacy route
           { path: "search", Component: SearchView },
           { path: "profile", Component: Profile },
-          { path: "photos", Component: PhotoGallery },
           { path: "branding", element: <Navigate to="/app/profile" replace /> },
           { path: "*", element: <Navigate to="/app/projects" replace /> },
         ],
