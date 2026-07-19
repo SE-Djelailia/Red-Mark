@@ -13,10 +13,10 @@ import {
   Key,
   ArrowLeft,
 } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useSmartBack } from "../../hooks/useSmartBack";
 
 export default function SecurityPrivacy() {
-  const navigate = useNavigate();
+  const goBack = useSmartBack("/");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -24,7 +24,7 @@ export default function SecurityPrivacy() {
       <div className="bg-[#1A1A1A] text-white py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <button
-            onClick={() => navigate(-1)}
+            onClick={goBack}
             className="flex items-center gap-2 text-gray-300 hover:text-white mb-4 transition-colors"
           >
             <ArrowLeft className="size-5" />

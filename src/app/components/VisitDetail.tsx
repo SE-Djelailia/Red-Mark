@@ -31,6 +31,7 @@ import { getIssuesByVisit, createIssue, updateIssue, getIssueErrorMessage } from
 import { getCommentsForIssue, type Comment } from "../../lib/commentsApi";
 import PlanFilesManager from "./PlanFilesManager";
 import { getRlsErrorMessage } from "../../lib/rlsErrors";
+import { useSmartBack } from "../../hooks/useSmartBack";
 import ConfirmDialog from "./ConfirmDialog";
 import type { SiteVisit } from "../../lib/supabase";
 import { supabase } from "../../lib/supabase";
@@ -87,6 +88,7 @@ interface VisitDisplay {
 export default function VisitDetail() {
   const navigate = useNavigate();
   const { projectId, visitId } = useParams();
+  const goBack = useSmartBack(`/app/projects/${projectId}`);
   const { user } = useAuth();
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [isEditingNotes, setIsEditingNotes] = useState(false);
@@ -498,11 +500,11 @@ export default function VisitDetail() {
       {/* Header */}
       <div className="bg-[#1A1A1A] text-white px-6 py-6 md:py-8">
         <button
-          onClick={() => navigate(`/app/projects/${projectId}`)}
+          onClick={goBack}
           className="flex items-center gap-2 text-gray-400 hover:text-white mb-4 min-h-[44px]"
         >
           <ArrowLeft size={20} />
-          <span>Retour au projet</span>
+          <span>Retour</span>
         </button>
 
         {isLoading ? (

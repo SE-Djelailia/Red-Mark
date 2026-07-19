@@ -6,6 +6,7 @@ import { createSiteVisit } from "../../lib/supabaseApi";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
 import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole } from "../../hooks/useProjectRole";
+import { useSmartBack } from "../../hooks/useSmartBack";
 
 const DEFAULT_PHASES = ["Fondation", "Charpente", "ÉMÉ", "Finitions", "Extérieur"];
 const CUSTOM_PHASES_KEY = "redmark_custom_phases";
@@ -15,6 +16,7 @@ export default function SiteVisitCreation() {
   const { id } = useParams();
   const { user } = useAuth();
   const projectRole = useProjectRole(id);
+  const goBack = useSmartBack(`/app/projects/${id}`);
 
   const [visitDate, setVisitDate] = useState(new Date().toISOString().split("T")[0]);
   const [notes, setNotes] = useState("");
@@ -148,11 +150,11 @@ export default function SiteVisitCreation() {
       {/* Header */}
       <div className="bg-[#1A1A1A] text-white px-6 py-6 md:py-8 sticky top-0 z-10">
         <button
-          onClick={() => navigate(`/app/projects/${id}`)}
+          onClick={goBack}
           className="flex items-center gap-2 text-gray-400 hover:text-white mb-4"
         >
           <ArrowLeft size={20} />
-          <span>Retour au projet</span>
+          <span>Retour</span>
         </button>
         <h1 className="text-2xl md:text-3xl">Nouvelle visite de chantier</h1>
       </div>

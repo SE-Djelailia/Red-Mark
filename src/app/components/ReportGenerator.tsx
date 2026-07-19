@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useParams } from "react-router";
 import {
   FileText,
   Calendar,
@@ -24,6 +24,7 @@ import {
   type DistributionEntry,
   type AttendeeEntry,
 } from "../../lib/reportGenerator";
+import { useSmartBack } from "../../hooks/useSmartBack";
 
 const EMPTY_MANUAL_FIELDS: ReportManualFields = {
   noteNumber: "",
@@ -43,8 +44,8 @@ const EMPTY_MANUAL_FIELDS: ReportManualFields = {
 };
 
 export default function ReportGenerator() {
-  const navigate = useNavigate();
   const { id } = useParams();
+  const goBack = useSmartBack(`/app/projects/${id}`);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
@@ -139,11 +140,11 @@ export default function ReportGenerator() {
       {/* Header */}
       <div className="bg-[#1A1A1A] text-white px-6 py-6 md:py-8">
         <button
-          onClick={() => void navigate(`/app/projects/${id}`)}
+          onClick={goBack}
           className="flex items-center gap-2 text-gray-400 hover:text-white mb-4"
         >
           <ArrowLeft size={20} />
-          <span>Retour au projet</span>
+          <span>Retour</span>
         </button>
         <h1 className="text-2xl md:text-3xl">Générer un rapport</h1>
         <p className="text-gray-400 mt-1 text-sm">{project?.name || "Chargement..."}</p>

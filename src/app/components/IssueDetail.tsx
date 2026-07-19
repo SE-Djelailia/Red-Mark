@@ -26,11 +26,15 @@ import { parseLocalDate, formatDateLongWithWeekday, formatDateForInput } from ".
 import CommentThread from "./CommentThread";
 import type { Comment } from "../../lib/commentsApi";
 import { useProjectRole, canEditIssue } from "../../hooks/useProjectRole";
+import { useSmartBack } from "../../hooks/useSmartBack";
 import ConfirmDialog from "./ConfirmDialog";
 
 export default function IssueDetail() {
   const navigate = useNavigate();
   const { projectId, visitId, issueId } = useParams();
+  const goBack = useSmartBack(
+    visitId ? `/app/projects/${projectId}/visits/${visitId}` : `/app/projects/${projectId}`,
+  );
   const [searchParams] = useSearchParams();
   const highlightCommentId = searchParams.get("commentId");
   const projectRole = useProjectRole(projectId);
@@ -272,18 +276,11 @@ export default function IssueDetail() {
       {/* Header */}
       <div className="bg-[#1A1A1A] text-white px-6 py-6 md:py-8">
         <button
-          onClick={() => {
-            // If we have a visitId, navigate back to the visit detail, otherwise to the project
-            if (visitId) {
-              navigate(`/app/projects/${projectId}/visits/${visitId}`);
-            } else {
-              navigate(`/app/projects/${projectId}`);
-            }
-          }}
+          onClick={goBack}
           className="flex items-center gap-2 text-gray-400 hover:text-white mb-4 min-h-[44px]"
         >
           <ArrowLeft size={20} />
-          <span>{visitId ? "Retour à la visite" : "Retour au projet"}</span>
+          <span>Retour</span>
         </button>
 
         <div className="flex items-start justify-between mb-4">

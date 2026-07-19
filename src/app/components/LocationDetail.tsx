@@ -5,6 +5,7 @@ import { getLocation, getLevels, type Location, type Level } from "../../lib/loc
 import { getIssuesByLocation, type Issue } from "../../lib/issuesApi";
 import { getPhotosByLocation, getPhotoSignedUrl } from "../../lib/supabaseApi";
 import { useModalOpen } from "../../hooks/useModalOpen";
+import { useSmartBack } from "../../hooks/useSmartBack";
 
 const STATUS_LABEL: Record<Issue["status"], string> = {
   open: "Ouverte",
@@ -30,6 +31,7 @@ interface DisplayPhoto {
 export default function LocationDetail() {
   const { projectId, locationId } = useParams<{ projectId: string; locationId: string }>();
   const navigate = useNavigate();
+  const goBack = useSmartBack(`/app/projects/${projectId}`);
 
   const [location, setLocation] = useState<Location | null>(null);
   const [levels, setLevels] = useState<Level[]>([]);
@@ -125,7 +127,7 @@ export default function LocationDetail() {
           <p className="text-sm text-gray-500 mb-6">{locationLoadError}</p>
           <div className="flex gap-3 justify-center">
             <button
-              onClick={() => navigate(-1)}
+              onClick={goBack}
               className="px-4 h-11 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 text-sm font-medium min-h-[44px]"
             >
               Retour
@@ -157,7 +159,7 @@ export default function LocationDetail() {
       {/* Header */}
       <div className="bg-[#1A1A1A] text-white px-6 py-6 md:py-8">
         <button
-          onClick={() => navigate(-1)}
+          onClick={goBack}
           className="flex items-center gap-2 text-gray-400 hover:text-white mb-4"
         >
           <ArrowLeft size={20} />

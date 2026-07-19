@@ -25,6 +25,7 @@ import { getSiteVisits, getProject, getPhotos, getPhotoSignedUrl } from "../../l
 import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole } from "../../hooks/useProjectRole";
 import { useModalOpen } from "../../hooks/useModalOpen";
+import { useSmartBack } from "../../hooks/useSmartBack";
 import { getIssuesByProject } from "../../lib/issuesApi";
 import { parseLocalDate } from "../../lib/dateUtils";
 import PhotoMarkup from "./PhotoMarkup";
@@ -74,6 +75,7 @@ interface Comment {
 export default function ProjectDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const goBack = useSmartBack("/app/projects");
   const { user, loading: authLoading } = useAuth();
   const projectRole = useProjectRole(id);
   const [activeTab, setActiveTab] = useState<"visits" | "gallery" | "plans" | "locations">(
@@ -358,7 +360,7 @@ export default function ProjectDetail() {
           <p className="text-sm text-gray-500 mb-6">{projectLoadError}</p>
           <div className="flex gap-3 justify-center">
             <button
-              onClick={() => navigate("/app/projects")}
+              onClick={goBack}
               className="px-4 h-11 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 text-sm font-medium min-h-[44px]"
             >
               Retour
@@ -389,7 +391,7 @@ export default function ProjectDetail() {
       <div className="bg-[#1A1A1A] text-white px-6 py-6 md:py-8">
         <div className="flex items-start justify-between mb-4">
           <button
-            onClick={() => navigate("/app/projects")}
+            onClick={goBack}
             className="flex items-center gap-2 text-gray-400 hover:text-white"
           >
             <ArrowLeft size={20} />

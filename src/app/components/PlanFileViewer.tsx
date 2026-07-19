@@ -8,10 +8,11 @@ import {
   Maximize2,
   MapPin,
 } from "lucide-react";
-import { useNavigate, useParams, useSearchParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { useProjectRole } from "../../hooks/useProjectRole";
+import { useSmartBack } from "../../hooks/useSmartBack";
 import {
   getPlanFile,
   getPlanFileSignedUrl,
@@ -54,8 +55,8 @@ const MAX_SCALE = 8;
 const SETTLE_DELAY_MS = 220;
 
 export default function PlanFileViewer() {
-  const { planFileId } = useParams<{ projectId: string; planFileId: string }>();
-  const navigate = useNavigate();
+  const { projectId, planFileId } = useParams<{ projectId: string; planFileId: string }>();
+  const goBack = useSmartBack(`/app/projects/${projectId}`);
   // Present only when the viewer was opened from within an active visit
   // (VisitDetail's Plans tab → PlanFilesManager appends this) — absent when
   // opened from the project-level Plans tab. Threaded down to
@@ -542,7 +543,7 @@ export default function PlanFileViewer() {
     <div className="fixed inset-0 bg-[#1A1A1A] z-40 flex flex-col">
       <div className="bg-[#1A1A1A] text-white px-4 py-3 flex items-center gap-3 border-b border-white/10">
         <button
-          onClick={() => navigate(-1)}
+          onClick={goBack}
           className="w-11 h-11 flex items-center justify-center hover:bg-white/10 rounded-lg"
           aria-label="Retour"
         >

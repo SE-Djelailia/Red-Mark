@@ -8,6 +8,7 @@ import { compressImage } from "../../lib/imageCompression";
 import { addToQueue } from "../../lib/uploadQueue";
 import { useProjectRole } from "../../hooks/useProjectRole";
 import { useModalOpen } from "../../hooks/useModalOpen";
+import { useSmartBack } from "../../hooks/useSmartBack";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
 
 // Network failures surface as TypeError (fetch's own error type) rather than the
@@ -19,6 +20,7 @@ function isNetworkError(error: unknown): boolean {
 export default function PhotoUploadPage() {
   const navigate = useNavigate();
   const { projectId, visitId } = useParams();
+  const goBack = useSmartBack(`/app/projects/${projectId}/visits/${visitId}`);
   const { user } = useAuth();
   const projectRole = useProjectRole(projectId);
 
@@ -274,7 +276,7 @@ export default function PhotoUploadPage() {
       <div className="bg-[#1A1A1A] text-white px-4 sm:px-6 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
           <button
-            onClick={() => navigate(-1)}
+            onClick={goBack}
             disabled={isUploading}
             className="flex items-center gap-2 text-gray-400 hover:text-white disabled:opacity-50"
           >
@@ -597,7 +599,7 @@ export default function PhotoUploadPage() {
             <div className="bg-white rounded-xl p-4 sm:p-5">
               <div className="flex gap-3">
                 <button
-                  onClick={() => navigate(-1)}
+                  onClick={goBack}
                   disabled={isUploading}
                   className="flex-1 py-3 bg-gray-200 text-[#1A1A1A] rounded-lg hover:bg-gray-300 active:bg-gray-400 transition-colors font-semibold text-base min-h-[48px] disabled:opacity-50"
                 >
