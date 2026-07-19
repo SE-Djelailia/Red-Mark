@@ -26,6 +26,7 @@ import { parseLocalDate, formatDateLongWithWeekday, formatDateForInput } from ".
 import CommentThread from "./CommentThread";
 import type { Comment } from "../../lib/commentsApi";
 import { useProjectRole, canEditIssue } from "../../hooks/useProjectRole";
+import ConfirmDialog from "./ConfirmDialog";
 
 export default function IssueDetail() {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ export default function IssueDetail() {
   const [isLoadingIssue, setIsLoadingIssue] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isEditingLocation, setIsEditingLocation] = useState(false);
   const [isEditingDate, setIsEditingDate] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
@@ -248,7 +250,8 @@ export default function IssueDetail() {
   };
 
   const handleDeleteIssue = async () => {
-    if (!issueId || !confirm("Supprimer cette déficience?")) return;
+    setShowDeleteConfirm(false);
+    if (!issueId) return;
 
     setSaveError(null);
     try {
@@ -316,7 +319,7 @@ export default function IssueDetail() {
                 <Edit size={20} />
               </button>
               <button
-                onClick={handleDeleteIssue}
+                onClick={() => setShowDeleteConfirm(true)}
                 className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors"
                 title="Supprimer"
               >
@@ -676,6 +679,15 @@ export default function IssueDetail() {
         </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="Supprimer cette déficience ?"
+        confirmLabel="Supprimer"
+        destructive
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteIssue}
+      />
     </div>
   );
 }

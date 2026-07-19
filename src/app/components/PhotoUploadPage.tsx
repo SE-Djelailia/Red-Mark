@@ -439,7 +439,7 @@ export default function PhotoUploadPage() {
                           e.stopPropagation();
                           handleRemovePhoto(index);
                         }}
-                        className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 active:bg-red-700 transition-colors"
+                        className="absolute top-2 right-2 w-11 h-11 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 active:bg-red-700 transition-colors"
                         aria-label="Supprimer la photo"
                       >
                         <X size={16} />

@@ -662,7 +662,7 @@ export default function PinIssueDialog({
               <h3 className="text-base font-medium text-[#1A1A1A]">Photos du projet</h3>
               <button
                 onClick={() => setShowGallery(false)}
-                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full"
+                className="w-11 h-11 flex items-center justify-center hover:bg-gray-100 rounded-full"
               >
                 <X size={18} />
               </button>

@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 import { toast } from "sonner";
 import { useProjectRole } from "../../hooks/useProjectRole";
 import { useModalOpen } from "../../hooks/useModalOpen";
+import ConfirmDialog from "./ConfirmDialog";
 
 type ProjectRole = "owner" | "editor" | "commenter";
 
@@ -31,6 +32,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"editor" | "commenter">("editor");
   const [inviting, setInviting] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string } | null>(null);
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
@@ -138,7 +140,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
   }
 
   async function handleRemoveMember(memberId: string, memberName: string) {
-    if (!window.confirm(`Retirer ${memberName} du projet ?`)) return;
+    setRemoveTarget(null);
     try {
       const { error } = await supabase.from("project_members").delete().eq("id", memberId);
       if (error) throw error;
@@ -341,8 +343,8 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                           <option value="commenter">Commentateur</option>
                         </select>
                         <button
-                          onClick={() => handleRemoveMember(member.id, member.name)}
-                          className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                          onClick={() => setRemoveTarget({ id: member.id, name: member.name })}
+                          className="w-11 h-11 flex items-center justify-center bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -376,6 +378,15 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!removeTarget}
+        title={removeTarget ? `Retirer ${removeTarget.name} du projet ?` : ""}
+        confirmLabel="Retirer"
+        destructive
+        onCancel={() => setRemoveTarget(null)}
+        onConfirm={() => removeTarget && handleRemoveMember(removeTarget.id, removeTarget.name)}
+      />
     </div>
   );
 }

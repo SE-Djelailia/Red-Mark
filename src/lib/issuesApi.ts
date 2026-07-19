@@ -156,7 +156,10 @@ export async function getIssuesByProject(projectId: string): Promise<Issue[]> {
 }
 
 // Get issues attached to a specific location (via issues.location_id), for the
-// flat "existing issues here" list shown on a pin's location panel.
+// flat "existing issues here" list shown on a pin's location panel. Throws
+// on failure (unlike most other get* functions in this file) so the panel
+// can tell "failed to load" apart from "genuinely no issues here" — a
+// silent empty array would render as an indistinguishable "0 issues".
 export async function getIssuesByLocation(locationId: string): Promise<Issue[]> {
   if (!locationId) return [];
   const { data, error } = await supabase
@@ -166,7 +169,7 @@ export async function getIssuesByLocation(locationId: string): Promise<Issue[]> 
     .order("created_at", { ascending: false });
   if (error) {
     console.error("Error fetching issues by location:", error);
-    return [];
+    throw error;
   }
   return (data || []).map(rowToIssue);
 }

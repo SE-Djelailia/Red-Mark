@@ -15,6 +15,7 @@ import {
   Palette,
 } from "lucide-react";
 import { useModalOpen } from "../../hooks/useModalOpen";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface PhotoAnnotatorProps {
   photo: {
@@ -70,6 +71,8 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
   const [cursorPos, setCursorPos] = useState<DrawingPoint | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [showDeleteTextConfirm, setShowDeleteTextConfirm] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // Load image as blob to avoid CORS issues
   useEffect(() => {
@@ -538,20 +541,24 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
 
   const handleDeleteSelectedText = () => {
     if (!selectedTextId) return;
+    setShowDeleteTextConfirm(true);
+  };
 
-    if (window.confirm("Supprimer ce texte ?")) {
-      const newAnnotations = annotations.filter((ann) => ann.id !== selectedTextId);
-      setAnnotations(newAnnotations);
+  const confirmDeleteSelectedText = () => {
+    setShowDeleteTextConfirm(false);
+    if (!selectedTextId) return;
 
-      // Update history
-      const newHistory = history.slice(0, historyStep + 1);
-      newHistory.push(newAnnotations);
-      setHistory(newHistory);
-      setHistoryStep(newHistory.length - 1);
+    const newAnnotations = annotations.filter((ann) => ann.id !== selectedTextId);
+    setAnnotations(newAnnotations);
 
-      setSelectedTextId(null);
-      redrawCanvas();
-    }
+    // Update history
+    const newHistory = history.slice(0, historyStep + 1);
+    newHistory.push(newAnnotations);
+    setHistory(newHistory);
+    setHistoryStep(newHistory.length - 1);
+
+    setSelectedTextId(null);
+    redrawCanvas();
   };
 
   const handleUndo = () => {
@@ -569,15 +576,18 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
   };
 
   const handleClear = () => {
-    if (window.confirm("Effacer toutes les annotations ?")) {
-      const newAnnotations: Annotation[] = [];
-      setAnnotations(newAnnotations);
+    setShowClearConfirm(true);
+  };
 
-      const newHistory = history.slice(0, historyStep + 1);
-      newHistory.push(newAnnotations);
-      setHistory(newHistory);
-      setHistoryStep(newHistory.length - 1);
-    }
+  const confirmClear = () => {
+    setShowClearConfirm(false);
+    const newAnnotations: Annotation[] = [];
+    setAnnotations(newAnnotations);
+
+    const newHistory = history.slice(0, historyStep + 1);
+    newHistory.push(newAnnotations);
+    setHistory(newHistory);
+    setHistoryStep(newHistory.length - 1);
   };
 
   const handleSave = async () => {
@@ -940,6 +950,23 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={showDeleteTextConfirm}
+        title="Supprimer ce texte ?"
+        confirmLabel="Supprimer"
+        destructive
+        onCancel={() => setShowDeleteTextConfirm(false)}
+        onConfirm={confirmDeleteSelectedText}
+      />
+      <ConfirmDialog
+        open={showClearConfirm}
+        title="Effacer toutes les annotations ?"
+        confirmLabel="Effacer"
+        destructive
+        onCancel={() => setShowClearConfirm(false)}
+        onConfirm={confirmClear}
+      />
     </div>
   );
 }

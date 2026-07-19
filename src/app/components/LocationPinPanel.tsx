@@ -56,12 +56,25 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
 
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loadingIssues, setLoadingIssues] = useState(false);
+  const [issuesLoadError, setIssuesLoadError] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Issue["priority"]>("medium");
   const [photos, setPhotos] = useState<File[]>([]);
   const [creating, setCreating] = useState(false);
+
+  const loadIssues = (locationId: string) => {
+    setLoadingIssues(true);
+    setIssuesLoadError(false);
+    getIssuesByLocation(locationId)
+      .then(setIssues)
+      .catch((e) => {
+        console.error("Error loading issues for location:", e);
+        setIssuesLoadError(true);
+      })
+      .finally(() => setLoadingIssues(false));
+  };
 
   useEffect(() => {
     if (!open || !location) return;
@@ -70,10 +83,8 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
     setDescription("");
     setPriority("medium");
     setPhotos([]);
-    setLoadingIssues(true);
-    getIssuesByLocation(location.id)
-      .then(setIssues)
-      .finally(() => setLoadingIssues(false));
+    loadIssues(location.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, location]);
 
   if (!open || !location) return null;
@@ -190,10 +201,20 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           <div>
             <h4 className="text-sm font-medium text-[#1A1A1A] mb-2">
-              Déficiences ({loadingIssues ? "…" : issues.length})
+              Déficiences ({loadingIssues ? "…" : issuesLoadError ? "?" : issues.length})
             </h4>
             {loadingIssues ? (
               <div className="text-sm text-gray-500">Chargement…</div>
+            ) : issuesLoadError ? (
+              <div className="text-sm text-red-600 flex items-center gap-2">
+                Impossible de charger les déficiences.
+                <button
+                  onClick={() => location && loadIssues(location.id)}
+                  className="underline font-medium"
+                >
+                  Réessayer
+                </button>
+              </div>
             ) : issues.length === 0 ? (
               <div className="text-sm text-gray-500">Aucune déficience à ce local pour le moment.</div>
             ) : (

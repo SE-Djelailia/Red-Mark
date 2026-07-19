@@ -12,6 +12,7 @@ import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import { getTodayForInput, formatDateShort } from "../../lib/dateUtils";
 import { toast } from "sonner";
 import { useModalOpen } from "../../hooks/useModalOpen";
+import ConfirmDialog from "./ConfirmDialog";
 
 export default function ProjectList() {
   const { user, loading } = useAuth();
@@ -20,6 +21,7 @@ export default function ProjectList() {
   useModalOpen(showCreateModal);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<Project["status"] | "all">("all");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     address: "",
@@ -106,24 +108,23 @@ export default function ProjectList() {
     }
   }
 
-  async function handleDeleteProject(projectId: string, projectName: string) {
+  async function handleDeleteProject(projectId: string) {
     if (!user) return;
+    setDeleteTarget(null);
 
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le projet "${projectName}"?`)) {
-      try {
-        await deleteProjectFromSupabase(projectId);
-        await loadProjects();
-        toast.success("Projet supprimé");
-      } catch (error) {
-        console.error("❌ Error deleting project:", error);
-        toast.error(
-          getRlsErrorMessage(
-            error,
-            "Erreur lors de la suppression",
-            "Seul le propriétaire ou un administrateur peut supprimer ce projet.",
-          ),
-        );
-      }
+    try {
+      await deleteProjectFromSupabase(projectId);
+      await loadProjects();
+      toast.success("Projet supprimé");
+    } catch (error) {
+      console.error("❌ Error deleting project:", error);
+      toast.error(
+        getRlsErrorMessage(
+          error,
+          "Erreur lors de la suppression",
+          "Seul le propriétaire ou un administrateur peut supprimer ce projet.",
+        ),
+      );
     }
   }
 
@@ -362,7 +363,7 @@ export default function ProjectList() {
                     Ouvrir
                   </button>
                   <button
-                    onClick={() => handleDeleteProject(project.id, project.name)}
+                    onClick={() => setDeleteTarget({ id: project.id, name: project.name })}
                     className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
                   >
                     Supprimer
@@ -489,6 +490,16 @@ export default function ProjectList() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title={deleteTarget ? `Supprimer le projet « ${deleteTarget.name} » ?` : ""}
+        description="Cette action est définitive."
+        confirmLabel="Supprimer"
+        destructive
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && handleDeleteProject(deleteTarget.id)}
+      />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
 import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import { createNotification } from "../../lib/notificationsApi";
 import { useAuth } from "../../contexts/useAuth";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface VisitCommentsProps {
   visitId: string;
@@ -202,6 +203,7 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [newCommentText, setNewCommentText] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
@@ -409,8 +411,7 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!window.confirm("Supprimer ce commentaire ?")) return;
-
+    setDeleteTargetId(null);
     setError(null);
     try {
       await deleteComment(commentId);
@@ -460,7 +461,7 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
               onStartEdit={handleEditComment}
               onSaveEdit={handleSaveEdit}
               onCancelEdit={handleCancelEdit}
-              onDelete={handleDeleteComment}
+              onDelete={setDeleteTargetId}
               onReply={(id) => setReplyingTo(id)}
             />
           ))
@@ -537,6 +538,15 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTargetId}
+        title="Supprimer ce commentaire ?"
+        confirmLabel="Supprimer"
+        destructive
+        onCancel={() => setDeleteTargetId(null)}
+        onConfirm={() => deleteTargetId && handleDeleteComment(deleteTargetId)}
+      />
     </div>
   );
 }

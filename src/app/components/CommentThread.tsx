@@ -6,6 +6,7 @@ import { createNotification } from "../../lib/notificationsApi";
 import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import { useAuth } from "../../contexts/useAuth";
 import type { Comment, Teammate } from "../../lib/commentsApi";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface CommentThreadProps {
   comments: Comment[];
@@ -39,6 +40,7 @@ export default function CommentThread({
   const [teammates, setTeammates] = useState<Teammate[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const commentRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
@@ -273,8 +275,7 @@ export default function CommentThread({
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!confirm("Supprimer ce commentaire?")) return;
-
+    setDeleteTargetId(null);
     setError(null);
     try {
       await deleteComment(commentId);
@@ -384,7 +385,7 @@ export default function CommentThread({
                           <Edit size={14} />
                         </button>
                         <button
-                          onClick={() => handleDeleteComment(comment.id)}
+                          onClick={() => setDeleteTargetId(comment.id)}
                           className="p-1.5 text-gray-400 hover:text-[#E10600] transition-colors"
                           title="Supprimer"
                         >
@@ -470,6 +471,15 @@ export default function CommentThread({
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTargetId}
+        title="Supprimer ce commentaire ?"
+        confirmLabel="Supprimer"
+        destructive
+        onCancel={() => setDeleteTargetId(null)}
+        onConfirm={() => deleteTargetId && handleDeleteComment(deleteTargetId)}
+      />
     </div>
   );
 }

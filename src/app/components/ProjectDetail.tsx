@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   Share2,
@@ -109,6 +110,7 @@ export default function ProjectDetail() {
   // Project state
   const [project, setProject] = useState<any>(null);
   const [isLoadingProject, setIsLoadingProject] = useState(true);
+  const [projectLoadError, setProjectLoadError] = useState<string | null>(null);
 
   // Edit form data
   const [editFormData, setEditFormData] = useState({
@@ -206,80 +208,92 @@ export default function ProjectDetail() {
     setSelectedPhotoPhase("");
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      // Don't fetch if still checking auth or no user
-      if (authLoading) {
-        console.log("⏳ Still loading auth, waiting...");
-        return;
-      }
+  const fetchData = useCallback(async () => {
+    // Don't fetch if still checking auth or no user
+    if (authLoading) return;
 
-      if (!user) {
-        console.log("⚠️ No user logged in, redirecting to login...");
-        navigate("/");
-        return;
-      }
+    if (!user) {
+      navigate("/");
+      return;
+    }
 
-      if (!id) return;
+    if (!id) return;
 
-      try {
-        setIsLoadingVisits(true);
-        console.log("🔄 Fetching project and visits for user:", user.email);
+    // Project load is kept separate from visits/photos below: without a
+    // project there's nothing meaningful to show at all (title, tabs,
+    // every action in the header reads from it), so a failure here gets
+    // its own visible, retryable error state instead of leaving the rest
+    // of the page to render around a null `project`.
+    setIsLoadingProject(true);
+    setProjectLoadError(null);
+    let proj;
+    try {
+      proj = await getProject(id);
+      if (!proj) throw new Error("Projet introuvable.");
+      setProject(proj);
+    } catch (error: any) {
+      console.error("❌ Error fetching project:", error);
+      setProjectLoadError(error.message || "Impossible de charger le projet.");
+      setIsLoadingProject(false);
+      setIsLoadingVisits(false);
+      return;
+    }
+    setIsLoadingProject(false);
 
-        // Fetch project
-        const proj = await getProject(id);
-        setProject(proj);
-        setIsLoadingProject(false);
+    try {
+      setIsLoadingVisits(true);
 
-        // Fetch site visits
-        const visits = await getSiteVisits(id);
+      // Fetch site visits
+      const visits = await getSiteVisits(id);
 
-        // Transform visits and fetch photo counts for each
-        const transformedVisits = await Promise.all(
-          visits.map(async (visit) => {
-            // Fetch photos for this visit
-            const photos = await getPhotos(visit.id);
+      // Transform visits and fetch photo counts for each
+      const transformedVisits = await Promise.all(
+        visits.map(async (visit) => {
+          // Fetch photos for this visit
+          const photos = await getPhotos(visit.id);
 
-            // Collect all unique tags from photos in this visit
-            const visitTags = [...new Set(photos.flatMap((p) => p.tags || []))];
+          // Collect all unique tags from photos in this visit
+          const visitTags = [...new Set(photos.flatMap((p) => p.tags || []))];
 
-            // Generate signed URLs for all photos
-            const photosWithSignedUrls = await Promise.all(
-              photos.map(async (p) => {
-                try {
-                  const signedUrl = await getPhotoSignedUrl(p.storage_path);
-                  return { id: p.id, url: signedUrl, tags: p.tags || [] };
-                } catch (error) {
-                  console.error("Error generating signed URL for photo:", p.id, error);
-                  return { id: p.id, url: "", tags: p.tags || [] };
-                }
-              }),
-            );
+          // Generate signed URLs for all photos
+          const photosWithSignedUrls = await Promise.all(
+            photos.map(async (p) => {
+              try {
+                const signedUrl = await getPhotoSignedUrl(p.storage_path);
+                return { id: p.id, url: signedUrl, tags: p.tags || [] };
+              } catch (error) {
+                console.error("Error generating signed URL for photo:", p.id, error);
+                return { id: p.id, url: "", tags: p.tags || [] };
+              }
+            }),
+          );
 
-            return {
-              id: visit.id,
-              date: visit.visit_date,
-              phase: visit.phase.charAt(0).toUpperCase() + visit.phase.slice(1), // Capitalize
-              room: visit.attendees?.[0] || "Zone non spécifiée",
-              tags: visitTags, // Tags collected from all photos in this visit
-              photoCount: photos.length, // Actual photo count
-              notes: visit.notes,
-              photos: photosWithSignedUrls,
-            };
-          }),
-        );
+          return {
+            id: visit.id,
+            date: visit.visit_date,
+            phase: visit.phase.charAt(0).toUpperCase() + visit.phase.slice(1), // Capitalize
+            room: visit.attendees?.[0] || "Zone non spécifiée",
+            tags: visitTags, // Tags collected from all photos in this visit
+            photoCount: photos.length, // Actual photo count
+            notes: visit.notes,
+            photos: photosWithSignedUrls,
+          };
+        }),
+      );
 
-        setSiteVisits(transformedVisits);
-        console.log("✅ Loaded", transformedVisits.length, "site visits");
+      setSiteVisits(transformedVisits);
       } catch (error) {
         console.error("❌ Error fetching site visits:", error);
+        toast.error("Erreur lors du chargement des visites.");
       } finally {
         setIsLoadingVisits(false);
       }
-    };
-
-    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, authLoading, navigate]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
     const fetchIssues = async () => {
@@ -295,6 +309,42 @@ export default function ProjectDetail() {
 
     fetchIssues();
   }, [id]);
+
+  if (projectLoadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6">
+        <div className="text-center max-w-sm">
+          <AlertCircle size={40} className="mx-auto text-[#E10600] mb-3" />
+          <p className="text-base text-[#1A1A1A] font-medium mb-2">
+            Impossible de charger ce projet
+          </p>
+          <p className="text-sm text-gray-500 mb-6">{projectLoadError}</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => navigate("/app/projects")}
+              className="px-4 h-11 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 text-sm font-medium min-h-[44px]"
+            >
+              Retour
+            </button>
+            <button
+              onClick={() => fetchData()}
+              className="px-4 h-11 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] text-sm font-medium min-h-[44px]"
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoadingProject) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500 text-sm">
+        Chargement…
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-20">

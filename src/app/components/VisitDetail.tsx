@@ -31,6 +31,7 @@ import { getIssuesByVisit, createIssue, updateIssue, getIssueErrorMessage } from
 import { getCommentsForIssue, type Comment } from "../../lib/commentsApi";
 import PlanFilesManager from "./PlanFilesManager";
 import { getRlsErrorMessage } from "../../lib/rlsErrors";
+import ConfirmDialog from "./ConfirmDialog";
 import type { SiteVisit } from "../../lib/supabase";
 import { supabase } from "../../lib/supabase";
 import { formatDateLongWithWeekday } from "../../lib/dateUtils";
@@ -124,6 +125,7 @@ export default function VisitDetail() {
     assignedTo: "",
   });
   const [selectedIssuePhotoIds, setSelectedIssuePhotoIds] = useState<string[]>([]);
+  const [showDeletePhotosConfirm, setShowDeletePhotosConfirm] = useState(false);
 
   useEffect(() => {
     if (!editingIssue) {
@@ -386,15 +388,8 @@ export default function VisitDetail() {
 
   // Photo delete handler for multiple photos
   const handleDeleteSelectedPhotos = async () => {
+    setShowDeletePhotosConfirm(false);
     if (selectedPhotoIds.length === 0) return;
-
-    if (
-      !window.confirm(
-        `Voulez-vous vraiment supprimer ${selectedPhotoIds.length} photo${selectedPhotoIds.length !== 1 ? "s" : ""} ?`,
-      )
-    ) {
-      return;
-    }
 
     try {
       if (visitId) {
@@ -807,7 +802,7 @@ export default function VisitDetail() {
                   </button>
                 )}
                 <button
-                  onClick={handleDeleteSelectedPhotos}
+                  onClick={() => setShowDeletePhotosConfirm(true)}
                   className="py-2 px-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
                 >
                   <Trash2 size={16} />
@@ -951,7 +946,7 @@ export default function VisitDetail() {
                     {canEditIssue(projectRole, issue.createdBy) && (
                       <button
                         onClick={(e) => handleEditIssue(issue, e)}
-                        className="ml-2 w-8 h-8 flex items-center justify-center bg-white text-gray-600 rounded-full hover:bg-gray-200 transition-colors"
+                        className="ml-2 w-11 h-11 flex items-center justify-center bg-white text-gray-600 rounded-full hover:bg-gray-200 transition-colors"
                         title="Modifier"
                       >
                         <Edit size={14} />
@@ -1348,6 +1343,15 @@ export default function VisitDetail() {
           onSave={handleSaveAnnotation}
         />
       )}
+
+      <ConfirmDialog
+        open={showDeletePhotosConfirm}
+        title={`Supprimer ${selectedPhotoIds.length} photo${selectedPhotoIds.length !== 1 ? "s" : ""} ?`}
+        confirmLabel="Supprimer"
+        destructive
+        onCancel={() => setShowDeletePhotosConfirm(false)}
+        onConfirm={handleDeleteSelectedPhotos}
+      />
     </div>
   );
 }
