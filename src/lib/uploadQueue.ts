@@ -17,6 +17,7 @@ export interface QueuedUpload {
   tags: string[];
   location?: { floor?: string; room?: string };
   description?: string;
+  locationId?: string;
   status: QueuedUploadStatus;
   createdAt: string;
 }
@@ -211,6 +212,7 @@ export async function processQueue(): Promise<ProcessQueueResult> {
         tags: item.tags,
         location: item.location,
         description: item.description,
+        locationId: item.locationId,
       });
 
       await removeFromQueue(item.id);

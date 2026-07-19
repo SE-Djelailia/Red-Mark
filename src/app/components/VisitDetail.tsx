@@ -17,6 +17,7 @@ import {
   Check,
   Pencil,
   MessageSquare,
+  LayoutGrid,
 } from "lucide-react";
 import {
   getSiteVisit,
@@ -28,6 +29,7 @@ import {
 } from "../../lib/supabaseApi";
 import { getIssuesByVisit, createIssue, updateIssue, getIssueErrorMessage } from "../../lib/issuesApi";
 import { getCommentsForIssue, type Comment } from "../../lib/commentsApi";
+import PlanFilesManager from "./PlanFilesManager";
 import type { SiteVisit } from "../../lib/supabase";
 import { supabase } from "../../lib/supabase";
 import { formatDateLongWithWeekday } from "../../lib/dateUtils";
@@ -647,6 +649,17 @@ export default function VisitDetail() {
             </div>
           )}
         </div>
+
+        {/* Plans */}
+        {projectId && (
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h2 className="text-sm font-semibold text-[#1A1A1A] mb-3 flex items-center gap-2">
+              <LayoutGrid size={18} className="text-gray-500" />
+              Plans
+            </h2>
+            <PlanFilesManager projectId={projectId} visitId={visitId} />
+          </div>
+        )}
 
         {/* Photos Grid */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">

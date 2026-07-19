@@ -32,9 +32,14 @@ function isFileTooLargeError(message: string): boolean {
 
 interface Props {
   projectId: string;
+  // When opened from within an active visit, threads that visit's id into
+  // the plan viewer via a `?visitId=` query param (see PlanFileViewer.tsx)
+  // so pins placed/issues created there link back to it. Omitted when
+  // opened from the project-level Plans tab (no active visit).
+  visitId?: string;
 }
 
-export default function PlanFilesManager({ projectId }: Props) {
+export default function PlanFilesManager({ projectId, visitId }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const projectRole = useProjectRole(projectId);
@@ -188,7 +193,11 @@ export default function PlanFilesManager({ projectId }: Props) {
               className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 hover:border-[#E10600] hover:shadow-md transition-all"
             >
               <button
-                onClick={() => navigate(`/app/projects/${projectId}/plan-files/${planFile.id}`)}
+                onClick={() =>
+                  navigate(
+                    `/app/projects/${projectId}/plan-files/${planFile.id}${visitId ? `?visitId=${visitId}` : ""}`,
+                  )
+                }
                 className="flex-1 flex items-center gap-3 text-left min-w-0"
               >
                 <div className="w-12 h-12 rounded-lg bg-[#E10600]/10 text-[#E10600] flex items-center justify-center flex-shrink-0">

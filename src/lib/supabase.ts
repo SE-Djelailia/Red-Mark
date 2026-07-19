@@ -65,6 +65,7 @@ export interface Photo {
     room?: string;
   };
   description?: string;
+  location_id?: string | null;
   created_at: string;
 }
 

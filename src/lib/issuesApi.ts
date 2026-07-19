@@ -171,6 +171,32 @@ export async function getIssuesByLocation(locationId: string): Promise<Issue[]> 
   return (data || []).map(rowToIssue);
 }
 
+// For a batch of location ids, reports which ones have at least one
+// non-resolved issue — the live signal behind the plan viewer's pin color
+// (red = has an open issue, green = all resolved or no issues at all).
+// Never stored: recomputed from current issue statuses every time it's
+// needed, so it can't drift from reality.
+export async function getIssueStatusesByLocations(
+  locationIds: string[],
+): Promise<Record<string, boolean>> {
+  if (locationIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from("issues")
+    .select("location_id, status")
+    .in("location_id", locationIds);
+
+  if (error) {
+    console.error("Error fetching issue statuses by locations:", error);
+    return {};
+  }
+
+  const hasOpenIssue: Record<string, boolean> = {};
+  for (const row of data || []) {
+    if (row.status !== "resolved") hasOpenIssue[row.location_id] = true;
+  }
+  return hasOpenIssue;
+}
+
 // Get a single issue by ID
 export async function getIssue(issueId: string): Promise<Issue | null> {
   const { data, error } = await supabase.from("issues").select("*").eq("id", issueId).single();

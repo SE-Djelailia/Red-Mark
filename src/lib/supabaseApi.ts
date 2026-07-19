@@ -254,6 +254,7 @@ export async function uploadPhoto(
     tags?: string[];
     location?: { floor?: string; room?: string };
     description?: string;
+    locationId?: string;
   },
 ): Promise<Photo> {
   try {
@@ -287,6 +288,7 @@ export async function uploadPhoto(
           tags: metadata.tags || [],
           location: metadata.location || null,
           description: metadata.description || null,
+          location_id: metadata.locationId || null,
         },
       ])
       .select()

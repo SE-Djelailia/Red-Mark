@@ -8,7 +8,7 @@ import {
   Maximize2,
   MapPin,
 } from "lucide-react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { useProjectRole } from "../../hooks/useProjectRole";
@@ -24,6 +24,7 @@ import {
   type PinPlacement,
 } from "../../lib/plansApi";
 import { getLevels, getLocations, type Level, type Location } from "../../lib/locationsApi";
+import { getIssueStatusesByLocations } from "../../lib/issuesApi";
 import {
   openPdfFromUrl,
   renderPageToCanvas,
@@ -55,6 +56,13 @@ const SETTLE_DELAY_MS = 220;
 export default function PlanFileViewer() {
   const { planFileId } = useParams<{ projectId: string; planFileId: string }>();
   const navigate = useNavigate();
+  // Present only when the viewer was opened from within an active visit
+  // (VisitDetail's Plans tab → PlanFilesManager appends this) — absent when
+  // opened from the project-level Plans tab. Threaded down to
+  // LocationPinPanel, which uses it to set issues'/photos' visit_id and to
+  // gate issue-creation when there's no active visit (see its own comment).
+  const [searchParams] = useSearchParams();
+  const visitId = searchParams.get("visitId") || undefined;
 
   // This is a full-screen route (`fixed inset-0`), not a modal — but it's
   // still covered by the app's persistent, fixed, higher-z-index BottomNav
@@ -88,6 +96,12 @@ export default function PlanFileViewer() {
   const [placementMode, setPlacementMode] = useState(false);
   const [pendingPinCoords, setPendingPinCoords] = useState<{ x: number; y: number } | null>(null);
   const [openedLocationId, setOpenedLocationId] = useState<string | null>(null);
+  // location id -> has at least one non-resolved issue. Never stored — a
+  // pin's color (red/green) is purely this map applied live to pins.map()
+  // below. Refetched whenever the pin set for this page changes, and again
+  // when the location panel closes (an issue may have just been created or
+  // resolved during that session).
+  const [locationHasOpenIssue, setLocationHasOpenIssue] = useState<Record<string, boolean>>({});
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
 
   const currentPlan = plans.find((p) => p.pageNumber === currentPage) || null;
@@ -201,13 +215,25 @@ export default function PlanFileViewer() {
     }
     let cancelled = false;
     getPinPlacements(currentPlan.id)
-      .then((p) => !cancelled && setPins(p))
+      .then((p) => {
+        if (cancelled) return;
+        setPins(p);
+        refreshPinColors(p.map((pin) => pin.locationId));
+      })
       .catch((e) => console.error("Error loading pin placements:", e));
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPlan?.id]);
+
+  function refreshPinColors(locationIds: string[]) {
+    if (locationIds.length === 0) {
+      setLocationHasOpenIssue({});
+      return;
+    }
+    getIssueStatusesByLocations(locationIds).then(setLocationHasOpenIssue);
+  }
 
   async function handleAssignPage() {
     if (!planFile || !assignLevelId) return;
@@ -636,7 +662,11 @@ export default function PlanFileViewer() {
                     className="absolute -translate-x-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center"
                     aria-label="Ouvrir ce local"
                   >
-                    <span className="w-6 h-6 rounded-full bg-[#E10600] border-2 border-white shadow-md flex items-center justify-center">
+                    <span
+                      className={`w-6 h-6 rounded-full border-2 border-white shadow-md flex items-center justify-center ${
+                        locationHasOpenIssue[pin.locationId] ? "bg-[#E10600]" : "bg-green-600"
+                      }`}
+                    >
                       <MapPin size={13} className="text-white" fill="currentColor" />
                     </span>
                   </button>
@@ -727,8 +757,14 @@ export default function PlanFileViewer() {
         <LocationPinPanel
           open={!!openedLocationId}
           projectId={planFile.projectId}
+          visitId={visitId}
           location={openedLocation}
-          onClose={() => setOpenedLocationId(null)}
+          onClose={() => {
+            setOpenedLocationId(null);
+            // An issue may have just been created/resolved during this
+            // session — refresh this page's pin colors to reflect it.
+            refreshPinColors(pins.map((pin) => pin.locationId));
+          }}
         />
       )}
     </div>
