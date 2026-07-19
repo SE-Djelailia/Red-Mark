@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   Clock,
 } from "lucide-react";
-import type { Issue } from "./IssueCreation";
 import { ButtonLoader } from "./LoadingStates";
 import { useModalOpen } from "../../hooks/useModalOpen";
 

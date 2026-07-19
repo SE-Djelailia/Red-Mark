@@ -38,7 +38,6 @@ import { useSmartBack } from "../../hooks/useSmartBack";
 import { getIssuesByProject } from "../../lib/issuesApi";
 import { parseLocalDate } from "../../lib/dateUtils";
 import PhotoMarkup from "./PhotoMarkup";
-import IssueCreation from "./IssueCreation";
 import ReportTemplateSelector from "./ReportTemplateSelector";
 import ProjectMembersModal from "./ProjectMembersModal";
 import ProjectEditModal from "./ProjectEditModal";
@@ -125,7 +124,6 @@ export default function ProjectDetail() {
   const [selectedVisit, setSelectedVisit] = useState<SiteVisit | null>(null);
   const [commentText, setCommentText] = useState("");
   const [showPhotoMarkupModal, setShowPhotoMarkupModal] = useState(false);
-  const [showIssueCreationModal, setShowIssueCreationModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<{
     id: string;
     url: string;
@@ -150,7 +148,7 @@ export default function ProjectDetail() {
   const [totalPhotosCount, setTotalPhotosCount] = useState(0);
   useModalOpen(showShareModal);
   useModalOpen(showCommentModal);
-  useModalOpen(!!selectedPhoto && !showPhotoMarkupModal && !showIssueCreationModal);
+  useModalOpen(!!selectedPhoto && !showPhotoMarkupModal);
   useModalOpen(showVisitModal && !!selectedVisit);
   useModalOpen(showLocationsImportModal);
 
@@ -985,17 +983,6 @@ export default function ProjectDetail() {
                   </div>
                   ))
                 )}
-
-                {/* Add Issue Button */}
-                {projectRole.canCreateIssues && (
-                  <button
-                    onClick={() => setShowIssueCreationModal(true)}
-                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-[#E10600] hover:text-[#E10600] transition-colors flex items-center justify-center gap-2 min-h-[48px]"
-                  >
-                    <AlertCircle size={18} />
-                    <span>Créer une déficience</span>
-                  </button>
-                )}
               </div>
             )}
           </div>
@@ -1158,7 +1145,7 @@ export default function ProjectDetail() {
       )}
 
       {/* Photo Detail Modal */}
-      {selectedPhoto && !showPhotoMarkupModal && !showIssueCreationModal && (
+      {selectedPhoto && !showPhotoMarkupModal && (
         <div
           className="fixed inset-0 bg-black/95 z-50 flex flex-col"
           onClick={() => setSelectedPhoto(null)}
@@ -1198,15 +1185,6 @@ export default function ProjectDetail() {
               <Pencil size={18} />
               <span>Annoter</span>
             </button>
-            {projectRole.canCreateIssues && (
-              <button
-                onClick={() => setShowIssueCreationModal(true)}
-                className="flex-1 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
-              >
-                <AlertCircle size={18} />
-                <span>Créer déficience</span>
-              </button>
-            )}
           </div>
 
           {/* Metadata */}
@@ -1257,25 +1235,6 @@ export default function ProjectDetail() {
             console.log("Saved annotated image:", annotatedUrl);
             setShowPhotoMarkupModal(false);
             alert("Photo annotée enregistrée avec succès!");
-          }}
-        />
-      )}
-
-      {/* Issue Creation Modal */}
-      {showIssueCreationModal && selectedPhoto && (
-        <IssueCreation
-          photoUrl={selectedPhoto.url}
-          photoId={selectedPhoto.id}
-          projectId={id || "1"}
-          projectName={project?.name}
-          phase={selectedPhoto.phase}
-          room={selectedPhoto.room}
-          defaultTags={selectedPhoto.tags || []}
-          onClose={() => setShowIssueCreationModal(false)}
-          onSave={(issue) => {
-            setIssues([...issues, issue]);
-            setShowIssueCreationModal(false);
-            alert(`Déficience créée et assignée à ${issue.assignedTo}`);
           }}
         />
       )}
