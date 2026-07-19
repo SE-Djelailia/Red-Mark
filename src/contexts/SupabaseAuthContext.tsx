@@ -27,7 +27,6 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     // Vérifier la session au chargement
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("🔍 Session initiale:", session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -37,7 +36,6 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("🔄 Auth state changed:", _event, session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -52,10 +50,8 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     metadata: { name: string; firm: string },
   ) => {
     try {
-      console.log("🔐 SignUp called:", { email, name: metadata.name });
-
       // Créer le compte avec Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -72,8 +68,6 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         throw error;
       }
 
-      console.log("✅ User created:", data.user?.email);
-
       // Le profil sera créé automatiquement par le trigger SQL
       // Pas besoin de créer manuellement dans la table profiles
 
@@ -88,9 +82,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log("🔐 SignIn called:", email);
-
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -100,7 +92,6 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         throw error;
       }
 
-      console.log("✅ User logged in:", data.user?.email);
       toast.success("Connexion réussie!");
     } catch (error: any) {
       console.error("❌ Login error:", error);
@@ -115,7 +106,6 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   const signOut = async () => {
     try {
-      console.log("🚪 SignOut called");
       const { error } = await supabase.auth.signOut();
 
       if (error) {
@@ -123,7 +113,6 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         throw error;
       }
 
-      console.log("✅ User logged out");
       toast.success("Déconnexion réussie");
     } catch (error: any) {
       console.error("❌ Logout error:", error);
@@ -137,8 +126,6 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       if (!user) {
         throw new Error("Utilisateur non connecté");
       }
-
-      console.log("📝 Updating profile:", data);
 
       // Mettre à jour les métadonnées utilisateur
       const { error: authError } = await supabase.auth.updateUser({
@@ -159,7 +146,6 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
       if (profileError) throw profileError;
 
-      console.log("✅ Profile updated");
       toast.success("Profil mis à jour!");
     } catch (error: any) {
       console.error("❌ Update profile error:", error);
