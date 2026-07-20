@@ -12,6 +12,11 @@ import ConfirmDialog from "./ConfirmDialog";
 
 interface Props {
   visitId: string;
+  // When rendered inside another card (e.g. VisitDetail's CollapsibleSection),
+  // skips this component's own outer card chrome so it doesn't double up —
+  // everything else (including the internal header/record button) is
+  // unchanged.
+  bare?: boolean;
 }
 
 const MIME_CANDIDATES = [
@@ -53,7 +58,7 @@ function describeError(e: any): string {
   return "Microphone indisponible : " + (e?.message || name || "erreur inconnue");
 }
 
-export default function VoiceNotesSection({ visitId }: Props) {
+export default function VoiceNotesSection({ visitId, bare = false }: Props) {
   const [notes, setNotes] = useState<VoiceNote[]>([]);
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -224,11 +229,11 @@ export default function VoiceNotesSection({ visitId }: Props) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+    <div className={bare ? "space-y-3" : "bg-white rounded-xl border border-gray-200 p-4 space-y-3"}>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-sm font-medium text-[#1A1A1A]">Notes vocales</h3>
-          <p className="text-xs text-gray-500">Transcription automatique à venir</p>
+          <p className="text-xs text-gray-500">Enregistrez une note audio pour cette visite</p>
         </div>
         {!recording ? (
           <button
@@ -283,9 +288,9 @@ export default function VoiceNotesSection({ visitId }: Props) {
                 <div className="text-sm text-[#1A1A1A]">
                   {fmt(note.duration_seconds)} · {new Date(note.created_at).toLocaleString("fr-CA")}
                 </div>
-                <div className="text-xs text-gray-500 truncate">
-                  {note.transcription ? note.transcription : "Transcription en attente"}
-                </div>
+                {note.transcription && (
+                  <div className="text-xs text-gray-500 truncate">{note.transcription}</div>
+                )}
               </div>
               <audio
                 ref={(el) => {

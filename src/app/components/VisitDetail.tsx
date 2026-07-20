@@ -18,6 +18,7 @@ import {
   Pencil,
   MessageSquare,
   LayoutGrid,
+  Mic,
 } from "lucide-react";
 import {
   getSiteVisit,
@@ -30,6 +31,7 @@ import {
 import { getIssuesByVisit, createIssue, updateIssue, getIssueErrorMessage } from "../../lib/issuesApi";
 import { getCommentsForIssue, type Comment } from "../../lib/commentsApi";
 import PlanFilesManager from "./PlanFilesManager";
+import CollapsibleSection from "./CollapsibleSection";
 import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import { useSmartBack } from "../../hooks/useSmartBack";
 import ConfirmDialog from "./ConfirmDialog";
@@ -548,64 +550,41 @@ export default function VisitDetail() {
       </div>
 
       {/* Content */}
-      <div className="px-4 py-6 max-w-2xl mx-auto space-y-6">
-        {/* Meta Information */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-          <div className="flex items-start gap-3">
-            <Tag size={18} className="text-gray-500 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <div className="text-xs text-gray-500 mb-2">Phase</div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg border border-blue-200">
-                <span className="text-sm font-medium">{visit?.phase}</span>
-              </div>
+      <div className="px-4 py-4 max-w-2xl mx-auto space-y-3">
+        {/* Meta Information — compact inline row. Emplacement dropped (same
+            phantom "Zone non spécifiée" field removed from the visits list
+            — attendees was never a real column) and Photos dropped (the
+            Photos section below already shows the count). */}
+        <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+            <div className="flex items-center gap-1.5">
+              <Tag size={14} className="text-gray-400 flex-shrink-0" />
+              <span className="font-medium text-[#1A1A1A]">{visit?.phase}</span>
             </div>
+            {visit?.weather && (
+              <div className="flex items-center gap-1.5">
+                <Cloud size={14} className="text-gray-400 flex-shrink-0" />
+                <span className="text-[#1A1A1A]">{visit.weather}</span>
+              </div>
+            )}
+            {visit?.temperature && (
+              <div className="flex items-center gap-1.5">
+                <Thermometer size={14} className="text-gray-400 flex-shrink-0" />
+                <span className="text-[#1A1A1A]">{visit.temperature}</span>
+              </div>
+            )}
           </div>
-
-          <div className="flex items-start gap-3">
-            <MapPin size={18} className="text-gray-500 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <div className="text-xs text-gray-500 mb-1">Emplacement</div>
-              <div className="text-sm text-[#1A1A1A] font-medium">{visit?.room}</div>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <Camera size={18} className="text-gray-500 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <div className="text-xs text-gray-500 mb-1">Photos</div>
-              <div className="text-sm text-[#1A1A1A] font-medium">
-                {visit?.photos.length} photo{visit?.photos.length !== 1 ? "s" : ""}
-              </div>
-            </div>
-          </div>
-
-          {visit?.weather && (
-            <div className="flex items-start gap-3">
-              <Cloud size={18} className="text-gray-500 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <div className="text-xs text-gray-500 mb-1">Météo</div>
-                <div className="text-sm text-[#1A1A1A] font-medium">{visit.weather}</div>
-              </div>
-            </div>
-          )}
-
-          {visit?.temperature && (
-            <div className="flex items-start gap-3">
-              <Thermometer size={18} className="text-gray-500 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <div className="text-xs text-gray-500 mb-1">Température</div>
-                <div className="text-sm text-[#1A1A1A] font-medium">{visit.temperature}</div>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Notes */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-[#1A1A1A] mb-3 flex items-center gap-2">
-            <FileText size={18} className="text-gray-500" />
-            Notes de visite
-          </h2>
+        {/* Notes de visite — collapsed by default when empty (nothing to
+            reclaim space for otherwise); stays open if there's real content
+            to read at a glance. */}
+        {visit && (
+          <CollapsibleSection
+            title="Notes de visite"
+            icon={<FileText size={16} className="text-gray-500" />}
+            defaultOpen={!!visit.notes?.trim()}
+          >
           {isEditingNotes ? (
             <div className="space-y-3">
               <textarea
@@ -652,22 +631,20 @@ export default function VisitDetail() {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Plans */}
-        {projectId && (
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-[#1A1A1A] mb-3 flex items-center gap-2">
-              <LayoutGrid size={18} className="text-gray-500" />
-              Plans
-            </h2>
-            <PlanFilesManager projectId={projectId} visitId={visitId} />
-          </div>
+          </CollapsibleSection>
         )}
 
-        {/* Photos Grid */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-4">
+        {/* Plans — collapsed by default; not needed on every visit and the
+            file manager itself is a fair amount of content. */}
+        {projectId && (
+          <CollapsibleSection title="Plans" icon={<LayoutGrid size={16} className="text-gray-500" />}>
+            <PlanFilesManager projectId={projectId} visitId={visitId} />
+          </CollapsibleSection>
+        )}
+
+        {/* Photos Grid — stays always visible, this is core content */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-[#1A1A1A] flex items-center gap-2">
               <Camera size={18} className="text-gray-500" />
               Photos ({visit?.photos.length})
@@ -911,9 +888,12 @@ export default function VisitDetail() {
           </div>
         </div>
 
-        {/* Deficiences */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-4">
+        {/* Deficiences — stays always visible (core content), but each row
+            is now a single compact line instead of a large card. Same
+            fields as before (title, description, priority, status, linked
+            photos, assignee), just condensed. */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-[#1A1A1A] flex items-center gap-2">
               <AlertCircle size={18} className="text-gray-500" />
               Déficiences ({issues.length})
@@ -934,117 +914,119 @@ export default function VisitDetail() {
               Aucune déficience pour cette visite.
             </p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-1.5">
               {issues.map((issue) => (
                 <div
                   key={issue.id}
                   onClick={() =>
                     navigate(`/app/projects/${projectId}/visits/${visitId}/issues/${issue.id}`)
                   }
-                  className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-gray-100 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors min-h-[44px]"
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-sm font-medium text-[#1A1A1A] flex-1">{issue.title}</h3>
-                    {canEditIssue(projectRole, issue.createdBy) && (
-                      <button
-                        onClick={(e) => handleEditIssue(issue, e)}
-                        className="ml-2 w-11 h-11 flex items-center justify-center bg-white text-gray-600 rounded-full hover:bg-gray-200 transition-colors"
-                        title="Modifier"
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-sm font-medium text-[#1A1A1A] truncate">
+                        {issue.title}
+                      </span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${
+                          issue.priority === "critical"
+                            ? "bg-red-100 text-red-700"
+                            : issue.priority === "high"
+                              ? "bg-orange-100 text-orange-700"
+                              : issue.priority === "medium"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-gray-100 text-gray-700"
+                        }`}
                       >
-                        <Edit size={14} />
-                      </button>
+                        {issue.priority === "critical"
+                          ? "Critique"
+                          : issue.priority === "high"
+                            ? "Élevé"
+                            : issue.priority === "medium"
+                              ? "Moyen"
+                              : "Faible"}
+                      </span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${
+                          issue.status === "open"
+                            ? "bg-red-50 text-red-700"
+                            : issue.status === "in_progress"
+                              ? "bg-blue-50 text-blue-700"
+                              : "bg-green-50 text-green-700"
+                        }`}
+                      >
+                        {issue.status === "open"
+                          ? "Ouvert"
+                          : issue.status === "in_progress"
+                            ? "En cours"
+                            : "Résolu"}
+                      </span>
+                    </div>
+                    {(issue.description || issue.assignedTo) && (
+                      <div className="text-xs text-gray-500 truncate mt-0.5">
+                        {issue.description}
+                        {issue.description && issue.assignedTo ? " · " : ""}
+                        {issue.assignedTo}
+                      </div>
                     )}
                   </div>
-                  <p className="text-xs text-gray-600 mb-3 line-clamp-2">{issue.description}</p>
-                  <div className="flex items-center gap-2 flex-wrap mb-2">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        issue.priority === "critical"
-                          ? "bg-red-100 text-red-700"
-                          : issue.priority === "high"
-                            ? "bg-orange-100 text-orange-700"
-                            : issue.priority === "medium"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {issue.priority === "critical"
-                        ? "Critique"
-                        : issue.priority === "high"
-                          ? "Élevé"
-                          : issue.priority === "medium"
-                            ? "Moyen"
-                            : "Faible"}
-                    </span>
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        issue.status === "open"
-                          ? "bg-red-50 text-red-700"
-                          : issue.status === "in_progress"
-                            ? "bg-blue-50 text-blue-700"
-                            : "bg-green-50 text-green-700"
-                      }`}
-                    >
-                      {issue.status === "open"
-                        ? "Ouvert"
-                        : issue.status === "in_progress"
-                          ? "En cours"
-                          : "Résolu"}
-                    </span>
-                  </div>
 
-                  {/* Linked Photos */}
+                  {/* Linked Photos — small thumbnails instead of a full row */}
                   {issue.photos && issue.photos.length > 0 && (
-                    <div className="mt-3 mb-2">
-                      <div className="flex items-center gap-1 mb-2">
-                        <Camera size={12} className="text-gray-500" />
-                        <span className="text-xs text-gray-500 font-medium">
-                          {issue.photos.length} photo{issue.photos.length > 1 ? "s" : ""}
-                        </span>
-                      </div>
-                      <div className="flex gap-2 overflow-x-auto pb-1">
-                        {issue.photos.slice(0, 4).map((photo) => {
-                          const fullPhoto = visit?.photos.find((p) => p.id === photo.id);
-                          return (
-                            <div
-                              key={photo.id}
-                              className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-gray-200"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (fullPhoto) setSelectedPhoto(fullPhoto);
-                              }}
-                            >
-                              <SecureImage
-                                storagePath={fullPhoto?.storage_path || photo.url}
-                                alt="Issue photo"
-                                className="w-full h-full object-cover hover:scale-110 transition-transform cursor-pointer"
-                              />
-                            </div>
-                          );
-                        })}
-                        {issue.photos.length > 4 && (
-                          <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center">
-                            <span className="text-xs font-medium text-gray-600">
-                              +{issue.photos.length - 4}
-                            </span>
+                    <div className="flex gap-1 flex-shrink-0">
+                      {issue.photos.slice(0, 2).map((photo) => {
+                        const fullPhoto = visit?.photos.find((p) => p.id === photo.id);
+                        return (
+                          <div
+                            key={photo.id}
+                            className="w-8 h-8 rounded overflow-hidden flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (fullPhoto) setSelectedPhoto(fullPhoto);
+                            }}
+                          >
+                            <SecureImage
+                              storagePath={fullPhoto?.storage_path || photo.url}
+                              alt="Issue photo"
+                              className="w-full h-full object-cover cursor-pointer"
+                            />
                           </div>
-                        )}
-                      </div>
+                        );
+                      })}
+                      {issue.photos.length > 2 && (
+                        <div className="w-8 h-8 rounded bg-gray-200 flex items-center justify-center flex-shrink-0">
+                          <span className="text-[10px] font-medium text-gray-600">
+                            +{issue.photos.length - 2}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  <div className="text-xs text-gray-500">
-                    Assigné à :{" "}
-                    <span className="font-medium text-gray-700">{issue.assignedTo}</span>
-                  </div>
+                  {canEditIssue(projectRole, issue.createdBy) && (
+                    <button
+                      onClick={(e) => handleEditIssue(issue, e)}
+                      className="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-[#1A1A1A] flex-shrink-0"
+                      title="Modifier"
+                    >
+                      <Edit size={14} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Voice Notes (placeholder for future transcription) */}
-        {visitId && <VoiceNotesSection visitId={visitId} />}
+        {/* Voice Notes (placeholder for future transcription) — collapsed
+            by default; this used to show a full card just to say "Aucune
+            note vocale", now that's hidden until expanded. */}
+        {visitId && (
+          <CollapsibleSection title="Notes vocales" icon={<Mic size={16} className="text-gray-500" />}>
+            <VoiceNotesSection visitId={visitId} bare />
+          </CollapsibleSection>
+        )}
 
         {/* Comments */}
         <VisitComments
@@ -1054,7 +1036,7 @@ export default function VisitDetail() {
         />
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
           <h2 className="text-sm font-semibold text-[#1A1A1A] mb-3">Actions rapides</h2>
           <div className="grid grid-cols-2 gap-3">
             <button

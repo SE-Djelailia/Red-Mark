@@ -200,6 +200,28 @@ export async function getIssueStatusesByLocations(
   return hasOpenIssue;
 }
 
+// The set of visit ids (within a project) that have at least one
+// non-resolved issue — powers the Visits list's "has open issues" filter.
+// One batched query for the whole project, then applied client-side as an
+// `.in("id", ...)` restriction on the paginated visits query (see
+// supabaseApi.ts's SiteVisitPageFilters.visitIds) — deliberately not an
+// embedded/inner-join count, which would break pagination correctness for
+// visits with more than one open issue.
+export async function getVisitIdsWithOpenIssues(projectId: string): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from("issues")
+    .select("visit_id")
+    .eq("project_id", projectId)
+    .neq("status", "resolved")
+    .not("visit_id", "is", null);
+
+  if (error) {
+    console.error("Error fetching visit ids with open issues:", error);
+    return new Set();
+  }
+  return new Set((data || []).map((r) => r.visit_id).filter((v): v is string => !!v));
+}
+
 // Get a single issue by ID
 export async function getIssue(issueId: string): Promise<Issue | null> {
   const { data, error } = await supabase.from("issues").select("*").eq("id", issueId).single();

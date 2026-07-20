@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import {
@@ -19,23 +19,27 @@ import {
   Image as ImageIcon,
   AlertCircle,
   Upload,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { VisitCardSkeleton, PhotoGridSkeleton, CommentSkeleton } from "./LoadingStates";
 import {
   getSiteVisitsPage,
   getVisitsCount,
+  getVisitPhasesInUse,
   getProject,
   getPhotosByProject,
   getPhotosCount,
   getPhotosSignedUrls,
   type ProjectGalleryPhotoRow,
+  type SiteVisitPageFilters,
 } from "../../lib/supabaseApi";
 import VisitCard from "./VisitCard";
 import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole } from "../../hooks/useProjectRole";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { useSmartBack } from "../../hooks/useSmartBack";
-import { getIssuesByProject } from "../../lib/issuesApi";
+import { getIssuesByProject, getVisitIdsWithOpenIssues } from "../../lib/issuesApi";
 import { parseLocalDate } from "../../lib/dateUtils";
 import PhotoMarkup from "./PhotoMarkup";
 import ReportTemplateSelector from "./ReportTemplateSelector";
@@ -65,15 +69,17 @@ interface SiteVisit {
   id: string;
   date: string;
   phase: string;
+  authorName: string;
+  // room/tags/photoCount/notes/photos below are always dummy defaults now —
+  // the compact Visits list (VisitCard.tsx) doesn't show them, and neither
+  // getSiteVisitsPage nor this component's mapping populates them
+  // meaningfully anymore. Kept on the type only because the (currently
+  // unreachable — see the dead "Visit Detail Modal" below) selectedVisit
+  // state still reads them.
   room: string;
   tags: string[];
   photoCount: number;
   notes: string;
-  // Always [] now — visits are paginated and each VisitCard lazy-loads and
-  // owns its own photos (see VisitCard.tsx) rather than this array being
-  // populated eagerly. Kept on the type only because the (currently
-  // unreachable — see the dead "Visit Detail Modal" below) selectedVisit
-  // state still reads it.
   photos: { id: string; url: string; tags: string[] }[];
 }
 
@@ -95,10 +101,12 @@ function mapVisitRow(visit: any): SiteVisit {
     id: visit.id,
     date: visit.visit_date,
     phase: visit.phase.charAt(0).toUpperCase() + visit.phase.slice(1), // Capitalize
-    room: visit.attendees?.[0] || "Zone non spécifiée",
-    tags: [], // dead-code compat only — see SiteVisit.photos' comment
-    photoCount: visit.photoCount,
-    notes: visit.notes,
+    authorName: visit.authorName,
+    // Dead-code compat only — see SiteVisit's comment.
+    room: "",
+    tags: [],
+    photoCount: 0,
+    notes: visit.notes || "",
     photos: [],
   };
 }
@@ -115,6 +123,7 @@ export default function ProjectDetail() {
   const [gallerySubTab, setGallerySubTab] = useState<"photos" | "issues">("photos");
   const [issueLocationFilter, setIssueLocationFilter] = useState("");
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showProjectInfo, setShowProjectInfo] = useState(false);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
@@ -135,6 +144,18 @@ export default function ProjectDetail() {
   const [loadingMoreVisits, setLoadingMoreVisits] = useState(false);
   const [totalVisitsCount, setTotalVisitsCount] = useState(0);
   const VISITS_PAGE_SIZE = 20;
+
+  // Visits list filters — all server-side (see supabaseApi.ts's
+  // getSiteVisitsPage), so they compose correctly with pagination instead
+  // of only filtering whatever page happens to be loaded.
+  const [visitPhaseFilter, setVisitPhaseFilter] = useState("");
+  const [visitDateFrom, setVisitDateFrom] = useState("");
+  const [visitDateTo, setVisitDateTo] = useState("");
+  const [visitOpenIssuesOnly, setVisitOpenIssuesOnly] = useState(false);
+  const [visitPhasesInUse, setVisitPhasesInUse] = useState<string[]>([]);
+  // Resolved lazily the first time the open-issues toggle is turned on, not
+  // on every render — see toggleVisitOpenIssuesOnly below.
+  const [openIssueVisitIds, setOpenIssueVisitIds] = useState<Set<string> | null>(null);
 
   // Gallery tab's own state — no longer derived from siteVisits (see
   // VisitCard.tsx's comment: visits are paginated and no longer carry every
@@ -259,6 +280,15 @@ export default function ProjectDetail() {
     ? issues.filter((issue) => issue.locationId === issueLocationFilter)
     : issues;
 
+  // Header stats, muted and secondary to déficiences — zero-value ones are
+  // dropped entirely rather than shown as e.g. "0 commentaires", which read
+  // as noise/broken rather than as real information.
+  const secondaryStats = [
+    totalVisitsCount > 0 ? `${totalVisitsCount} visite${totalVisitsCount !== 1 ? "s" : ""}` : null,
+    totalPhotosCount > 0 ? `${totalPhotosCount} photo${totalPhotosCount !== 1 ? "s" : ""}` : null,
+    comments.length > 0 ? `${comments.length} commentaire${comments.length !== 1 ? "s" : ""}` : null,
+  ].filter((s): s is string => s !== null);
+
   // Prefers the resolved location (locationId -> "202 — Salle mécanique")
   // over the free-text `location` field, which predates the Plans &
   // Locations feature and is all older issues have.
@@ -310,16 +340,18 @@ export default function ProjectDetail() {
       // actually on/near screen (see VisitCard.tsx). The total count is a
       // separate cheap query so the header stat/tab badge show the real
       // total, not just what's been paged in so far.
-      const [{ visits, hasMore }, total, totalPhotos] = await Promise.all([
+      const [{ visits, hasMore }, total, totalPhotos, phases] = await Promise.all([
         getSiteVisitsPage(id, { offset: 0, limit: VISITS_PAGE_SIZE }),
         getVisitsCount(id),
         getPhotosCount(id),
+        getVisitPhasesInUse(id),
       ]);
 
       setSiteVisits(visits.map(mapVisitRow));
       setVisitsHasMore(hasMore);
       setTotalVisitsCount(total);
       setTotalPhotosCount(totalPhotos);
+      setVisitPhasesInUse(phases);
     } catch (error) {
       console.error("❌ Error fetching site visits:", error);
       toast.error("Erreur lors du chargement des visites.");
@@ -333,23 +365,65 @@ export default function ProjectDetail() {
     fetchData();
   }, [fetchData]);
 
-  const loadMoreVisits = useCallback(async () => {
-    if (!id || loadingMoreVisits) return;
-    setLoadingMoreVisits(true);
-    try {
-      const { visits, hasMore } = await getSiteVisitsPage(id, {
-        offset: siteVisits.length,
-        limit: VISITS_PAGE_SIZE,
-      });
-      setSiteVisits((prev) => [...prev, ...visits.map(mapVisitRow)]);
-      setVisitsHasMore(hasMore);
-    } catch (error) {
-      console.error("❌ Error loading more visits:", error);
-      toast.error("Erreur lors du chargement des visites supplémentaires.");
-    } finally {
-      setLoadingMoreVisits(false);
+  const activeVisitFilters = useMemo((): SiteVisitPageFilters | undefined => {
+    const f: SiteVisitPageFilters = {};
+    if (visitPhaseFilter) f.phase = visitPhaseFilter;
+    if (visitDateFrom) f.dateFrom = visitDateFrom;
+    if (visitDateTo) f.dateTo = visitDateTo;
+    if (visitOpenIssuesOnly) f.visitIds = Array.from(openIssueVisitIds || []);
+    return Object.keys(f).length > 0 ? f : undefined;
+  }, [visitPhaseFilter, visitDateFrom, visitDateTo, visitOpenIssuesOnly, openIssueVisitIds]);
+
+  // Used by both "Charger plus" (reset=false) and the filter-change effect
+  // below (reset=true) — kept separate from fetchData's own initial fetch
+  // so filter state doesn't need to be part of fetchData's deps (that
+  // effect should only re-run on id/user/auth changes).
+  const loadVisits = useCallback(
+    async (reset: boolean) => {
+      if (!id) return;
+      if (reset) setIsLoadingVisits(true);
+      else setLoadingMoreVisits(true);
+      try {
+        const { visits, hasMore } = await getSiteVisitsPage(id, {
+          offset: reset ? 0 : siteVisits.length,
+          limit: VISITS_PAGE_SIZE,
+          filters: activeVisitFilters,
+        });
+        setSiteVisits((prev) =>
+          reset ? visits.map(mapVisitRow) : [...prev, ...visits.map(mapVisitRow)],
+        );
+        setVisitsHasMore(hasMore);
+      } catch (error) {
+        console.error("❌ Error fetching site visits:", error);
+        toast.error("Erreur lors du chargement des visites.");
+      } finally {
+        if (reset) setIsLoadingVisits(false);
+        else setLoadingMoreVisits(false);
+      }
+    },
+    [id, siteVisits.length, activeVisitFilters],
+  );
+
+  // Skips the first run — the initial page is already loaded by fetchData
+  // above with no filters, which is equivalent to this effect's default
+  // (empty) filter state; only real filter changes should trigger a refetch.
+  const isFirstVisitFilterRun = useRef(true);
+  useEffect(() => {
+    if (isFirstVisitFilterRun.current) {
+      isFirstVisitFilterRun.current = false;
+      return;
     }
-  }, [id, siteVisits.length, loadingMoreVisits]);
+    loadVisits(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeVisitFilters]);
+
+  const toggleVisitOpenIssuesOnly = async () => {
+    if (!visitOpenIssuesOnly && !openIssueVisitIds && id) {
+      const ids = await getVisitIdsWithOpenIssues(id);
+      setOpenIssueVisitIds(ids);
+    }
+    setVisitOpenIssuesOnly((v) => !v);
+  };
 
   const loadGalleryPhotos = useCallback(async () => {
     if (!id) return;
@@ -522,51 +596,76 @@ export default function ProjectDetail() {
         </div>
         <h1 className="text-xl md:text-2xl mb-4">{project?.name}</h1>
 
-        {/* Quick Stats */}
-        <div className="flex items-center gap-4 text-sm flex-wrap">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#E10600]" />
-            <span>{totalVisitsCount} visites</span>
+        {/* Quick Stats — déficiences is the primary number on this screen,
+            everything else is secondary/muted and hidden entirely at zero
+            so it doesn't read as noise (e.g. "0 commentaires"). */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-full bg-[#E10600] flex items-center justify-center flex-shrink-0">
+              <AlertCircle size={18} className="text-white" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold leading-none">{issues.length}</div>
+              <div className="text-xs text-white/70">
+                déficience{issues.length !== 1 ? "s" : ""}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-gray-400" />
-            <span>{totalPhotosCount} photos</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-blue-400" />
-            <span>{comments.length} commentaires</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-orange-400" />
-            <span>{issues.length} déficiences</span>
-          </div>
+          {secondaryStats.length > 0 && (
+            <div className="text-xs text-white/60">{secondaryStats.join(" · ")}</div>
+          )}
         </div>
       </div>
 
-      {/* Project Info */}
-      <div className="px-6 py-4 bg-white border-b border-gray-200">
-        <div className="max-w-2xl mx-auto space-y-2 text-sm">
-          <div className="flex items-start gap-3">
-            <MapPin size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
-            <span className="text-gray-700">{project?.address}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <User size={16} className="text-gray-500" />
-            <span className="text-gray-500">Client :</span>
-            <span className="text-gray-700">{project?.client}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Users size={16} className="text-gray-500" />
-            <span className="text-gray-500">Entrepreneur :</span>
-            <span className="text-gray-700">{(project as any)?.contractor || "Non spécifié"}</span>
-          </div>
-          {(project as any)?.sharedWith && (project as any).sharedWith.length > 0 && (
-            <div className="flex items-start gap-3">
-              <Share2 size={16} className="text-gray-500 mt-0.5" />
-              <div>
-                <span className="text-gray-500">Partagé avec : </span>
-                <span className="text-gray-700">{(project as any).sharedWith.join(", ")}</span>
-              </div>
+      {/* Project Info — collapsed by default so it doesn't eat space above
+          the tabs; only fields that actually have a value render when
+          expanded. */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-2xl mx-auto">
+          <button
+            onClick={() => setShowProjectInfo((v) => !v)}
+            className="w-full flex items-center justify-between px-6 py-3 text-sm text-gray-600 hover:text-[#1A1A1A] min-h-[44px]"
+          >
+            <span>Détails du projet</span>
+            {showProjectInfo ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
+          {showProjectInfo && (
+            <div className="px-6 pb-4 space-y-2 text-sm">
+              {project?.address && (
+                <div className="flex items-start gap-3">
+                  <MapPin size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">{project.address}</span>
+                </div>
+              )}
+              {project?.client && (
+                <div className="flex items-center gap-3">
+                  <User size={16} className="text-gray-500" />
+                  <span className="text-gray-500">Client :</span>
+                  <span className="text-gray-700">{project.client}</span>
+                </div>
+              )}
+              {(project as any)?.contractor && (
+                <div className="flex items-center gap-3">
+                  <Users size={16} className="text-gray-500" />
+                  <span className="text-gray-500">Entrepreneur :</span>
+                  <span className="text-gray-700">{(project as any).contractor}</span>
+                </div>
+              )}
+              {(project as any)?.sharedWith && (project as any).sharedWith.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <Share2 size={16} className="text-gray-500 mt-0.5" />
+                  <div>
+                    <span className="text-gray-500">Partagé avec : </span>
+                    <span className="text-gray-700">{(project as any).sharedWith.join(", ")}</span>
+                  </div>
+                </div>
+              )}
+              {!project?.address &&
+                !project?.client &&
+                !(project as any)?.contractor &&
+                !(project as any)?.sharedWith?.length && (
+                  <p className="text-gray-400">Aucune information</p>
+                )}
             </div>
           )}
         </div>
@@ -627,21 +726,80 @@ export default function ProjectDetail() {
         {/* Visits Tab */}
         {activeTab === "visits" && (
           <div className="space-y-3">
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={visitPhaseFilter}
+                onChange={(e) => setVisitPhaseFilter(e.target.value)}
+                className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm min-h-[44px]"
+              >
+                <option value="">Toutes les phases</option>
+                {visitPhasesInUse.map((phase) => (
+                  <option key={phase} value={phase}>
+                    {phase.charAt(0).toUpperCase() + phase.slice(1)}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="date"
+                value={visitDateFrom}
+                onChange={(e) => setVisitDateFrom(e.target.value)}
+                aria-label="Du"
+                className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm min-h-[44px]"
+              />
+              <input
+                type="date"
+                value={visitDateTo}
+                onChange={(e) => setVisitDateTo(e.target.value)}
+                aria-label="Au"
+                className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm min-h-[44px]"
+              />
+              <button
+                onClick={toggleVisitOpenIssuesOnly}
+                className={`px-3 py-2 rounded-lg text-sm font-medium min-h-[44px] transition-colors ${
+                  visitOpenIssuesOnly
+                    ? "bg-[#E10600] text-white"
+                    : "bg-white border border-gray-300 text-gray-700 hover:border-[#E10600]"
+                }`}
+              >
+                Déficiences ouvertes
+              </button>
+              {(visitPhaseFilter || visitDateFrom || visitDateTo || visitOpenIssuesOnly) && (
+                <button
+                  onClick={() => {
+                    setVisitPhaseFilter("");
+                    setVisitDateFrom("");
+                    setVisitDateTo("");
+                    setVisitOpenIssuesOnly(false);
+                  }}
+                  className="px-3 py-2 text-sm text-gray-600 hover:text-[#E10600]"
+                >
+                  Effacer
+                </button>
+              )}
+            </div>
+
             {isLoadingVisits ? (
               <VisitCardSkeleton />
+            ) : siteVisits.length === 0 ? (
+              <div className="text-center py-12">
+                <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500">Aucune visite ne correspond à ces filtres.</p>
+              </div>
             ) : (
               <>
-                {siteVisits.map((visit) => (
-                  <VisitCard
-                    key={visit.id}
-                    visit={visit}
-                    onOpen={() => navigate(`/app/projects/${id}/visits/${visit.id}`)}
-                    onPhotoClick={setSelectedPhoto}
-                  />
-                ))}
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  {siteVisits.map((visit) => (
+                    <VisitCard
+                      key={visit.id}
+                      visit={visit}
+                      onOpen={() => navigate(`/app/projects/${id}/visits/${visit.id}`)}
+                    />
+                  ))}
+                </div>
                 {visitsHasMore && (
                   <button
-                    onClick={loadMoreVisits}
+                    onClick={() => loadVisits(false)}
                     disabled={loadingMoreVisits}
                     className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-[#1A1A1A] hover:border-[#E10600] hover:text-[#E10600] disabled:opacity-50 transition-colors min-h-[48px]"
                   >

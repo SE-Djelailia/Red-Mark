@@ -158,34 +158,89 @@ export async function getSiteVisits(projectId: string): Promise<SiteVisit[]> {
   }
 }
 
-// Paginated visits fetch, most recent first, with each visit's photo count
-// embedded in the same query (PostgREST's `photos(count)` syntax) — avoids
-// a separate photos query per visit just to show the camera-icon count.
-// `hasMore` is inferred from whether a full page came back, so no extra
-// count query is needed just to paginate.
+export interface SiteVisitPageFilters {
+  phase?: string;
+  dateFrom?: string; // "YYYY-MM-DD"
+  dateTo?: string;
+  // Restricts to this exact id set — used for the "has open issues" filter
+  // (see issuesApi.ts's getVisitIdsWithOpenIssues), resolved by the caller
+  // ahead of time rather than as a DB-side join. An embedded/inner-join
+  // count here would make `.range()` paginate over joined rows, not
+  // distinct visits — silently returning short pages whenever a visit has
+  // more than one open issue. This keeps pagination correct.
+  visitIds?: string[];
+}
+
+// Paginated visits fetch, most recent first, with each visit's author name
+// resolved in one batched query (site_visits.user_id has no FK to profiles
+// — only to auth.users — so PostgREST can't auto-embed it; this mirrors
+// commentsApi.ts's resolveAuthorNames pattern instead). `hasMore` is
+// inferred from whether a full page came back, so no extra count query is
+// needed just to paginate.
 export async function getSiteVisitsPage(
   projectId: string,
-  { offset, limit }: { offset: number; limit: number },
-): Promise<{ visits: (SiteVisit & { photoCount: number })[]; hasMore: boolean }> {
+  { offset, limit, filters }: { offset: number; limit: number; filters?: SiteVisitPageFilters },
+): Promise<{ visits: (SiteVisit & { authorName: string })[]; hasMore: boolean }> {
   try {
-    const { data, error } = await supabase
-      .from("site_visits")
-      .select("*, photos(count)")
-      .eq("project_id", projectId)
+    if (filters?.visitIds && filters.visitIds.length === 0) {
+      // Filter resolved to "no visits match" (e.g. no open issues at all) —
+      // no point querying, .in("id", []) would just do that the slow way.
+      return { visits: [], hasMore: false };
+    }
+
+    let query = supabase.from("site_visits").select("*").eq("project_id", projectId);
+    if (filters?.phase) query = query.eq("phase", filters.phase);
+    if (filters?.dateFrom) query = query.gte("visit_date", filters.dateFrom);
+    if (filters?.dateTo) query = query.lte("visit_date", filters.dateTo);
+    if (filters?.visitIds) query = query.in("id", filters.visitIds);
+
+    const { data, error } = await query
       .order("visit_date", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
     const rows = data || [];
+
+    const userIds = [...new Set(rows.map((r: any) => r.user_id).filter(Boolean))];
+    const nameById = new Map<string, string>();
+    if (userIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, name, email")
+        .in("id", userIds);
+      if (profilesError) console.error("❌ Error resolving visit author names:", profilesError);
+      (profiles || []).forEach((p: any) => nameById.set(p.id, p.name || p.email || "Utilisateur"));
+    }
+
     const visits = rows.map((row: any) => ({
       ...row,
-      photoCount: row.photos?.[0]?.count ?? 0,
+      authorName: nameById.get(row.user_id) || "Utilisateur",
     }));
     return { visits, hasMore: rows.length === limit };
   } catch (error) {
     console.error("❌ Error fetching visits page:", error);
     throw error;
   }
+}
+
+// Distinct phases actually used by this project's visits, for the phase
+// filter dropdown — one lightweight single-column query, deduped
+// client-side (no DISTINCT support in the query builder for this).
+export async function getVisitPhasesInUse(projectId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("site_visits")
+    .select("phase")
+    .eq("project_id", projectId);
+
+  if (error) {
+    console.error("❌ Error fetching visit phases:", error);
+    return [];
+  }
+  const phases = new Set<string>();
+  (data || []).forEach((r: any) => {
+    if (r.phase) phases.add(r.phase);
+  });
+  return Array.from(phases).sort();
 }
 
 // Cheap total-count query for the "N visites" header stat and tab badge —
