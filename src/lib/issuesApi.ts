@@ -1,7 +1,9 @@
 // Client-side API for managing issues (déficiences).
-// Backed by Supabase (table `issues`). The rich client-facing fields that have
-// no dedicated column (tags, assignedTo label, photos, free-text location) are
-// packed into the `location` JSONB column so we don't need a schema migration.
+// Backed by Supabase (table `issues`). discipline/dueDate/assignedToName are
+// real columns (added by stage-issue-consolidation.sql). `tags`/`location`
+// (free-text label) still live in the `location` JSONB column — narrowed to
+// just those two keys now that photos and assignedTo have real homes.
+// Photos are now a real relationship (photos.issue_id), not a JSONB array.
 
 import { supabase } from "./supabase";
 
@@ -12,22 +14,40 @@ export interface Issue {
   title: string;
   description: string;
   priority: "low" | "medium" | "high" | "critical";
-  status: "open" | "in_progress" | "resolved";
+  status: "open" | "resolved";
+  discipline?: string;
+  dueDate?: string | null;
+  // Free-text assignee (external contractor not in the app). Kept as
+  // `assignedTo` for back-compat with existing callers; `assignedToName` is
+  // the same value under the canonical field name for new code to prefer.
+  // Both read/write the same `assigned_to_name` column.
   assignedTo: string;
+  assignedToName?: string;
+  // Real project-member assignee (uuid FK -> auth.users). No UI writes this
+  // yet (Stage 2/3 adds the member picker) — exposed for forward use.
+  assignedToUserId?: string | null;
   createdBy: string;
   createdDate: string;
-  photos: { id: string; url: string }[];
+  // `url` (file_url) is kept for back-compat but is not signed and should
+  // not be used directly for display against the private storage bucket —
+  // use `storagePath` with SecureImage/getPhotosSignedUrls instead, same as
+  // the visit page and getPhotosByLocation.
+  photos: { id: string; url: string; storagePath?: string }[];
   tags: string[];
   location: string;
   locationId?: string | null;
 }
 
-// Shape stored inside the issues.location JSONB column
+// Shape stored inside the issues.location JSONB column. Narrowed to just
+// label/tags going forward — photos and assignedTo used to live here too
+// (see stage-issue-consolidation.sql for the one-time backfill of legacy
+// photos out of this blob into photos.issue_id). Old rows may still carry
+// a legacy `assignedTo` key here; read side falls back to it below since
+// that data was NOT part of the schema migration's backfill.
 interface IssueExtras {
   label?: string;
   tags?: string[];
-  assignedTo?: string;
-  photos?: { id: string; url: string }[];
+  assignedTo?: string; // legacy-only; no longer written
 }
 
 // Thrown by updateIssue/deleteIssue on failure, carrying the Postgres/PostgREST
@@ -73,9 +93,11 @@ async function getCurrentUserId(): Promise<string | null> {
   }
 }
 
-// Map a Supabase row to the client-facing Issue shape
-function rowToIssue(row: any): Issue {
+// Map a Supabase row to the client-facing Issue shape, minus photos (which
+// need a separate batched query — see attachPhotos below).
+function rowToIssueBase(row: any): Omit<Issue, "photos"> {
   const extras: IssueExtras = row.location && typeof row.location === "object" ? row.location : {};
+  const assignedToName = row.assigned_to_name ?? extras.assignedTo ?? "";
   return {
     id: row.id,
     visitId: row.visit_id || "",
@@ -84,29 +106,75 @@ function rowToIssue(row: any): Issue {
     description: row.description || "",
     priority: row.priority,
     status: row.status,
-    assignedTo: extras.assignedTo || "",
+    discipline: row.discipline || undefined,
+    dueDate: row.due_date ?? null,
+    assignedTo: assignedToName,
+    assignedToName,
+    assignedToUserId: row.assigned_to || null,
     createdBy: row.user_id,
     createdDate: (row.created_at || new Date().toISOString()).split("T")[0],
-    photos: Array.isArray(extras.photos) ? extras.photos : [],
     tags: Array.isArray(extras.tags) ? extras.tags : [],
     location: extras.label || "",
     locationId: row.location_id || null,
   };
 }
 
-// Build the location JSONB payload from client-facing fields
-function buildExtras(data: {
-  location?: string;
-  tags?: string[];
-  assignedTo?: string;
-  photos?: { id: string; url: string }[];
-}): IssueExtras {
+// Batch-fetch photos for a set of issues in one query (avoids N+1) and
+// merge them onto the base rows.
+async function attachPhotos(rows: Omit<Issue, "photos">[]): Promise<Issue[]> {
+  if (rows.length === 0) return [];
+  const ids = rows.map((r) => r.id);
+  const { data, error } = await supabase
+    .from("photos")
+    .select("id, file_url, storage_path, issue_id")
+    .in("issue_id", ids);
+
+  const byIssue: Record<string, { id: string; url: string; storagePath: string }[]> = {};
+  if (error) {
+    console.error("Error fetching photos for issues:", error);
+  } else {
+    for (const p of data || []) {
+      if (!p.issue_id) continue;
+      (byIssue[p.issue_id] ??= []).push({ id: p.id, url: p.file_url, storagePath: p.storage_path });
+    }
+  }
+  return rows.map((r) => ({ ...r, photos: byIssue[r.id] || [] }));
+}
+
+// Build the location JSONB payload from client-facing fields. Narrowed to
+// just label/tags — photos and assignedTo have real columns now.
+function buildExtras(data: { location?: string; tags?: string[] }): IssueExtras {
   return {
     label: data.location || "",
     tags: data.tags || [],
-    assignedTo: data.assignedTo || "",
-    photos: data.photos || [],
   };
+}
+
+// Attach/detach photos so that exactly `photoIds` end up linked to this
+// issue: clears issue_id on any currently-linked photo not in the new list,
+// then sets issue_id on the given ids. Mirrors the old JSONB-replace
+// semantics (callers always pass the full desired list).
+async function setIssuePhotos(issueId: string, photoIds: string[]): Promise<void> {
+  let detachQuery = supabase.from("photos").update({ issue_id: null }).eq("issue_id", issueId);
+  if (photoIds.length > 0) {
+    detachQuery = detachQuery.not("id", "in", `(${photoIds.join(",")})`);
+  }
+  const { error: detachError } = await detachQuery;
+  if (detachError) {
+    console.error("Error detaching photos from issue:", detachError);
+    throw detachError;
+  }
+
+  if (photoIds.length > 0) {
+    const { error: attachError } = await supabase
+      .from("photos")
+      .update({ issue_id: issueId })
+      .in("id", photoIds);
+    if (attachError) {
+      console.error("Error attaching photos to issue:", attachError);
+      throw attachError;
+    }
+  }
 }
 
 // Get issues created by the current user (all projects)
@@ -122,7 +190,7 @@ export async function getUserIssues(): Promise<Issue[]> {
     console.error("Error fetching user issues:", error);
     return [];
   }
-  return (data || []).map(rowToIssue);
+  return attachPhotos((data || []).map(rowToIssueBase));
 }
 
 // Get issues for a specific visit
@@ -137,7 +205,7 @@ export async function getIssuesByVisit(visitId: string): Promise<Issue[]> {
     console.error("Error fetching issues by visit:", error);
     return [];
   }
-  return (data || []).map(rowToIssue);
+  return attachPhotos((data || []).map(rowToIssueBase));
 }
 
 // Get issues for a specific project (includes teammates' issues via RLS)
@@ -152,7 +220,7 @@ export async function getIssuesByProject(projectId: string): Promise<Issue[]> {
     console.error("Error fetching issues by project:", error);
     return [];
   }
-  return (data || []).map(rowToIssue);
+  return attachPhotos((data || []).map(rowToIssueBase));
 }
 
 // Get issues attached to a specific location (via issues.location_id), for the
@@ -171,7 +239,7 @@ export async function getIssuesByLocation(locationId: string): Promise<Issue[]> 
     console.error("Error fetching issues by location:", error);
     throw error;
   }
-  return (data || []).map(rowToIssue);
+  return attachPhotos((data || []).map(rowToIssueBase));
 }
 
 // For a batch of location ids, reports which ones have at least one
@@ -229,7 +297,9 @@ export async function getIssue(issueId: string): Promise<Issue | null> {
     console.error("Error fetching issue:", error);
     return null;
   }
-  return data ? rowToIssue(data) : null;
+  if (!data) return null;
+  const [issue] = await attachPhotos([rowToIssueBase(data)]);
+  return issue;
 }
 
 // Create a new issue
@@ -250,6 +320,9 @@ export async function createIssue(
         description: issueData.description,
         priority: issueData.priority,
         status: issueData.status,
+        discipline: issueData.discipline || null,
+        due_date: issueData.dueDate || null,
+        assigned_to_name: issueData.assignedToName || issueData.assignedTo || null,
         location: buildExtras(issueData),
         location_id: issueData.locationId || null,
       },
@@ -261,7 +334,16 @@ export async function createIssue(
     console.error("Error creating issue:", error);
     throw error;
   }
-  return rowToIssue(data);
+
+  if (issueData.photos && issueData.photos.length > 0) {
+    await setIssuePhotos(
+      data.id,
+      issueData.photos.map((p) => p.id),
+    );
+  }
+
+  const [issue] = await attachPhotos([rowToIssueBase(data)]);
+  return issue;
 }
 
 // Update an existing issue
@@ -287,14 +369,14 @@ export async function updateIssue(
   if (updates.createdDate !== undefined) {
     payload.created_at = new Date(`${updates.createdDate}T00:00:00.000Z`).toISOString();
   }
+  if (updates.discipline !== undefined) payload.discipline = updates.discipline || null;
+  if (updates.dueDate !== undefined) payload.due_date = updates.dueDate || null;
+  if (updates.assignedToName !== undefined || updates.assignedTo !== undefined) {
+    payload.assigned_to_name = updates.assignedToName ?? updates.assignedTo ?? null;
+  }
 
   // Rebuild extras JSONB if any of its constituent fields changed
-  if (
-    updates.location !== undefined ||
-    updates.tags !== undefined ||
-    updates.assignedTo !== undefined ||
-    updates.photos !== undefined
-  ) {
+  if (updates.location !== undefined || updates.tags !== undefined) {
     payload.location = buildExtras(merged);
   }
 
@@ -309,7 +391,16 @@ export async function updateIssue(
     console.error("Error updating issue:", error);
     throw new IssueUpdateError(error.message, error.code);
   }
-  return rowToIssue(data);
+
+  if (updates.photos !== undefined) {
+    await setIssuePhotos(
+      issueId,
+      updates.photos.map((p) => p.id),
+    );
+  }
+
+  const [issue] = await attachPhotos([rowToIssueBase(data)]);
+  return issue;
 }
 
 // Delete an issue

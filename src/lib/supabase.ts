@@ -78,8 +78,11 @@ export interface Issue {
   title: string;
   description?: string;
   priority: "low" | "medium" | "high" | "critical";
-  status: "open" | "in_progress" | "resolved";
+  status: "open" | "resolved";
+  discipline?: string;
+  due_date?: string;
   assigned_to?: string;
+  assigned_to_name?: string;
   location?: {
     floor?: string;
     room?: string;

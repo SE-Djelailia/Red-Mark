@@ -9,7 +9,6 @@ import { useSmartBack } from "../../hooks/useSmartBack";
 
 const STATUS_LABEL: Record<Issue["status"], string> = {
   open: "Ouverte",
-  in_progress: "En cours",
   resolved: "Résolue",
 };
 

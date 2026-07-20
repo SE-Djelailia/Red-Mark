@@ -108,8 +108,11 @@ export type Database = {
       issues: {
         Row: {
           assigned_to: string | null
+          assigned_to_name: string | null
           created_at: string | null
           description: string | null
+          discipline: string | null
+          due_date: string | null
           id: string
           location: Json | null
           location_id: string | null
@@ -125,8 +128,11 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          assigned_to_name?: string | null
           created_at?: string | null
           description?: string | null
+          discipline?: string | null
+          due_date?: string | null
           id?: string
           location?: Json | null
           location_id?: string | null
@@ -142,8 +148,11 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          assigned_to_name?: string | null
           created_at?: string | null
           description?: string | null
+          discipline?: string | null
+          due_date?: string | null
           id?: string
           location?: Json | null
           location_id?: string | null
@@ -338,6 +347,7 @@ export type Database = {
           description: string | null
           file_url: string
           id: string
+          issue_id: string | null
           location: Json | null
           location_id: string | null
           project_id: string
@@ -351,6 +361,7 @@ export type Database = {
           description?: string | null
           file_url: string
           id?: string
+          issue_id?: string | null
           location?: Json | null
           location_id?: string | null
           project_id: string
@@ -364,6 +375,7 @@ export type Database = {
           description?: string | null
           file_url?: string
           id?: string
+          issue_id?: string | null
           location?: Json | null
           location_id?: string | null
           project_id?: string
@@ -373,6 +385,13 @@ export type Database = {
           visit_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "photos_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "photos_location_id_fkey"
             columns: ["location_id"]

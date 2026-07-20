@@ -20,7 +20,6 @@ const PRIORITIES: { value: Issue["priority"]; label: string; dot: string }[] = [
 
 const STATUS_LABEL: Record<Issue["status"], string> = {
   open: "Ouverte",
-  in_progress: "En cours",
   resolved: "Résolue",
 };
 

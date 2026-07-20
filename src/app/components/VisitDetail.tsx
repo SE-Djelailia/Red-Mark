@@ -64,7 +64,7 @@ interface Issue {
   title: string;
   description: string;
   priority: "low" | "medium" | "high" | "critical";
-  status: "open" | "in_progress" | "resolved";
+  status: "open" | "resolved";
   assignedTo: string;
   createdBy: string;
   createdDate: string;
@@ -949,18 +949,10 @@ export default function VisitDetail() {
                       </span>
                       <span
                         className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${
-                          issue.status === "open"
-                            ? "bg-red-50 text-red-700"
-                            : issue.status === "in_progress"
-                              ? "bg-blue-50 text-blue-700"
-                              : "bg-green-50 text-green-700"
+                          issue.status === "open" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"
                         }`}
                       >
-                        {issue.status === "open"
-                          ? "Ouvert"
-                          : issue.status === "in_progress"
-                            ? "En cours"
-                            : "Résolu"}
+                        {issue.status === "open" ? "Ouvert" : "Résolu"}
                       </span>
                     </div>
                     {(issue.description || issue.assignedTo) && (
@@ -1204,7 +1196,6 @@ export default function VisitDetail() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
                 >
                   <option value="open">Ouvert</option>
-                  <option value="in_progress">En cours</option>
                   <option value="resolved">Résolu</option>
                 </select>
               </div>

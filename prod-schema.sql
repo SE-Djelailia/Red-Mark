@@ -250,7 +250,10 @@ CREATE TABLE IF NOT EXISTS "public"."issues" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "resolved_at" timestamp with time zone,
-    "location_id" "uuid"
+    "location_id" "uuid",
+    "discipline" "text",
+    "due_date" "date",
+    "assigned_to_name" "text"
 );
 
 
@@ -322,7 +325,8 @@ CREATE TABLE IF NOT EXISTS "public"."photos" (
     "location" "jsonb",
     "description" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "location_id" "uuid"
+    "location_id" "uuid",
+    "issue_id" "uuid"
 );
 
 
@@ -643,6 +647,10 @@ CREATE INDEX "idx_notifications_user_id" ON "public"."notifications" USING "btre
 
 
 
+CREATE INDEX "idx_photos_issue_id" ON "public"."photos" USING "btree" ("issue_id");
+
+
+
 CREATE INDEX "idx_photos_location_id" ON "public"."photos" USING "btree" ("location_id");
 
 
@@ -934,6 +942,11 @@ ALTER TABLE ONLY "public"."locations"
 
 ALTER TABLE ONLY "public"."notifications"
     ADD CONSTRAINT "notifications_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."photos"
+    ADD CONSTRAINT "photos_issue_id_fkey" FOREIGN KEY ("issue_id") REFERENCES "public"."issues"("id") ON DELETE SET NULL;
 
 
 

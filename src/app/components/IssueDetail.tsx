@@ -27,7 +27,9 @@ import CommentThread from "./CommentThread";
 import type { Comment } from "../../lib/commentsApi";
 import { useProjectRole, canEditIssue } from "../../hooks/useProjectRole";
 import { useSmartBack } from "../../hooks/useSmartBack";
+import { useModalOpen } from "../../hooks/useModalOpen";
 import ConfirmDialog from "./ConfirmDialog";
+import SecureImage from "./SecureImage";
 
 export default function IssueDetail() {
   const navigate = useNavigate();
@@ -55,6 +57,8 @@ export default function IssueDetail() {
   const [editedDate, setEditedDate] = useState("");
   const [editedDescription, setEditedDescription] = useState("");
   const [editedAssignedTo, setEditedAssignedTo] = useState("");
+  const [selectedPhoto, setSelectedPhoto] = useState<Issue["photos"][number] | null>(null);
+  useModalOpen(!!selectedPhoto);
 
   useEffect(() => {
     let cancelled = false;
@@ -584,14 +588,11 @@ export default function IssueDetail() {
                 <div
                   key={photo.id}
                   className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-gray-200"
-                  onClick={() => {
-                    // Open photo lightbox
-                    console.log("Open photo:", photo.id);
-                  }}
+                  onClick={() => setSelectedPhoto(photo)}
                 >
-                  <img
-                    src={photo.url}
-                    alt="Issue photo"
+                  <SecureImage
+                    storagePath={photo.storagePath}
+                    alt="Photo de la déficience"
                     className="w-full h-full object-cover transition-transform group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -627,7 +628,7 @@ export default function IssueDetail() {
         {canEditIssue(projectRole, issue?.createdBy) && (
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-[#1A1A1A] mb-3">Changer le statut</h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => handleStatusChange("open")}
               className={`py-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2 min-h-[48px] ${
@@ -641,21 +642,6 @@ export default function IssueDetail() {
                 className={issue?.status === "open" ? "text-red-600" : "text-gray-600"}
               />
               <span className="text-xs font-medium">Ouvert</span>
-            </button>
-
-            <button
-              onClick={() => handleStatusChange("in_progress")}
-              className={`py-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2 min-h-[48px] ${
-                issue?.status === "in_progress"
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 hover:border-blue-300"
-              }`}
-            >
-              <Clock
-                size={20}
-                className={issue?.status === "in_progress" ? "text-blue-600" : "text-gray-600"}
-              />
-              <span className="text-xs font-medium">En cours</span>
             </button>
 
             <button
@@ -685,6 +671,29 @@ export default function IssueDetail() {
         onCancel={() => setShowDeleteConfirm(false)}
         onConfirm={handleDeleteIssue}
       />
+
+      {/* Photo Lightbox */}
+      {selectedPhoto && (
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <div className="relative max-w-4xl w-full">
+            <button
+              onClick={() => setSelectedPhoto(null)}
+              className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors z-10"
+            >
+              ✕
+            </button>
+            <SecureImage
+              storagePath={selectedPhoto.storagePath}
+              alt="Photo de la déficience"
+              className="w-full h-auto rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
