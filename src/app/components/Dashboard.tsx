@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router";
 import { useAuth } from "../../contexts/useAuth";
-import { getDashboardStats, getAllUserIssues, type DashboardStats } from "../../lib/supabaseApi";
+import { getDashboardStats, type DashboardStats } from "../../lib/supabaseApi";
+import { getAllUserIssues } from "../../lib/issuesApi";
 import { supabase } from "../../lib/supabase";
 import { formatDateShort } from "../../lib/dateUtils";
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -288,7 +289,7 @@ export default function Dashboard() {
               {recentIssues.map((issue) => (
                 <div
                   key={issue.id}
-                  onClick={() => navigate(`/app/projects/${issue.project_id}/issues/${issue.id}`)}
+                  onClick={() => navigate(`/app/projects/${issue.projectId}/issues/${issue.id}`)}
                   className="p-5 hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -314,7 +315,7 @@ export default function Dashboard() {
                       {getStatusLabel(issue.status)}
                     </span>
                     <span className="text-gray-400 ml-auto">
-                      {formatDateShort(issue.created_at)}
+                      {formatDateShort(issue.createdDate)}
                     </span>
                   </div>
                 </div>

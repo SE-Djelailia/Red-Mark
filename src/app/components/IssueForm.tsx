@@ -25,6 +25,11 @@ interface Props {
   locationId?: string | null;
   // When present, the form edits this issue; when absent, it creates a new one.
   issue?: Issue | null;
+  // Create mode only: photos already uploaded elsewhere (e.g. selected from
+  // a visit's photo grid) to attach immediately — shown/removable exactly
+  // like an existing issue's photos, just pre-populated instead of loaded
+  // from an issue that doesn't exist yet.
+  initialPhotos?: Issue["photos"];
   onSaved: (issue: Issue) => void;
   onCancel: () => void;
 }
@@ -36,7 +41,15 @@ type AssigneeMode = "none" | "member" | "external";
 // Stage 3 of the consolidation plan). Photos reuse LocationPinPanel's
 // capture/compress/upload/offline-queue flow, generalized to attach via
 // photos.issue_id instead of a per-location payload.
-export default function IssueForm({ projectId, visitId, locationId, issue, onSaved, onCancel }: Props) {
+export default function IssueForm({
+  projectId,
+  visitId,
+  locationId,
+  issue,
+  initialPhotos,
+  onSaved,
+  onCancel,
+}: Props) {
   const { user } = useAuth();
   const isEdit = !!issue;
 
@@ -91,7 +104,7 @@ export default function IssueForm({ projectId, visitId, locationId, issue, onSav
       setAssigneeMode("none");
       setAssignedToUserId("");
       setAssignedToName("");
-      setExistingPhotos([]);
+      setExistingPhotos(initialPhotos || []);
       setRemovedPhotoIds([]);
       setNewPhotoFiles([]);
       return;
@@ -197,7 +210,11 @@ export default function IssueForm({ projectId, visitId, locationId, issue, onSav
         locationId: location?.id,
       });
 
-      const photosChanged = uploadedRefs.length > 0 || removedPhotoIds.length > 0;
+      // For a brand-new issue, existingPhotos only ever holds initialPhotos
+      // (pre-selected already-uploaded photos) — those still need attaching
+      // even if nothing else about photos changed in this save.
+      const photosChanged =
+        uploadedRefs.length > 0 || removedPhotoIds.length > 0 || (!issue && existingPhotos.length > 0);
       if (photosChanged) {
         const keptExisting = existingPhotos.filter((p) => !removedPhotoIds.includes(p.id));
         const finalPhotos = [...keptExisting, ...uploadedRefs];

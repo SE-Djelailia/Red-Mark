@@ -1,35 +1,28 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Search, AlertCircle, Clock, CheckCircle2, X, MapPin, Loader2, MessageSquare } from "lucide-react";
-import { getAllUserIssues } from "../../lib/supabaseApi";
+import { useNavigate } from "react-router";
+import { Search, AlertCircle, CheckCircle2, Loader2, MapPin } from "lucide-react";
+import { getAllUserIssues, type Issue } from "../../lib/issuesApi";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/useAuth";
-import type { Issue } from "../../lib/supabase";
-import { getCommentsForIssue, type Comment } from "../../lib/commentsApi";
-import CommentThread from "./CommentThread";
-import { useModalOpen } from "../../hooks/useModalOpen";
+import { parseLocalDate } from "../../lib/dateUtils";
 
 type IssueWithProject = Issue & { projectName: string };
 
+// Cross-project issue list. Clicking a row navigates to the real
+// IssueDetail route (which hosts the canonical IssueView, with its own
+// edit → IssueForm affordance) rather than a separate read-only modal —
+// same page every other surface uses, so view/edit stays fully consistent
+// without duplicating IssueView-hosting logic here.
 export default function IssueManagement() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [issues, setIssues] = useState<IssueWithProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<Issue["status"] | "all">("all");
   const [priorityFilter, setPriorityFilter] = useState<Issue["priority"] | "all">("all");
-  const [selectedIssue, setSelectedIssue] = useState<IssueWithProject | null>(null);
-  useModalOpen(!!selectedIssue);
-  const [issueComments, setIssueComments] = useState<Comment[]>([]);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (!selectedIssue) {
-      setIssueComments([]);
-      return;
-    }
-    getCommentsForIssue(selectedIssue.id).then(setIssueComments);
-  }, [selectedIssue]);
 
   const loadIssues = useCallback(async () => {
     if (!user?.id) return;
@@ -73,7 +66,6 @@ export default function IssueManagement() {
 
   const statusConfig: Record<string, { label: string; icon: any; color: string }> = {
     open: { label: "Ouvert", icon: AlertCircle, color: "text-red-600 bg-red-50" },
-    in_progress: { label: "En cours", icon: Clock, color: "text-blue-600 bg-blue-50" },
     resolved: { label: "Résolu", icon: CheckCircle2, color: "text-green-600 bg-green-50" },
   };
 
@@ -101,8 +93,8 @@ export default function IssueManagement() {
     <div className="min-h-screen pb-20">
       <div className="bg-[#1A1A1A] text-white px-6 py-6 md:py-8">
         <h1 className="text-2xl md:text-3xl mb-4">Déficiences</h1>
-        <div className="grid grid-cols-3 gap-3">
-          {["open", "in_progress", "resolved"].map((s) => (
+        <div className="grid grid-cols-2 gap-3">
+          {["open", "resolved"].map((s) => (
             <div key={s} className="bg-white/10 rounded-lg p-3">
               <div className="text-2xl font-bold">{countByStatus(s)}</div>
               <div className="text-xs text-gray-400">{statusConfig[s]?.label}</div>
@@ -130,7 +122,6 @@ export default function IssueManagement() {
           >
             <option value="all">Tous les statuts</option>
             <option value="open">Ouvert</option>
-            <option value="in_progress">En cours</option>
             <option value="resolved">Résolu</option>
           </select>
           <select
@@ -168,13 +159,10 @@ export default function IssueManagement() {
             const sc = statusConfig[issue.status] ?? statusConfig.open;
             const StatusIcon = sc.icon;
             const pc = priorityConfig[issue.priority] ?? priorityConfig.medium;
-            const loc = issue.location as any;
-            const locText =
-              loc?.label || (loc?.floor ? `${loc.floor}${loc.room ? ` · ${loc.room}` : ""}` : "");
             return (
               <div
                 key={issue.id}
-                onClick={() => setSelectedIssue(issue)}
+                onClick={() => navigate(`/app/projects/${issue.projectId}/issues/${issue.id}`)}
                 className="bg-white rounded-xl border border-gray-200 p-4 hover:border-[#E10600] hover:shadow-md transition-all cursor-pointer"
               >
                 <div className="flex items-start justify-between mb-2">
@@ -197,14 +185,14 @@ export default function IssueManagement() {
                     <StatusIcon size={12} />
                     <span>{sc.label}</span>
                   </div>
-                  {locText && (
+                  {issue.discipline && (
                     <div className="flex items-center gap-1 text-gray-500">
                       <MapPin size={12} />
-                      <span>{locText}</span>
+                      <span>{issue.discipline}</span>
                     </div>
                   )}
                   <span className="text-gray-400 ml-auto">
-                    {new Date(issue.created_at).toLocaleDateString("fr-CA")}
+                    {parseLocalDate(issue.createdDate).toLocaleDateString("fr-CA")}
                   </span>
                 </div>
               </div>
@@ -212,108 +200,6 @@ export default function IssueManagement() {
           })
         )}
       </div>
-
-      {selectedIssue &&
-        (() => {
-          const sc = statusConfig[selectedIssue.status] ?? statusConfig.open;
-          const StatusIcon = sc.icon;
-          const pc = priorityConfig[selectedIssue.priority] ?? priorityConfig.medium;
-          const loc = selectedIssue.location as any;
-          const locText =
-            loc?.label || (loc?.floor ? `${loc.floor}${loc.room ? ` · ${loc.room}` : ""}` : "");
-          return (
-            <div
-              className="fixed inset-0 bg-black/50 z-50 overflow-y-auto"
-              onClick={() => setSelectedIssue(null)}
-            >
-              <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
-                <div
-                  className="bg-white rounded-xl max-w-2xl w-full"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
-                    <h2 className="text-xl font-medium text-[#1A1A1A]">Détails de la déficience</h2>
-                    <button
-                      onClick={() => setSelectedIssue(null)}
-                      className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <X size={24} />
-                    </button>
-                  </div>
-
-                  <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
-                    <div>
-                      <h3 className="text-xl text-[#1A1A1A] mb-1">{selectedIssue.title}</h3>
-                      <p className="text-sm text-gray-500">{selectedIssue.projectName}</p>
-                    </div>
-
-                    {selectedIssue.description && (
-                      <div>
-                        <h4 className="text-sm text-gray-500 mb-1">Description</h4>
-                        <p className="text-[#1A1A1A]">{selectedIssue.description}</p>
-                      </div>
-                    )}
-
-                    <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Statut</p>
-                        <div
-                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full ${sc.color}`}
-                        >
-                          <StatusIcon size={14} />
-                          <span className="text-sm">{sc.label}</span>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Priorité</p>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${pc.color}`} />
-                          <span className="text-sm text-[#1A1A1A]">{pc.label}</span>
-                        </div>
-                      </div>
-                      {locText && (
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">Localisation</p>
-                          <p className="text-sm text-[#1A1A1A]">{locText}</p>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Créée le</p>
-                        <p className="text-sm text-[#1A1A1A]">
-                          {new Date(selectedIssue.created_at).toLocaleDateString("fr-CA")}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-gray-200">
-                      <h4 className="text-sm font-semibold text-[#1A1A1A] mb-3 flex items-center gap-2">
-                        <MessageSquare size={18} className="text-gray-500" />
-                        Commentaires
-                      </h4>
-                      <CommentThread
-                        comments={issueComments}
-                        issueId={selectedIssue.id}
-                        projectId={selectedIssue.project_id}
-                        visitId={selectedIssue.visit_id || undefined}
-                        issueCreatedBy={selectedIssue.user_id}
-                        onCommentsUpdate={setIssueComments}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="px-6 py-4 border-t border-gray-200 bg-white rounded-b-xl">
-                    <button
-                      onClick={() => setSelectedIssue(null)}
-                      className="w-full py-3 bg-gray-200 text-[#1A1A1A] rounded-lg hover:bg-gray-300 transition-colors font-medium min-h-[48px]"
-                    >
-                      Fermer
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
     </div>
   );
 }

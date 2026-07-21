@@ -755,29 +755,8 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
 // ============================================
 // ISSUES API
 // ============================================
-
-type IssueRowWithProject = Issue & { projects: { name: string } | null };
-
-export async function getAllUserIssues(
-  userId: string,
-): Promise<(Issue & { projectName: string })[]> {
-  try {
-    const { data, error } = await supabase
-      .from("issues")
-      .select("*, projects(name)")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-    return ((data as IssueRowWithProject[] | null) || []).map(({ projects, ...row }) => ({
-      ...row,
-      projectName: projects?.name ?? "Projet inconnu",
-    }));
-  } catch (error) {
-    console.error("❌ Error fetching all user issues:", error);
-    throw error;
-  }
-}
+// getAllUserIssues moved to issuesApi.ts so it goes through the same
+// canonical row mapping as every other issue read (see that file).
 
 export async function getIssues(projectId: string): Promise<Issue[]> {
   try {

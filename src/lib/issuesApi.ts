@@ -302,6 +302,34 @@ export async function getIssue(issueId: string): Promise<Issue | null> {
   return issue;
 }
 
+// All issues created by the current user across every project, with each
+// issue's project name attached — powers the cross-project /app/issues
+// list (IssueManagement.tsx) and the Dashboard's "recent issues" panel.
+// Moved here from supabaseApi.ts, which used to spread raw rows directly
+// (snake_case fields, none of discipline/dueDate/assignedToUserId/photos) —
+// now goes through the same rowToIssueBase/attachPhotos mapping as every
+// other issue read in this file.
+export async function getAllUserIssues(
+  userId: string,
+): Promise<(Issue & { projectName: string })[]> {
+  const { data, error } = await supabase
+    .from("issues")
+    .select("*, projects(name)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching all user issues:", error);
+    throw error;
+  }
+
+  const base = (data || []).map((row: any) => ({
+    ...rowToIssueBase(row),
+    projectName: row.projects?.name ?? "Projet inconnu",
+  }));
+  return (await attachPhotos(base)) as (Issue & { projectName: string })[];
+}
+
 // Create a new issue
 export async function createIssue(
   issueData: Omit<Issue, "id" | "createdBy" | "createdDate">,

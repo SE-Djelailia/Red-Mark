@@ -14,9 +14,7 @@ import {
   Cloud,
   Thermometer,
   AlertCircle,
-  Check,
   Pencil,
-  MessageSquare,
   LayoutGrid,
   Mic,
 } from "lucide-react";
@@ -28,8 +26,7 @@ import {
   updateSiteVisit,
   deletePhoto,
 } from "../../lib/supabaseApi";
-import { getIssuesByVisit, createIssue, updateIssue, getIssueErrorMessage } from "../../lib/issuesApi";
-import { getCommentsForIssue, type Comment } from "../../lib/commentsApi";
+import { getIssuesByVisit, type Issue } from "../../lib/issuesApi";
 import PlanFilesManager from "./PlanFilesManager";
 import CollapsibleSection from "./CollapsibleSection";
 import { getRlsErrorMessage } from "../../lib/rlsErrors";
@@ -40,7 +37,7 @@ import type { SiteVisit } from "../../lib/supabase";
 import { supabase } from "../../lib/supabase";
 import { formatDateLongWithWeekday } from "../../lib/dateUtils";
 import VisitComments from "./VisitComments";
-import CommentThread from "./CommentThread";
+import IssueForm from "./IssueForm";
 import VoiceNotesSection from "./VoiceNotesSection";
 import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole, canEditIssue, canManagePhoto } from "../../hooks/useProjectRole";
@@ -58,20 +55,6 @@ interface Photo {
   user_id: string; // Uploader, used for per-photo manage permission
   tags?: string[];
   location?: { floor?: string; room?: string };
-}
-
-interface Issue {
-  id: string;
-  title: string;
-  description: string;
-  priority: "low" | "medium" | "high" | "critical";
-  status: "open" | "resolved";
-  assignedTo: string;
-  createdBy: string;
-  createdDate: string;
-  photos: { id: string; url: string }[];
-  tags?: string[];
-  location: string;
 }
 
 interface VisitDisplay {
@@ -115,29 +98,17 @@ export default function VisitDetail() {
   // Issues/deficiences for this visit
   const [issues, setIssues] = useState<Issue[]>([]);
 
-  // Issue creation/edition modal
+  // Issue creation/edition modal — hosts the shared IssueForm; editingIssue
+  // null means create mode. initialIssuePhotos carries photos pre-selected
+  // from the visit's photo grid ("Créer déficience" from a selection) into
+  // the new issue, since those already exist as real photos rows and just
+  // need attaching, not re-uploading.
   const [showIssueModal, setShowIssueModal] = useState(false);
   useModalOpen(!!selectedPhoto);
   useModalOpen(showIssueModal);
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null);
-  const [issueComments, setIssueComments] = useState<Comment[]>([]);
-  const [issueFormData, setIssueFormData] = useState({
-    title: "",
-    description: "",
-    priority: "medium" as Issue["priority"],
-    status: "open" as Issue["status"],
-    assignedTo: "",
-  });
-  const [selectedIssuePhotoIds, setSelectedIssuePhotoIds] = useState<string[]>([]);
+  const [initialIssuePhotos, setInitialIssuePhotos] = useState<Issue["photos"]>([]);
   const [showDeletePhotosConfirm, setShowDeletePhotosConfirm] = useState(false);
-
-  useEffect(() => {
-    if (!editingIssue) {
-      setIssueComments([]);
-      return;
-    }
-    getCommentsForIssue(editingIssue.id).then(setIssueComments);
-  }, [editingIssue]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -265,17 +236,12 @@ export default function VisitDetail() {
     }
   };
 
-  // Issue management handlers
+  // Issue management handlers — the form itself (IssueForm) now owns all
+  // the field state and the actual create/update calls; these just control
+  // which issue (if any) the modal is editing.
   const handleCreateIssue = () => {
     setEditingIssue(null);
-    setIssueFormData({
-      title: "",
-      description: "",
-      priority: "medium",
-      status: "open",
-      assignedTo: "",
-    });
-    setSelectedIssuePhotoIds([]);
+    setInitialIssuePhotos([]);
     setShowIssueModal(true);
   };
 
@@ -286,14 +252,11 @@ export default function VisitDetail() {
     }
 
     setEditingIssue(null);
-    setIssueFormData({
-      title: "",
-      description: "",
-      priority: "medium",
-      status: "open",
-      assignedTo: "",
-    });
-    setSelectedIssuePhotoIds([...selectedPhotoIds]);
+    const preSelected =
+      visit?.photos
+        .filter((p) => selectedPhotoIds.includes(p.id))
+        .map((p) => ({ id: p.id, url: p.url, storagePath: p.storage_path })) || [];
+    setInitialIssuePhotos(preSelected);
     setIsSelectionMode(false);
     setSelectedPhotoIds([]);
     setShowIssueModal(true);
@@ -302,91 +265,32 @@ export default function VisitDetail() {
   const handleEditIssue = (issue: Issue, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingIssue(issue);
-    setIssueFormData({
-      title: issue.title,
-      description: issue.description,
-      priority: issue.priority,
-      status: issue.status,
-      assignedTo: issue.assignedTo,
-    });
-    setSelectedIssuePhotoIds(issue.photos?.map((p) => p.id) || []);
+    setInitialIssuePhotos([]);
     setShowIssueModal(true);
   };
 
-  const handleSaveIssue = async () => {
-    if (!issueFormData.title.trim()) {
-      alert("Le titre est requis");
-      return;
-    }
-
-    if (!visitId || !projectId) return;
-
-    // Get selected photos data
-    const linkedPhotos =
-      visit?.photos
-        .filter((p) => selectedIssuePhotoIds.includes(p.id))
-        .map((p) => ({ id: p.id, url: p.storage_path })) || [];
-
-    try {
-      if (editingIssue) {
-        // Update existing issue
-        const updatedIssue = await updateIssue(editingIssue.id, {
-          ...issueFormData,
-          photos: linkedPhotos,
-        });
-        if (updatedIssue) {
-          setIssues((prevIssues) =>
-            prevIssues.map((issue) => (issue.id === editingIssue.id ? updatedIssue : issue)),
-          );
-          toast.success("Déficience modifiée!");
-        } else {
-          toast.error("Cette déficience n'existe plus.");
-          return;
-        }
-      } else {
-        // Create new issue
-        const newIssue = await createIssue({
-          visitId,
+  const handleIssueSaved = (savedIssue: Issue) => {
+    if (editingIssue) {
+      setIssues((prevIssues) =>
+        prevIssues.map((issue) => (issue.id === savedIssue.id ? savedIssue : issue)),
+      );
+    } else {
+      setIssues((prevIssues) => [...prevIssues, savedIssue]);
+      if (user && projectId) {
+        const actorName = user.user_metadata?.name || user.email?.split("@")[0] || "Utilisateur";
+        notifyProjectOwner({
           projectId,
-          ...issueFormData,
-          photos: linkedPhotos,
-          tags: [],
-          location: "",
+          actorId: user.id,
+          actorName,
+          type: "issue_created",
+          message: "a créé une nouvelle déficience",
+          issueId: savedIssue.id,
+          visitId,
         });
-        setIssues((prevIssues) => [...prevIssues, newIssue]);
-        toast.success(`Déficience créée avec ${linkedPhotos.length} photo(s)`);
-
-        if (user) {
-          const actorName = user.user_metadata?.name || user.email?.split("@")[0] || "Utilisateur";
-          notifyProjectOwner({
-            projectId,
-            actorId: user.id,
-            actorName,
-            type: "issue_created",
-            message: "a créé une nouvelle déficience",
-            issueId: newIssue.id,
-            visitId,
-          });
-        }
       }
-
-      setShowIssueModal(false);
-      setSelectedIssuePhotoIds([]);
-    } catch (err) {
-      console.error("Error saving issue:", err);
-      toast.error(getIssueErrorMessage(err, "Impossible d'enregistrer la déficience."));
     }
-  };
-
-  const handleQuickStatusChange = (
-    issueId: string,
-    newStatus: Issue["status"],
-    e: React.MouseEvent,
-  ) => {
-    e.stopPropagation();
-    setIssues((prevIssues) =>
-      prevIssues.map((issue) => (issue.id === issueId ? { ...issue, status: newStatus } : issue)),
-    );
+    setShowIssueModal(false);
+    setInitialIssuePhotos([]);
   };
 
   // Photo delete handler for multiple photos
@@ -979,8 +883,8 @@ export default function VisitDetail() {
                             }}
                           >
                             <SecureImage
-                              storagePath={fullPhoto?.storage_path || photo.url}
-                              alt="Issue photo"
+                              storagePath={photo.storagePath}
+                              alt="Photo de la déficience"
                               className="w-full h-full object-cover cursor-pointer"
                             />
                           </div>
@@ -1116,8 +1020,11 @@ export default function VisitDetail() {
         </div>
       )}
 
-      {/* Issue Creation/Edition Modal */}
-      {showIssueModal && (
+      {/* Issue Creation/Edition Modal — hosts the shared IssueForm, same
+          canonical create/edit surface as IssueDetail. Comments aren't
+          shown here (IssueForm doesn't own them); they're one tap away via
+          the full issue page. */}
+      {showIssueModal && visitId && (
         <div
           className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
           onClick={() => setShowIssueModal(false)}
@@ -1135,174 +1042,17 @@ export default function VisitDetail() {
             <h2 className="text-xl font-semibold text-[#1A1A1A] mb-6">
               {editingIssue ? "Modifier la déficience" : "Nouvelle déficience"}
             </h2>
-            <div className="space-y-4">
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Titre *</label>
-                <input
-                  type="text"
-                  value={issueFormData.title}
-                  onChange={(e) => setIssueFormData({ ...issueFormData, title: e.target.value })}
-                  placeholder="Ex: Fissure dans le béton"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Description</label>
-                <textarea
-                  value={issueFormData.description}
-                  onChange={(e) =>
-                    setIssueFormData({ ...issueFormData, description: e.target.value })
-                  }
-                  placeholder="Détails de la déficience..."
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent resize-none"
-                />
-              </div>
-
-              {/* Priority */}
-              <div>
-                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Priorité</label>
-                <select
-                  value={issueFormData.priority}
-                  onChange={(e) =>
-                    setIssueFormData({
-                      ...issueFormData,
-                      priority: e.target.value as Issue["priority"],
-                    })
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
-                >
-                  <option value="low">Faible</option>
-                  <option value="medium">Moyen</option>
-                  <option value="high">Élevé</option>
-                  <option value="critical">Critique</option>
-                </select>
-              </div>
-
-              {/* Status */}
-              <div>
-                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Statut</label>
-                <select
-                  value={issueFormData.status}
-                  onChange={(e) =>
-                    setIssueFormData({
-                      ...issueFormData,
-                      status: e.target.value as Issue["status"],
-                    })
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
-                >
-                  <option value="open">Ouvert</option>
-                  <option value="resolved">Résolu</option>
-                </select>
-              </div>
-
-              {/* Assigned To */}
-              <div>
-                <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Assigné à</label>
-                <input
-                  type="text"
-                  value={issueFormData.assignedTo}
-                  onChange={(e) =>
-                    setIssueFormData({ ...issueFormData, assignedTo: e.target.value })
-                  }
-                  placeholder="Nom de la personne"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
-                />
-              </div>
-
-              {/* Photo Selection */}
-              <div>
-                <label className="block text-sm font-medium text-[#1A1A1A] mb-2 flex items-center gap-2">
-                  <Camera size={18} className="text-[#E10600]" />
-                  Photos liées ({selectedIssuePhotoIds.length})
-                </label>
-                <p className="text-xs text-gray-500 mb-3">
-                  Sélectionnez les photos qui documentent cette déficience
-                </p>
-
-                {visit && visit.photos.length > 0 ? (
-                  <div className="grid grid-cols-4 gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 max-h-64 overflow-y-auto">
-                    {visit.photos.map((photo) => {
-                      const isSelected = selectedIssuePhotoIds.includes(photo.id);
-                      return (
-                        <div
-                          key={photo.id}
-                          onClick={() => {
-                            if (isSelected) {
-                              setSelectedIssuePhotoIds(
-                                selectedIssuePhotoIds.filter((id) => id !== photo.id),
-                              );
-                            } else {
-                              setSelectedIssuePhotoIds([...selectedIssuePhotoIds, photo.id]);
-                            }
-                          }}
-                          className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
-                            isSelected
-                              ? "border-[#E10600] ring-2 ring-[#E10600]/30"
-                              : "border-gray-300 hover:border-gray-400"
-                          }`}
-                        >
-                          <SecureImage
-                            storagePath={photo.storage_path}
-                            alt="Photo"
-                            className="w-full h-full object-cover"
-                          />
-                          {isSelected && (
-                            <div className="absolute inset-0 bg-[#E10600]/20 flex items-center justify-center">
-                              <div className="w-6 h-6 bg-[#E10600] rounded-full flex items-center justify-center">
-                                <Check size={14} className="text-white" strokeWidth={3} />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center text-sm text-gray-500">
-                    Aucune photo disponible pour cette visite
-                  </div>
-                )}
-              </div>
-
-              {/* Comments (existing issues only — a new issue has no id yet) */}
-              {editingIssue && (
-                <div className="pt-4 border-t border-gray-200">
-                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-3 flex items-center gap-2">
-                    <MessageSquare size={18} className="text-gray-500" />
-                    Commentaires
-                  </h3>
-                  <CommentThread
-                    comments={issueComments}
-                    issueId={editingIssue.id}
-                    projectId={projectId || ""}
-                    visitId={visitId}
-                    issueCreatedBy={editingIssue.createdBy}
-                    onCommentsUpdate={setIssueComments}
-                  />
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => setShowIssueModal(false)}
-                  className="flex-1 py-3 bg-gray-200 text-[#1A1A1A] rounded-lg hover:bg-gray-300 transition-colors font-medium min-h-[48px]"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={handleSaveIssue}
-                  className="flex-1 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors font-medium min-h-[48px]"
-                >
-                  {editingIssue ? "Sauvegarder" : "Créer"}
-                </button>
-              </div>
-            </div>
+            <IssueForm
+              projectId={projectId || ""}
+              visitId={visitId}
+              issue={editingIssue}
+              initialPhotos={initialIssuePhotos}
+              onSaved={handleIssueSaved}
+              onCancel={() => {
+                setShowIssueModal(false);
+                setInitialIssuePhotos([]);
+              }}
+            />
           </div>
         </div>
       )}
