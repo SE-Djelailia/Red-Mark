@@ -47,6 +47,8 @@ export interface SiteVisit {
   phase?: string;
   weather?: string;
   temperature?: string;
+  start_time?: string | null;
+  end_time?: string | null;
   notes?: string;
   created_at: string;
   updated_at: string;

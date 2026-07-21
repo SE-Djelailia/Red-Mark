@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -35,6 +35,7 @@ import {
   type SiteVisitPageFilters,
 } from "../../lib/supabaseApi";
 import VisitCard from "./VisitCard";
+import ProjectVisitCalendar from "./ProjectVisitCalendar";
 import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole } from "../../hooks/useProjectRole";
 import { useModalOpen } from "../../hooks/useModalOpen";
@@ -111,16 +112,85 @@ function mapVisitRow(visit: any): SiteVisit {
   };
 }
 
+type MainTab = "visits" | "gallery" | "plans" | "locations";
+type GallerySubTab = "photos" | "issues";
+
 export default function ProjectDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
   const goBack = useSmartBack("/app/projects");
   const { user, loading: authLoading } = useAuth();
   const projectRole = useProjectRole(id);
-  const [activeTab, setActiveTab] = useState<"visits" | "gallery" | "plans" | "locations">(
-    "visits",
-  );
-  const [gallerySubTab, setGallerySubTab] = useState<"photos" | "issues">("photos");
+
+  // Tab/sub-tab state lives in the URL (not local state) so that
+  // useSmartBack's navigate(-1) — which returns to whatever history entry
+  // this page already had — naturally restores the tab the user was on,
+  // instead of remounting back to the "visits" default. `replace: true`
+  // updates the current history entry in place rather than pushing a new
+  // one per tab click, so the back button still only takes one press to
+  // actually leave the page.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab: MainTab = (searchParams.get("tab") as MainTab) || "visits";
+  const gallerySubTab: GallerySubTab = (searchParams.get("sub") as GallerySubTab) || "photos";
+
+  const setActiveTab = (tab: MainTab) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("tab", tab);
+        if (tab !== "gallery") next.delete("sub");
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
+  const setGallerySubTab = (sub: GallerySubTab) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("tab", "gallery");
+        next.set("sub", sub);
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
+  // Visits tab's List/Calendar toggle and visible calendar month — same
+  // URL-state reasoning as tab/sub above, so navigating to a visit from the
+  // calendar and back restores both the view mode and the month.
+  const visitsView: "list" | "calendar" = searchParams.get("view") === "calendar" ? "calendar" : "list";
+  const visitsMonthParam = searchParams.get("month"); // "YYYY-MM"
+  const visitsMonth =
+    visitsMonthParam && /^\d{4}-\d{2}$/.test(visitsMonthParam)
+      ? new Date(Number(visitsMonthParam.slice(0, 4)), Number(visitsMonthParam.slice(5, 7)) - 1, 1)
+      : new Date();
+
+  const setVisitsView = (view: "list" | "calendar") => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (view === "calendar") next.set("view", "calendar");
+        else next.delete("view");
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
+  const setVisitsMonth = (month: Date) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        const ym = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
+        next.set("month", ym);
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
   const [issueLocationFilter, setIssueLocationFilter] = useState("");
   const [showShareModal, setShowShareModal] = useState(false);
   const [showProjectInfo, setShowProjectInfo] = useState(false);
@@ -725,6 +795,36 @@ export default function ProjectDetail() {
         {/* Visits Tab */}
         {activeTab === "visits" && (
           <div className="space-y-3">
+            {/* List/Calendar toggle */}
+            <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden">
+              <button
+                onClick={() => setVisitsView("list")}
+                className={`px-4 py-2 text-sm font-medium min-h-[44px] transition-colors ${
+                  visitsView === "list"
+                    ? "bg-[#E10600] text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                Liste
+              </button>
+              <button
+                onClick={() => setVisitsView("calendar")}
+                className={`px-4 py-2 text-sm font-medium min-h-[44px] transition-colors ${
+                  visitsView === "calendar"
+                    ? "bg-[#E10600] text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                Calendrier
+              </button>
+            </div>
+
+            {visitsView === "calendar" ? (
+              id && (
+                <ProjectVisitCalendar projectId={id} month={visitsMonth} onMonthChange={setVisitsMonth} />
+              )
+            ) : (
+              <>
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-2">
               <select
@@ -805,6 +905,8 @@ export default function ProjectDetail() {
                     {loadingMoreVisits ? "Chargement…" : "Charger plus de visites"}
                   </button>
                 )}
+              </>
+            )}
               </>
             )}
           </div>

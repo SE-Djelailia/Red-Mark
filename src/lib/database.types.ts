@@ -676,10 +676,12 @@ export type Database = {
       site_visits: {
         Row: {
           created_at: string | null
+          end_time: string | null
           id: string
           notes: string | null
           phase: string | null
           project_id: string
+          start_time: string | null
           temperature: string | null
           updated_at: string | null
           user_id: string
@@ -688,10 +690,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          end_time?: string | null
           id?: string
           notes?: string | null
           phase?: string | null
           project_id: string
+          start_time?: string | null
           temperature?: string | null
           updated_at?: string | null
           user_id: string
@@ -700,10 +704,12 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          end_time?: string | null
           id?: string
           notes?: string | null
           phase?: string | null
           project_id?: string
+          start_time?: string | null
           temperature?: string | null
           updated_at?: string | null
           user_id?: string

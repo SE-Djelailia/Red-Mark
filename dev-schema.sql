@@ -334,7 +334,9 @@ CREATE TABLE IF NOT EXISTS "public"."site_visits" (
     "temperature" "text",
     "notes" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "start_time" "time",
+    "end_time" "time"
 );
 
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Calendar, Cloud, Thermometer, ChevronDown, Plus } from "lucide-react";
+import { useNavigate, useParams, useSearchParams } from "react-router";
+import { ArrowLeft, Calendar, Clock, Cloud, Thermometer, ChevronDown, Plus } from "lucide-react";
 import { ButtonLoader } from "./LoadingStates";
 import { createSiteVisit } from "../../lib/supabaseApi";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
@@ -10,6 +10,10 @@ import { useSmartBack } from "../../hooks/useSmartBack";
 
 const DEFAULT_PHASES = ["Fondation", "Charpente", "ÉMÉ", "Finitions", "Extérieur"];
 const CUSTOM_PHASES_KEY = "redmark_custom_phases";
+const WEATHER_OPTIONS = ["Ensoleillé", "Nuageux", "Pluvieux", "Neige", "Venteux", "Brouillard"];
+const TEMPERATURE_MIN = -30;
+const TEMPERATURE_MAX = 35;
+const TEMPERATURE_DEFAULT = 20;
 
 export default function SiteVisitCreation() {
   const navigate = useNavigate();
@@ -17,13 +21,26 @@ export default function SiteVisitCreation() {
   const { user } = useAuth();
   const projectRole = useProjectRole(id);
   const goBack = useSmartBack(`/app/projects/${id}`);
+  const [searchParams] = useSearchParams();
 
-  const [visitDate, setVisitDate] = useState(new Date().toISOString().split("T")[0]);
+  // Accepts an optional pre-filled date (e.g. ?date=2026-07-21), falling
+  // back to today when absent or malformed.
+  const prefilledDate = searchParams.get("date");
+  const initialDate =
+    prefilledDate && /^\d{4}-\d{2}-\d{2}$/.test(prefilledDate)
+      ? prefilledDate
+      : new Date().toISOString().split("T")[0];
+
+  const [visitDate, setVisitDate] = useState(initialDate);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [notes, setNotes] = useState("");
   const [phase, setPhase] = useState("Fondation");
-  const [room, setRoom] = useState("");
   const [weather, setWeather] = useState("");
-  const [temperature, setTemperature] = useState("");
+  // null = not set. Slider needs a numeric value to render even before the
+  // user has touched it, so the displayed position defaults to
+  // TEMPERATURE_DEFAULT but nothing is submitted until the user interacts.
+  const [temperature, setTemperature] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Custom phases management
@@ -121,7 +138,9 @@ export default function SiteVisitCreation() {
         phase: phase,
         notes: notes,
         weather: weather,
-        temperature: temperature,
+        temperature: temperature === null ? "" : `${temperature}°C`,
+        start_time: startTime || null,
+        end_time: endTime || null,
       });
 
       console.log("✅ Site visit created successfully", newVisit.id);
@@ -189,6 +208,40 @@ export default function SiteVisitCreation() {
                 size={20}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
               />
+            </div>
+          </div>
+
+          {/* Start/End Time — both optional */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-[#1A1A1A] mb-2">De</label>
+              <div className="relative">
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 pr-10"
+                />
+                <Clock
+                  size={16}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm text-[#1A1A1A] mb-2">À</label>
+              <div className="relative">
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 pr-10"
+                />
+                <Clock
+                  size={16}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
+              </div>
             </div>
           </div>
 
@@ -263,18 +316,6 @@ export default function SiteVisitCreation() {
             </div>
           </div>
 
-          {/* Room/Area */}
-          <div>
-            <label className="block text-sm text-[#1A1A1A] mb-2">Pièce / Zone</label>
-            <input
-              type="text"
-              value={room}
-              onChange={(e) => setRoom(e.target.value)}
-              placeholder="ex: Hall d'entrée, Unité 201, Aile ouest"
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
-            />
-          </div>
-
           {/* Notes */}
           <div>
             <label className="block text-sm text-[#1A1A1A] mb-2">Notes</label>
@@ -291,30 +332,58 @@ export default function SiteVisitCreation() {
           {/* Weather */}
           <div>
             <label className="block text-sm text-[#1A1A1A] mb-2">Météo</label>
-            <input
-              type="text"
-              value={weather}
-              onChange={(e) => setWeather(e.target.value)}
-              placeholder="ex: Ensoleillé, Nuageux, Pluvieux"
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
-            />
+            <div className="relative">
+              <Cloud
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              />
+              <select
+                value={weather}
+                onChange={(e) => setWeather(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
+              >
+                <option value="">Non spécifiée</option>
+                {WEATHER_OPTIONS.map((w) => (
+                  <option key={w} value={w}>
+                    {w}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Temperature */}
           <div>
-            <label className="block text-sm text-[#1A1A1A] mb-2">Température</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={temperature}
-                onChange={(e) => setTemperature(e.target.value)}
-                placeholder="ex: 25°C"
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 pr-12"
-              />
-              <Thermometer
-                size={20}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-              />
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm text-[#1A1A1A]">Température</label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-[#1A1A1A] flex items-center gap-1">
+                  <Thermometer size={14} className="text-gray-400" />
+                  {temperature === null ? "Non spécifiée" : `${temperature}°C`}
+                </span>
+                {temperature !== null && (
+                  <button
+                    type="button"
+                    onClick={() => setTemperature(null)}
+                    className="text-xs text-[#E10600] hover:text-[#C00500] font-medium"
+                  >
+                    Effacer
+                  </button>
+                )}
+              </div>
+            </div>
+            <input
+              type="range"
+              min={TEMPERATURE_MIN}
+              max={TEMPERATURE_MAX}
+              step={1}
+              value={temperature ?? TEMPERATURE_DEFAULT}
+              onChange={(e) => setTemperature(Number(e.target.value))}
+              className="w-full accent-[#E10600]"
+            />
+            <div className="flex items-center justify-between mt-1 text-xs text-gray-400">
+              <span>{TEMPERATURE_MIN}°C</span>
+              <span>{TEMPERATURE_MAX}°C</span>
             </div>
           </div>
         </div>

@@ -223,6 +223,47 @@ export async function getSiteVisitsPage(
   }
 }
 
+// All visits within a date range (inclusive), for the calendar view — a
+// single month is inherently bounded, so no pagination is needed here,
+// unlike getSiteVisitsPage. Same author-name batching as that function.
+export async function getSiteVisitsForMonth(
+  projectId: string,
+  monthStart: string, // "YYYY-MM-DD"
+  monthEnd: string, // "YYYY-MM-DD"
+): Promise<(SiteVisit & { authorName: string })[]> {
+  try {
+    const { data, error } = await supabase
+      .from("site_visits")
+      .select("*")
+      .eq("project_id", projectId)
+      .gte("visit_date", monthStart)
+      .lte("visit_date", monthEnd)
+      .order("visit_date", { ascending: true });
+
+    if (error) throw error;
+    const rows = data || [];
+
+    const userIds = [...new Set(rows.map((r: any) => r.user_id).filter(Boolean))];
+    const nameById = new Map<string, string>();
+    if (userIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, name, email")
+        .in("id", userIds);
+      if (profilesError) console.error("❌ Error resolving visit author names:", profilesError);
+      (profiles || []).forEach((p: any) => nameById.set(p.id, p.name || p.email || "Utilisateur"));
+    }
+
+    return rows.map((row: any) => ({
+      ...row,
+      authorName: nameById.get(row.user_id) || "Utilisateur",
+    }));
+  } catch (error) {
+    console.error("❌ Error fetching visits for month:", error);
+    throw error;
+  }
+}
+
 // Distinct phases actually used by this project's visits, for the phase
 // filter dropdown — one lightweight single-column query, deduped
 // client-side (no DISTINCT support in the query builder for this).
