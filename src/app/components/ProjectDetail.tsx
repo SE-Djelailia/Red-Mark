@@ -57,7 +57,7 @@ interface Issue {
   title: string;
   description: string;
   priority: "low" | "medium" | "high" | "critical";
-  status: "open" | "in_progress" | "resolved";
+  status: "open" | "resolved";
   assignedTo: string;
   createdBy: string;
   createdDate: string;
@@ -1207,16 +1207,10 @@ export default function ProjectDetail() {
                               className={`px-2 py-1 rounded-md text-xs font-medium ${
                                 issue.status === "open"
                                   ? "bg-red-50 text-red-700"
-                                  : issue.status === "in_progress"
-                                    ? "bg-blue-50 text-blue-700"
-                                    : "bg-green-50 text-green-700"
+                                  : "bg-green-50 text-green-700"
                               }`}
                             >
-                              {issue.status === "open"
-                                ? "Ouvert"
-                                : issue.status === "in_progress"
-                                  ? "En cours"
-                                  : "Résolu"}
+                              {issue.status === "open" ? "Ouvert" : "Résolu"}
                             </span>
                           </div>
                         </button>

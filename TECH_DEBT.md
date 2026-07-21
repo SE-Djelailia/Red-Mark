@@ -1,14 +1,15 @@
 # Tech debt
 
-- **Photo↔issue linking is a JSONB array, not a real relationship.** `issues.location` (JSONB) holds a
-  `photos: {id, url}[]` array (see `issuesApi.ts`'s `IssueExtras`/`buildExtras`), rather than the `photos`
-  table having an `issue_id` FK. The `photos` table has no `issue_id` column at all today. This means:
-  - Nothing enforces that a referenced photo still exists, or prevents duplicate/stale entries.
-  - The offline upload queue (`uploadQueue.ts`) can't link a photo to its issue once it flushes — a photo
-    that fails to upload live (e.g. from the pin quick-create flow in `LocationPinPanel.tsx`) gets queued
-    with `visit_id`/`location_id` only; it uploads into the `photos` table correctly once back online, but
-    never gets pushed into the originating issue's JSONB `photos` array. The user sees a toast explaining
-    this at capture time, but nothing fixes it up automatically later.
-  - Refactoring to a proper `photos.issue_id` FK (and reading an issue's photos via a real join instead of
-    JSONB) would fix this gap as a side effect, plus make photo/issue integrity DB-enforced. Not planned
-    now — just tracked.
+- **RESOLVED — Photo↔issue linking is now a real relationship.** `photos.issue_id` (FK → `issues.id`,
+  `ON DELETE SET NULL`, mirroring the existing `photos.location_id` pattern) replaced the old JSONB
+  `photos: {id, url}[]` array that used to live in `issues.location`. `stage-issue-consolidation.sql`
+  migrated existing data (sandbox-tested, zero loss) and both `dev-schema.sql`/`prod-schema.sql` have the
+  column/index/FK. `issuesApi.ts` reads an issue's photos via a real batched query (`attachPhotos`) instead
+  of JSONB, and every create/edit surface (`IssueForm.tsx`, the pin quick-create in `LocationPinPanel.tsx`)
+  attaches via `photos.issue_id` through the shared `uploadIssuePhotos` helper — including the offline
+  upload queue path, which previously could never link a queued photo back to its issue once flushed.
+
+- **Remaining minor cleanup: `issues.photo_id` (singular) is dead.** A leftover column from before the
+  `photos.issue_id` relationship existed — no code reads or writes it (the real relationship is the reverse
+  FK on `photos`, not this one). Safe to drop in a future migration; left alone for now since removing it
+  isn't required for anything currently planned.

@@ -8,7 +8,6 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import {
   AlertCircle,
   CheckCircle,
-  Clock,
   TrendingUp,
   FolderKanban,
   Camera,
@@ -27,7 +26,6 @@ export default function Dashboard() {
     totalVisits: 0,
     photosThisWeek: 0,
     openIssues: 0,
-    inProgressIssues: 0,
     resolvedIssues: 0,
   });
   const [recentIssues, setRecentIssues] = useState<RecentIssue[]>([]);
@@ -113,8 +111,6 @@ export default function Dashboard() {
     switch (status) {
       case "open":
         return "bg-red-50 text-red-700";
-      case "in_progress":
-        return "bg-blue-50 text-blue-700";
       case "resolved":
         return "bg-green-50 text-green-700";
       default:
@@ -126,8 +122,6 @@ export default function Dashboard() {
     switch (status) {
       case "open":
         return "Ouvert";
-      case "in_progress":
-        return "En cours";
       case "resolved":
         return "Résolu";
       default:
@@ -234,11 +228,11 @@ export default function Dashboard() {
               Déficiences
             </h2>
             <span className="text-2xl font-semibold text-[#1A1A1A]">
-              {loading ? "—" : stats.openIssues + stats.inProgressIssues + stats.resolvedIssues}
+              {loading ? "—" : stats.openIssues + stats.resolvedIssues}
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="bg-red-50 rounded-lg p-3 border border-red-200">
               <div className="flex items-center gap-2 mb-1">
                 <AlertCircle size={16} className="text-red-600" />
@@ -246,16 +240,6 @@ export default function Dashboard() {
               </div>
               <div className="text-xl font-semibold text-red-700">
                 {loading ? "—" : stats.openIssues}
-              </div>
-            </div>
-
-            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-              <div className="flex items-center gap-2 mb-1">
-                <Clock size={16} className="text-blue-600" />
-                <span className="text-xs text-blue-600 font-medium">En cours</span>
-              </div>
-              <div className="text-xl font-semibold text-blue-700">
-                {loading ? "—" : stats.inProgressIssues}
               </div>
             </div>
 

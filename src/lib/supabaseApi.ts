@@ -634,7 +634,6 @@ export interface DashboardStats {
   totalVisits: number;
   photosThisWeek: number;
   openIssues: number;
-  inProgressIssues: number;
   resolvedIssues: number;
 }
 
@@ -649,60 +648,49 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     const projectIds = projects.map((p) => p.id);
 
     // Décomptes en parallèle via `head: true` (ne transfère pas les lignes, juste le count)
-    const [totalVisits, photosThisWeek, openIssues, inProgressIssues, resolvedIssues] =
-      await Promise.all([
-        resolveCount(
-          projectIds.length
-            ? supabase
-                .from("site_visits")
-                .select("id", { count: "exact", head: true })
-                .in("project_id", projectIds)
-            : null,
-        ),
-        resolveCount(
-          projectIds.length
-            ? supabase
-                .from("photos")
-                .select("id", { count: "exact", head: true })
-                .in("project_id", projectIds)
-                .gte("created_at", weekAgo.toISOString())
-            : null,
-        ),
-        resolveCount(
-          projectIds.length
-            ? supabase
-                .from("issues")
-                .select("id", { count: "exact", head: true })
-                .in("project_id", projectIds)
-                .eq("status", "open")
-            : null,
-        ),
-        resolveCount(
-          projectIds.length
-            ? supabase
-                .from("issues")
-                .select("id", { count: "exact", head: true })
-                .in("project_id", projectIds)
-                .eq("status", "in_progress")
-            : null,
-        ),
-        resolveCount(
-          projectIds.length
-            ? supabase
-                .from("issues")
-                .select("id", { count: "exact", head: true })
-                .in("project_id", projectIds)
-                .eq("status", "resolved")
-            : null,
-        ),
-      ]);
+    const [totalVisits, photosThisWeek, openIssues, resolvedIssues] = await Promise.all([
+      resolveCount(
+        projectIds.length
+          ? supabase
+              .from("site_visits")
+              .select("id", { count: "exact", head: true })
+              .in("project_id", projectIds)
+          : null,
+      ),
+      resolveCount(
+        projectIds.length
+          ? supabase
+              .from("photos")
+              .select("id", { count: "exact", head: true })
+              .in("project_id", projectIds)
+              .gte("created_at", weekAgo.toISOString())
+          : null,
+      ),
+      resolveCount(
+        projectIds.length
+          ? supabase
+              .from("issues")
+              .select("id", { count: "exact", head: true })
+              .in("project_id", projectIds)
+              .eq("status", "open")
+          : null,
+      ),
+      resolveCount(
+        projectIds.length
+          ? supabase
+              .from("issues")
+              .select("id", { count: "exact", head: true })
+              .in("project_id", projectIds)
+              .eq("status", "resolved")
+          : null,
+      ),
+    ]);
 
     return {
       totalProjects: projects.length,
       totalVisits,
       photosThisWeek,
       openIssues,
-      inProgressIssues,
       resolvedIssues,
     };
   } catch (error) {

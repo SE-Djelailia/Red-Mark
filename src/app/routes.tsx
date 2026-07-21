@@ -20,7 +20,6 @@ import PhotoUploadPage from "./components/PhotoUploadPage";
 import PlanFileViewer from "./components/PlanFileViewer";
 import LocationDetail from "./components/LocationDetail";
 import MigrationPrompt from "./components/MigrationPrompt"; // ✅ Migration prompt
-import IssueFormTestRoute from "./components/IssueFormTestRoute"; // TEMPORARY — Stage 2 test harness, remove after Stage 3
 
 // Root component that provides SupabaseAuthContext to all routes
 function RootLayout() {
@@ -49,12 +48,6 @@ export const router = createBrowserRouter([
       {
         path: "/icon-generator",
         Component: IconGenerator,
-      },
-      {
-        // TEMPORARY — Stage 2 test harness for IssueForm/IssueView, standalone
-        // (not wired into any real surface). Remove after Stage 3 lands.
-        path: "/dev/issue-form-test",
-        Component: IssueFormTestRoute,
       },
       {
         path: "/app",
