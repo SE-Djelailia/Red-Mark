@@ -10,16 +10,25 @@ import {
   Plus,
   Camera,
   ChevronRight,
+  MessageSquare,
+  Calendar,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getLocation, getLevels, getLocations, type Location, type Level } from "../../lib/locationsApi";
 import { getIssuesByLocation, type Issue } from "../../lib/issuesApi";
-import { getPhotosByLocation, getPhotosSignedUrls } from "../../lib/supabaseApi";
+import {
+  getPhotosByLocation,
+  getPhotosSignedUrls,
+  getSiteVisitsSummaryByIds,
+} from "../../lib/supabaseApi";
 import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
+import { getCommentsForLocationActivity, type Comment } from "../../lib/commentsApi";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { useSmartBack } from "../../hooks/useSmartBack";
 import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole } from "../../hooks/useProjectRole";
+import { parseLocalDate } from "../../lib/dateUtils";
 import type { SiteVisit } from "../../lib/supabase";
 import VisitPicker from "./VisitPicker";
 import IssueForm from "./IssueForm";
@@ -35,16 +44,70 @@ const TYPE_LABEL: Record<Location["type"], string> = {
   element: "Élément",
 };
 
+const PRIORITY_LABEL: Record<Issue["priority"], string> = {
+  critical: "Critique",
+  high: "Élevé",
+  medium: "Moyen",
+  low: "Faible",
+};
+
+// Timeline entries are grouped by day; this formats the group header
+// ("21 juillet 2026"). Uses parseLocalDate (not plain `new Date(...)`) to
+// avoid the timezone shift a date-only "YYYY-MM-DD" string would otherwise
+// introduce.
+function formatDateHeader(dayKey: string): string {
+  const s = parseLocalDate(dayKey).toLocaleDateString("fr-CA", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// Per-row time-of-day — only meaningful for entries with a real timestamp
+// (issues, photos, comments); visits only ever carry a date, so this
+// returns null for those rather than showing a fake "00:00".
+function formatEntryTime(dateStr: string): string | null {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
+  return new Date(dateStr).toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+}
+
 interface DisplayPhoto {
   id: string;
   url: string;
   description: string | null;
+  createdAt: string;
+  visitId: string;
 }
 
-// "Everything recorded at this location" — Phase 1 scope: metadata, issues
-// (via getIssuesByLocation), and photos (via getPhotosByLocation). No
-// status-change timeline and no comment-stitching yet — both deferred to a
-// later phase, per the P3 investigation.
+interface ActivityVisit {
+  id: string;
+  visitDate: string;
+  phase?: string;
+}
+
+interface TimelineEntry {
+  key: string;
+  date: string; // ISO or "YYYY-MM-DD" — always comparable via `new Date(...)`
+  kind: "issue-logged" | "issue-resolved" | "photo" | "comment" | "visit";
+  onClick?: () => void;
+  // Photo entries show their own image as the spine marker instead of a
+  // generic icon — set only for kind "photo".
+  thumbnailUrl?: string;
+  render: () => React.ReactNode;
+}
+
+interface TimelineGroup {
+  dayKey: string;
+  entries: TimelineEntry[];
+}
+
+// "Everything recorded at this location" — Phase 1: metadata, issues (via
+// getIssuesByLocation), and photos (via getPhotosByLocation). Phase 2 adds
+// the "Activité" tab: a unified chronological feed weaving those together
+// with their comments and the visits they belong to — see buildTimeline
+// below. Still no comments directly ON the location (needs location_id on
+// `comments`) and no status-change audit trail — both deferred further.
 export default function LocationDetail() {
   const { projectId, locationId } = useParams<{ projectId: string; locationId: string }>();
   const navigate = useNavigate();
@@ -78,6 +141,14 @@ export default function LocationDetail() {
   const [lightboxPhoto, setLightboxPhoto] = useState<DisplayPhoto | null>(null);
   useModalOpen(!!lightboxPhoto);
   useModalOpen(pendingAction !== null && !!activeVisit);
+
+  // Aperçu / Activité toggle — Activité renders the merged timeline built
+  // from the issues/photos already loaded above, plus their comments and
+  // the visits they belong to (fetched once both are in).
+  const [view, setView] = useState<"overview" | "activity">("overview");
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [activityVisits, setActivityVisits] = useState<ActivityVisit[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
 
   // Without the location itself there's nothing meaningful to show — same
   // reasoning as ProjectDetail's project-load split: this gets its own
@@ -136,7 +207,15 @@ export default function LocationDetail() {
           urls = rows.map(() => ""); // graceful degrade — broken images, not a failed section
         }
       }
-      setPhotos(rows.map((p, i) => ({ id: p.id, url: urls[i] || "", description: p.description ?? null })));
+      setPhotos(
+        rows.map((p, i) => ({
+          id: p.id,
+          url: urls[i] || "",
+          description: p.description ?? null,
+          createdAt: p.created_at,
+          visitId: p.visit_id,
+        })),
+      );
     } catch (e) {
       console.error("Error loading photos for location:", e);
       setPhotosLoadError(true);
@@ -150,6 +229,45 @@ export default function LocationDetail() {
     loadIssues();
     loadPhotos();
   }, [location, loadIssues, loadPhotos]);
+
+  // Activity feed data — waits for both issues and photos to finish
+  // loading, then fetches their comments (one batched call) and a summary
+  // of the visits they belong to (one batched call). Re-runs whenever the
+  // issue/photo lists change (e.g. after adding a deficiency or photos).
+  useEffect(() => {
+    if (loadingIssues || loadingPhotos) return;
+    const issueIds = issues.map((i) => i.id);
+    const photoIds = photos.map((p) => p.id);
+    if (issueIds.length === 0 && photoIds.length === 0) {
+      setComments([]);
+      setActivityVisits([]);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingActivity(true);
+    const visitIds = Array.from(
+      new Set([...issues.map((i) => i.visitId), ...photos.map((p) => p.visitId)].filter(Boolean)),
+    );
+
+    Promise.all([
+      getCommentsForLocationActivity(issueIds, photoIds),
+      getSiteVisitsSummaryByIds(visitIds),
+    ])
+      .then(([commentRows, visits]) => {
+        if (cancelled) return;
+        setComments(commentRows);
+        setActivityVisits(visits);
+      })
+      .catch((e) => console.error("Error loading location activity:", e))
+      .finally(() => {
+        if (!cancelled) setLoadingActivity(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [issues, photos, loadingIssues, loadingPhotos]);
 
   const startAddIssue = () => {
     setPendingAction("issue");
@@ -238,6 +356,145 @@ export default function LocationDetail() {
     : null;
   const childLocations = allLocations.filter((l) => l.parentLocationId === location.id);
 
+  // Merges issues (logged + resolved as two separate moments), photos,
+  // comments (linked back to their issue/photo), and the visits they
+  // belong to into one reverse-chronological "building memory" feed.
+  const timeline: TimelineEntry[] = [];
+
+  for (const issue of issues) {
+    timeline.push({
+      key: `issue-logged-${issue.id}`,
+      date: issue.createdAt || issue.createdDate,
+      kind: "issue-logged",
+      onClick: () => navigate(`/app/projects/${projectId}/issues/${issue.id}`),
+      render: () => (
+        <>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-[#1A1A1A] font-medium truncate">{issue.title}</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-700 flex-shrink-0">
+              Ouverte
+            </span>
+          </div>
+          <div className="text-xs text-gray-500">
+            Déficience créée · {PRIORITY_LABEL[issue.priority]}
+          </div>
+        </>
+      ),
+    });
+    if (issue.status === "resolved" && issue.resolvedAt) {
+      timeline.push({
+        key: `issue-resolved-${issue.id}`,
+        date: issue.resolvedAt,
+        kind: "issue-resolved",
+        onClick: () => navigate(`/app/projects/${projectId}/issues/${issue.id}`),
+        render: () => (
+          <>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-[#1A1A1A] font-medium truncate">{issue.title}</span>
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-700 flex-shrink-0">
+                Résolue
+              </span>
+            </div>
+            <div className="text-xs text-gray-500">Déficience marquée résolue</div>
+          </>
+        ),
+      });
+    }
+  }
+
+  for (const photo of photos) {
+    // created_at is nullable at the DB level (default now(), no NOT NULL) —
+    // a photo missing it can't be placed on the timeline; skip rather than
+    // crash the whole grouping pass below.
+    if (!photo.createdAt) continue;
+    timeline.push({
+      key: `photo-${photo.id}`,
+      date: photo.createdAt,
+      kind: "photo",
+      onClick: () => setLightboxPhoto(photo),
+      thumbnailUrl: photo.url,
+      render: () => (
+        <div className="text-sm text-[#1A1A1A]">
+          Photo ajoutée
+          {photo.description && <span className="text-gray-500"> · {photo.description}</span>}
+        </div>
+      ),
+    });
+  }
+
+  for (const comment of comments) {
+    // Same nullable created_at gap as photos above — skip rather than risk
+    // a falsy date reaching the grouping pass.
+    if (!comment.date) continue;
+    let sourceLabel = "";
+    let onClick: (() => void) | undefined;
+    if (comment.issueId) {
+      const relatedIssue = issues.find((i) => i.id === comment.issueId);
+      sourceLabel = relatedIssue ? `sur « ${relatedIssue.title} »` : "sur une déficience";
+      const issueId = comment.issueId;
+      onClick = () =>
+        navigate(`/app/projects/${projectId}/issues/${issueId}?commentId=${comment.id}`);
+    } else if (comment.photoId) {
+      sourceLabel = "sur une photo";
+      const relatedPhoto = photos.find((p) => p.id === comment.photoId);
+      onClick = relatedPhoto ? () => setLightboxPhoto(relatedPhoto) : undefined;
+    }
+    timeline.push({
+      key: `comment-${comment.id}`,
+      date: comment.date,
+      kind: "comment",
+      onClick,
+      render: () => (
+        <div
+          className={`bg-gray-50 rounded-2xl rounded-tl-sm px-3 py-2 inline-block max-w-full ${
+            onClick ? "hover:bg-gray-100 transition-colors" : ""
+          }`}
+        >
+          <div className="text-xs text-gray-500 mb-0.5">
+            <span className="font-medium text-[#1A1A1A]">{comment.author}</span> {sourceLabel}
+          </div>
+          <div className="text-sm text-[#1A1A1A] truncate">{comment.text}</div>
+        </div>
+      ),
+    });
+  }
+
+  for (const visit of activityVisits) {
+    timeline.push({
+      key: `visit-${visit.id}`,
+      date: visit.visitDate,
+      kind: "visit",
+      onClick: () => navigate(`/app/projects/${projectId}/visits/${visit.id}`),
+      render: () => (
+        <div className="text-sm text-[#1A1A1A]">Visite{visit.phase ? ` · ${visit.phase}` : ""}</div>
+      ),
+    });
+  }
+
+  timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  // Group consecutive same-day entries under one date header — since
+  // `timeline` is already sorted descending, same-day entries are always
+  // adjacent, so this is a single linear pass. Guards against a falsy
+  // `entry.date` (defense in depth — every construction site above should
+  // already skip/guarantee a real date, but a bad value here must never
+  // crash the whole page again the way it just did).
+  const timelineGroups: TimelineGroup[] = [];
+  for (const entry of timeline) {
+    const dayKey = entry.date ? entry.date.slice(0, 10) : "inconnue";
+    const lastGroup = timelineGroups[timelineGroups.length - 1];
+    if (lastGroup && lastGroup.dayKey === dayKey) lastGroup.entries.push(entry);
+    else timelineGroups.push({ dayKey, entries: [entry] });
+  }
+
+  const TIMELINE_ICON: Record<TimelineEntry["kind"], { icon: typeof AlertCircle; color: string }> = {
+    "issue-logged": { icon: AlertCircle, color: "text-red-600 bg-red-50" },
+    "issue-resolved": { icon: CheckCircle2, color: "text-green-600 bg-green-50" },
+    photo: { icon: ImageIcon, color: "text-blue-600 bg-blue-50" },
+    comment: { icon: MessageSquare, color: "text-gray-600 bg-gray-100" },
+    visit: { icon: Calendar, color: "text-purple-600 bg-purple-50" },
+  };
+
   return (
     <div className="min-h-screen pb-20 bg-gray-50">
       {/* Header */}
@@ -260,6 +517,110 @@ export default function LocationDetail() {
         )}
       </div>
 
+      <div className="px-4 pt-4 max-w-2xl mx-auto">
+        <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden">
+          <button
+            onClick={() => setView("overview")}
+            className={`px-4 py-2 text-sm font-medium min-h-[40px] transition-colors ${
+              view === "overview" ? "bg-[#E10600] text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Aperçu
+          </button>
+          <button
+            onClick={() => setView("activity")}
+            className={`px-4 py-2 text-sm font-medium min-h-[40px] transition-colors ${
+              view === "activity" ? "bg-[#E10600] text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Activité
+          </button>
+        </div>
+      </div>
+
+      {view === "activity" ? (
+        <div className="px-4 py-6 max-w-2xl mx-auto">
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h2 className="text-sm font-semibold text-[#1A1A1A] mb-3">
+              Historique ({loadingActivity ? "…" : timeline.length})
+            </h2>
+            {loadingActivity ? (
+              <div className="text-sm text-gray-500">Chargement…</div>
+            ) : timeline.length === 0 ? (
+              <div className="text-sm text-gray-500 text-center py-6">
+                Aucune activité enregistrée à ce local pour le moment.
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {timelineGroups.map((group) => (
+                  <div key={group.dayKey}>
+                    <div className="text-xs font-semibold text-gray-500 mb-3 pl-1">
+                      {formatDateHeader(group.dayKey)}
+                    </div>
+                    <div className="relative">
+                      {group.entries.length > 1 && (
+                        <div className="absolute left-4 top-4 bottom-4 w-px bg-gray-200" />
+                      )}
+                      <div className="space-y-3">
+                        {group.entries.map((entry) => {
+                          const { icon: Icon, color } = TIMELINE_ICON[entry.kind];
+                          const Tag = entry.onClick ? "button" : "div";
+                          const isComment = entry.kind === "comment";
+                          const time = formatEntryTime(entry.date);
+                          return (
+                            <div
+                              key={entry.key}
+                              className={`flex items-start gap-3 ${isComment ? "pl-4" : ""}`}
+                            >
+                              {/* Marker — photo entries show a thumbnail instead of an icon */}
+                              <div className="relative z-10 flex-shrink-0">
+                                {entry.thumbnailUrl ? (
+                                  <button
+                                    onClick={entry.onClick}
+                                    className="w-8 h-8 rounded-lg overflow-hidden border-2 border-white shadow-sm bg-gray-100"
+                                  >
+                                    <img
+                                      src={entry.thumbnailUrl}
+                                      alt=""
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </button>
+                                ) : (
+                                  <div
+                                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-sm ${color}`}
+                                  >
+                                    <Icon size={14} />
+                                  </div>
+                                )}
+                              </div>
+
+                              <Tag
+                                onClick={entry.onClick}
+                                className={`flex-1 min-w-0 flex items-start justify-between gap-3 rounded-lg text-left ${
+                                  entry.onClick && !isComment
+                                    ? "hover:bg-gray-50 -mx-1 px-1 py-0.5 cursor-pointer"
+                                    : ""
+                                }`}
+                              >
+                                <div className="min-w-0 flex-1">{entry.render()}</div>
+                                {time && (
+                                  <div className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap pt-0.5">
+                                    {time}
+                                  </div>
+                                )}
+                              </Tag>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
       <div className="px-4 py-6 max-w-2xl mx-auto space-y-6">
         {/* Metadata card */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-2 text-sm">
@@ -414,6 +775,7 @@ export default function LocationDetail() {
           )}
         </div>
       </div>
+      )}
 
       {/* Minimal photo lightbox — view only, no comments/annotations (Phase 2) */}
       {lightboxPhoto && (

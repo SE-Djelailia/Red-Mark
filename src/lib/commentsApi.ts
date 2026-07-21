@@ -126,6 +126,43 @@ export async function getCommentsForPhoto(photoId: string): Promise<Comment[]> {
   return getCommentsForTarget("photo_id", photoId);
 }
 
+// Comments across a whole set of issues/photos at once — powers
+// LocationDetail's activity timeline, which would otherwise need one
+// getCommentsForIssue/getCommentsForPhoto call per item (each of which runs
+// its own author-name/mention queries). Two batched `IN (...)` queries
+// total, then author names and mentions are resolved once across the
+// combined result set — constant query count regardless of how many
+// issues/photos the location has.
+export async function getCommentsForLocationActivity(
+  issueIds: string[],
+  photoIds: string[],
+): Promise<Comment[]> {
+  const [byIssue, byPhoto] = await Promise.all([
+    issueIds.length > 0
+      ? supabase.from("comments").select("*").in("issue_id", issueIds)
+      : Promise.resolve({ data: [] as any[], error: null }),
+    photoIds.length > 0
+      ? supabase.from("comments").select("*").in("photo_id", photoIds)
+      : Promise.resolve({ data: [] as any[], error: null }),
+  ]);
+
+  const rows: any[] = [];
+  if (byIssue.error) console.error("Error fetching issue comments for location activity:", byIssue.error);
+  else rows.push(...(byIssue.data || []));
+  if (byPhoto.error) console.error("Error fetching photo comments for location activity:", byPhoto.error);
+  else rows.push(...(byPhoto.data || []));
+  if (rows.length === 0) return [];
+
+  const [authorNames, mentionsByComment] = await Promise.all([
+    resolveAuthorNames(rows.map((r) => r.user_id)),
+    resolveMentions(rows.map((r) => r.id)),
+  ]);
+
+  return rows.map((row) =>
+    rowToComment(row, authorNames.get(row.user_id) || "Utilisateur", mentionsByComment.get(row.id) || []),
+  );
+}
+
 async function createComment(
   target: Target,
   text: string,

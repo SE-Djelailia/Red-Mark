@@ -28,6 +28,12 @@ export interface Issue {
   assignedToUserId?: string | null;
   createdBy: string;
   createdDate: string;
+  // Full-precision counterparts of createdDate/status, for callers that need
+  // real ordering (e.g. LocationDetail's activity timeline) rather than the
+  // day-only display string. resolvedAt mirrors the DB's resolved_at, which
+  // was already being written on every status change but never read back.
+  createdAt?: string;
+  resolvedAt?: string | null;
   // `url` (file_url) is kept for back-compat but is not signed and should
   // not be used directly for display against the private storage bucket —
   // use `storagePath` with SecureImage/getPhotosSignedUrls instead, same as
@@ -113,6 +119,8 @@ function rowToIssueBase(row: any): Omit<Issue, "photos"> {
     assignedToUserId: row.assigned_to || null,
     createdBy: row.user_id,
     createdDate: (row.created_at || new Date().toISOString()).split("T")[0],
+    createdAt: row.created_at || undefined,
+    resolvedAt: row.resolved_at || null,
     tags: Array.isArray(extras.tags) ? extras.tags : [],
     location: extras.label || "",
     locationId: row.location_id || null,

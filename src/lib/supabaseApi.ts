@@ -316,6 +316,29 @@ export async function getSiteVisit(visitId: string): Promise<SiteVisit | null> {
   }
 }
 
+// Lightweight batched lookup — just enough to label a set of visit ids
+// (date + phase), for LocationDetail's activity timeline ("visits where
+// this location had activity"). One query regardless of how many ids.
+export async function getSiteVisitsSummaryByIds(
+  ids: string[],
+): Promise<{ id: string; visitDate: string; phase?: string }[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from("site_visits")
+    .select("id, visit_date, phase")
+    .in("id", ids);
+
+  if (error) {
+    console.error("❌ Error fetching visit summaries:", error);
+    return [];
+  }
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    visitDate: row.visit_date,
+    phase: row.phase || undefined,
+  }));
+}
+
 export async function createSiteVisit(
   visit: Omit<SiteVisit, "id" | "created_at" | "updated_at">,
 ): Promise<SiteVisit> {
