@@ -6,29 +6,22 @@ import { useModalOpen } from "../../hooks/useModalOpen";
 import { useAuth } from "../../contexts/useAuth";
 import type { Location } from "../../lib/locationsApi";
 import { createIssue, updateIssue, getIssuesByLocation, type Issue } from "../../lib/issuesApi";
-import { uploadPhoto } from "../../lib/supabaseApi";
-import { addToQueue } from "../../lib/uploadQueue";
-import { compressImage } from "../../lib/imageCompression";
+import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
 
+// Same 3-choice priority set as IssueForm (the canonical spec deliberately
+// excludes "critical") — this lite variant must not be able to create data
+// the canonical form couldn't also produce.
 const PRIORITIES: { value: Issue["priority"]; label: string; dot: string }[] = [
+  { value: "high", label: "Élevé", dot: "bg-orange-500" },
+  { value: "medium", label: "Moyen", dot: "bg-blue-500" },
   { value: "low", label: "Faible", dot: "bg-gray-500" },
-  { value: "medium", label: "Moyenne", dot: "bg-blue-500" },
-  { value: "high", label: "Élevée", dot: "bg-orange-500" },
-  { value: "critical", label: "Critique", dot: "bg-red-600" },
 ];
 
 const STATUS_LABEL: Record<Issue["status"], string> = {
   open: "Ouverte",
   resolved: "Résolue",
 };
-
-// Network failures surface as TypeError (fetch's own error type) rather than the
-// PostgrestError/StorageError objects Supabase throws for validation/permission
-// failures — same check used by PhotoUploadPage.tsx.
-function isNetworkError(error: unknown): boolean {
-  return !navigator.onLine || error instanceof TypeError;
-}
 
 interface Props {
   open: boolean;
@@ -120,32 +113,12 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
         locationId: location.id,
       });
 
-      let queuedCount = 0;
-      const uploadedRefs: { id: string; url: string }[] = [];
-      for (const file of photos) {
-        try {
-          const compressed = await compressImage(file);
-          try {
-            const photo = await uploadPhoto(compressed, user.id, projectId, visitId, {
-              locationId: location.id,
-            });
-            uploadedRefs.push({ id: photo.id, url: photo.file_url });
-          } catch (uploadError) {
-            if (!isNetworkError(uploadError)) throw uploadError;
-            await addToQueue({
-              file: compressed,
-              userId: user.id,
-              projectId,
-              visitId,
-              tags: [],
-              locationId: location.id,
-            });
-            queuedCount++;
-          }
-        } catch (e: any) {
-          toast.error(`Échec de l'envoi d'une photo : ${e.message || e}`);
-        }
-      }
+      const { uploaded: uploadedRefs, queuedCount } = await uploadIssuePhotos(photos, {
+        userId: user.id,
+        projectId,
+        visitId,
+        locationId: location.id,
+      });
 
       if (uploadedRefs.length > 0) {
         await updateIssue(issue.id, { photos: uploadedRefs });

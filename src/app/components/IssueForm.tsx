@@ -5,9 +5,7 @@ import { useAuth } from "../../contexts/useAuth";
 import { createIssue, updateIssue, type Issue } from "../../lib/issuesApi";
 import { getLocation, type Location } from "../../lib/locationsApi";
 import { getProjectTeammates, type Teammate } from "../../lib/commentsApi";
-import { uploadPhoto } from "../../lib/supabaseApi";
-import { addToQueue } from "../../lib/uploadQueue";
-import { compressImage } from "../../lib/imageCompression";
+import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
 import SecureImage from "./SecureImage";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
 
@@ -18,13 +16,6 @@ const PRIORITIES: { value: Issue["priority"]; label: string; dot: string }[] = [
 ];
 
 const DISCIPLINES = ["Architecture", "Structure", "Mécanique", "Électricité", "Plomberie"];
-
-// Network failures surface as TypeError (fetch's own error type) rather than the
-// PostgrestError/StorageError objects Supabase throws for validation/permission
-// failures — same check used by LocationPinPanel.tsx / PhotoUploadPage.tsx.
-function isNetworkError(error: unknown): boolean {
-  return !navigator.onLine || error instanceof TypeError;
-}
 
 interface Props {
   projectId: string;
@@ -199,32 +190,12 @@ export default function IssueForm({ projectId, visitId, locationId, issue, onSav
         savedIssue = await createIssue(payload);
       }
 
-      let queuedCount = 0;
-      const uploadedRefs: Issue["photos"] = [];
-      for (const file of newPhotoFiles) {
-        try {
-          const compressed = await compressImage(file);
-          try {
-            const photo = await uploadPhoto(compressed, user.id, projectId, visitId, {
-              locationId: location?.id,
-            });
-            uploadedRefs.push({ id: photo.id, url: photo.file_url, storagePath: photo.storage_path });
-          } catch (uploadError) {
-            if (!isNetworkError(uploadError)) throw uploadError;
-            await addToQueue({
-              file: compressed,
-              userId: user.id,
-              projectId,
-              visitId,
-              tags: [],
-              locationId: location?.id,
-            });
-            queuedCount++;
-          }
-        } catch (e: any) {
-          toast.error(`Échec de l'envoi d'une photo : ${e.message || e}`);
-        }
-      }
+      const { uploaded: uploadedRefs, queuedCount } = await uploadIssuePhotos(newPhotoFiles, {
+        userId: user.id,
+        projectId,
+        visitId,
+        locationId: location?.id,
+      });
 
       const photosChanged = uploadedRefs.length > 0 || removedPhotoIds.length > 0;
       if (photosChanged) {

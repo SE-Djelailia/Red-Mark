@@ -50,6 +50,7 @@ import PlanFilesManager from "./PlanFilesManager";
 import LocationsImportModal from "./LocationsImportModal";
 import LocationsTab from "./LocationsTab";
 import { getLocations, getLevels, type Location, type Level } from "../../lib/locationsApi";
+import { PLANS_ENABLED } from "../../lib/featureFlags";
 
 interface Issue {
   id: string;
@@ -130,7 +131,11 @@ export default function ProjectDetail() {
   // one per tab click, so the back button still only takes one press to
   // actually leave the page.
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab: MainTab = (searchParams.get("tab") as MainTab) || "visits";
+  const requestedTab = (searchParams.get("tab") as MainTab) || "visits";
+  // Falls back to "visits" if a stale/typed-in URL asks for the Plans tab
+  // while the feature is flagged off, rather than rendering an empty tab
+  // with no way to reach it from the tab bar.
+  const activeTab: MainTab = requestedTab === "plans" && !PLANS_ENABLED ? "visits" : requestedTab;
   const gallerySubTab: GallerySubTab = (searchParams.get("sub") as GallerySubTab) || "photos";
 
   const setActiveTab = (tab: MainTab) => {
@@ -765,17 +770,19 @@ export default function ProjectDetail() {
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E10600]" />
             )}
           </button>
-          <button
-            onClick={() => setActiveTab("plans")}
-            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === "plans" ? "text-[#E10600]" : "text-gray-600 hover:text-[#1A1A1A]"
-            }`}
-          >
-            Plans
-            {activeTab === "plans" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E10600]" />
-            )}
-          </button>
+          {PLANS_ENABLED && (
+            <button
+              onClick={() => setActiveTab("plans")}
+              className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+                activeTab === "plans" ? "text-[#E10600]" : "text-gray-600 hover:text-[#1A1A1A]"
+              }`}
+            >
+              Plans
+              {activeTab === "plans" && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E10600]" />
+              )}
+            </button>
+          )}
           <button
             onClick={() => setActiveTab("locations")}
             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
@@ -1223,7 +1230,7 @@ export default function ProjectDetail() {
         )}
 
         {/* Plans Tab */}
-        {activeTab === "plans" && id && <PlanFilesManager projectId={id} />}
+        {PLANS_ENABLED && activeTab === "plans" && id && <PlanFilesManager projectId={id} />}
 
         {/* Locations Tab */}
         {activeTab === "locations" && id && (

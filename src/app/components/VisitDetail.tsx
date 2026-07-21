@@ -33,6 +33,7 @@ import { getCommentsForIssue, type Comment } from "../../lib/commentsApi";
 import PlanFilesManager from "./PlanFilesManager";
 import CollapsibleSection from "./CollapsibleSection";
 import { getRlsErrorMessage } from "../../lib/rlsErrors";
+import { PLANS_ENABLED } from "../../lib/featureFlags";
 import { useSmartBack } from "../../hooks/useSmartBack";
 import ConfirmDialog from "./ConfirmDialog";
 import type { SiteVisit } from "../../lib/supabase";
@@ -633,8 +634,9 @@ export default function VisitDetail() {
         )}
 
         {/* Plans — collapsed by default; not needed on every visit and the
-            file manager itself is a fair amount of content. */}
-        {projectId && (
+            file manager itself is a fair amount of content. Hidden
+            entirely while PLANS_ENABLED is off (see featureFlags.ts). */}
+        {PLANS_ENABLED && projectId && (
           <CollapsibleSection title="Plans" icon={<LayoutGrid size={16} className="text-gray-500" />}>
             <PlanFilesManager projectId={projectId} visitId={visitId} />
           </CollapsibleSection>
