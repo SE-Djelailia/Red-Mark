@@ -322,7 +322,10 @@ export async function createIssue(
         status: issueData.status,
         discipline: issueData.discipline || null,
         due_date: issueData.dueDate || null,
-        assigned_to_name: issueData.assignedToName || issueData.assignedTo || null,
+        assigned_to: issueData.assignedToUserId || null,
+        assigned_to_name: issueData.assignedToUserId
+          ? null
+          : issueData.assignedToName || issueData.assignedTo || null,
         location: buildExtras(issueData),
         location_id: issueData.locationId || null,
       },
@@ -371,8 +374,16 @@ export async function updateIssue(
   }
   if (updates.discipline !== undefined) payload.discipline = updates.discipline || null;
   if (updates.dueDate !== undefined) payload.due_date = updates.dueDate || null;
+  // XOR: setting one assignee field clears the other, matching the form's
+  // client-enforced member-vs-free-text toggle.
+  if (updates.assignedToUserId !== undefined) {
+    payload.assigned_to = updates.assignedToUserId || null;
+    if (updates.assignedToUserId) payload.assigned_to_name = null;
+  }
   if (updates.assignedToName !== undefined || updates.assignedTo !== undefined) {
-    payload.assigned_to_name = updates.assignedToName ?? updates.assignedTo ?? null;
+    const name = updates.assignedToName ?? updates.assignedTo ?? null;
+    payload.assigned_to_name = name;
+    if (name) payload.assigned_to = null;
   }
 
   // Rebuild extras JSONB if any of its constituent fields changed

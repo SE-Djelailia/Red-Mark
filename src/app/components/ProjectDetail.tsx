@@ -59,7 +59,7 @@ interface Issue {
   assignedTo: string;
   createdBy: string;
   createdDate: string;
-  photos: { id: string; url: string }[];
+  photos: { id: string; url: string; storagePath?: string }[];
   tags?: string[];
   location: string;
   locationId?: string | null;
@@ -219,7 +219,6 @@ export default function ProjectDetail() {
     phase: p.site_visits?.phase
       ? p.site_visits.phase.charAt(0).toUpperCase() + p.site_visits.phase.slice(1)
       : "",
-    room: p.site_visits?.attendees?.[0] || "Zone non spécifiée",
   }));
 
   // Filter photos based on search and filters
@@ -228,7 +227,6 @@ export default function ProjectDetail() {
     if (photoSearchQuery.trim()) {
       const query = photoSearchQuery.toLowerCase();
       const matchesSearch =
-        photo.room.toLowerCase().includes(query) ||
         photo.phase.toLowerCase().includes(query) ||
         (photo.tags && photo.tags.some((tag) => tag.toLowerCase().includes(query)));
       if (!matchesSearch) return false;
@@ -289,15 +287,16 @@ export default function ProjectDetail() {
     comments.length > 0 ? `${comments.length} commentaire${comments.length !== 1 ? "s" : ""}` : null,
   ].filter((s): s is string => s !== null);
 
-  // Prefers the resolved location (locationId -> "202 — Salle mécanique")
-  // over the free-text `location` field, which predates the Plans &
-  // Locations feature and is all older issues have.
-  const resolveLocationLabel = (issue: Issue): string => {
-    if (issue.locationId) {
-      const loc = locations.find((l) => l.id === issue.locationId);
-      if (loc) return loc.locationNumber + (loc.name ? ` — ${loc.name}` : "");
-    }
-    return issue.location;
+  // Only the resolved location (locationId -> "202 — Salle mécanique") is
+  // trustworthy — the free-text `location` field predates the Plans &
+  // Locations feature and is often just the phantom "Zone non spécifiée"
+  // fallback from the old visit-room flow, so it's not used here at all.
+  // Returns null when there's no real linked location, so the caller can
+  // hide the chip entirely instead of showing a phantom value.
+  const resolveLocationLabel = (issue: Issue): string | null => {
+    if (!issue.locationId) return null;
+    const loc = locations.find((l) => l.id === issue.locationId);
+    return loc ? loc.locationNumber + (loc.name ? ` — ${loc.name}` : "") : null;
   };
 
   const fetchData = useCallback(async () => {
@@ -534,8 +533,8 @@ export default function ProjectDetail() {
   return (
     <div className="min-h-screen pb-20">
       {/* Header */}
-      <div className="bg-[#1A1A1A] text-white px-6 py-6 md:py-8">
-        <div className="flex items-start justify-between mb-4">
+      <div className="bg-[#1A1A1A] text-white px-6 py-4 md:py-5">
+        <div className="flex items-start justify-between mb-3">
           <button
             onClick={goBack}
             className="flex items-center gap-2 text-gray-400 hover:text-white"
@@ -594,7 +593,7 @@ export default function ProjectDetail() {
             </button>
           </div>
         </div>
-        <h1 className="text-xl md:text-2xl mb-4">{project?.name}</h1>
+        <h1 className="text-xl md:text-2xl mb-3">{project?.name}</h1>
 
         {/* Quick Stats — déficiences is the primary number on this screen,
             everything else is secondary/muted and hidden entirely at zero
@@ -977,16 +976,13 @@ export default function ProjectDetail() {
                       >
                         <img
                           src={photo.url}
-                          alt={photo.room}
+                          alt="Photo"
                           className="w-full h-full object-cover transition-transform group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
                             <div className="text-xs mb-1">
                               {parseLocalDate(photo.date).toLocaleDateString("fr-CA")}
-                            </div>
-                            <div className="text-sm font-medium mb-1 line-clamp-1">
-                              {photo.room}
                             </div>
                             <div className="flex items-center gap-1 flex-wrap">
                               <div className="text-xs px-2 py-0.5 bg-[#E10600] rounded inline-block">
@@ -1041,105 +1037,83 @@ export default function ProjectDetail() {
                     </button>
                   </div>
                 ) : (
-                  filteredIssues.map((issue) => (
-                  <div
-                    key={issue.id}
-                    onClick={() => navigate(`/app/projects/${id}/issues/${issue.id}`)}
-                    className="bg-white rounded-xl border border-gray-200 p-5 cursor-pointer hover:border-[#E10600] hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-[#E10600] text-white flex items-center justify-center text-sm font-medium">
-                          {issue.assignedTo
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-[#1A1A1A]">{issue.title}</div>
-                          <div className="text-xs text-gray-500">
-                            {parseLocalDate(issue.createdDate).toLocaleDateString("fr-CA")}
+                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    {filteredIssues.map((issue) => {
+                      const locationLabel = resolveLocationLabel(issue);
+                      return (
+                        <button
+                          key={issue.id}
+                          onClick={() => navigate(`/app/projects/${id}/issues/${issue.id}`)}
+                          className="w-full flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors min-h-[44px] text-left"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-[#1A1A1A] truncate">
+                              {issue.title}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5 flex-wrap">
+                              <span className="whitespace-nowrap">
+                                {parseLocalDate(issue.createdDate).toLocaleDateString("fr-CA", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </span>
+                              {locationLabel && (
+                                <span className="flex items-center gap-1 min-w-0">
+                                  <span>·</span>
+                                  <MapPin size={10} className="flex-shrink-0" />
+                                  <span className="truncate">{locationLabel}</span>
+                                </span>
+                              )}
+                              {issue.photos.length > 0 && (
+                                <span className="flex items-center gap-1 flex-shrink-0">
+                                  <span>·</span>
+                                  <Camera size={10} />
+                                  {issue.photos.length}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-700 leading-relaxed line-clamp-2 mb-3">
-                      {issue.description}
-                    </p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div
-                        className={`px-2 py-1 rounded-md text-xs font-medium ${
-                          issue.priority === "critical"
-                            ? "bg-red-100 text-red-700"
-                            : issue.priority === "high"
-                              ? "bg-orange-100 text-orange-700"
-                              : issue.priority === "medium"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {issue.priority === "critical"
-                          ? "Critique"
-                          : issue.priority === "high"
-                            ? "Élevé"
-                            : issue.priority === "medium"
-                              ? "Moyen"
-                              : "Faible"}
-                      </div>
-                      <div
-                        className={`px-2 py-1 rounded-md text-xs font-medium ${
-                          issue.status === "open"
-                            ? "bg-red-50 text-red-700"
-                            : issue.status === "in_progress"
-                              ? "bg-blue-50 text-blue-700"
-                              : "bg-green-50 text-green-700"
-                        }`}
-                      >
-                        {issue.status === "open"
-                          ? "Ouvert"
-                          : issue.status === "in_progress"
-                            ? "En cours"
-                            : "Résolu"}
-                      </div>
-                      <div className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs flex items-center gap-1">
-                        <MapPin size={10} />
-                        {resolveLocationLabel(issue)}
-                      </div>
-                    </div>
-                    {issue.tags && issue.tags.length > 0 && (
-                      <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        {issue.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs flex items-center gap-1"
-                          >
-                            <Tag size={10} />
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    {issue.photos.length > 0 && (
-                      <div className="flex gap-2 overflow-x-auto pb-2 mt-4">
-                        {issue.photos.slice(0, 3).map((photo) => (
-                          <img
-                            key={photo.id}
-                            src={photo.url}
-                            alt="Issue photo"
-                            className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
-                          />
-                        ))}
-                        {issue.photos.length > 3 && (
-                          <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs text-gray-600">
-                              +{issue.photos.length - 3}
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <span
+                              className={`px-2 py-1 rounded-md text-xs font-medium ${
+                                issue.priority === "critical"
+                                  ? "bg-red-100 text-red-700"
+                                  : issue.priority === "high"
+                                    ? "bg-orange-100 text-orange-700"
+                                    : issue.priority === "medium"
+                                      ? "bg-yellow-100 text-yellow-700"
+                                      : "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {issue.priority === "critical"
+                                ? "Critique"
+                                : issue.priority === "high"
+                                  ? "Élevé"
+                                  : issue.priority === "medium"
+                                    ? "Moyen"
+                                    : "Faible"}
+                            </span>
+                            <span
+                              className={`px-2 py-1 rounded-md text-xs font-medium ${
+                                issue.status === "open"
+                                  ? "bg-red-50 text-red-700"
+                                  : issue.status === "in_progress"
+                                    ? "bg-blue-50 text-blue-700"
+                                    : "bg-green-50 text-green-700"
+                              }`}
+                            >
+                              {issue.status === "open"
+                                ? "Ouvert"
+                                : issue.status === "in_progress"
+                                  ? "En cours"
+                                  : "Résolu"}
                             </span>
                           </div>
-                        )}
-                      </div>
-                    )}
+                        </button>
+                      );
+                    })}
                   </div>
-                  ))
                 )}
               </div>
             )}
@@ -1326,7 +1300,7 @@ export default function ProjectDetail() {
           >
             <img
               src={selectedPhoto.url}
-              alt={selectedPhoto.room}
+              alt="Photo"
               className="max-w-full max-h-full object-contain rounded-lg"
             />
           </div>
@@ -1353,11 +1327,6 @@ export default function ProjectDetail() {
             <div className="flex items-center gap-3 text-sm">
               <Calendar size={18} className="text-gray-400" />
               <span>{parseLocalDate(selectedPhoto.date).toLocaleDateString("fr-CA")}</span>
-            </div>
-
-            <div className="flex items-center gap-3 text-sm">
-              <MapPin size={18} className="text-gray-400" />
-              <span>{selectedPhoto.room}</span>
             </div>
 
             <div className="space-y-2">

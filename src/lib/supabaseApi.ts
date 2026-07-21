@@ -348,7 +348,7 @@ export async function getPhotos(visitId: string): Promise<Photo[]> {
 // not anything stored directly on the photo, so that gets embedded in the
 // same query (PostgREST `site_visits(...)`) rather than joined client-side.
 export interface ProjectGalleryPhotoRow extends Photo {
-  site_visits: { phase: string | null; attendees: string[] | null; visit_date: string } | null;
+  site_visits: { phase: string | null; visit_date: string } | null;
 }
 
 // All photos across a project, for the Gallery tab — its own dedicated
@@ -363,7 +363,7 @@ export async function getPhotosByProject(projectId: string): Promise<ProjectGall
   try {
     const { data, error } = await supabase
       .from("photos")
-      .select("*, site_visits(phase, attendees, visit_date)")
+      .select("*, site_visits(phase, visit_date)")
       .eq("project_id", projectId)
       .order("created_at", { ascending: false });
 

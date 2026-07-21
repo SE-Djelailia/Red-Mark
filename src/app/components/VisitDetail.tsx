@@ -77,7 +77,6 @@ interface VisitDisplay {
   id: string;
   date: string;
   phase: string;
-  room: string;
   tags: string[];
   photoCount: number;
   notes: string;
@@ -149,7 +148,6 @@ export default function VisitDetail() {
           id: apiVisit.id,
           date: apiVisit.visit_date,
           phase: apiVisit.phase.charAt(0).toUpperCase() + apiVisit.phase.slice(1),
-          room: apiVisit.attendees?.[0] || "Zone non spécifiée",
           tags: [],
           photoCount: photos.length,
           notes: apiVisit.notes,
@@ -352,7 +350,7 @@ export default function VisitDetail() {
           ...issueFormData,
           photos: linkedPhotos,
           tags: [],
-          location: visit?.room || "Zone non spécifiée",
+          location: "",
         });
         setIssues((prevIssues) => [...prevIssues, newIssue]);
         toast.success(`Déficience créée avec ${linkedPhotos.length} photo(s)`);
