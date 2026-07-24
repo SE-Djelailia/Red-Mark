@@ -1,33 +1,22 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "useDefineForClassFields": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "WebWorker"],
     "module": "ESNext",
     "skipLibCheck": true,
 
-    /* Bundler mode */
     "moduleResolution": "Bundler",
     "esModuleInterop": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
-    "jsx": "react-jsx",
 
-    /* Strict mode */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true,
-
-    /* Path aliases */
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "utils"],
-  "exclude": ["src/sw.ts"]
+  "include": ["src/sw.ts"]
 }

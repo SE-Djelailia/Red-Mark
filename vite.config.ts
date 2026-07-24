@@ -11,6 +11,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "robots.txt", "icon.svg"],
       manifest: {
@@ -56,36 +59,11 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
+      injectManifest: {
+        // The caching rules themselves now live in src/sw.ts (registerRoute
+        // calls) since a custom SW source has full control; this only
+        // covers which build output gets fed into self.__WB_MANIFEST.
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/images\.unsplash\.com\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "unsplash-images",
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: /\/api\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "api-cache",
-              networkTimeoutSeconds: 10,
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 5, // 5 minutes
-              },
-            },
-          },
-        ],
       },
       devOptions: {
         enabled: true,

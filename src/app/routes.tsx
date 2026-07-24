@@ -53,7 +53,7 @@ export const router = createBrowserRouter([
         path: "/app",
         Component: Layout,
         children: [
-          { index: true, Component: ProjectList },
+          { index: true, element: <Navigate to="/app/dashboard" replace /> },
           { path: "projects", Component: ProjectList },
           { path: "projects/:id", Component: ProjectDetail },
           { path: "projects/:projectId/visits/:visitId", Component: VisitDetail },
@@ -70,7 +70,7 @@ export const router = createBrowserRouter([
           { path: "search", Component: SearchView },
           { path: "profile", Component: Profile },
           { path: "branding", element: <Navigate to="/app/profile" replace /> },
-          { path: "*", element: <Navigate to="/app/projects" replace /> },
+          { path: "*", element: <Navigate to="/app/dashboard" replace /> },
         ],
       },
     ],
