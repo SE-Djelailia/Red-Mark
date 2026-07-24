@@ -338,6 +338,36 @@ export async function getAllUserIssues(
   return (await attachPhotos(base)) as (Issue & { projectName: string })[];
 }
 
+// Most recent issues across every project the user is a MEMBER of (owner,
+// editor, or commenter) — not just ones they personally authored. Powers the
+// Dashboard's "recent issues" panel; getAllUserIssues above is authorship-only
+// and under-reports activity for anyone who didn't create the issues
+// themselves (a viewer/editor on someone else's project).
+export async function getRecentIssuesAcrossProjects(
+  projectIds: string[],
+  limit = 5,
+): Promise<(Issue & { projectName: string })[]> {
+  if (projectIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("issues")
+    .select("*, projects(name)")
+    .in("project_id", projectIds)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("Error fetching recent issues across projects:", error);
+    throw error;
+  }
+
+  const base = (data || []).map((row: any) => ({
+    ...rowToIssueBase(row),
+    projectName: row.projects?.name ?? "Projet inconnu",
+  }));
+  return (await attachPhotos(base)) as (Issue & { projectName: string })[];
+}
+
 // Create a new issue
 export async function createIssue(
   issueData: Omit<Issue, "id" | "createdBy" | "createdDate">,

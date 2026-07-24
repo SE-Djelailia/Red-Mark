@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import {
   ArrowLeft,
   Calendar,
@@ -48,6 +48,7 @@ import { uploadIssuePhotos, WEATHER_EVIDENCE_TAG } from "../../lib/issuePhotoUpl
 import SecureImage from "./SecureImage";
 import { toast } from "sonner";
 import { PhotoAnnotator } from "./PhotoAnnotator";
+import FloatingActions from "./FloatingActions";
 
 interface Photo {
   id: string;
@@ -74,6 +75,7 @@ interface VisitDisplay {
 export default function VisitDetail() {
   const navigate = useNavigate();
   const { projectId, visitId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const goBack = useSmartBack(`/app/projects/${projectId}`);
   const { user } = useAuth();
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
@@ -284,6 +286,24 @@ export default function VisitDetail() {
     setInitialIssuePhotos([]);
     setShowIssueModal(true);
   };
+
+  // Arriving via ProjectDetail's floating "Nouvelle déficience" action
+  // (which has no visit in context yet, so it goes through VisitPicker then
+  // lands here) — auto-open the same modal a manual "Ajouter" tap would.
+  useEffect(() => {
+    if (searchParams.get("action") === "new-issue") {
+      handleCreateIssue();
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("action");
+          return next;
+        },
+        { replace: true },
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCreateIssueFromPhotos = () => {
     if (selectedPhotoIds.length === 0) {
@@ -1138,6 +1158,24 @@ export default function VisitDetail() {
         destructive
         onCancel={() => setShowDeletePhotosConfirm(false)}
         onConfirm={handleDeleteSelectedPhotos}
+      />
+
+      <FloatingActions
+        menu={[
+          ...(projectRole.canCreateIssues
+            ? [{ label: "Nouvelle déficience", icon: AlertCircle, onClick: handleCreateIssue }]
+            : []),
+          ...(projectRole.canUploadPhotos
+            ? [
+                {
+                  label: "Ajouter des photos",
+                  icon: Camera,
+                  onClick: () =>
+                    navigate(`/app/projects/${projectId}/visits/${visitId}/add-photos`),
+                },
+              ]
+            : []),
+        ]}
       />
     </div>
   );

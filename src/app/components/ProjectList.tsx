@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router";
 import { Plus, Building2, MapPin, Calendar, Users, Search, X } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import {
@@ -13,11 +14,15 @@ import { getTodayForInput, formatDateShort } from "../../lib/dateUtils";
 import { toast } from "sonner";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import ConfirmDialog from "./ConfirmDialog";
+import FloatingActions from "./FloatingActions";
 
 export default function ProjectList() {
   const { user, loading } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  // ?new=1 (e.g. from the Dashboard's "Nouveau projet" quick action) opens
+  // the create modal immediately instead of requiring an extra tap here.
+  const [showCreateModal, setShowCreateModal] = useState(searchParams.get("new") === "1");
   useModalOpen(showCreateModal);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<Project["status"] | "all">("all");
@@ -45,6 +50,18 @@ export default function ProjectList() {
       toast.error("Erreur lors du chargement des projets");
     }
   }, [user?.id]);
+
+  // Strip ?new=1 from the URL once consumed so a refresh/back doesn't reopen it.
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("new");
+        return next;
+      }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Chargement initial
   useEffect(() => {
@@ -375,16 +392,13 @@ export default function ProjectList() {
         </div>
       )}
 
-      {/* Floating Action Button */}
-      {projects.length > 0 && (
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="fixed right-6 bottom-24 w-14 h-14 bg-[#E10600] text-white rounded-full shadow-lg hover:bg-[#C00500] transition-all hover:scale-110 flex items-center justify-center z-40"
-          aria-label="Créer un projet"
-        >
-          <Plus size={24} />
-        </button>
-      )}
+      <FloatingActions
+        menu={
+          projects.length > 0
+            ? [{ label: "Nouveau projet", icon: Plus, onClick: () => setShowCreateModal(true) }]
+            : []
+        }
+      />
 
       {/* Create Project Modal */}
       {showCreateModal && (

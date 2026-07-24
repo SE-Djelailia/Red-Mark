@@ -722,6 +722,112 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
   }
 }
 
+export async function getRecentVisitsAcrossProjects(
+  projectIds: string[],
+  limit = 5,
+): Promise<(SiteVisit & { projectName: string })[]> {
+  if (projectIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("site_visits")
+    .select("*, projects(name)")
+    .in("project_id", projectIds)
+    .order("visit_date", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("❌ Error fetching recent visits across projects:", error);
+    throw error;
+  }
+
+  return (data || []).map((row: any) => {
+    const { projects, ...visit } = row;
+    return { ...visit, projectName: projects?.name ?? "Projet inconnu" };
+  });
+}
+
+export interface ActivityEntry {
+  id: string;
+  kind: "issue_created" | "issue_resolved" | "visit_created";
+  title: string;
+  projectId: string;
+  projectName: string;
+  timestamp: string;
+  linkPath: string;
+}
+
+// Merges three project-scoped feeds (new issues, resolved issues, new
+// visits) into one timeline, sorted by recency. Deliberately leaves out
+// comments — `comments` has no `project_id` column (only `issue_id`/
+// `visit_id`), so folding it in needs an extra id-resolution join; a
+// reasonable v2 addition, not silently expanded into this pass.
+export async function getRecentActivity(
+  projectIds: string[],
+  limit = 15,
+): Promise<ActivityEntry[]> {
+  if (projectIds.length === 0) return [];
+
+  const [issuesCreated, issuesResolved, visitsCreated] = await Promise.all([
+    supabase
+      .from("issues")
+      .select("id, title, project_id, created_at, projects(name)")
+      .in("project_id", projectIds)
+      .order("created_at", { ascending: false })
+      .limit(limit),
+    supabase
+      .from("issues")
+      .select("id, title, project_id, resolved_at, projects(name)")
+      .in("project_id", projectIds)
+      .eq("status", "resolved")
+      .not("resolved_at", "is", null)
+      .order("resolved_at", { ascending: false })
+      .limit(limit),
+    supabase
+      .from("site_visits")
+      .select("id, project_id, visit_date, phase, created_at, projects(name)")
+      .in("project_id", projectIds)
+      .order("created_at", { ascending: false })
+      .limit(limit),
+  ]);
+
+  if (issuesCreated.error) throw issuesCreated.error;
+  if (issuesResolved.error) throw issuesResolved.error;
+  if (visitsCreated.error) throw visitsCreated.error;
+
+  const entries: ActivityEntry[] = [
+    ...(issuesCreated.data || []).map((row: any) => ({
+      id: `issue-created-${row.id}`,
+      kind: "issue_created" as const,
+      title: row.title,
+      projectId: row.project_id,
+      projectName: row.projects?.name ?? "Projet inconnu",
+      timestamp: row.created_at,
+      linkPath: `/app/projects/${row.project_id}/issues/${row.id}`,
+    })),
+    ...(issuesResolved.data || []).map((row: any) => ({
+      id: `issue-resolved-${row.id}`,
+      kind: "issue_resolved" as const,
+      title: row.title,
+      projectId: row.project_id,
+      projectName: row.projects?.name ?? "Projet inconnu",
+      timestamp: row.resolved_at,
+      linkPath: `/app/projects/${row.project_id}/issues/${row.id}`,
+    })),
+    ...(visitsCreated.data || []).map((row: any) => ({
+      id: `visit-created-${row.id}`,
+      kind: "visit_created" as const,
+      title: row.phase ? `Visite — ${row.phase}` : "Visite de chantier",
+      projectId: row.project_id,
+      projectName: row.projects?.name ?? "Projet inconnu",
+      timestamp: row.created_at,
+      linkPath: `/app/projects/${row.project_id}/visits/${row.id}`,
+    })),
+  ];
+
+  entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  return entries.slice(0, limit);
+}
+
 export interface ProfileStats {
   projectCount: number;
   totalVisits: number;

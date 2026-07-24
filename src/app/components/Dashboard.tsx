@@ -1,9 +1,17 @@
 import { useNavigate } from "react-router";
 import { useAuth } from "../../contexts/useAuth";
-import { getDashboardStats, type DashboardStats } from "../../lib/supabaseApi";
-import { getAllUserIssues } from "../../lib/issuesApi";
+import {
+  getDashboardStats,
+  getRecentVisitsAcrossProjects,
+  getRecentActivity,
+  getProjects,
+  type DashboardStats,
+  type ActivityEntry,
+} from "../../lib/supabaseApi";
+import { getRecentIssuesAcrossProjects } from "../../lib/issuesApi";
 import { supabase } from "../../lib/supabase";
-import { formatDateShort } from "../../lib/dateUtils";
+import { formatDateShort, formatRelativeDate } from "../../lib/dateUtils";
+import type { Project } from "../../lib/supabase";
 import { useEffect, useState, useCallback, useRef } from "react";
 import {
   AlertCircle,
@@ -12,11 +20,28 @@ import {
   FolderKanban,
   Camera,
   FileText,
-  Users,
+  Calendar,
+  Plus,
+  Search,
   RefreshCw,
+  ChevronRight,
 } from "lucide-react";
+import FloatingActions from "./FloatingActions";
 
-type RecentIssue = Awaited<ReturnType<typeof getAllUserIssues>>[number];
+type RecentIssue = Awaited<ReturnType<typeof getRecentIssuesAcrossProjects>>[number];
+type RecentVisit = Awaited<ReturnType<typeof getRecentVisitsAcrossProjects>>[number];
+
+const ACTIVITY_ICON: Record<ActivityEntry["kind"], typeof AlertCircle> = {
+  issue_created: AlertCircle,
+  issue_resolved: CheckCircle,
+  visit_created: Calendar,
+};
+
+const ACTIVITY_ICON_COLOR: Record<ActivityEntry["kind"], string> = {
+  issue_created: "bg-red-100 text-red-600",
+  issue_resolved: "bg-green-100 text-green-600",
+  visit_created: "bg-blue-100 text-blue-600",
+};
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -29,6 +54,9 @@ export default function Dashboard() {
     resolvedIssues: 0,
   });
   const [recentIssues, setRecentIssues] = useState<RecentIssue[]>([]);
+  const [recentVisits, setRecentVisits] = useState<RecentVisit[]>([]);
+  const [recentProjects, setRecentProjects] = useState<Project[]>([]);
+  const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -38,12 +66,25 @@ export default function Dashboard() {
       if (!user?.id) return;
       if (showSpinner) setRefreshing(true);
       try {
-        const [statsData, issuesData] = await Promise.all([
+        const projects = await getProjects(user.id);
+        const projectIds = projects.map((p) => p.id);
+
+        const [statsData, issuesData, visitsData, activityData] = await Promise.all([
           getDashboardStats(user.id),
-          getAllUserIssues(user.id),
+          getRecentIssuesAcrossProjects(projectIds, 5),
+          getRecentVisitsAcrossProjects(projectIds, 5),
+          getRecentActivity(projectIds, 15),
         ]);
+
         setStats(statsData);
-        setRecentIssues(issuesData.slice(0, 5));
+        setRecentIssues(issuesData);
+        setRecentVisits(visitsData);
+        setActivity(activityData);
+        setRecentProjects(
+          [...projects]
+            .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+            .slice(0, 5),
+        );
       } catch (error) {
         console.error("Erreur lors du chargement du tableau de bord:", error);
       } finally {
@@ -163,7 +204,45 @@ export default function Dashboard() {
       </div>
 
       <div className="px-4 py-6 max-w-2xl mx-auto space-y-6">
-        {/* Top Stats Grid */}
+        {/* Quick Actions — one prominent primary action, two secondary */}
+        <div className="space-y-3">
+          <button
+            onClick={() => navigate("/app/new-visit")}
+            className="w-full p-5 bg-[#E10600] text-white rounded-2xl hover:bg-[#C00500] active:scale-[0.99] transition-all flex items-center gap-4 shadow-md"
+          >
+            <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Calendar size={24} />
+            </div>
+            <div className="flex-1 text-left">
+              <div className="text-base font-semibold">Nouvelle visite</div>
+              <div className="text-sm text-white/80">Démarrer une visite de chantier</div>
+            </div>
+            <ChevronRight size={20} className="text-white/70" />
+          </button>
+
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => navigate("/app/projects?new=1")}
+              className="p-4 bg-white rounded-xl border border-gray-200 hover:border-[#E10600] hover:shadow-md transition-all flex flex-col items-center gap-2 text-center"
+            >
+              <div className="w-10 h-10 bg-[#E10600]/10 rounded-lg flex items-center justify-center text-[#E10600]">
+                <Plus size={20} />
+              </div>
+              <span className="text-sm font-medium text-[#1A1A1A]">Nouveau projet</span>
+            </button>
+            <button
+              onClick={() => navigate("/app/search")}
+              className="p-4 bg-white rounded-xl border border-gray-200 hover:border-[#E10600] hover:shadow-md transition-all flex flex-col items-center gap-2 text-center"
+            >
+              <div className="w-10 h-10 bg-[#E10600]/10 rounded-lg flex items-center justify-center text-[#E10600]">
+                <Search size={20} />
+              </div>
+              <span className="text-sm font-medium text-[#1A1A1A]">Rechercher</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div
             onClick={() => navigate("/app/projects")}
@@ -220,38 +299,108 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Issues Summary */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[#1A1A1A] flex items-center gap-2">
-              <AlertCircle size={20} className="text-[#E10600]" />
-              Déficiences
-            </h2>
-            <span className="text-2xl font-semibold text-[#1A1A1A]">
-              {loading ? "—" : stats.openIssues + stats.resolvedIssues}
-            </span>
+        {/* Recent Activity — merges new issues, resolved issues, new visits
+            across every project the user is a member of. */}
+        <div className="bg-white rounded-xl border border-gray-200">
+          <div className="px-5 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-[#1A1A1A]">Activité récente</h2>
+            <p className="text-xs text-gray-500 mt-1">Tous projets confondus</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-              <div className="flex items-center gap-2 mb-1">
-                <AlertCircle size={16} className="text-red-600" />
-                <span className="text-xs text-red-600 font-medium">Ouvert</span>
-              </div>
-              <div className="text-xl font-semibold text-red-700">
-                {loading ? "—" : stats.openIssues}
-              </div>
+          {loading ? (
+            <div className="p-8 text-center text-sm text-gray-400">Chargement...</div>
+          ) : activity.length === 0 ? (
+            <div className="p-8 text-center text-sm text-gray-500">Aucune activité récente</div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {activity.map((entry) => {
+                const Icon = ACTIVITY_ICON[entry.kind];
+                return (
+                  <div
+                    key={entry.id}
+                    onClick={() => navigate(entry.linkPath)}
+                    className="p-4 hover:bg-gray-50 transition-colors cursor-pointer flex items-center gap-3"
+                  >
+                    <div
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${ACTIVITY_ICON_COLOR[entry.kind]}`}
+                    >
+                      <Icon size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-[#1A1A1A] truncate">
+                        {entry.title}
+                      </div>
+                      <div className="text-xs text-gray-500 truncate">{entry.projectName}</div>
+                    </div>
+                    <div className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap">
+                      {formatRelativeDate(entry.timestamp)}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+          )}
+        </div>
 
-            <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-              <div className="flex items-center gap-2 mb-1">
-                <CheckCircle size={16} className="text-green-600" />
-                <span className="text-xs text-green-600 font-medium">Résolu</span>
-              </div>
-              <div className="text-xl font-semibold text-green-700">
-                {loading ? "—" : stats.resolvedIssues}
-              </div>
+        {/* Recent Projects / Recent Visits — jump back into recent work */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-xl border border-gray-200">
+            <div className="px-5 py-4 border-b border-gray-200">
+              <h2 className="text-base font-semibold text-[#1A1A1A]">Projets récents</h2>
             </div>
+            {loading ? (
+              <div className="p-6 text-center text-sm text-gray-400">Chargement...</div>
+            ) : recentProjects.length === 0 ? (
+              <div className="p-6 text-center text-sm text-gray-500">Aucun projet</div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {recentProjects.map((project) => (
+                  <div
+                    key={project.id}
+                    onClick={() => navigate(`/app/projects/${project.id}`)}
+                    className="px-5 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <div className="text-sm font-medium text-[#1A1A1A] truncate">
+                      {project.name}
+                    </div>
+                    {project.address && (
+                      <div className="text-xs text-gray-500 truncate">{project.address}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200">
+            <div className="px-5 py-4 border-b border-gray-200">
+              <h2 className="text-base font-semibold text-[#1A1A1A]">Visites récentes</h2>
+            </div>
+            {loading ? (
+              <div className="p-6 text-center text-sm text-gray-400">Chargement...</div>
+            ) : recentVisits.length === 0 ? (
+              <div className="p-6 text-center text-sm text-gray-500">Aucune visite</div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {recentVisits.map((visit) => (
+                  <div
+                    key={visit.id}
+                    onClick={() =>
+                      navigate(`/app/projects/${visit.project_id}/visits/${visit.id}`)
+                    }
+                    className="px-5 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <div className="text-sm font-medium text-[#1A1A1A] truncate">
+                      {visit.projectName}
+                      {visit.phase ? ` — ${visit.phase}` : ""}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {formatDateShort(visit.visit_date)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -316,21 +465,14 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-lg font-semibold text-[#1A1A1A] mb-4">Actions rapides</h2>
-          <div className="grid grid-cols-1 gap-3">
-            <button
-              onClick={() => navigate("/app/projects")}
-              className="p-4 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors flex flex-col items-center gap-2"
-            >
-              <FolderKanban size={24} />
-              <span className="text-sm font-medium">Voir mes projets</span>
-            </button>
-          </div>
-        </div>
       </div>
+
+      <FloatingActions
+        menu={[
+          { label: "Nouvelle visite", icon: Calendar, onClick: () => navigate("/app/new-visit") },
+          { label: "Nouveau projet", icon: Plus, onClick: () => navigate("/app/projects?new=1") },
+        ]}
+      />
     </div>
   );
 }

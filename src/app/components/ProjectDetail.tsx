@@ -49,6 +49,8 @@ import ProjectEditModal from "./ProjectEditModal";
 import PlanFilesManager from "./PlanFilesManager";
 import LocationsImportModal from "./LocationsImportModal";
 import LocationsTab from "./LocationsTab";
+import FloatingActions from "./FloatingActions";
+import VisitPicker from "./VisitPicker";
 import { getLocations, getLevels, type Location, type Level } from "../../lib/locationsApi";
 import { PLANS_ENABLED } from "../../lib/featureFlags";
 
@@ -203,6 +205,11 @@ export default function ProjectDetail() {
   const [showReportModal, setShowReportModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [showLocationsImportModal, setShowLocationsImportModal] = useState(false);
+  // "Nouvelle déficience" from the floating-actions menu has no visit in
+  // context yet (unlike VisitDetail/LocationDetail) — VisitPicker resolves
+  // one, then we hand off to VisitDetail's own issue-creation modal via
+  // ?action=new-issue rather than duplicating IssueForm hosting here.
+  const [showVisitPickerForIssue, setShowVisitPickerForIssue] = useState(false);
   const [showVisitModal, setShowVisitModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<SiteVisit | null>(null);
@@ -247,6 +254,7 @@ export default function ProjectDetail() {
   useModalOpen(!!selectedPhoto && !showPhotoMarkupModal);
   useModalOpen(showVisitModal && !!selectedVisit);
   useModalOpen(showLocationsImportModal);
+  useModalOpen(showVisitPickerForIssue);
 
   // Photo filter states
   const [photoSearchQuery, setPhotoSearchQuery] = useState("");
@@ -603,6 +611,37 @@ export default function ProjectDetail() {
         Chargement…
       </div>
     );
+  }
+
+  // Contextual "+" options depend on which tab is active — an option a
+  // commenter can't perform is simply left out, so the menu (or the whole
+  // "+" button, if it ends up empty) reflects the role automatically.
+  const floatingMenu: { label: string; icon: typeof Plus; onClick: () => void }[] = [];
+  if (projectRole.canCreateIssues) {
+    if (activeTab === "visits") {
+      floatingMenu.push({
+        label: "Nouvelle visite",
+        icon: Calendar,
+        onClick: () => navigate(`/app/projects/${id}/visit/new`),
+      });
+    } else if (activeTab === "gallery") {
+      floatingMenu.push({
+        label: "Nouvelle déficience",
+        icon: AlertCircle,
+        onClick: () => setShowVisitPickerForIssue(true),
+      });
+      floatingMenu.push({
+        label: "Nouvelle visite",
+        icon: Calendar,
+        onClick: () => navigate(`/app/projects/${id}/visit/new`),
+      });
+    } else if (activeTab === "locations") {
+      floatingMenu.push({
+        label: "Importer des emplacements",
+        icon: Upload,
+        onClick: () => setShowLocationsImportModal(true),
+      });
+    }
   }
 
   return (
@@ -1239,15 +1278,18 @@ export default function ProjectDetail() {
         )}
       </div>
 
-      {/* Create New Site Visit Button */}
-      {projectRole.canCreateIssues && (
-        <button
-          onClick={() => navigate(`/app/projects/${id}/visit/new`)}
-          className="fixed bottom-24 md:bottom-28 right-4 sm:right-6 w-14 h-14 md:w-16 md:h-16 bg-[#E10600] text-white rounded-full shadow-lg hover:bg-[#C00500] active:scale-95 transition-all flex items-center justify-center z-40 touch-manipulation"
-          aria-label="Créer une nouvelle visite"
-        >
-          <Plus size={28} />
-        </button>
+      <FloatingActions menu={floatingMenu} />
+
+      {id && (
+        <VisitPicker
+          open={showVisitPickerForIssue}
+          projectId={id}
+          onSelect={(visit) => {
+            setShowVisitPickerForIssue(false);
+            navigate(`/app/projects/${id}/visits/${visit.id}?action=new-issue`);
+          }}
+          onClose={() => setShowVisitPickerForIssue(false)}
+        />
       )}
 
       {/* Share Modal */}

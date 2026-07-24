@@ -33,6 +33,7 @@ import type { SiteVisit } from "../../lib/supabase";
 import VisitPicker from "./VisitPicker";
 import IssueForm from "./IssueForm";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
+import FloatingActions from "./FloatingActions";
 
 const STATUS_LABEL: Record<Issue["status"], string> = {
   open: "Ouverte",
@@ -916,6 +917,17 @@ export default function LocationDetail() {
           </div>
         </div>
       )}
+
+      <FloatingActions
+        menu={[
+          ...(projectRole.canCreateIssues
+            ? [{ label: "Nouvelle déficience", icon: AlertCircle, onClick: startAddIssue }]
+            : []),
+          ...(projectRole.canUploadPhotos
+            ? [{ label: "Ajouter des photos", icon: Camera, onClick: startAddPhotos }]
+            : []),
+        ]}
+      />
     </div>
   );
 }

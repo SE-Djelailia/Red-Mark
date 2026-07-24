@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { FolderKanban, LayoutDashboard, Search, User } from "lucide-react";
+import { FolderKanban, LayoutDashboard, User } from "lucide-react";
 import { ModalOpenContext } from "../../contexts/ModalOpenContext";
 
 export default function BottomNav() {
@@ -11,7 +11,6 @@ export default function BottomNav() {
   const navItems = [
     { label: "Tableau de bord", icon: LayoutDashboard, path: "/app/dashboard" },
     { label: "Projets", icon: FolderKanban, path: "/app/projects" },
-    { label: "Recherche", icon: Search, path: "/app/search" },
     { label: "Profil", icon: User, path: "/app/profile" },
   ];
 
@@ -23,7 +22,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-[#1A1A1A] border-t border-gray-800 safe-area-bottom z-50">
-      <div className="max-w-2xl mx-auto grid grid-cols-4 h-16 md:h-20">
+      <div className="max-w-2xl mx-auto grid grid-cols-3 h-16 md:h-20">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
