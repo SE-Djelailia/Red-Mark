@@ -46,7 +46,9 @@ export interface ReportManualFields {
   contractorEmail: string;
   subject: string;
   preparedByNameTitle: string;
-  // SiteVisit has no time-range column, only a free-text notes/weather/temperature set.
+  // Fallback only. The report prefers the visit's real start_time/end_time
+  // (added later as time columns); this free-text value is used only for
+  // older visits that predate those columns and have neither set.
   time: string;
 }
 
@@ -123,6 +125,45 @@ async function buildPhotoRows(photos: Photo[]): Promise<PhotoRow[]> {
   return rows;
 }
 
+// "09:00:00" / "09:00" -> "9 h 00" (Québec French convention).
+function formatTimeOfDay(value: string): string {
+  const parts = value.split(":");
+  if (parts.length < 2) return value;
+  const hours = parseInt(parts[0], 10);
+  if (Number.isNaN(hours)) return value;
+  return `${hours} h ${parts[1]}`;
+}
+
+// The visit's real recorded times, as the report's "heure de visite".
+// Tolerates only one of the two being set (both columns are nullable).
+export function formatVisitTimeRange(
+  startTime?: string | null,
+  endTime?: string | null,
+): string {
+  const start = startTime ? formatTimeOfDay(startTime) : "";
+  const end = endTime ? formatTimeOfDay(endTime) : "";
+  if (start && end) return `${start} à ${end}`;
+  return start || end || "";
+}
+
+// The template's footers already carry real Word PAGE / NUMPAGES fields, but
+// Word renders the *cached* value stored in the file until something forces a
+// recalculation — so a generated report showed the template's stale numbers
+// (footer2 is saved as "2 / 2") rather than its own pagination. Setting
+// updateFields makes Word recalculate every field on open, which is what
+// actually makes the page numbers correct.
+function forceFieldUpdateOnOpen(zip: PizZip): void {
+  const path = "word/settings.xml";
+  const file = zip.file(path);
+  if (!file) return;
+
+  const xml = file.asText();
+  if (xml.includes("<w:updateFields")) return; // already set — keep idempotent
+
+  const patched = xml.replace(/(<w:settings\b[^>]*>)/, `$1<w:updateFields w:val="true"/>`);
+  if (patched !== xml) zip.file(path, patched);
+}
+
 async function fetchTemplate(): Promise<ArrayBuffer> {
   const res = await fetch(TEMPLATE_URL);
   if (!res.ok) {
@@ -188,7 +229,9 @@ export async function generateSiteVisitReport(
     contractorEmail: manual.contractorEmail,
     distribution: manual.distribution,
     weather: [visit.weather, visit.temperature].filter(Boolean).join(", "),
-    time: manual.time,
+    // Prefer the visit's real recorded times; manual.time only covers older
+    // visits saved before start_time/end_time existed.
+    time: formatVisitTimeRange(visit.start_time, visit.end_time) || manual.time,
     subject: manual.subject,
     attendees: manual.attendees,
     generalNotes: visit.notes || "",
@@ -206,6 +249,7 @@ export async function generateSiteVisitReport(
   });
 
   await doc.renderAsync(data);
+  forceFieldUpdateOnOpen(doc.getZip());
 
   const blob = doc.getZip().generate({
     type: "blob",

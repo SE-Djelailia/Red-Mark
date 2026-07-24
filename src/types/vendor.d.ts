@@ -7,8 +7,17 @@ declare module "pizzip" {
     mimeType?: string;
   }
 
+  export interface PizZipObject {
+    asText(): string;
+    asArrayBuffer(): ArrayBuffer;
+  }
+
   export default class PizZip {
     constructor(data?: ArrayBuffer | Uint8Array | string);
+    /** Read an entry; null when the path isn't in the archive. */
+    file(path: string): PizZipObject | null;
+    /** Write/overwrite an entry. */
+    file(path: string, content: string | ArrayBuffer | Uint8Array): PizZip;
     generate(options: PizZipGenerateOptions): Blob | Uint8Array | string | ArrayBuffer;
   }
 }

@@ -44,6 +44,7 @@ import { useProjectRole, canEditIssue, canManagePhoto } from "../../hooks/usePro
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
 import { compressImage } from "../../lib/imageCompression";
+import { uploadIssuePhotos, WEATHER_EVIDENCE_TAG } from "../../lib/issuePhotoUpload";
 import SecureImage from "./SecureImage";
 import { toast } from "sonner";
 import { PhotoAnnotator } from "./PhotoAnnotator";
@@ -81,6 +82,7 @@ export default function VisitDetail() {
   const [visit, setVisit] = useState<VisitDisplay | null>(null);
   const [projectName, setProjectName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [uploadingWeatherPhoto, setUploadingWeatherPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Photo selection for deletion
@@ -233,6 +235,44 @@ export default function VisitDetail() {
     // Reset input
     if (e.target) {
       e.target.value = "";
+    }
+  };
+
+  // Weather evidence — a regular visit photo tagged "Météo" (a sky photo,
+  // a weather-app screenshot, etc.), via the same shared capture/compress/
+  // upload/offline-queue flow used for issue and location photos.
+  const handleWeatherPhotoSelected = async (files: FileList) => {
+    if (!user?.id || !projectId || !visitId) return;
+    setUploadingWeatherPhoto(true);
+    try {
+      const { uploaded, queuedCount } = await uploadIssuePhotos(Array.from(files), {
+        userId: user.id,
+        projectId,
+        visitId,
+        tags: [WEATHER_EVIDENCE_TAG],
+      });
+      if (uploaded.length > 0) {
+        toast.success(`${uploaded.length} preuve(s) météo ajoutée(s)`);
+        setVisit((prev) => {
+          if (!prev) return prev;
+          const newPhotos = uploaded.map((p) => ({
+            id: p.id,
+            url: p.url,
+            storage_path: p.storagePath || "",
+            user_id: user.id,
+            tags: [WEATHER_EVIDENCE_TAG],
+          }));
+          return { ...prev, photos: [...prev.photos, ...newPhotos], photoCount: prev.photoCount + newPhotos.length };
+        });
+      }
+      if (queuedCount > 0) {
+        toast.info("Photo mise en file d'attente — elle sera envoyée une fois de retour en ligne.");
+      }
+    } catch (error) {
+      console.error("Error uploading weather evidence photo:", error);
+      toast.error("Échec de l'envoi de la preuve météo");
+    } finally {
+      setUploadingWeatherPhoto(false);
     }
   };
 
@@ -475,6 +515,28 @@ export default function VisitDetail() {
                 <Thermometer size={14} className="text-gray-400 flex-shrink-0" />
                 <span className="text-[#1A1A1A]">{visit.temperature}</span>
               </div>
+            )}
+            {projectRole.canUploadPhotos && (
+              <button
+                type="button"
+                disabled={uploadingWeatherPhoto}
+                onClick={() => {
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.accept = "image/*";
+                  input.multiple = true;
+                  input.onchange = (e: any) => {
+                    if (e.target.files?.length) void handleWeatherPhotoSelected(e.target.files);
+                  };
+                  input.click();
+                }}
+                className="flex items-center gap-1.5 text-[#E10600] hover:text-[#C00500] disabled:opacity-50 ml-auto"
+              >
+                <Camera size={14} className="flex-shrink-0" />
+                <span className="text-xs font-medium">
+                  {uploadingWeatherPhoto ? "Envoi…" : "Preuve météo"}
+                </span>
+              </button>
             )}
           </div>
         </div>

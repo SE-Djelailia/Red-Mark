@@ -22,11 +22,20 @@ function isNetworkError(error: unknown): boolean {
   return !navigator.onLine || error instanceof TypeError;
 }
 
+// Marks a photo as weather evidence (e.g. a sky photo or a weather-app
+// screenshot) rather than adding a dedicated column/table for it — it's a
+// regular visit photo, just tagged, so it shows up wherever tagged photos
+// already do (VisitDetail's grid + tag filter) with no new surface.
+export const WEATHER_EVIDENCE_TAG = "Météo";
+
 export interface UploadIssuePhotosContext {
   userId: string;
   projectId: string;
   visitId: string;
   locationId?: string | null;
+  // Applied to every photo in this call (e.g. ["Météo"] for weather
+  // evidence). Defaults to no tags, same as before this field existed.
+  tags?: string[];
 }
 
 export interface UploadIssuePhotosResult {
@@ -40,6 +49,7 @@ export async function uploadIssuePhotos(
 ): Promise<UploadIssuePhotosResult> {
   let queuedCount = 0;
   const uploaded: Issue["photos"] = [];
+  const tags = context.tags || [];
 
   for (const file of files) {
     try {
@@ -50,7 +60,7 @@ export async function uploadIssuePhotos(
           context.userId,
           context.projectId,
           context.visitId,
-          { locationId: context.locationId || undefined },
+          { locationId: context.locationId || undefined, tags },
         );
         uploaded.push({ id: photo.id, url: photo.file_url, storagePath: photo.storage_path });
       } catch (uploadError) {
@@ -60,7 +70,7 @@ export async function uploadIssuePhotos(
           userId: context.userId,
           projectId: context.projectId,
           visitId: context.visitId,
-          tags: [],
+          tags,
           locationId: context.locationId || undefined,
         });
         queuedCount++;

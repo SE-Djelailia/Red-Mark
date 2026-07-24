@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Calendar, Clock, Cloud, Thermometer, ChevronDown, Plus } from "lucide-react";
+import { Calendar, Clock, Cloud, Thermometer, ChevronDown, Plus, X, Camera } from "lucide-react";
 import { ButtonLoader } from "./LoadingStates";
 import { createSiteVisit } from "../../lib/supabaseApi";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
 import { useAuth } from "../../contexts/useAuth";
+import { uploadIssuePhotos, WEATHER_EVIDENCE_TAG } from "../../lib/issuePhotoUpload";
+import PhotoCaptureButtons from "./PhotoCaptureButtons";
 import type { SiteVisit } from "../../lib/supabase";
 
 const DEFAULT_PHASES = ["Fondation", "Charpente", "ÉMÉ", "Finitions", "Extérieur"];
@@ -44,6 +46,10 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
   // TEMPERATURE_DEFAULT but nothing is submitted until the user interacts.
   const [temperature, setTemperature] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Photos can't attach until the visit exists (uploadPhoto needs a real
+  // visitId) — held here and uploaded right after createSiteVisit succeeds,
+  // same deferred-upload pattern IssueForm uses for its own photos.
+  const [weatherPhotos, setWeatherPhotos] = useState<File[]>([]);
 
   // Custom phases management
   const [customPhases, setCustomPhases] = useState<string[]>([]);
@@ -151,6 +157,20 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
         message: "a ajouté une nouvelle visite",
         visitId: newVisit.id,
       });
+
+      if (weatherPhotos.length > 0) {
+        const { queuedCount } = await uploadIssuePhotos(weatherPhotos, {
+          userId: user.id,
+          projectId,
+          visitId: newVisit.id,
+          tags: [WEATHER_EVIDENCE_TAG],
+        });
+        if (queuedCount > 0) {
+          alert(
+            "Visite créée. Une preuve météo a été mise en file d'attente et sera envoyée une fois de retour en ligne.",
+          );
+        }
+      }
 
       onCreated(newVisit);
     } catch (error) {
@@ -351,6 +371,44 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
             <span>{TEMPERATURE_MIN}°C</span>
             <span>{TEMPERATURE_MAX}°C</span>
           </div>
+        </div>
+
+        {/* Weather evidence — optional photo (sky, weather-app screenshot,
+            etc.), stored as a regular visit photo tagged "Météo". */}
+        <div>
+          <label className="block text-sm text-[#1A1A1A] mb-2 flex items-center gap-2">
+            <Camera size={16} className="text-gray-400" />
+            Preuve météo (optionnel)
+          </label>
+          <PhotoCaptureButtons
+            onFilesSelected={(files) => setWeatherPhotos((prev) => [...prev, ...Array.from(files)])}
+            disabled={isSubmitting}
+          />
+          {weatherPhotos.length > 0 && (
+            <div className="grid grid-cols-4 gap-2 mt-3">
+              {weatherPhotos.map((file, index) => (
+                <div
+                  key={index}
+                  className="relative aspect-square rounded-lg overflow-hidden border border-gray-200"
+                >
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={`Preuve météo ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setWeatherPhotos((prev) => prev.filter((_, i) => i !== index))}
+                    disabled={isSubmitting}
+                    className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center"
+                    aria-label="Retirer la photo"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Actions */}

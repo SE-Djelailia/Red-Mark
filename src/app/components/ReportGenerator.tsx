@@ -19,6 +19,7 @@ import { formatDateLong } from "../../lib/dateUtils";
 import { toast } from "sonner";
 import {
   generateSiteVisitReport,
+  formatVisitTimeRange,
   type ReportManualFields,
   type DossierNumberEntry,
   type DistributionEntry,
@@ -134,6 +135,12 @@ export default function ReportGenerator() {
   };
 
   const selectedVisit = visits.find((v) => v.id === selectedVisitId);
+  // Once a visit has real start/end times recorded, those are what the
+  // report uses — the manual field becomes a read-only preview of them.
+  // Only visits with neither time set still take the free-text fallback.
+  const visitTimeRange = selectedVisit
+    ? formatVisitTimeRange(selectedVisit.start_time, selectedVisit.end_time)
+    : "";
 
   return (
     <div className="min-h-screen pb-20">
@@ -219,13 +226,20 @@ export default function ReportGenerator() {
               </div>
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Heure de visite</label>
-                <input
-                  type="text"
-                  value={manual.time}
-                  onChange={(e) => updateManual("time", e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
-                  placeholder="9h00 - 10h00"
-                />
+                {visitTimeRange ? (
+                  <div className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-600">
+                    {visitTimeRange}
+                    <span className="text-gray-400"> (de la visite)</span>
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={manual.time}
+                    onChange={(e) => updateManual("time", e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
+                    placeholder="9h00 - 10h00"
+                  />
+                )}
               </div>
             </div>
 
