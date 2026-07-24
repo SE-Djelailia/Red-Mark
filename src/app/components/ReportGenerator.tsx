@@ -66,6 +66,24 @@ export default function ReportGenerator() {
         setProject(projectData);
 
         if (projectData) {
+          // Pre-fill fixed identifying details from the project so they don't
+          // have to be retyped on every report; still plain editable inputs
+          // below, so a specific report can override any of them.
+          setManual((prev) => ({
+            ...prev,
+            dossierNumbers: projectData.file_number
+              ? [
+                  { ...prev.dossierNumbers[0], number: projectData.file_number },
+                  ...prev.dossierNumbers.slice(1),
+                ]
+              : prev.dossierNumbers,
+            contractorCompany: projectData.contractor_name || prev.contractorCompany,
+            contractorContactNameTitle: projectData.contractor_contact || prev.contractorContactNameTitle,
+            contractorAddress: projectData.contractor_address || prev.contractorAddress,
+            contractorPhone: projectData.contractor_phone || prev.contractorPhone,
+            contractorEmail: projectData.contractor_email || prev.contractorEmail,
+          }));
+
           const visitsData = await getSiteVisits(id);
           setVisits(visitsData);
           if (visitsData.length > 0) {
@@ -257,7 +275,12 @@ export default function ReportGenerator() {
             {/* Dossier numbers */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs text-gray-600">Numéros de dossier</label>
+                <label className="text-xs text-gray-600">
+                  Numéros de dossier
+                  {project?.file_number && (
+                    <span className="text-gray-400"> (pré-rempli du projet, modifiable)</span>
+                  )}
+                </label>
                 <button
                   type="button"
                   onClick={() => addListEntry("dossierNumbers", { label: "", number: "" })}
@@ -365,6 +388,9 @@ export default function ReportGenerator() {
           <div className="flex items-center gap-2 mb-4">
             <Building2 size={18} className="text-[#E10600]" />
             <label className="text-sm font-semibold text-[#1A1A1A]">Entrepreneur</label>
+            {project?.contractor_name && (
+              <span className="text-xs text-gray-400">(pré-rempli du projet, modifiable)</span>
+            )}
           </div>
 
           <div className="space-y-3">

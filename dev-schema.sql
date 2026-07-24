@@ -320,7 +320,13 @@ CREATE TABLE IF NOT EXISTS "public"."projects" (
     "status" "text" DEFAULT 'active'::"text",
     "start_date" "date",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "file_number" "text",
+    "contractor_name" "text",
+    "contractor_contact" "text",
+    "contractor_address" "text",
+    "contractor_phone" "text",
+    "contractor_email" "text"
 );
 
 

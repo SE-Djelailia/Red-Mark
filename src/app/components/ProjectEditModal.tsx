@@ -21,6 +21,12 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
     client: project.client_name || "",
     startDate: project.start_date || "",
     status: project.status,
+    fileNumber: project.file_number || "",
+    contractorName: project.contractor_name || "",
+    contractorContact: project.contractor_contact || "",
+    contractorAddress: project.contractor_address || "",
+    contractorPhone: project.contractor_phone || "",
+    contractorEmail: project.contractor_email || "",
   });
 
   async function handleSubmit(e: React.FormEvent) {
@@ -39,6 +45,12 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
         client_name: formData.client,
         start_date: formData.startDate || undefined,
         status: formData.status,
+        file_number: formData.fileNumber || undefined,
+        contractor_name: formData.contractorName || undefined,
+        contractor_contact: formData.contractorContact || undefined,
+        contractor_address: formData.contractorAddress || undefined,
+        contractor_phone: formData.contractorPhone || undefined,
+        contractor_email: formData.contractorEmail || undefined,
       });
 
       onSave(updatedProject);
@@ -129,6 +141,89 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
                 className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
                 placeholder="Nom du client"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Numéro de dossier
+              </label>
+              <input
+                type="text"
+                value={formData.fileNumber}
+                onChange={(e) => setFormData({ ...formData, fileNumber: e.target.value })}
+                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                placeholder="Ex: JLPa-4521"
+              />
+            </div>
+
+            <div className="pt-2 border-t border-gray-100">
+              <p className="text-sm font-medium text-gray-700 mb-3 mt-4">
+                Entrepreneur (pré-rempli dans les rapports)
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom de l'entreprise
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.contractorName}
+                    onChange={(e) => setFormData({ ...formData, contractorName: e.target.value })}
+                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                    placeholder="Ex: Construction ABC inc."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Contact (nom, titre)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.contractorContact}
+                    onChange={(e) =>
+                      setFormData({ ...formData, contractorContact: e.target.value })
+                    }
+                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                    placeholder="Ex: Jean Tremblay, Surintendant"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Adresse</label>
+                  <input
+                    type="text"
+                    value={formData.contractorAddress}
+                    onChange={(e) =>
+                      setFormData({ ...formData, contractorAddress: e.target.value })
+                    }
+                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                    placeholder="Ex: 456 Boul. Industriel, Laval"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
+                  <input
+                    type="tel"
+                    value={formData.contractorPhone}
+                    onChange={(e) => setFormData({ ...formData, contractorPhone: e.target.value })}
+                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                    placeholder="Ex: 450-555-1234"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Courriel</label>
+                  <input
+                    type="email"
+                    value={formData.contractorEmail}
+                    onChange={(e) => setFormData({ ...formData, contractorEmail: e.target.value })}
+                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                    placeholder="Ex: jtremblay@abc.ca"
+                  />
+                </div>
+              </div>
             </div>
 
             <div>

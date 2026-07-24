@@ -641,7 +641,13 @@ export type Database = {
         Row: {
           address: string | null
           client_name: string | null
+          contractor_address: string | null
+          contractor_contact: string | null
+          contractor_email: string | null
+          contractor_name: string | null
+          contractor_phone: string | null
           created_at: string | null
+          file_number: string | null
           id: string
           name: string
           start_date: string | null
@@ -652,7 +658,13 @@ export type Database = {
         Insert: {
           address?: string | null
           client_name?: string | null
+          contractor_address?: string | null
+          contractor_contact?: string | null
+          contractor_email?: string | null
+          contractor_name?: string | null
+          contractor_phone?: string | null
           created_at?: string | null
+          file_number?: string | null
           id?: string
           name: string
           start_date?: string | null
@@ -663,7 +675,13 @@ export type Database = {
         Update: {
           address?: string | null
           client_name?: string | null
+          contractor_address?: string | null
+          contractor_contact?: string | null
+          contractor_email?: string | null
+          contractor_name?: string | null
+          contractor_phone?: string | null
           created_at?: string | null
+          file_number?: string | null
           id?: string
           name?: string
           start_date?: string | null

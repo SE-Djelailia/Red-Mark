@@ -37,6 +37,12 @@ export interface Project {
   start_date?: string;
   created_at: string;
   updated_at: string;
+  file_number?: string;
+  contractor_name?: string;
+  contractor_contact?: string;
+  contractor_address?: string;
+  contractor_phone?: string;
+  contractor_email?: string;
 }
 
 export interface SiteVisit {
