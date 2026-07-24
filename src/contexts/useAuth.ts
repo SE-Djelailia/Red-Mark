@@ -26,5 +26,6 @@ export function useAuth() {
     signUp: supabaseAuth.signUp,
     signIn: supabaseAuth.signIn,
     signOut: supabaseAuth.signOut,
+    updateProfile: supabaseAuth.updateProfile,
   };
 }

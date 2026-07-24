@@ -1,53 +1,27 @@
 import { useState, useEffect } from "react";
-import { X, Globe, HardDrive, Shield, Trash2, AlertTriangle, Database } from "lucide-react";
+import { X, HardDrive, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
 import { useModalOpen } from "../../hooks/useModalOpen";
-
-interface GeneralSettingsData {
-  language: "fr" | "en";
-  dataStorage: "local" | "cloud";
-  autoSync: boolean;
-  enableAnalytics: boolean;
-  shareUsageData: boolean;
-}
 
 interface GeneralSettingsProps {
   onClose: () => void;
 }
 
-const DEFAULT_SETTINGS: GeneralSettingsData = {
-  language: "fr",
-  dataStorage: "cloud",
-  autoSync: true,
-  enableAnalytics: false,
-  shareUsageData: false,
-};
+// Browsers don't expose the real localStorage quota, but ~5 MB is the
+// near-universal limit — used only to give the usage bar a sensible scale.
+const LOCAL_STORAGE_QUOTA_BYTES = 5 * 1024 * 1024;
 
 export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
   useModalOpen();
   const { user } = useAuth();
-  const [settings, setSettings] = useState<GeneralSettingsData>(DEFAULT_SETTINGS);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [storageUsed, setStorageUsed] = useState("0 MB");
+  const [storagePercent, setStoragePercent] = useState(0);
 
   useEffect(() => {
-    loadSettings();
     calculateStorage();
   }, []);
-
-  const loadSettings = () => {
-    const saved = localStorage.getItem(`general_settings_${user?.id}`);
-    if (saved) {
-      setSettings(JSON.parse(saved));
-    }
-  };
-
-  const saveSettings = (newSettings: GeneralSettingsData) => {
-    localStorage.setItem(`general_settings_${user?.id}`, JSON.stringify(newSettings));
-    setSettings(newSettings);
-    toast.success("Paramètres sauvegardés");
-  };
 
   const calculateStorage = () => {
     let totalSize = 0;
@@ -58,15 +32,13 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
     }
     const mb = (totalSize / (1024 * 1024)).toFixed(2);
     setStorageUsed(`${mb} MB`);
+    setStoragePercent(Math.min(100, (totalSize / LOCAL_STORAGE_QUOTA_BYTES) * 100));
   };
 
   const handleClearCache = () => {
-    const keysToKeep = [
-      `general_settings_${user?.id}`,
-      `report_template_${user?.id}`,
-      `notifications_${user?.id}`,
-      `team_${user?.id}`,
-    ];
+    // Auth lives in IndexedDB (see authStorage.ts), not localStorage, so
+    // clearing here can no longer sign the user out.
+    const keysToKeep = [`team_${user?.id}`];
 
     for (let key in localStorage) {
       if (localStorage.hasOwnProperty(key) && !keysToKeep.includes(key)) {
@@ -77,13 +49,6 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
     setShowClearConfirm(false);
     calculateStorage();
     toast.success("Cache nettoyé avec succès");
-  };
-
-  const updateSetting = <K extends keyof GeneralSettingsData>(
-    key: K,
-    value: GeneralSettingsData[K],
-  ) => {
-    saveSettings({ ...settings, [key]: value });
   };
 
   return (
@@ -97,7 +62,7 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
           <div className="p-6 border-b border-gray-200 flex items-center justify-between">
             <div>
               <h2 className="text-xl text-[#1A1A1A] font-medium">Paramètres généraux</h2>
-              <p className="text-sm text-gray-600 mt-1">Langue, stockage et confidentialité</p>
+              <p className="text-sm text-gray-600 mt-1">Gestion du stockage local</p>
             </div>
             <button
               onClick={onClose}
@@ -109,69 +74,6 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
-            {/* Language */}
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center gap-2">
-                <Globe size={18} className="text-[#E10600]" />
-                Langue
-              </h3>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => updateSetting("language", "fr")}
-                  className={`px-4 py-3 rounded-lg border-2 transition-colors ${
-                    settings.language === "fr"
-                      ? "border-[#E10600] bg-red-50"
-                      : "border-gray-300 hover:border-gray-400"
-                  }`}
-                >
-                  <div className="text-sm font-medium">Français</div>
-                  <div className="text-xs text-gray-500">Langue par défaut</div>
-                </button>
-                <button
-                  onClick={() => updateSetting("language", "en")}
-                  className={`px-4 py-3 rounded-lg border-2 transition-colors ${
-                    settings.language === "en"
-                      ? "border-[#E10600] bg-red-50"
-                      : "border-gray-300 hover:border-gray-400"
-                  }`}
-                >
-                  <div className="text-sm font-medium">English</div>
-                  <div className="text-xs text-gray-500">English</div>
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Note: RedMark est optimisé pour le français (conformité québécoise)
-              </p>
-            </div>
-
-            {/* Data Storage */}
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center gap-2">
-                <Database size={18} className="text-[#E10600]" />
-                Stockage des données
-              </h3>
-              <div className="space-y-3">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-700">Mode de stockage actuel</span>
-                    <span className="text-sm font-medium text-[#E10600]">
-                      {settings.dataStorage === "cloud" ? "Cloud (Supabase)" : "Local"}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-600">
-                    Vos données sont stockées sur Supabase pour permettre la synchronisation
-                    multi-appareils
-                  </p>
-                </div>
-                <SettingToggle
-                  label="Synchronisation automatique"
-                  description="Synchroniser automatiquement avec le cloud"
-                  checked={settings.autoSync}
-                  onChange={(checked) => updateSetting("autoSync", checked)}
-                />
-              </div>
-            </div>
-
             {/* Storage Management */}
             <div className="mb-6">
               <h3 className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center gap-2">
@@ -184,38 +86,23 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
                   <span className="text-sm font-medium text-[#1A1A1A]">{storageUsed}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-[#E10600] h-2 rounded-full" style={{ width: "25%" }} />
+                  <div
+                    className="bg-[#E10600] h-2 rounded-full transition-all"
+                    style={{ width: `${Math.max(storagePercent, storagePercent > 0 ? 2 : 0)}%` }}
+                  />
                 </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Vos projets, visites et photos sont stockés dans le cloud (Supabase) et ne sont
+                  pas affectés.
+                </p>
               </div>
               <button
                 onClick={() => setShowClearConfirm(true)}
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-gray-700"
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-gray-700 min-h-[48px]"
               >
                 <Trash2 size={18} />
                 Vider le cache local
               </button>
-            </div>
-
-            {/* Privacy */}
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center gap-2">
-                <Shield size={18} className="text-[#E10600]" />
-                Confidentialité
-              </h3>
-              <div className="space-y-3">
-                <SettingToggle
-                  label="Activer les analyses d'utilisation"
-                  description="Aide à améliorer RedMark (aucune donnée sensible)"
-                  checked={settings.enableAnalytics}
-                  onChange={(checked) => updateSetting("enableAnalytics", checked)}
-                />
-                <SettingToggle
-                  label="Partager les données d'utilisation"
-                  description="Partager des statistiques anonymes pour améliorer l'app"
-                  checked={settings.shareUsageData}
-                  onChange={(checked) => updateSetting("shareUsageData", checked)}
-                />
-              </div>
             </div>
 
             {/* Info Box */}
@@ -282,32 +169,3 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
   );
 }
 
-interface SettingToggleProps {
-  label: string;
-  description: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}
-
-function SettingToggle({ label, description, checked, onChange }: SettingToggleProps) {
-  return (
-    <div className="flex items-start justify-between gap-4 p-3 bg-gray-50 rounded-lg">
-      <div className="flex-1">
-        <div className="text-sm font-medium text-[#1A1A1A] mb-0.5">{label}</div>
-        <div className="text-xs text-gray-600">{description}</div>
-      </div>
-      <button
-        onClick={() => onChange(!checked)}
-        className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
-          checked ? "bg-[#E10600]" : "bg-gray-300"
-        }`}
-      >
-        <div
-          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-            checked ? "translate-x-6" : ""
-          }`}
-        />
-      </button>
-    </div>
-  );
-}

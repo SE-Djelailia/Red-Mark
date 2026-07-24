@@ -30,6 +30,10 @@ export interface Profile {
   avatar_url?: string;
   created_at: string;
   updated_at: string;
+  // Org-level role (admin/member) — distinct from `role` above, which is the
+  // free-text job title shown on the profile screen. NOT NULL in the DB with
+  // a 'member' default; drives is_admin() in RLS, never user-editable here.
+  org_role: "admin" | "member";
 }
 
 export interface Project {

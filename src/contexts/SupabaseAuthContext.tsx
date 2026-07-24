@@ -15,7 +15,7 @@ interface AuthContextType {
   ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  updateProfile: (data: { name?: string; firm?: string }) => Promise<void>;
+  updateProfile: (data: { name?: string; firm?: string; role?: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -127,7 +127,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const updateProfile = async (data: { name?: string; firm?: string }) => {
+  const updateProfile = async (data: { name?: string; firm?: string; role?: string }) => {
     try {
       if (!user) {
         throw new Error("Utilisateur non connecté");
@@ -140,14 +140,20 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
       if (authError) throw authError;
 
-      // Mettre à jour le profil dans la table profiles
+      // Mettre à jour le profil dans la table profiles. Only the keys
+      // actually passed in are written, so a partial update can't blank out
+      // a field the caller didn't touch. `org_role` is deliberately never
+      // written here — it's an admin/permission concern, not a self-edit.
+      const profilePatch: { name?: string; firm?: string; role?: string; updated_at: string } = {
+        updated_at: new Date().toISOString(),
+      };
+      if (data.name !== undefined) profilePatch.name = data.name;
+      if (data.firm !== undefined) profilePatch.firm = data.firm;
+      if (data.role !== undefined) profilePatch.role = data.role;
+
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({
-          name: data.name,
-          firm: data.firm,
-          updated_at: new Date().toISOString(),
-        })
+        .update(profilePatch)
         .eq("id", user.id);
 
       if (profileError) throw profileError;

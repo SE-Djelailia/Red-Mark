@@ -7,26 +7,38 @@ import {
   LogOut,
   Download,
   Settings,
-  FileText,
-  Bell,
   ChevronRight,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import { getProfileStats } from "../../lib/supabaseApi";
 import { toast } from "sonner";
-import NotificationSettings from "./NotificationSettings";
-import ReportTemplates from "./ReportTemplates";
 import GeneralSettings from "./GeneralSettings";
 import DataExport from "./DataExport";
 import { useModalOpen } from "../../hooks/useModalOpen";
 
+// Left behind by settings that were removed as non-functional stubs: the
+// Notifications and Report-Templates sections entirely, plus the general
+// settings' language/sync/analytics toggles. All only ever wrote to
+// localStorage; nothing read the values back. Cleared once on mount so
+// existing installs don't keep carrying orphaned keys around.
+function clearRemovedSettingsKeys(userId: string) {
+  try {
+    localStorage.removeItem(`notifications_${userId}`);
+    localStorage.removeItem(`report_template_${userId}`);
+    localStorage.removeItem(`general_settings_${userId}`);
+  } catch {
+    // localStorage unavailable — nothing to clean up.
+  }
+}
+
 export default function Profile() {
   const navigate = useNavigate();
-  const { user, session, signOut } = useAuth();
+  const { user, session, signOut, updateProfile } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   useModalOpen(showLogoutConfirm);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showReportTemplates, setShowReportTemplates] = useState(false);
   const [showGeneralSettings, setShowGeneralSettings] = useState(false);
   const [showDataExport, setShowDataExport] = useState(false);
   const [stats, setStats] = useState({
@@ -36,9 +48,17 @@ export default function Profile() {
   });
   const [loading, setLoading] = useState(true);
 
+  // Profile editing — email is intentionally absent: it's the auth identity,
+  // and changing it needs Supabase's own confirm-by-email flow, not a plain
+  // text field.
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [form, setForm] = useState({ name: "", firm: "", role: "" });
+
   useEffect(() => {
     if (user?.id) {
       loadStats();
+      clearRemovedSettingsKeys(user.id);
     }
   }, [user?.id]); // ✅ Fixed: use user.id instead of user object
 
@@ -54,6 +74,39 @@ export default function Profile() {
       setLoading(false);
     }
   }
+
+  const startEditing = () => {
+    setForm({
+      name: user?.user_metadata?.name || "",
+      firm: user?.user_metadata?.firm || "",
+      role: user?.user_metadata?.role || "",
+    });
+    setIsEditing(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!form.name.trim()) {
+      toast.error("Le nom ne peut pas être vide");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // updateProfile writes both the auth metadata and the profiles row;
+      // the auth state change it triggers refreshes `user`, so the header
+      // and these fields pick up the new values without a manual refetch.
+      await updateProfile({
+        name: form.name.trim(),
+        firm: form.firm.trim(),
+        role: form.role.trim(),
+      });
+      setIsEditing(false);
+    } catch {
+      // updateProfile already surfaces its own error toast.
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -123,28 +176,106 @@ export default function Profile() {
 
       {/* Profile Info */}
       <div className="px-4 py-6 max-w-2xl mx-auto">
-        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-200 mb-6">
-          <div className="p-4 flex items-center gap-3">
-            <Mail size={20} className="text-gray-500" />
-            <div className="flex-1">
-              <div className="text-xs text-gray-500 mb-1">Courriel</div>
-              <div className="text-sm text-[#1A1A1A]">{user.email}</div>
-            </div>
+        <div className="bg-white rounded-xl border border-gray-200 mb-6">
+          <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+            <h2 className="text-base font-bold text-[#1A1A1A]">Mes informations</h2>
+            {isEditing ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsEditing(false)}
+                  disabled={isSaving}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 min-h-[36px]"
+                >
+                  <X size={16} />
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors disabled:opacity-50 min-h-[36px]"
+                >
+                  <Check size={16} />
+                  {isSaving ? "Enregistrement…" : "Enregistrer"}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={startEditing}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-[#E10600] hover:bg-red-50 rounded-lg transition-colors min-h-[36px]"
+              >
+                <Pencil size={16} />
+                Modifier
+              </button>
+            )}
           </div>
 
-          <div className="p-4 flex items-center gap-3">
-            <Building2 size={20} className="text-gray-500" />
-            <div className="flex-1">
-              <div className="text-xs text-gray-500 mb-1">Entreprise</div>
-              <div className="text-sm text-[#1A1A1A]">{userFirm}</div>
+          <div className="divide-y divide-gray-200">
+            <div className="p-4 flex items-center gap-3">
+              <User size={20} className="text-gray-500 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-gray-500 mb-1">Nom</div>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[44px]"
+                    placeholder="Votre nom complet"
+                  />
+                ) : (
+                  <div className="text-sm text-[#1A1A1A]">{userName}</div>
+                )}
+              </div>
             </div>
-          </div>
 
-          <div className="p-4 flex items-center gap-3">
-            <User size={20} className="text-gray-500" />
-            <div className="flex-1">
-              <div className="text-xs text-gray-500 mb-1">Rôle</div>
-              <div className="text-sm text-[#1A1A1A] capitalize">{userRole}</div>
+            {/* Read-only: the email is the auth identity. */}
+            <div className="p-4 flex items-center gap-3">
+              <Mail size={20} className="text-gray-500 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-gray-500 mb-1">Courriel</div>
+                <div className="text-sm text-[#1A1A1A] break-all">{user.email}</div>
+                {isEditing && (
+                  <div className="text-xs text-gray-400 mt-1">
+                    Le courriel ne peut pas être modifié ici.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 flex items-center gap-3">
+              <Building2 size={20} className="text-gray-500 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-gray-500 mb-1">Entreprise</div>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={form.firm}
+                    onChange={(e) => setForm({ ...form, firm: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[44px]"
+                    placeholder="Nom de votre entreprise"
+                  />
+                ) : (
+                  <div className="text-sm text-[#1A1A1A]">{userFirm}</div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 flex items-center gap-3">
+              <Settings size={20} className="text-gray-500 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-gray-500 mb-1">Rôle</div>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={form.role}
+                    onChange={(e) => setForm({ ...form, role: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[44px]"
+                    placeholder="Ex : Architecte, Technologue"
+                  />
+                ) : (
+                  <div className="text-sm text-[#1A1A1A] capitalize">{userRole}</div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -152,34 +283,6 @@ export default function Profile() {
         {/* Settings Menu */}
         <div className="space-y-3">
           <h2 className="text-lg text-[#1A1A1A] mb-3">Paramètres</h2>
-
-          <button
-            onClick={() => setShowNotifications(true)}
-            className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between hover:border-[#E10600] transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Bell size={20} className="text-gray-600" />
-              <div className="text-left">
-                <div className="text-sm text-[#1A1A1A]">Notifications</div>
-                <div className="text-xs text-gray-500">Alertes et rappels</div>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </button>
-
-          <button
-            onClick={() => setShowReportTemplates(true)}
-            className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between hover:border-[#E10600] transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <FileText size={20} className="text-gray-600" />
-              <div className="text-left">
-                <div className="text-sm text-[#1A1A1A]">Modèles de rapports</div>
-                <div className="text-xs text-gray-500">Personnaliser les rapports PDF</div>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </button>
 
           <button
             onClick={() => setShowDataExport(true)}
@@ -203,7 +306,7 @@ export default function Profile() {
               <Settings size={20} className="text-gray-600" />
               <div className="text-left">
                 <div className="text-sm text-[#1A1A1A]">Paramètres généraux</div>
-                <div className="text-xs text-gray-500">Langue, stockage, confidentialité</div>
+                <div className="text-xs text-gray-500">Stockage local</div>
               </div>
             </div>
             <ChevronRight size={20} className="text-gray-400" />
@@ -263,8 +366,6 @@ export default function Profile() {
       )}
 
       {/* Settings Modals */}
-      {showNotifications && <NotificationSettings onClose={() => setShowNotifications(false)} />}
-      {showReportTemplates && <ReportTemplates onClose={() => setShowReportTemplates(false)} />}
       {showGeneralSettings && <GeneralSettings onClose={() => setShowGeneralSettings(false)} />}
       {showDataExport && <DataExport onClose={() => setShowDataExport(false)} />}
     </div>

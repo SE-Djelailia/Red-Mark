@@ -22,9 +22,7 @@ import {
   FileText,
   Calendar,
   Plus,
-  Search,
   RefreshCw,
-  ChevronRight,
 } from "lucide-react";
 import FloatingActions from "./FloatingActions";
 
@@ -191,46 +189,8 @@ export default function Dashboard() {
 
       <div className="px-4 md:px-6 py-4 max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:items-start">
-          {/* Main column: quick actions, stats, activity */}
+          {/* Main column: stats, activity */}
           <div className="lg:col-span-2 space-y-4">
-            {/* Quick Actions — one prominent primary action, two secondary */}
-            <div className="space-y-2">
-              <button
-                onClick={() => navigate("/app/new-visit")}
-                className="w-full p-4 bg-[#E10600] text-white rounded-2xl hover:bg-[#C00500] active:scale-[0.99] transition-all flex items-center gap-3 shadow-md"
-              >
-                <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Calendar size={20} />
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="text-sm font-semibold">Nouvelle visite</div>
-                  <div className="text-xs text-white/80">Démarrer une visite de chantier</div>
-                </div>
-                <ChevronRight size={20} className="text-white/70" />
-              </button>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => navigate("/app/projects?new=1")}
-                  className="p-3 bg-white rounded-xl border border-gray-200 hover:border-[#E10600] hover:shadow-md transition-all flex items-center gap-2 text-left"
-                >
-                  <div className="w-8 h-8 bg-[#E10600]/10 rounded-lg flex items-center justify-center text-[#E10600] flex-shrink-0">
-                    <Plus size={16} />
-                  </div>
-                  <span className="text-sm font-medium text-[#1A1A1A]">Nouveau projet</span>
-                </button>
-                <button
-                  onClick={() => navigate("/app/search")}
-                  className="p-3 bg-white rounded-xl border border-gray-200 hover:border-[#E10600] hover:shadow-md transition-all flex items-center gap-2 text-left"
-                >
-                  <div className="w-8 h-8 bg-[#E10600]/10 rounded-lg flex items-center justify-center text-[#E10600] flex-shrink-0">
-                    <Search size={16} />
-                  </div>
-                  <span className="text-sm font-medium text-[#1A1A1A]">Rechercher</span>
-                </button>
-              </div>
-            </div>
-
             {/* Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div
@@ -292,8 +252,9 @@ export default function Dashboard() {
                 across every project the user is a member of. Capped to 5 by
                 default; "Voir tout" expands in place (data's already fetched). */}
             <div className="bg-white rounded-xl border border-gray-200">
-              <div className="px-4 py-2.5 border-b border-gray-200">
-                <h2 className="text-base font-semibold text-[#1A1A1A]">Activité récente</h2>
+              <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+                <span className="w-1 h-5 bg-[#E10600] rounded-full" />
+                <h2 className="text-base font-bold text-[#1A1A1A]">Activité récente</h2>
               </div>
 
               {loading ? (
@@ -352,8 +313,9 @@ export default function Dashboard() {
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
               <div className="bg-white rounded-xl border border-gray-200">
-                <div className="px-4 py-2.5 border-b border-gray-200">
-                  <h2 className="text-sm font-semibold text-[#1A1A1A]">Projets récents</h2>
+                <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+                  <span className="w-1 h-5 bg-[#E10600] rounded-full" />
+                  <h2 className="text-base font-bold text-[#1A1A1A]">Projets récents</h2>
                 </div>
                 {loading ? (
                   <div className="py-5 text-center text-sm text-gray-400">Chargement...</div>
@@ -380,8 +342,9 @@ export default function Dashboard() {
               </div>
 
               <div className="bg-white rounded-xl border border-gray-200">
-                <div className="px-4 py-2.5 border-b border-gray-200">
-                  <h2 className="text-sm font-semibold text-[#1A1A1A]">Visites récentes</h2>
+                <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+                  <span className="w-1 h-5 bg-[#E10600] rounded-full" />
+                  <h2 className="text-base font-bold text-[#1A1A1A]">Visites récentes</h2>
                 </div>
                 {loading ? (
                   <div className="py-5 text-center text-sm text-gray-400">Chargement...</div>
@@ -415,8 +378,9 @@ export default function Dashboard() {
                 actionable "still needs attention" list, not a chronological
                 feed, so only open (non-resolved) issues appear here. */}
             <div className="bg-white rounded-xl border border-gray-200">
-              <div className="px-4 py-2.5 border-b border-gray-200">
-                <h2 className="text-sm font-semibold text-[#1A1A1A]">Déficiences ouvertes</h2>
+              <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+                <span className="w-1 h-5 bg-[#E10600] rounded-full" />
+                <h2 className="text-base font-bold text-[#1A1A1A]">Déficiences ouvertes</h2>
               </div>
 
               {loading ? (
