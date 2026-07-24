@@ -16,6 +16,8 @@ COMMENT ON SCHEMA "public" IS 'standard public schema';
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 
+CREATE EXTENSION IF NOT EXISTS "pg_trgm" WITH SCHEMA "extensions";
+
 
 
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
@@ -525,6 +527,14 @@ CREATE INDEX "idx_issues_status" ON "public"."issues" USING "btree" ("status");
 
 
 
+CREATE INDEX "idx_issues_title_trgm" ON "public"."issues" USING "gin" ("title" "extensions"."gin_trgm_ops");
+
+
+
+CREATE INDEX "idx_issues_description_trgm" ON "public"."issues" USING "gin" ("description" "extensions"."gin_trgm_ops");
+
+
+
 CREATE INDEX "idx_issues_user_id" ON "public"."issues" USING "btree" ("user_id");
 
 
@@ -542,6 +552,14 @@ CREATE INDEX "idx_locations_parent_location_id" ON "public"."locations" USING "b
 
 
 CREATE INDEX "idx_locations_project_id" ON "public"."locations" USING "btree" ("project_id");
+
+
+
+CREATE INDEX "idx_locations_number_trgm" ON "public"."locations" USING "gin" ("location_number" "extensions"."gin_trgm_ops");
+
+
+
+CREATE INDEX "idx_locations_name_trgm" ON "public"."locations" USING "gin" ("name" "extensions"."gin_trgm_ops");
 
 
 
@@ -621,6 +639,10 @@ CREATE INDEX "idx_projects_user_id" ON "public"."projects" USING "btree" ("user_
 
 
 
+CREATE INDEX "idx_projects_name_trgm" ON "public"."projects" USING "gin" ("name" "extensions"."gin_trgm_ops");
+
+
+
 CREATE INDEX "idx_site_visits_date" ON "public"."site_visits" USING "btree" ("visit_date");
 
 
@@ -630,6 +652,10 @@ CREATE INDEX "idx_site_visits_project_id" ON "public"."site_visits" USING "btree
 
 
 CREATE INDEX "idx_site_visits_user_id" ON "public"."site_visits" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "idx_site_visits_phase_trgm" ON "public"."site_visits" USING "gin" ("phase" "extensions"."gin_trgm_ops");
 
 
 
