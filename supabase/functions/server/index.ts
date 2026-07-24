@@ -2,7 +2,7 @@ import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import * as kv from "./kv_store.tsx";
+import * as kv from "./kv_store.ts";
 
 const app = new Hono();
 
@@ -665,6 +665,23 @@ app.get("/make-server-9fe75696/projects/:projectId/members", requireAuth, async 
 const FLOORPLAN_BUCKET = "redmark-floorplans";
 const VOICENOTE_BUCKET = "redmark-voicenotes";
 
+// Browsers' MediaRecorder often reports a codec-qualified mime type (e.g.
+// iOS Safari's "audio/mp4;codecs=mp4a.40.2", Chrome/Firefox's
+// "audio/webm;codecs=opus") — this is the real, correct type of what was
+// recorded, and the client is right to keep using the full string for
+// MediaRecorder itself. But this bucket's allowedMimeTypes are bare strings
+// ("audio/mp4", "audio/webm", ...) with no codec parameters, and Storage's
+// allowlist check does exact string matching — it does not strip
+// parameters. Left as-is, EVERY codec-qualified recording gets rejected
+// with 415, on every platform, not just iOS (confirmed: "audio/webm;
+// codecs=opus is not supported" was the actual prod error). Normalizing
+// here, at the one place that actually enforces the allowlist, fixes every
+// current and future client/codec combination without having to chase
+// specific codec strings in the bucket config.
+function normalizeAudioMimeType(mime: string): string {
+  return mime.split(";")[0].trim() || "audio/webm";
+}
+
 // Get a signed URL for a stored floor plan (or voice note) file
 app.post("/make-server-9fe75696/storage/signed-url", requireAuth, async (c) => {
   try {
@@ -917,10 +934,11 @@ app.post("/make-server-9fe75696/site-visits/:visitId/voice-notes", requireAuth, 
     const noteId = crypto.randomUUID();
     const storagePath = `${visitId}/${noteId}.${ext}`;
     const arrayBuffer = await file.arrayBuffer();
+    const contentType = normalizeAudioMimeType(file.type || "audio/webm");
     const { error: uploadError } = await supabase.storage
       .from(VOICENOTE_BUCKET)
       .upload(storagePath, new Uint8Array(arrayBuffer), {
-        contentType: file.type || "audio/webm",
+        contentType,
         upsert: false,
       });
     if (uploadError) throw uploadError;
@@ -930,7 +948,7 @@ app.post("/make-server-9fe75696/site-visits/:visitId/voice-notes", requireAuth, 
       site_visit_id: visitId,
       storage_path: storagePath,
       bucket: VOICENOTE_BUCKET,
-      content_type: file.type || "audio/webm",
+      content_type: contentType,
       duration_seconds: duration,
       transcription: null, // reserved for future voice-to-text
       transcription_status: "pending",

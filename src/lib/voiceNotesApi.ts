@@ -66,7 +66,10 @@ export async function uploadVoiceNote(
     headers: await authHeader(),
     body: form,
   });
-  if (!res.ok) throw new Error(`Voice note upload failed: ${res.status}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Voice note upload failed: ${res.status} ${text}`);
+  }
   return res.json();
 }
 
