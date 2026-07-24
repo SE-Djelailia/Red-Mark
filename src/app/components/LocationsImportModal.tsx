@@ -10,6 +10,7 @@ import {
 } from "../../lib/locationImportParser";
 import { buildImportPlan, type ImportPlan } from "../../lib/locationImportPlanner";
 import { executeImportPlan, type ExecuteResult } from "../../lib/locationImportExecutor";
+import { LOCATION_TYPE_LABELS } from "../../lib/locationTypes";
 
 interface Props {
   projectId: string;
@@ -198,7 +199,7 @@ export default function LocationsImportModal({ projectId, onClose, onImported }:
                                 <td className="px-3 py-2 font-medium">{l.locationNumber}</td>
                                 <td className="px-3 py-2 text-gray-600">{l.name || "—"}</td>
                                 <td className="px-3 py-2 text-gray-600">
-                                  {l.type === "room" ? "Salle" : "Élément"}
+                                  {LOCATION_TYPE_LABELS[l.type]}
                                 </td>
                                 <td className="px-3 py-2">
                                   {l.kind === "new" ? (

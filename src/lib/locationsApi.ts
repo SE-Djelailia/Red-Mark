@@ -18,7 +18,7 @@ export interface Location {
   levelId: string;
   locationNumber: string;
   name: string | null;
-  type: "room" | "element";
+  type: "room" | "element" | "roof" | "envelope" | "exterior" | "parking";
   discipline: string | null;
   parentLocationId: string | null;
 }
@@ -105,7 +105,7 @@ export async function createLocation(input: {
   levelId: string;
   locationNumber: string;
   name?: string | null;
-  type: "room" | "element";
+  type: "room" | "element" | "roof" | "envelope" | "exterior" | "parking";
   discipline?: string | null;
 }): Promise<Location> {
   const { data, error } = await supabase
@@ -135,7 +135,7 @@ export async function updateLocation(
   patch: Partial<{
     name: string | null;
     discipline: string | null;
-    type: "room" | "element";
+    type: "room" | "element" | "roof" | "envelope" | "exterior" | "parking";
     parentLocationId: string | null;
   }>,
 ): Promise<Location> {

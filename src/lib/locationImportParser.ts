@@ -6,7 +6,7 @@
 
 import * as XLSX from "xlsx";
 
-export type LocationType = "room" | "element";
+export type LocationType = "room" | "element" | "roof" | "envelope" | "exterior" | "parking";
 
 export interface ParsedLocationRow {
   rowNumber: number; // 1-indexed spreadsheet row (header is row 1), for error messages
@@ -46,6 +46,16 @@ const TYPE_ALIASES: Record<string, LocationType> = {
   room: "room",
   salle: "room",
   element: "element",
+  roof: "roof",
+  toiture: "roof",
+  toit: "roof",
+  envelope: "envelope",
+  enveloppe: "envelope",
+  facade: "envelope",
+  exterior: "exterior",
+  exterieur: "exterior",
+  parking: "parking",
+  stationnement: "parking",
 };
 
 const REQUIRED_COLUMNS: CanonicalColumn[] = ["locationNumber", "level", "type"];
@@ -147,7 +157,7 @@ function parseRows(
     if (!type) {
       errors.push({
         rowNumber,
-        message: `Type invalide "${typeRaw}" — attendu room/salle ou element/élément.`,
+        message: `Type invalide "${typeRaw}" — attendu room/salle, element/élément, roof/toiture, envelope/enveloppe, exterior/extérieur ou parking/stationnement.`,
       });
       return;
     }
@@ -208,6 +218,7 @@ export function downloadLocationImportTemplate(): void {
   const exampleRows = [
     ["202", "Salle mécanique", "Niveau 3", "room", "Mechanical", ""],
     ["D-312", "", "Niveau 3", "element", "Architecture", "202"],
+    ["R-1", "Toit principal", "Toit", "roof", "Enveloppe", ""],
   ];
 
   const sheet = XLSX.utils.aoa_to_sheet([headers, ...exampleRows]);

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   ArrowLeft,
-  MapPin,
   Layers,
   AlertCircle,
   Image as ImageIcon,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getLocation, getLevels, getLocations, type Location, type Level } from "../../lib/locationsApi";
+import { LOCATION_TYPE_LABELS, LOCATION_TYPE_ICONS } from "../../lib/locationTypes";
 import { getIssuesByLocation, type Issue } from "../../lib/issuesApi";
 import {
   getPhotosByLocation,
@@ -37,11 +37,6 @@ import PhotoCaptureButtons from "./PhotoCaptureButtons";
 const STATUS_LABEL: Record<Issue["status"], string> = {
   open: "Ouverte",
   resolved: "Résolue",
-};
-
-const TYPE_LABEL: Record<Location["type"], string> = {
-  room: "Local",
-  element: "Élément",
 };
 
 const PRIORITY_LABEL: Record<Issue["priority"], string> = {
@@ -625,9 +620,12 @@ export default function LocationDetail() {
         {/* Metadata card */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-2 text-sm">
           <div className="flex items-center gap-3">
-            <MapPin size={16} className="text-gray-500" />
+            {(() => {
+              const TypeIcon = LOCATION_TYPE_ICONS[location.type];
+              return <TypeIcon size={16} className="text-gray-500" />;
+            })()}
             <span className="text-gray-500">Type :</span>
-            <span className="text-gray-700">{TYPE_LABEL[location.type]}</span>
+            <span className="text-gray-700">{LOCATION_TYPE_LABELS[location.type]}</span>
           </div>
           <div className="flex items-center gap-3">
             <Layers size={16} className="text-gray-500" />

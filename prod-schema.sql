@@ -494,7 +494,7 @@ ALTER TABLE ONLY "public"."locations"
 
 
 ALTER TABLE ONLY "public"."locations"
-    ADD CONSTRAINT "locations_type_check" CHECK (("type" = ANY (ARRAY['room'::"text", 'element'::"text"])));
+    ADD CONSTRAINT "locations_type_check" CHECK (("type" = ANY (ARRAY['room'::"text", 'element'::"text", 'roof'::"text", 'envelope'::"text", 'exterior'::"text", 'parking'::"text"])));
 
 
 

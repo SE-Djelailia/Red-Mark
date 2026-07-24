@@ -2,11 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Search, MapPin, AlertCircle } from "lucide-react";
 import type { Location, Level } from "../../lib/locationsApi";
-
-const TYPE_LABEL: Record<Location["type"], string> = {
-  room: "Local",
-  element: "Élément",
-};
+import { LOCATION_TYPE_LABELS, LOCATION_TYPE_ICONS } from "../../lib/locationTypes";
 
 interface Props {
   projectId: string;
@@ -108,27 +104,30 @@ export default function LocationsTab({
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map((loc) => (
-            <button
-              key={loc.id}
-              onClick={() => navigate(`/app/projects/${projectId}/locations/${loc.id}`)}
-              className="w-full flex items-center gap-3 bg-white rounded-xl border border-gray-200 p-4 hover:border-[#E10600] hover:shadow-md transition-all text-left"
-            >
-              <div className="w-10 h-10 rounded-lg bg-[#E10600]/10 text-[#E10600] flex items-center justify-center flex-shrink-0">
-                <MapPin size={18} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-[#1A1A1A] truncate">
-                  {loc.locationNumber}
-                  {loc.name ? ` — ${loc.name}` : ""}
+          {filtered.map((loc) => {
+            const TypeIcon = LOCATION_TYPE_ICONS[loc.type];
+            return (
+              <button
+                key={loc.id}
+                onClick={() => navigate(`/app/projects/${projectId}/locations/${loc.id}`)}
+                className="w-full flex items-center gap-3 bg-white rounded-xl border border-gray-200 p-4 hover:border-[#E10600] hover:shadow-md transition-all text-left"
+              >
+                <div className="w-10 h-10 rounded-lg bg-[#E10600]/10 text-[#E10600] flex items-center justify-center flex-shrink-0">
+                  <TypeIcon size={18} />
                 </div>
-                <div className="text-xs text-gray-500">
-                  {TYPE_LABEL[loc.type]}
-                  {loc.discipline ? ` · ${loc.discipline}` : ""}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-[#1A1A1A] truncate">
+                    {loc.locationNumber}
+                    {loc.name ? ` — ${loc.name}` : ""}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {LOCATION_TYPE_LABELS[loc.type]}
+                    {loc.discipline ? ` · ${loc.discipline}` : ""}
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
