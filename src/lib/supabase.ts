@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { projectId, publicAnonKey } from "../../utils/supabase/info";
 import type { Database } from "./database.types";
+import { indexedDbAuthStorage } from "./authStorage";
 
 // Supabase URL et clé publique
 const supabaseUrl = `https://${projectId}.supabase.co`;
@@ -12,6 +13,10 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
+    // IndexedDB instead of the default localStorage — see authStorage.ts
+    // for why (iOS eviction mitigation) and how existing localStorage
+    // sessions are migrated in automatically, not lost.
+    storage: indexedDbAuthStorage,
   },
 });
 

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { User, Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+import { requestPersistentStorage } from "../lib/authStorage";
 import { toast } from "sonner";
 
 interface AuthContextType {
@@ -30,6 +31,10 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      // Ask the browser to make our storage non-evictable — as early as
+      // possible on app relaunch, since that's when iOS is most likely to
+      // have cleared it. Best-effort; see requestPersistentStorage().
+      if (session) void requestPersistentStorage();
     });
 
     // Écouter les changements d'authentification
@@ -39,6 +44,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session) void requestPersistentStorage();
     });
 
     return () => subscription.unsubscribe();
