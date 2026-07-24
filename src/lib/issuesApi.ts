@@ -340,21 +340,28 @@ export async function getAllUserIssues(
 
 // Most recent issues across every project the user is a MEMBER of (owner,
 // editor, or commenter) — not just ones they personally authored. Powers the
-// Dashboard's "recent issues" panel; getAllUserIssues above is authorship-only
-// and under-reports activity for anyone who didn't create the issues
-// themselves (a viewer/editor on someone else's project).
+// Dashboard's "Déficiences ouvertes" panel; getAllUserIssues above is
+// authorship-only and under-reports activity for anyone who didn't create
+// the issues themselves (a viewer/editor on someone else's project). An
+// optional status filter lets the Dashboard ask for open issues specifically
+// (distinct from "Activité récente", which already covers all recent
+// issue/visit events regardless of status).
 export async function getRecentIssuesAcrossProjects(
   projectIds: string[],
   limit = 5,
+  status?: Issue["status"],
 ): Promise<(Issue & { projectName: string })[]> {
   if (projectIds.length === 0) return [];
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("issues")
     .select("*, projects(name)")
     .in("project_id", projectIds)
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (status) query = query.eq("status", status);
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching recent issues across projects:", error);
