@@ -138,14 +138,18 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
       {/* Bell Icon */}
       <button
         onClick={() => setShowPanel(!showPanel)}
-        className="relative p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+        className="relative w-9 h-9 flex items-center justify-center text-body hover:bg-subtle rounded-lg transition-colors"
         title="Notifications"
+        aria-label={
+          unreadCount > 0 ? `Notifications (${unreadCount} non lues)` : "Notifications"
+        }
       >
-        <Bell size={20} />
+        <Bell size={19} />
+        {/* The design system marks unread state with a small dot rather than
+            a count bubble. The exact number is still announced to screen
+            readers via aria-label, and shown in the panel's filter tabs. */}
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#E10600] text-white text-xs font-bold rounded-full flex items-center justify-center">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
+          <span className="absolute top-1.5 right-1.5 w-[7px] h-[7px] bg-brand-600 border-[1.5px] border-surface rounded-full" />
         )}
       </button>
 

@@ -17,32 +17,62 @@ export function Card({
   );
 }
 
-// Section headers were called out as not standing out enough. The accent
-// bar + semibold ink title gives the eye a consistent left-edge marker to
-// scan for, without resorting to a heavier type size that would fight the
-// compact density.
-export function SectionHeader({
+// Section overline, per the design system's "key fix" for section titles:
+// small uppercase wide-tracked grey text sitting ABOVE and OUTSIDE the
+// card, not a bordered row inside it. Counter-intuitively this makes
+// sections easier to scan — the title stops competing with the row titles
+// beneath it, and the card itself becomes the visual unit.
+//
+// Renders a <section> wrapper so the heading and its card are one landmark
+// and the optional action lands in the header rather than a footer strip.
+export function Section({
   title,
-  meta,
   action,
+  className = "",
+  children,
 }: {
   title: string;
-  meta?: string;
+  /** Optional right-aligned link, e.g. "Tout voir". */
   action?: ReactNode;
+  className?: string;
+  children: ReactNode;
 }) {
   return (
-    <div className="px-4 py-3 border-b border-line flex items-center gap-2">
-      <span className="w-1 h-5 bg-brand-600 rounded-full flex-shrink-0" aria-hidden="true" />
-      <h2 className="text-base font-semibold text-ink">{title}</h2>
-      {meta && <span className="text-xs text-faint">{meta}</span>}
-      {action && <div className="ml-auto flex items-center">{action}</div>}
-    </div>
+    <section className={className}>
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.09em] text-muted">
+          {title}
+        </h2>
+        {action}
+      </div>
+      {children}
+    </section>
   );
 }
 
-// Compact, tappable list row — thin divider between rows rather than
-// card-per-item padding. Matches the density already used on the visits
-// and déficiences lists.
+// The red "Tout voir"-style link that pairs with a Section overline. Uses
+// brand-strong rather than brand-600: at 12px on white, the base red is
+// too light to read comfortably.
+export function SectionAction({
+  onClick,
+  children,
+}: {
+  onClick?: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-xs font-medium text-brand-strong hover:underline flex-shrink-0"
+    >
+      {children}
+    </button>
+  );
+}
+
+// Compact, tappable list row. py-3 + min-h-11 meets the 44px touch target
+// the design system specifies (the previous py-2.5 fell short of it).
 export function ListRow({
   onClick,
   className = "",
@@ -54,7 +84,7 @@ export function ListRow({
 }) {
   const interactive = onClick ? "hover:bg-subtle cursor-pointer transition-colors" : "";
   return (
-    <div onClick={onClick} className={`px-4 py-2.5 ${interactive} ${className}`}>
+    <div onClick={onClick} className={`px-4 py-3 min-h-11 ${interactive} ${className}`}>
       {children}
     </div>
   );

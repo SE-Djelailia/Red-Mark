@@ -41,6 +41,14 @@
   --color-brand-600: #e10600; /* primary accent — current app red */
   --color-brand-700: #c00500; /* hover */
   --color-brand-800: #8f0400; /* active/pressed */
+  /* Red text ON a light background. brand-600 is too light to read at small
+   * sizes over white/brand-50; the design system uses this darker red for
+   * "Tout voir" links, counts, and badge text. Not a background colour. */
+  --color-brand-strong: #b80500;
+
+  /* ---- Amber (the single warm tint, used only for priority "Élevé") ---- */
+  --color-amber-50: #fffbeb; /* badge background */
+  --color-amber-200: #f5e7c4; /* badge border */
 
   /* ---- Semantic status ---- */
   --color-open: #e10600; /* déficience ouverte (same value as brand-600,

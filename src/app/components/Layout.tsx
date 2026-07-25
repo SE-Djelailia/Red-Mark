@@ -3,6 +3,7 @@ import { Outlet } from "react-router";
 import { Navigate } from "react-router";
 import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
+import { PageHeaderProvider } from "../../contexts/PageHeaderContext";
 import { processQueue } from "../../lib/uploadQueue";
 import BottomNav from "./BottomNav";
 import OfflineIndicator from "./OfflineIndicator";
@@ -61,13 +62,15 @@ export default function Layout() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas pb-14 md:pb-16">
-      <AppHeader />
-      <OfflineIndicator />
-      <PWAInstallPrompt />
-      <PWAUpdateNotification />
-      <Outlet />
-      <BottomNav />
-    </div>
+    <PageHeaderProvider>
+      <div className="min-h-screen bg-canvas pb-14 md:pb-16">
+        <AppHeader />
+        <OfflineIndicator />
+        <PWAInstallPrompt />
+        <PWAUpdateNotification />
+        <Outlet />
+        <BottomNav />
+      </div>
+    </PageHeaderProvider>
   );
 }
