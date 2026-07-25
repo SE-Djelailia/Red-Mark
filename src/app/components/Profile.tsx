@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import GeneralSettings from "./GeneralSettings";
 import DataExport from "./DataExport";
 import { useModalOpen } from "../../hooks/useModalOpen";
+import { inputClassName } from "./ui-kit/Input";
 
 // Left behind by settings that were removed as non-functional stubs: the
 // Notifications and Report-Templates sections entirely, plus the general
@@ -124,8 +125,8 @@ export default function Profile() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E10600] mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement du profil...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mx-auto mb-4"></div>
+          <p className="text-muted">Chargement du profil...</p>
         </div>
       </div>
     );
@@ -139,11 +140,11 @@ export default function Profile() {
   return (
     <div className="min-h-screen pb-20">
       {/* Header */}
-      <div className="bg-[#1A1A1A] text-white px-6 py-8 md:py-12">
+      <div className="bg-surface border-b border-line px-6 py-6 md:py-8">
         <div className="max-w-2xl mx-auto">
           {/* Avatar */}
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-20 h-20 rounded-full bg-[#E10600] flex items-center justify-center text-2xl font-bold">
+            <div className="w-16 h-16 rounded-full bg-brand-600 text-white flex items-center justify-center text-xl font-semibold">
               {userName
                 .split(" ")
                 .map((n) => n[0])
@@ -151,24 +152,24 @@ export default function Profile() {
                 .toUpperCase()}
             </div>
             <div>
-              <h1 className="text-2xl font-medium mb-1">{userName}</h1>
-              <p className="text-gray-400 text-sm capitalize">{userRole}</p>
+              <h1 className="text-2xl font-semibold text-ink mb-1">{userName}</h1>
+              <p className="text-muted text-sm capitalize">{userRole}</p>
             </div>
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white/10 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold mb-1">{loading ? "-" : stats.projectCount}</div>
-              <div className="text-xs text-gray-400">Projets</div>
+            <div className="bg-canvas border border-line rounded-lg p-3 text-center">
+              <div className="text-2xl font-semibold text-ink mb-1">{loading ? "-" : stats.projectCount}</div>
+              <div className="text-xs text-muted">Projets</div>
             </div>
-            <div className="bg-white/10 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold mb-1">{loading ? "-" : stats.totalVisits}</div>
-              <div className="text-xs text-gray-400">Visites</div>
+            <div className="bg-canvas border border-line rounded-lg p-3 text-center">
+              <div className="text-2xl font-semibold text-ink mb-1">{loading ? "-" : stats.totalVisits}</div>
+              <div className="text-xs text-muted">Visites</div>
             </div>
-            <div className="bg-white/10 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold mb-1">{loading ? "-" : stats.totalPhotos}</div>
-              <div className="text-xs text-gray-400">Photos</div>
+            <div className="bg-canvas border border-line rounded-lg p-3 text-center">
+              <div className="text-2xl font-semibold text-ink mb-1">{loading ? "-" : stats.totalPhotos}</div>
+              <div className="text-xs text-muted">Photos</div>
             </div>
           </div>
         </div>
@@ -176,15 +177,15 @@ export default function Profile() {
 
       {/* Profile Info */}
       <div className="px-4 py-6 max-w-2xl mx-auto">
-        <div className="bg-white rounded-xl border border-gray-200 mb-6">
-          <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-base font-bold text-[#1A1A1A]">Mes informations</h2>
+        <div className="bg-surface rounded-xl border border-line mb-6">
+          <div className="px-4 py-3 border-b border-line flex items-center justify-between">
+            <h2 className="text-base font-semibold text-ink">Mes informations</h2>
             {isEditing ? (
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsEditing(false)}
                   disabled={isSaving}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 min-h-[36px]"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-body hover:bg-subtle rounded-lg transition-colors disabled:opacity-50 min-h-[36px]"
                 >
                   <X size={16} />
                   Annuler
@@ -192,7 +193,7 @@ export default function Profile() {
                 <button
                   onClick={handleSaveProfile}
                   disabled={isSaving}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors disabled:opacity-50 min-h-[36px]"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 min-h-[36px]"
                 >
                   <Check size={16} />
                   {isSaving ? "Enregistrement…" : "Enregistrer"}
@@ -201,7 +202,7 @@ export default function Profile() {
             ) : (
               <button
                 onClick={startEditing}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm text-[#E10600] hover:bg-red-50 rounded-lg transition-colors min-h-[36px]"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-brand-600 hover:bg-brand-50 rounded-lg transition-colors min-h-[36px]"
               >
                 <Pencil size={16} />
                 Modifier
@@ -209,33 +210,33 @@ export default function Profile() {
             )}
           </div>
 
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-line">
             <div className="p-4 flex items-center gap-3">
-              <User size={20} className="text-gray-500 flex-shrink-0" />
+              <User size={20} className="text-faint flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-xs text-gray-500 mb-1">Nom</div>
+                <div className="text-xs text-muted mb-1">Nom</div>
                 {isEditing ? (
                   <input
                     type="text"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[44px]"
+                    className={inputClassName}
                     placeholder="Votre nom complet"
                   />
                 ) : (
-                  <div className="text-sm text-[#1A1A1A]">{userName}</div>
+                  <div className="text-sm text-ink">{userName}</div>
                 )}
               </div>
             </div>
 
             {/* Read-only: the email is the auth identity. */}
             <div className="p-4 flex items-center gap-3">
-              <Mail size={20} className="text-gray-500 flex-shrink-0" />
+              <Mail size={20} className="text-faint flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-xs text-gray-500 mb-1">Courriel</div>
-                <div className="text-sm text-[#1A1A1A] break-all">{user.email}</div>
+                <div className="text-xs text-muted mb-1">Courriel</div>
+                <div className="text-sm text-ink break-all">{user.email}</div>
                 {isEditing && (
-                  <div className="text-xs text-gray-400 mt-1">
+                  <div className="text-xs text-faint mt-1">
                     Le courriel ne peut pas être modifié ici.
                   </div>
                 )}
@@ -243,37 +244,37 @@ export default function Profile() {
             </div>
 
             <div className="p-4 flex items-center gap-3">
-              <Building2 size={20} className="text-gray-500 flex-shrink-0" />
+              <Building2 size={20} className="text-faint flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-xs text-gray-500 mb-1">Entreprise</div>
+                <div className="text-xs text-muted mb-1">Entreprise</div>
                 {isEditing ? (
                   <input
                     type="text"
                     value={form.firm}
                     onChange={(e) => setForm({ ...form, firm: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[44px]"
+                    className={inputClassName}
                     placeholder="Nom de votre entreprise"
                   />
                 ) : (
-                  <div className="text-sm text-[#1A1A1A]">{userFirm}</div>
+                  <div className="text-sm text-ink">{userFirm}</div>
                 )}
               </div>
             </div>
 
             <div className="p-4 flex items-center gap-3">
-              <Settings size={20} className="text-gray-500 flex-shrink-0" />
+              <Settings size={20} className="text-faint flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-xs text-gray-500 mb-1">Rôle</div>
+                <div className="text-xs text-muted mb-1">Rôle</div>
                 {isEditing ? (
                   <input
                     type="text"
                     value={form.role}
                     onChange={(e) => setForm({ ...form, role: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[44px]"
+                    className={inputClassName}
                     placeholder="Ex : Architecte, Technologue"
                   />
                 ) : (
-                  <div className="text-sm text-[#1A1A1A] capitalize">{userRole}</div>
+                  <div className="text-sm text-ink capitalize">{userRole}</div>
                 )}
               </div>
             </div>
@@ -282,48 +283,48 @@ export default function Profile() {
 
         {/* Settings Menu */}
         <div className="space-y-3">
-          <h2 className="text-lg text-[#1A1A1A] mb-3">Paramètres</h2>
+          <h2 className="text-base font-semibold text-ink mb-3">Paramètres</h2>
 
           <button
             onClick={() => setShowDataExport(true)}
-            className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between hover:border-[#E10600] transition-colors"
+            className="w-full bg-surface rounded-xl border border-line p-4 flex items-center justify-between hover:border-brand-600 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <Download size={20} className="text-gray-600" />
+              <Download size={20} className="text-muted" />
               <div className="text-left">
-                <div className="text-sm text-[#1A1A1A]">Exporter les données</div>
-                <div className="text-xs text-gray-500">Télécharger tous les projets</div>
+                <div className="text-sm text-ink">Exporter les données</div>
+                <div className="text-xs text-muted">Télécharger tous les projets</div>
               </div>
             </div>
-            <ChevronRight size={20} className="text-gray-400" />
+            <ChevronRight size={20} className="text-faint" />
           </button>
 
           <button
             onClick={() => setShowGeneralSettings(true)}
-            className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between hover:border-[#E10600] transition-colors"
+            className="w-full bg-surface rounded-xl border border-line p-4 flex items-center justify-between hover:border-brand-600 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <Settings size={20} className="text-gray-600" />
+              <Settings size={20} className="text-muted" />
               <div className="text-left">
-                <div className="text-sm text-[#1A1A1A]">Paramètres généraux</div>
-                <div className="text-xs text-gray-500">Stockage local</div>
+                <div className="text-sm text-ink">Paramètres généraux</div>
+                <div className="text-xs text-muted">Stockage local</div>
               </div>
             </div>
-            <ChevronRight size={20} className="text-gray-400" />
+            <ChevronRight size={20} className="text-faint" />
           </button>
         </div>
 
         {/* Logout Button */}
         <button
           onClick={() => setShowLogoutConfirm(true)}
-          className="w-full mt-8 bg-white rounded-xl border border-red-200 p-4 flex items-center justify-center gap-3 text-red-600 hover:bg-red-50 transition-colors"
+          className="w-full mt-8 bg-surface rounded-xl border border-open/30 p-4 flex items-center justify-center gap-3 text-open hover:bg-open/5 transition-colors"
         >
           <LogOut size={20} />
           <span>Se déconnecter</span>
         </button>
 
         {/* App Version */}
-        <div className="text-center mt-8 text-sm text-gray-500">
+        <div className="text-center mt-8 text-sm text-muted">
           <p>RedMark v1.0.0</p>
         </div>
       </div>
@@ -341,20 +342,20 @@ export default function Profile() {
             >
               {/* Content */}
               <div className="p-6">
-                <h2 className="text-xl text-[#1A1A1A] font-medium mb-2">Se déconnecter?</h2>
-                <p className="text-sm text-gray-600 mb-6">
+                <h2 className="text-xl text-ink font-semibold mb-2">Se déconnecter?</h2>
+                <p className="text-sm text-body mb-6">
                   Êtes-vous sûr de vouloir vous déconnecter de RedMark?
                 </p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowLogoutConfirm(false)}
-                    className="flex-1 py-3 bg-gray-200 text-[#1A1A1A] rounded-lg hover:bg-gray-300 font-medium min-h-[48px]"
+                    className="flex-1 py-3 bg-surface border border-line text-ink rounded-lg hover:bg-subtle font-medium min-h-[48px]"
                   >
                     Annuler
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="flex-1 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] font-medium min-h-[48px]"
+                    className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium min-h-[48px]"
                   >
                     Déconnexion
                   </button>

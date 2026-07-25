@@ -8,6 +8,7 @@ import type { Location } from "../../lib/locationsApi";
 import { createIssue, updateIssue, getIssuesByLocation, type Issue } from "../../lib/issuesApi";
 import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
+import { STATUS_LABEL } from "./ui-kit/Badge";
 
 // Same 3-choice priority set as IssueForm (the canonical spec deliberately
 // excludes "critical") — this lite variant must not be able to create data
@@ -17,11 +18,6 @@ const PRIORITIES: { value: Issue["priority"]; label: string; dot: string }[] = [
   { value: "medium", label: "Moyen", dot: "bg-blue-500" },
   { value: "low", label: "Faible", dot: "bg-gray-500" },
 ];
-
-const STATUS_LABEL: Record<Issue["status"], string> = {
-  open: "Ouverte",
-  resolved: "Résolue",
-};
 
 interface Props {
   open: boolean;

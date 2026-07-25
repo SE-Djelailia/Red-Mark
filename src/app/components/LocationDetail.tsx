@@ -34,18 +34,7 @@ import VisitPicker from "./VisitPicker";
 import IssueForm from "./IssueForm";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
 import FloatingActions from "./FloatingActions";
-
-const STATUS_LABEL: Record<Issue["status"], string> = {
-  open: "Ouverte",
-  resolved: "Résolue",
-};
-
-const PRIORITY_LABEL: Record<Issue["priority"], string> = {
-  critical: "Critique",
-  high: "Élevé",
-  medium: "Moyen",
-  low: "Faible",
-};
+import { PRIORITY_LABEL, STATUS_LABEL } from "./ui-kit/Badge";
 
 // Timeline entries are grouped by day; this formats the group header
 // ("21 juillet 2026"). Uses parseLocalDate (not plain `new Date(...)`) to

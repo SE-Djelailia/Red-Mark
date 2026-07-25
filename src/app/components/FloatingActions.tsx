@@ -51,10 +51,10 @@ export default function FloatingActions({ menu = [] }: Props) {
                     setMenuOpen(false);
                     item.onClick();
                   }}
-                  className="flex items-center gap-2 pl-4 pr-2 py-2 bg-white border border-gray-200 rounded-full shadow-lg hover:border-[#E10600] transition-colors text-sm font-medium text-[#1A1A1A] whitespace-nowrap"
+                  className="flex items-center gap-2 pl-4 pr-2 py-2 bg-surface border border-line rounded-full shadow-sm hover:border-brand-600 transition-colors text-sm font-medium text-ink whitespace-nowrap"
                 >
                   <span>{item.label}</span>
-                  <span className="w-8 h-8 rounded-full bg-[#E10600]/10 text-[#E10600] flex items-center justify-center flex-shrink-0">
+                  <span className="w-8 h-8 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center flex-shrink-0">
                     <Icon size={16} />
                   </span>
                 </button>
@@ -67,7 +67,7 @@ export default function FloatingActions({ menu = [] }: Props) {
           <button
             onClick={() => navigate("/app/search")}
             aria-label="Rechercher"
-            className="w-12 h-12 rounded-full bg-white text-[#1A1A1A] border border-gray-200 shadow-lg hover:border-[#E10600] transition-colors flex items-center justify-center touch-manipulation"
+            className="w-12 h-12 rounded-full bg-surface text-body border border-line shadow-sm hover:border-brand-600 hover:text-brand-600 transition-colors flex items-center justify-center touch-manipulation"
           >
             <Search size={20} />
           </button>
@@ -77,9 +77,9 @@ export default function FloatingActions({ menu = [] }: Props) {
           <button
             onClick={() => setMenuOpen((open) => !open)}
             aria-label={menuOpen ? "Fermer le menu d'actions" : "Actions rapides"}
-            className="w-14 h-14 md:w-16 md:h-16 bg-[#E10600] text-white rounded-full shadow-lg hover:bg-[#C00500] active:scale-95 transition-all flex items-center justify-center touch-manipulation"
+            className="w-14 h-14 bg-brand-600 text-white rounded-full shadow-sm hover:bg-brand-700 active:bg-brand-800 active:scale-95 transition-all flex items-center justify-center touch-manipulation"
           >
-            {menuOpen ? <X size={28} /> : <Plus size={28} />}
+            {menuOpen ? <X size={24} /> : <Plus size={24} />}
           </button>
         )}
       </div>

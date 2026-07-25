@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router";
-import { Search, AlertCircle, CheckCircle2, Loader2, MapPin } from "lucide-react";
+import { Search, AlertCircle, Loader2, MapPin } from "lucide-react";
 import { getAllUserIssues, type Issue } from "../../lib/issuesApi";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/useAuth";
 import { parseLocalDate } from "../../lib/dateUtils";
+import { PriorityBadge, StatusBadge, PRIORITY_LABEL, STATUS_LABEL } from "./ui-kit/Badge";
 
 type IssueWithProject = Issue & { projectName: string };
 
@@ -64,18 +65,6 @@ export default function IssueManagement() {
     };
   }, [user?.id, loadIssues]);
 
-  const statusConfig: Record<string, { label: string; icon: any; color: string }> = {
-    open: { label: "Ouvert", icon: AlertCircle, color: "text-red-600 bg-red-50" },
-    resolved: { label: "Résolu", icon: CheckCircle2, color: "text-green-600 bg-green-50" },
-  };
-
-  const priorityConfig: Record<string, { label: string; color: string }> = {
-    low: { label: "Faible", color: "bg-gray-500" },
-    medium: { label: "Moyenne", color: "bg-blue-500" },
-    high: { label: "Élevée", color: "bg-orange-500" },
-    critical: { label: "Critique", color: "bg-red-600" },
-  };
-
   const filteredIssues = issues.filter((issue) => {
     const q = searchQuery.toLowerCase();
     const matchesSearch =
@@ -97,7 +86,7 @@ export default function IssueManagement() {
           {["open", "resolved"].map((s) => (
             <div key={s} className="bg-white/10 rounded-lg p-3">
               <div className="text-2xl font-bold">{countByStatus(s)}</div>
-              <div className="text-xs text-gray-400">{statusConfig[s]?.label}</div>
+              <div className="text-xs text-gray-400">{STATUS_LABEL[s as Issue["status"]]}</div>
             </div>
           ))}
         </div>
@@ -121,8 +110,8 @@ export default function IssueManagement() {
             className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
           >
             <option value="all">Tous les statuts</option>
-            <option value="open">Ouvert</option>
-            <option value="resolved">Résolu</option>
+            <option value="open">{STATUS_LABEL.open}</option>
+            <option value="resolved">{STATUS_LABEL.resolved}</option>
           </select>
           <select
             value={priorityFilter}
@@ -130,10 +119,10 @@ export default function IssueManagement() {
             className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
           >
             <option value="all">Toutes les priorités</option>
-            <option value="critical">Critique</option>
-            <option value="high">Élevée</option>
-            <option value="medium">Moyenne</option>
-            <option value="low">Faible</option>
+            <option value="critical">{PRIORITY_LABEL.critical}</option>
+            <option value="high">{PRIORITY_LABEL.high}</option>
+            <option value="medium">{PRIORITY_LABEL.medium}</option>
+            <option value="low">{PRIORITY_LABEL.low}</option>
           </select>
         </div>
       </div>
@@ -156,9 +145,6 @@ export default function IssueManagement() {
           </div>
         ) : (
           filteredIssues.map((issue) => {
-            const sc = statusConfig[issue.status] ?? statusConfig.open;
-            const StatusIcon = sc.icon;
-            const pc = priorityConfig[issue.priority] ?? priorityConfig.medium;
             return (
               <div
                 key={issue.id}
@@ -170,10 +156,9 @@ export default function IssueManagement() {
                     <h3 className="text-base font-medium text-[#1A1A1A] mb-1">{issue.title}</h3>
                     <p className="text-sm text-gray-500">{issue.projectName}</p>
                   </div>
-                  <div
-                    className={`w-3 h-3 rounded-full flex-shrink-0 ml-2 mt-1 ${pc.color}`}
-                    title={pc.label}
-                  />
+                  <div className="flex-shrink-0 ml-2">
+                    <PriorityBadge priority={issue.priority} />
+                  </div>
                 </div>
 
                 {issue.description && (
@@ -181,10 +166,7 @@ export default function IssueManagement() {
                 )}
 
                 <div className="flex items-center gap-3 text-xs flex-wrap">
-                  <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${sc.color}`}>
-                    <StatusIcon size={12} />
-                    <span>{sc.label}</span>
-                  </div>
+                  <StatusBadge status={issue.status} />
                   {issue.discipline && (
                     <div className="flex items-center gap-1 text-gray-500">
                       <MapPin size={12} />

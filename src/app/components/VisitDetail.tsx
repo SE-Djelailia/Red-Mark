@@ -49,6 +49,7 @@ import SecureImage from "./SecureImage";
 import { toast } from "sonner";
 import { PhotoAnnotator } from "./PhotoAnnotator";
 import FloatingActions from "./FloatingActions";
+import { PriorityBadge, StatusBadge } from "./ui-kit/Badge";
 
 interface Photo {
   id: string;
@@ -914,32 +915,8 @@ export default function VisitDetail() {
                       <span className="text-sm font-medium text-[#1A1A1A] truncate">
                         {issue.title}
                       </span>
-                      <span
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${
-                          issue.priority === "critical"
-                            ? "bg-red-100 text-red-700"
-                            : issue.priority === "high"
-                              ? "bg-orange-100 text-orange-700"
-                              : issue.priority === "medium"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {issue.priority === "critical"
-                          ? "Critique"
-                          : issue.priority === "high"
-                            ? "Élevé"
-                            : issue.priority === "medium"
-                              ? "Moyen"
-                              : "Faible"}
-                      </span>
-                      <span
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${
-                          issue.status === "open" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"
-                        }`}
-                      >
-                        {issue.status === "open" ? "Ouvert" : "Résolu"}
-                      </span>
+                      <PriorityBadge priority={issue.priority} />
+                      <StatusBadge status={issue.status} />
                     </div>
                     {(issue.description || issue.assignedTo) && (
                       <div className="text-xs text-gray-500 truncate mt-0.5">

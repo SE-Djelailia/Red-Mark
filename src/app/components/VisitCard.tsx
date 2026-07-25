@@ -19,19 +19,19 @@ export default function VisitCard({ visit, onOpen }: Props) {
   return (
     <button
       onClick={onOpen}
-      className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors min-h-[44px] text-left"
+      className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-surface border-b border-line hover:bg-subtle transition-colors min-h-[44px] text-left"
     >
       <div className="flex items-center gap-3 min-w-0">
-        <span className="text-sm text-gray-500 whitespace-nowrap">
+        <span className="text-sm text-muted whitespace-nowrap">
           {parseLocalDate(visit.date).toLocaleDateString("fr-CA", {
             day: "numeric",
             month: "short",
             year: "numeric",
           })}
         </span>
-        <span className="text-sm text-[#1A1A1A] font-medium truncate">{visit.authorName}</span>
+        <span className="text-sm text-ink font-medium truncate">{visit.authorName}</span>
       </div>
-      <span className="px-2 py-1 bg-[#E10600]/10 text-[#E10600] rounded-md text-xs font-medium flex-shrink-0">
+      <span className="px-2 py-1 bg-brand-50 text-brand-600 rounded-md text-xs font-medium flex-shrink-0">
         {visit.phase}
       </span>
     </button>

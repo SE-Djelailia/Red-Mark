@@ -47,10 +47,10 @@ export default function Layout() {
   // Protection : Rediriger vers login si pas connecté
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E10600] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mx-auto"></div>
+          <p className="mt-4 text-muted">Chargement...</p>
         </div>
       </div>
     );
@@ -61,7 +61,7 @@ export default function Layout() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16 md:pb-20">
+    <div className="min-h-screen bg-canvas pb-14 md:pb-16">
       <AppHeader />
       <OfflineIndicator />
       <PWAInstallPrompt />

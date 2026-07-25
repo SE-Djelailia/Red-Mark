@@ -72,17 +72,11 @@
 }
 
 /**
- * Radius tokens are recorded here but deliberately NOT wired to
- * --radius-lg / --radius-xl yet. theme.css currently derives those from
- * --radius: 0.625rem, making rounded-lg 10px and rounded-xl 14px; adopting
- * the design values (which are Tailwind's stock 8px/12px) would shift 356
- * rounded-lg and 80 rounded-xl usages by 2px each. That lands in Step 2
- * with the component restyling, not here.
+ * Radius: adopted in Step 2 via a single `--radius: 0.5rem` in theme.css,
+ * whose existing scale derives --radius-lg (0.5rem) and --radius-xl
+ * (calc(--radius + 4px) = 0.75rem) — both design values exactly, with no
+ * per-class migration across the ~436 rounded-lg/xl usages.
  */
-:root {
-  --ds-radius-lg: 0.5rem;
-  --ds-radius-xl: 0.75rem;
-}
 
 @layer base {
   /* Canvas background. theme.css's `body { @apply bg-background }` resolves

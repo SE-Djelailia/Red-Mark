@@ -51,6 +51,7 @@ import LocationsImportModal from "./LocationsImportModal";
 import LocationsTab from "./LocationsTab";
 import FloatingActions from "./FloatingActions";
 import VisitPicker from "./VisitPicker";
+import { PriorityBadge, StatusBadge } from "./ui-kit/Badge";
 import { getLocations, getLevels, type Location, type Level } from "../../lib/locationsApi";
 import { PLANS_ENABLED } from "../../lib/featureFlags";
 
@@ -1223,34 +1224,8 @@ export default function ProjectDetail() {
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <span
-                              className={`px-2 py-1 rounded-md text-xs font-medium ${
-                                issue.priority === "critical"
-                                  ? "bg-red-100 text-red-700"
-                                  : issue.priority === "high"
-                                    ? "bg-orange-100 text-orange-700"
-                                    : issue.priority === "medium"
-                                      ? "bg-yellow-100 text-yellow-700"
-                                      : "bg-gray-100 text-gray-700"
-                              }`}
-                            >
-                              {issue.priority === "critical"
-                                ? "Critique"
-                                : issue.priority === "high"
-                                  ? "Élevé"
-                                  : issue.priority === "medium"
-                                    ? "Moyen"
-                                    : "Faible"}
-                            </span>
-                            <span
-                              className={`px-2 py-1 rounded-md text-xs font-medium ${
-                                issue.status === "open"
-                                  ? "bg-red-50 text-red-700"
-                                  : "bg-green-50 text-green-700"
-                              }`}
-                            >
-                              {issue.status === "open" ? "Ouvert" : "Résolu"}
-                            </span>
+                            <PriorityBadge priority={issue.priority} />
+                            <StatusBadge status={issue.status} />
                           </div>
                         </button>
                       );

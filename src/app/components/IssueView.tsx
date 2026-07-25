@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, Calendar, User, MapPin, Tag, CheckCircle, Clock, MessageSquare, Camera, Edit } from "lucide-react";
+import { Calendar, User, MapPin, Tag, MessageSquare, Camera, Edit } from "lucide-react";
 import { getCommentsForIssue } from "../../lib/commentsApi";
 import { getProjectTeammates, type Comment, type Teammate } from "../../lib/commentsApi";
 import { getLocation, type Location } from "../../lib/locationsApi";
@@ -9,36 +9,13 @@ import { useModalOpen } from "../../hooks/useModalOpen";
 import CommentThread from "./CommentThread";
 import SecureImage from "./SecureImage";
 import IssueForm from "./IssueForm";
+import { PriorityBadge, StatusBadge } from "./ui-kit/Badge";
 
 interface Props {
   issue: Issue;
   projectId: string;
   onIssueUpdated: (issue: Issue) => void;
   highlightCommentId?: string | null;
-}
-
-function getPriorityConfig(priority: string) {
-  switch (priority) {
-    case "critical":
-      return { color: "bg-red-100 text-red-700 border-red-300", label: "Critique", icon: AlertCircle };
-    case "high":
-      return { color: "bg-orange-100 text-orange-700 border-orange-300", label: "Élevé", icon: AlertCircle };
-    case "medium":
-      return { color: "bg-yellow-100 text-yellow-700 border-yellow-300", label: "Moyen", icon: AlertCircle };
-    default:
-      return { color: "bg-gray-100 text-gray-700 border-gray-300", label: "Faible", icon: AlertCircle };
-  }
-}
-
-function getStatusConfig(status: string) {
-  switch (status) {
-    case "open":
-      return { color: "bg-red-50 text-red-700 border-red-200", label: "Ouvert", icon: AlertCircle };
-    case "resolved":
-      return { color: "bg-green-50 text-green-700 border-green-200", label: "Résolu", icon: CheckCircle };
-    default:
-      return { color: "bg-gray-50 text-gray-700 border-gray-200", label: status, icon: Clock };
-  }
 }
 
 // Canonical read view for an issue (déficience) — used everywhere an issue
@@ -77,12 +54,6 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
       setAssigneeName(match ? match.name || match.email : null);
     });
   }, [issue.assignedToUserId, projectId]);
-
-  const priorityConfig = getPriorityConfig(issue.priority);
-  const statusConfig = getStatusConfig(issue.status);
-  const PriorityIcon = priorityConfig.icon;
-  const StatusIcon = statusConfig.icon;
-
   const assigneeDisplay = issue.assignedToUserId
     ? assigneeName || "Membre du projet"
     : issue.assignedToName || issue.assignedTo || null;
@@ -123,18 +94,8 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
         </div>
 
         <div className="flex flex-wrap gap-2 mb-3">
-          <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-medium ${priorityConfig.color}`}
-          >
-            <PriorityIcon size={12} />
-            {priorityConfig.label}
-          </span>
-          <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-medium ${statusConfig.color}`}
-          >
-            <StatusIcon size={12} />
-            {statusConfig.label}
-          </span>
+          <PriorityBadge priority={issue.priority} />
+          <StatusBadge status={issue.status} />
           {issue.discipline && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-600">
               {issue.discipline}

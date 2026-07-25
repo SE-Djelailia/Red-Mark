@@ -21,8 +21,8 @@ export default function BottomNav() {
   if (modalCtx?.isModalOpen) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-[#1A1A1A] border-t border-gray-800 safe-area-bottom z-50">
-      <div className="max-w-2xl mx-auto grid grid-cols-3 h-16 md:h-20">
+    <nav className="fixed bottom-0 left-0 right-0 bg-surface border-t border-line safe-area-bottom z-50">
+      <div className="max-w-2xl mx-auto grid grid-cols-3 h-14 md:h-16">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
@@ -30,18 +30,20 @@ export default function BottomNav() {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`relative flex flex-col items-center justify-center gap-1 transition-all min-h-[48px] ${
-                active
-                  ? "text-[#E10600] bg-white/5"
-                  : "text-gray-400 hover:text-white active:bg-white/5"
+              // Labels removed — icons only. The label still ships as the
+              // accessible name so the tabs stay screen-reader navigable.
+              aria-label={item.label}
+              aria-current={active ? "page" : undefined}
+              className={`relative flex items-center justify-center transition-colors min-h-[48px] ${
+                active ? "text-brand-600" : "text-faint hover:text-body active:bg-subtle"
               }`}
             >
-              {/* Active Indicator Bar */}
+              {/* Active indicator — the only cue left now that labels are
+                  gone, so it stays. */}
               {active && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-[#E10600] rounded-b-full" />
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-brand-600 rounded-b-full" />
               )}
-              <Icon size={22} strokeWidth={active ? 2.5 : 2} />
-              <span className={`text-xs ${active ? "font-semibold" : ""}`}>{item.label}</span>
+              <Icon size={22} strokeWidth={active ? 2.25 : 1.75} />
             </button>
           );
         })}
