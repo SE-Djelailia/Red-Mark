@@ -24,6 +24,7 @@ import {
   uploadPhoto,
   updateSiteVisit,
   deletePhoto,
+  saveAnnotatedPhoto,
 } from "../../lib/supabaseApi";
 import { getIssuesByVisit, type Issue } from "../../lib/issuesApi";
 import PlanFilesManager from "./PlanFilesManager";
@@ -429,35 +430,39 @@ export default function VisitDetail() {
         return;
       }
 
-      // Delete the old file from storage
-      const { error: deleteError } = await supabase.storage
-        .from("project-photos")
-        .remove([originalPhoto.storage_path]);
+      // Non-destructive: uploads to a new path under the current user's
+      // folder, then repoints the row. The original stays in storage.
+      const updated = await saveAnnotatedPhoto(
+        originalPhoto,
+        annotatedImageBlob,
+        user.id,
+        projectId,
+        visitId,
+      );
 
-      if (deleteError) {
-        console.warn("Warning deleting old file:", deleteError);
-        // Continue anyway - file might not exist
-      }
+      // Swap the storage path in place so the new signed URL is fetched for
+      // just this photo — no full page reload.
+      setVisit((prev) =>
+        prev
+          ? {
+              ...prev,
+              photos: prev.photos.map((p) =>
+                p.id === photoId ? { ...p, storage_path: updated.storage_path } : p,
+              ),
+            }
+          : prev,
+      );
 
-      // Upload the new annotated image with the same path
-      const { error: uploadError } = await supabase.storage
-        .from("project-photos")
-        .upload(originalPhoto.storage_path, annotatedImageBlob, {
-          contentType: "image/jpeg",
-          upsert: true,
-        });
-
-      if (uploadError) throw uploadError;
-
-      toast.success("Annotations sauvegardées! Actualisation...");
-
-      // Reload page to show updated photo with fresh signed URLs
-      setTimeout(() => {
-        window.location.reload();
-      }, 800);
+      toast.success("Annotations sauvegardées");
     } catch (error) {
       console.error("Error saving annotation:", error);
-      toast.error("Erreur lors de l'enregistrement de l'annotation");
+      toast.error(
+        getRlsErrorMessage(
+          error,
+          "Erreur lors de l'enregistrement de l'annotation",
+          "Seul l'auteur de la photo peut enregistrer une annotation pour le moment.",
+        ),
+      );
     }
   };
 

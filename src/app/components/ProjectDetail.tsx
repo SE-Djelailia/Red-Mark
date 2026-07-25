@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
+import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -31,6 +32,7 @@ import {
   getPhotosByProject,
   getPhotosCount,
   getPhotosSignedUrls,
+  saveAnnotatedPhoto,
   type ProjectGalleryPhotoRow,
   type SiteVisitPageFilters,
 } from "../../lib/supabaseApi";
@@ -43,7 +45,7 @@ import { useSmartBack } from "../../hooks/useSmartBack";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
 import { getIssuesByProject, getVisitIdsWithOpenIssues } from "../../lib/issuesApi";
 import { parseLocalDate } from "../../lib/dateUtils";
-import PhotoMarkup from "./PhotoMarkup";
+import { PhotoAnnotator } from "./PhotoAnnotator";
 import ReportTemplateSelector from "./ReportTemplateSelector";
 import ProjectMembersModal from "./ProjectMembersModal";
 import ProjectEditModal from "./ProjectEditModal";
@@ -216,11 +218,20 @@ export default function ProjectDetail() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<SiteVisit | null>(null);
   const [commentText, setCommentText] = useState("");
-  const [showPhotoMarkupModal, setShowPhotoMarkupModal] = useState(false);
+  const [showAnnotator, setShowAnnotator] = useState(false);
+  // storage_path and visit_id are carried so the annotator can save without
+  // a second fetch — PhotoAnnotator resolves its own signed URL from the
+  // path, and saveAnnotatedPhoto needs the visit to build the new path.
   const [selectedPhoto, setSelectedPhoto] = useState<{
     id: string;
     url: string;
     tags: string[];
+    date?: string;
+    phase?: string;
+    // Present only for gallery photos (full rows). The visit-modal grid
+    // carries a lighter shape, so the annotate action is gated on these.
+    storage_path?: string;
+    visit_id?: string;
   } | null>(null);
   const [siteVisits, setSiteVisits] = useState<SiteVisit[]>([]);
   const [isLoadingVisits, setIsLoadingVisits] = useState(true);
@@ -253,7 +264,7 @@ export default function ProjectDetail() {
   const [totalPhotosCount, setTotalPhotosCount] = useState(0);
   useModalOpen(showShareModal);
   useModalOpen(showCommentModal);
-  useModalOpen(!!selectedPhoto && !showPhotoMarkupModal);
+  useModalOpen(!!selectedPhoto && !showAnnotator);
   useModalOpen(showVisitModal && !!selectedVisit);
   useModalOpen(showLocationsImportModal);
   useModalOpen(showVisitPickerForIssue);
@@ -511,6 +522,41 @@ export default function ProjectDetail() {
       setOpenIssueVisitIds(ids);
     }
     setVisitOpenIssuesOnly((v) => !v);
+  };
+
+  // Mirrors VisitDetail's handler: non-destructive save, then repoint the
+  // local row so the gallery re-fetches a signed URL for the new path.
+  const handleSaveAnnotation = async (photoId: string, annotatedImageBlob: Blob) => {
+    const target = galleryPhotos.find((p) => p.id === photoId);
+    if (!user?.id || !id || !target) {
+      toast.error("Photo introuvable");
+      return;
+    }
+    try {
+      const updated = await saveAnnotatedPhoto(
+        target,
+        annotatedImageBlob,
+        user.id,
+        id,
+        target.visit_id,
+      );
+      setGalleryPhotos((prev) =>
+        prev.map((p) => (p.id === photoId ? { ...p, storage_path: updated.storage_path } : p)),
+      );
+      const [freshUrl] = await getPhotosSignedUrls([updated.storage_path]);
+      setGalleryPhotoUrls((prev) => ({ ...prev, [photoId]: freshUrl || "" }));
+      setSelectedPhoto(null);
+      toast.success("Annotations sauvegardées");
+    } catch (error) {
+      console.error("Error saving annotation:", error);
+      toast.error(
+        getRlsErrorMessage(
+          error,
+          "Erreur lors de l'enregistrement de l'annotation",
+          "Seul l'auteur de la photo peut enregistrer une annotation pour le moment.",
+        ),
+      );
+    }
   };
 
   const loadGalleryPhotos = useCallback(async () => {
@@ -1398,7 +1444,7 @@ export default function ProjectDetail() {
       )}
 
       {/* Photo Detail Modal */}
-      {selectedPhoto && !showPhotoMarkupModal && (
+      {selectedPhoto && !showAnnotator && (
         <div
           className="fixed inset-0 bg-black/95 z-50 flex flex-col"
           onClick={() => setSelectedPhoto(null)}
@@ -1431,9 +1477,12 @@ export default function ProjectDetail() {
             className="px-6 py-3 bg-ink border-b border-ink flex gap-3 safe-area-bottom"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Only gallery photos carry the storage_path the annotator
+                needs; the visit-modal grid passes a lighter shape. */}
             <button
-              onClick={() => setShowPhotoMarkupModal(true)}
-              className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2"
+              onClick={() => setShowAnnotator(true)}
+              disabled={!selectedPhoto.storage_path}
+              className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Pencil size={18} />
               <span>Annoter</span>
@@ -1445,10 +1494,12 @@ export default function ProjectDetail() {
             className="bg-ink text-white px-6 py-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3 text-sm">
-              <Calendar size={18} className="text-faint" />
-              <span>{parseLocalDate(selectedPhoto.date).toLocaleDateString("fr-CA")}</span>
-            </div>
+            {selectedPhoto.date && (
+              <div className="flex items-center gap-3 text-sm">
+                <Calendar size={18} className="text-faint" />
+                <span>{parseLocalDate(selectedPhoto.date).toLocaleDateString("fr-CA")}</span>
+              </div>
+            )}
 
             <div className="space-y-2">
               <div className="flex items-center gap-2">
@@ -1474,16 +1525,15 @@ export default function ProjectDetail() {
         </div>
       )}
 
-      {/* Photo Markup Modal */}
-      {showPhotoMarkupModal && selectedPhoto && (
-        <PhotoMarkup
-          imageUrl={selectedPhoto.url}
-          onClose={() => setShowPhotoMarkupModal(false)}
-          onSave={(annotatedUrl) => {
-            console.log("Saved annotated image:", annotatedUrl);
-            setShowPhotoMarkupModal(false);
-            alert("Photo annotée enregistrée avec succès!");
-          }}
+      {/* Photo annotation — the same canonical PhotoAnnotator the visit
+          screen uses. This used to render PhotoMarkup, whose onSave only
+          logged a blob: URL and then claimed success, silently losing every
+          annotation made from this screen. */}
+      {showAnnotator && selectedPhoto?.storage_path && (
+        <PhotoAnnotator
+          photo={{ ...selectedPhoto, storage_path: selectedPhoto.storage_path }}
+          onClose={() => setShowAnnotator(false)}
+          onSave={handleSaveAnnotation}
         />
       )}
 

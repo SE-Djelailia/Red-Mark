@@ -1175,6 +1175,10 @@ CREATE POLICY "Editors and owners can create issues" ON "public"."issues" FOR IN
 
 
 
+CREATE POLICY "Editors can update project photos" ON "public"."photos" FOR UPDATE USING ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"])) WITH CHECK ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
+
+
+
 CREATE POLICY "Members can create comments" ON "public"."comments" FOR INSERT WITH CHECK ((("auth"."uid"() = "user_id") AND "public"."is_project_member"("public"."comment_project_id"("photo_id", "issue_id", "visit_id"))));
 
 

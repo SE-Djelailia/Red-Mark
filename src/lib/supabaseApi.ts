@@ -550,6 +550,74 @@ export async function uploadPhoto(
   }
 }
 
+/**
+ * Persist an annotated version of an existing photo.
+ *
+ * Non-destructive by design: the annotated image is written to a NEW path
+ * under the CURRENT user's folder and the photos row is repointed at it.
+ * The original file is left untouched in storage.
+ *
+ * Why not overwrite in place (what this replaces):
+ *  - Photo paths are `{uploaderId}/{projectId}/{visitId}/{file}`, and the
+ *    storage INSERT/DELETE policies both require `foldername[1] = auth.uid()`.
+ *    Overwriting a teammate's photo therefore always failed — the common
+ *    case on a multi-person inspection.
+ *  - There is no storage UPDATE policy at all, so `upsert: true` could not
+ *    work on an existing object either.
+ *  - The old code deleted the original BEFORE uploading the replacement, so
+ *    a failed upload destroyed the only copy.
+ *
+ * Writing to the annotator's own folder is a plain INSERT, which the
+ * existing policy already allows — no new storage policy needed.
+ *
+ * NOTE: repointing the row still requires UPDATE on `photos`, which today is
+ * restricted to the original uploader ("Creator can update their photos").
+ * Annotating someone else's photo will upload successfully and then fail on
+ * the row update until that policy is widened to project editors.
+ */
+export async function saveAnnotatedPhoto(
+  photo: { id: string; storage_path: string },
+  annotatedImage: Blob,
+  userId: string,
+  projectId: string,
+  visitId: string,
+): Promise<Photo> {
+  // 1. Upload FIRST, under the annotator's own folder. Nothing is mutated
+  //    until this succeeds, so a failure leaves the original intact.
+  const annotatedPath = `${userId}/${projectId}/${visitId}/${Date.now()}-annotated.jpg`;
+  const { error: uploadError } = await supabase.storage
+    .from("project-photos")
+    .upload(annotatedPath, annotatedImage, { contentType: "image/jpeg" });
+
+  if (uploadError) {
+    console.error("❌ Error uploading annotated photo:", uploadError);
+    throw uploadError;
+  }
+
+  // 2. Only now repoint the row at the annotated version.
+  const { data: urlData } = supabase.storage
+    .from("project-photos")
+    .getPublicUrl(annotatedPath);
+
+  try {
+    return await updatePhoto(photo.id, {
+      storage_path: annotatedPath,
+      file_url: urlData.publicUrl,
+    });
+  } catch (error) {
+    // The row still points at the original, so the photo is undamaged —
+    // we've just orphaned the newly uploaded file. Clean it up so repeated
+    // failed attempts don't accumulate junk in the bucket.
+    await supabase.storage
+      .from("project-photos")
+      .remove([annotatedPath])
+      .catch(() => {
+        /* best-effort cleanup; the row update error is what matters */
+      });
+    throw error;
+  }
+}
+
 export async function updatePhoto(photoId: string, updates: Partial<Photo>): Promise<Photo> {
   try {
     const { data, error } = await supabase
