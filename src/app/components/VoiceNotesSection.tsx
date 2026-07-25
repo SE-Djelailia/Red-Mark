@@ -229,17 +229,17 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
   };
 
   return (
-    <div className={bare ? "space-y-3" : "bg-white rounded-xl border border-gray-200 p-4 space-y-3"}>
+    <div className={bare ? "space-y-3" : "bg-white rounded-xl border border-line p-4 space-y-3"}>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-sm font-medium text-[#1A1A1A]">Notes vocales</h3>
-          <p className="text-xs text-gray-500">Enregistrez une note audio pour cette visite</p>
+          <h3 className="text-sm font-medium text-ink">Notes vocales</h3>
+          <p className="text-xs text-muted">Enregistrez une note audio pour cette visite</p>
         </div>
         {!recording ? (
           <button
             onClick={start}
             disabled={!!capabilityError}
-            className="inline-flex items-center gap-2 h-11 px-4 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] disabled:opacity-50 text-sm font-medium min-h-[44px]"
+            className="inline-flex items-center gap-2 h-11 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 text-sm font-medium min-h-[44px]"
           >
             <Mic size={16} />
             Enregistrer
@@ -247,7 +247,7 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
         ) : (
           <button
             onClick={stop}
-            className="inline-flex items-center gap-2 h-11 px-4 bg-[#1A1A1A] text-white rounded-lg text-sm font-medium min-h-[44px]"
+            className="inline-flex items-center gap-2 h-11 px-4 bg-ink text-white rounded-lg text-sm font-medium min-h-[44px]"
           >
             <Square size={14} fill="currentColor" />
             Arrêter {fmt(elapsed)}
@@ -263,33 +263,33 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
       )}
 
       {recording && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-lg p-3 text-sm text-[#E10600]">
-          <span className="w-2 h-2 rounded-full bg-[#E10600] animate-pulse" />
+        <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-lg p-3 text-sm text-brand-600">
+          <span className="w-2 h-2 rounded-full bg-brand-600 animate-pulse" />
           Enregistrement en cours · {fmt(elapsed)}
         </div>
       )}
 
       {notes.length === 0 ? (
-        <div className="text-center text-xs text-gray-400 py-2">
+        <div className="text-center text-xs text-faint py-2">
           Aucune note vocale pour cette visite
         </div>
       ) : (
         <ul className="space-y-2">
           {notes.map((note) => (
-            <li key={note.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+            <li key={note.id} className="flex items-center gap-3 p-2 bg-canvas rounded-lg">
               <button
                 onClick={() => togglePlay(note)}
-                className="w-11 h-11 rounded-full bg-[#E10600] text-white flex items-center justify-center min-h-[44px]"
+                className="w-11 h-11 rounded-full bg-brand-600 text-white flex items-center justify-center min-h-[44px]"
                 aria-label="Lire / Pause"
               >
                 {playingId === note.id ? <Pause size={18} /> : <Play size={18} />}
               </button>
               <div className="flex-1 min-w-0">
-                <div className="text-sm text-[#1A1A1A]">
+                <div className="text-sm text-ink">
                   {fmt(note.duration_seconds)} · {new Date(note.created_at).toLocaleString("fr-CA")}
                 </div>
                 {note.transcription && (
-                  <div className="text-xs text-gray-500 truncate">{note.transcription}</div>
+                  <div className="text-xs text-muted truncate">{note.transcription}</div>
                 )}
               </div>
               <audio
@@ -301,7 +301,7 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
               />
               <button
                 onClick={() => setDeleteTarget(note)}
-                className="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-[#E10600]"
+                className="w-11 h-11 flex items-center justify-center text-faint hover:text-brand-600"
                 aria-label="Supprimer"
               >
                 <Trash2 size={16} />

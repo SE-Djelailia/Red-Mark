@@ -29,7 +29,7 @@ export default function RedMarkLogo({
         >
           <defs>
             <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#E10600" />
+              <stop offset="0%" stopColor="var(--color-brand-600)" />
               <stop offset="100%" stopColor="#A00400" />
             </linearGradient>
           </defs>
@@ -62,7 +62,7 @@ export default function RedMarkLogo({
         >
           <defs>
             <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#E10600" />
+              <stop offset="0%" stopColor="var(--color-brand-600)" />
               <stop offset="100%" stopColor="#A00400" />
             </linearGradient>
           </defs>
@@ -81,7 +81,7 @@ export default function RedMarkLogo({
         </svg>
       </div>
       <div className={`font-bold ${currentSize.text} leading-none`}>
-        <span style={{ color: "#E10600" }}>Red</span>
+        <span style={{ color: "var(--color-brand-600)" }}>Red</span>
         <span style={{ color: "currentColor" }}>Mark</span>
       </div>
     </div>

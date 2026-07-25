@@ -16,7 +16,7 @@ import { STATUS_LABEL } from "./ui-kit/Badge";
 const PRIORITIES: { value: Issue["priority"]; label: string; dot: string }[] = [
   { value: "high", label: "Élevé", dot: "bg-orange-500" },
   { value: "medium", label: "Moyen", dot: "bg-blue-500" },
-  { value: "low", label: "Faible", dot: "bg-gray-500" },
+  { value: "low", label: "Faible", dot: "bg-canvas0" },
 ];
 
 interface Props {
@@ -142,24 +142,24 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-start justify-between px-5 py-4 border-b border-gray-200">
+        <div className="flex items-start justify-between px-5 py-4 border-b border-line">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-lg bg-[#E10600]/10 text-[#E10600] flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-brand-600/10 text-brand-600 flex items-center justify-center flex-shrink-0">
               <MapPin size={18} />
             </div>
             <div className="min-w-0">
-              <div className="text-base font-medium text-[#1A1A1A] truncate">
+              <div className="text-base font-medium text-ink truncate">
                 {location.locationNumber}
                 {location.name ? ` — ${location.name}` : ""}
               </div>
               {location.discipline && (
-                <div className="text-xs text-gray-500 truncate">{location.discipline}</div>
+                <div className="text-xs text-muted truncate">{location.discipline}</div>
               )}
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-[#1A1A1A] rounded-lg flex-shrink-0"
+            className="w-9 h-9 flex items-center justify-center text-faint hover:text-ink rounded-lg flex-shrink-0"
             aria-label="Fermer"
           >
             <X size={20} />
@@ -168,11 +168,11 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           <div>
-            <h4 className="text-sm font-medium text-[#1A1A1A] mb-2">
+            <h4 className="text-sm font-medium text-ink mb-2">
               Déficiences ({loadingIssues ? "…" : issuesLoadError ? "?" : issues.length})
             </h4>
             {loadingIssues ? (
-              <div className="text-sm text-gray-500">Chargement…</div>
+              <div className="text-sm text-muted">Chargement…</div>
             ) : issuesLoadError ? (
               <div className="text-sm text-red-600 flex items-center gap-2">
                 Impossible de charger les déficiences.
@@ -184,17 +184,17 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
                 </button>
               </div>
             ) : issues.length === 0 ? (
-              <div className="text-sm text-gray-500">Aucune déficience à ce local pour le moment.</div>
+              <div className="text-sm text-muted">Aucune déficience à ce local pour le moment.</div>
             ) : (
               <div className="space-y-1.5">
                 {issues.map((issue) => (
                   <button
                     key={issue.id}
                     onClick={() => navigate(`/app/projects/${projectId}/issues/${issue.id}`)}
-                    className="w-full text-left px-3 py-2.5 rounded-lg border border-gray-200 hover:border-[#E10600] hover:bg-gray-50 min-h-[44px]"
+                    className="w-full text-left px-3 py-2.5 rounded-lg border border-line hover:border-brand-600 hover:bg-subtle min-h-[44px]"
                   >
-                    <div className="text-sm text-[#1A1A1A] font-medium truncate">{issue.title}</div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-sm text-ink font-medium truncate">{issue.title}</div>
+                    <div className="text-xs text-muted">
                       {STATUS_LABEL[issue.status]} · {issue.createdDate}
                     </div>
                   </button>
@@ -204,40 +204,40 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
           </div>
 
           {!visitId ? (
-            <div className="text-sm text-gray-500 border-t border-gray-200 pt-4">
+            <div className="text-sm text-muted border-t border-line pt-4">
               Ouvrez ce plan depuis une visite pour créer une déficience.
             </div>
           ) : !showCreateForm ? (
             <button
               onClick={() => setShowCreateForm(true)}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm font-medium text-[#1A1A1A] hover:border-[#E10600] hover:text-[#E10600] min-h-[44px]"
+              className="w-full inline-flex items-center justify-center gap-2 py-3 border-2 border-dashed border-line-strong rounded-lg text-sm font-medium text-ink hover:border-brand-600 hover:text-brand-600 min-h-[44px]"
             >
               <Plus size={16} />
               Créer une déficience
             </button>
           ) : (
-            <div className="space-y-3 border-t border-gray-200 pt-4">
+            <div className="space-y-3 border-t border-line pt-4">
               <div>
-                <label className="block text-sm text-[#1A1A1A] mb-2">Titre</label>
+                <label className="block text-sm text-ink mb-2">Titre</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
+                  className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm text-[#1A1A1A] mb-2">Description</label>
+                <label className="block text-sm text-ink mb-2">Description</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
+                  className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
                 />
               </div>
               <div>
-                <label className="block text-sm text-[#1A1A1A] mb-2">Priorité</label>
+                <label className="block text-sm text-ink mb-2">Priorité</label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {PRIORITIES.map((p) => (
                     <button
@@ -245,8 +245,8 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
                       onClick={() => setPriority(p.value)}
                       className={`py-2.5 px-3 rounded-lg border-2 transition-all flex items-center gap-2 justify-center ${
                         priority === p.value
-                          ? "border-[#E10600] bg-[#E10600]/10"
-                          : "border-gray-200 hover:border-gray-300"
+                          ? "border-brand-600 bg-brand-600/10"
+                          : "border-line hover:border-line-strong"
                       }`}
                     >
                       <span className={`w-3 h-3 rounded-full ${p.dot}`} />
@@ -256,12 +256,12 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-[#1A1A1A] mb-2">Photos</label>
+                <label className="block text-sm text-ink mb-2">Photos</label>
                 <PhotoCaptureButtons onFilesSelected={handleFilesSelected} disabled={creating} />
                 {photos.length > 0 && (
                   <div className="grid grid-cols-4 gap-2 mt-3">
                     {photos.map((file, index) => (
-                      <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
+                      <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-line">
                         <img
                           src={URL.createObjectURL(file)}
                           alt={`Photo ${index + 1}`}
@@ -281,7 +281,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
                   </div>
                 )}
                 {photos.length === 0 && (
-                  <p className="text-xs text-gray-400 mt-2 flex items-center gap-1.5">
+                  <p className="text-xs text-faint mt-2 flex items-center gap-1.5">
                     <CameraIcon size={12} />
                     Facultatif — vous pouvez aussi ajouter des photos plus tard depuis la fiche
                   </p>
@@ -291,14 +291,14 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
                 <button
                   onClick={() => setShowCreateForm(false)}
                   disabled={creating}
-                  className="flex-1 py-3 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 disabled:opacity-50 font-medium min-h-[44px]"
+                  className="flex-1 py-3 bg-subtle text-ink rounded-lg hover:bg-line disabled:opacity-50 font-medium min-h-[44px]"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleCreate}
                   disabled={creating}
-                  className="flex-1 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] disabled:opacity-50 font-medium min-h-[44px]"
+                  className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 font-medium min-h-[44px]"
                 >
                   {creating ? "Création…" : "Créer"}
                 </button>

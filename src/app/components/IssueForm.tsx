@@ -8,11 +8,12 @@ import { getProjectTeammates, type Teammate } from "../../lib/commentsApi";
 import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
 import SecureImage from "./SecureImage";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
+import { inputClassName, labelClassName, textareaClassName } from "./ui-kit/Input";
 
 const PRIORITIES: { value: Issue["priority"]; label: string; dot: string }[] = [
   { value: "high", label: "Élevé", dot: "bg-orange-500" },
-  { value: "medium", label: "Moyen", dot: "bg-blue-500" },
-  { value: "low", label: "Faible", dot: "bg-gray-500" },
+  { value: "medium", label: "Moyen", dot: "bg-subtle0" },
+  { value: "low", label: "Faible", dot: "bg-canvas0" },
 ];
 
 const DISCIPLINES = ["Architecture", "Structure", "Mécanique", "Électricité", "Plomberie"];
@@ -242,32 +243,32 @@ export default function IssueForm({
     <div className="space-y-4">
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Titre *</label>
+        <label className={labelClassName}>Titre *</label>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Ex: Fissure dans le béton"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
+          className={inputClassName}
           autoFocus
         />
       </div>
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Description</label>
+        <label className={labelClassName}>Description</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Détails de la déficience..."
           rows={4}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent resize-none"
+          className={textareaClassName}
         />
       </div>
 
       {/* Priority */}
       <div>
-        <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Priorité</label>
+        <label className={labelClassName}>Priorité</label>
         <div className="grid grid-cols-3 gap-2">
           {PRIORITIES.map((p) => (
             <button
@@ -276,8 +277,8 @@ export default function IssueForm({
               onClick={() => setPriority(p.value)}
               className={`py-2.5 px-3 rounded-lg border-2 transition-all flex items-center gap-2 justify-center min-h-[44px] ${
                 priority === p.value
-                  ? "border-[#E10600] bg-[#E10600]/10"
-                  : "border-gray-200 hover:border-gray-300"
+                  ? "border-brand-600 bg-brand-600/10"
+                  : "border-line hover:border-line-strong"
               }`}
             >
               <span className={`w-3 h-3 rounded-full ${p.dot}`} />
@@ -289,15 +290,15 @@ export default function IssueForm({
 
       {/* Status */}
       <div>
-        <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Statut</label>
+        <label className={labelClassName}>Statut</label>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => setStatus("open")}
             className={`py-2.5 px-3 rounded-lg border-2 transition-all text-sm min-h-[44px] ${
               status === "open"
-                ? "border-red-500 bg-red-50 text-red-700"
-                : "border-gray-200 hover:border-gray-300"
+                ? "border-brand-600 bg-brand-50 text-brand-strong"
+                : "border-line hover:border-line-strong"
             }`}
           >
             Ouvert
@@ -307,8 +308,8 @@ export default function IssueForm({
             onClick={() => setStatus("resolved")}
             className={`py-2.5 px-3 rounded-lg border-2 transition-all text-sm min-h-[44px] ${
               status === "resolved"
-                ? "border-green-500 bg-green-50 text-green-700"
-                : "border-gray-200 hover:border-gray-300"
+                ? "border-resolved bg-resolved/10 text-resolved"
+                : "border-line hover:border-line-strong"
             }`}
           >
             Résolu
@@ -318,11 +319,11 @@ export default function IssueForm({
 
       {/* Discipline */}
       <div>
-        <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Discipline</label>
+        <label className={labelClassName}>Discipline</label>
         <select
           value={discipline}
           onChange={(e) => setDiscipline(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
+          className={inputClassName}
         >
           <option value="">Non spécifiée</option>
           {DISCIPLINES.map((d) => (
@@ -335,26 +336,26 @@ export default function IssueForm({
 
       {/* Due date */}
       <div>
-        <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Date d'échéance</label>
+        <label className={labelClassName}>Date d'échéance</label>
         <input
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
+          className={inputClassName}
         />
       </div>
 
       {/* Assigned to */}
       <div>
-        <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Assigné à</label>
+        <label className={labelClassName}>Assigné à</label>
         <div className="flex gap-2 mb-2">
           <button
             type="button"
             onClick={selectMemberMode}
             className={`flex-1 py-2 px-3 rounded-lg border-2 transition-all flex items-center justify-center gap-2 text-sm min-h-[40px] ${
               assigneeMode === "member"
-                ? "border-[#E10600] bg-[#E10600]/10"
-                : "border-gray-200 hover:border-gray-300"
+                ? "border-brand-600 bg-brand-600/10"
+                : "border-line hover:border-line-strong"
             }`}
           >
             <Users size={14} />
@@ -365,8 +366,8 @@ export default function IssueForm({
             onClick={selectExternalMode}
             className={`flex-1 py-2 px-3 rounded-lg border-2 transition-all flex items-center justify-center gap-2 text-sm min-h-[40px] ${
               assigneeMode === "external"
-                ? "border-[#E10600] bg-[#E10600]/10"
-                : "border-gray-200 hover:border-gray-300"
+                ? "border-brand-600 bg-brand-600/10"
+                : "border-line hover:border-line-strong"
             }`}
           >
             <User size={14} />
@@ -377,7 +378,7 @@ export default function IssueForm({
           <select
             value={assignedToUserId}
             onChange={(e) => setAssignedToUserId(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
+            className={inputClassName}
           >
             <option value="">Sélectionner un membre</option>
             {teammates.map((t) => (
@@ -393,14 +394,14 @@ export default function IssueForm({
             value={assignedToName}
             onChange={(e) => setAssignedToName(e.target.value)}
             placeholder="Nom de l'entrepreneur externe"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
+            className={inputClassName}
           />
         )}
         {assigneeMode !== "none" && (
           <button
             type="button"
             onClick={clearAssignee}
-            className="text-xs text-gray-500 hover:text-[#E10600] mt-1.5"
+            className="text-xs text-muted hover:text-brand-600 mt-1.5"
           >
             Retirer l'assignation
           </button>
@@ -409,8 +410,8 @@ export default function IssueForm({
 
       {/* Location — read-only */}
       <div>
-        <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Emplacement</label>
-        <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
+        <label className={labelClassName}>Emplacement</label>
+        <div className="w-full px-4 py-3 bg-canvas border border-line rounded-lg text-sm text-body">
           {loadingLocation
             ? "Chargement…"
             : location
@@ -421,7 +422,7 @@ export default function IssueForm({
 
       {/* Tags */}
       <div>
-        <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Étiquettes</label>
+        <label className={labelClassName}>Étiquettes</label>
         <div className="flex gap-2 mb-2">
           <input
             type="text"
@@ -434,12 +435,12 @@ export default function IssueForm({
               }
             }}
             placeholder="Ajouter une étiquette"
-            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent text-sm"
+            className="flex-1 px-4 py-2.5 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent text-sm"
           />
           <button
             type="button"
             onClick={addTag}
-            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium min-h-[44px]"
+            className="px-4 py-2.5 bg-subtle hover:bg-line rounded-lg text-sm font-medium min-h-[44px]"
           >
             Ajouter
           </button>
@@ -449,7 +450,7 @@ export default function IssueForm({
             {tags.map((t) => (
               <span
                 key={t}
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-[#1A1A1A] rounded-full text-xs"
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-subtle text-ink rounded-full text-xs"
               >
                 {t}
                 <button type="button" onClick={() => removeTag(t)} aria-label={`Retirer ${t}`}>
@@ -463,14 +464,14 @@ export default function IssueForm({
 
       {/* Photos */}
       <div>
-        <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Photos</label>
+        <label className={labelClassName}>Photos</label>
         <PhotoCaptureButtons onFilesSelected={handleFilesSelected} disabled={saving} />
         {(visiblePhotos.length > 0 || newPhotoFiles.length > 0) && (
           <div className="grid grid-cols-4 gap-2 mt-3">
             {visiblePhotos.map((photo) => (
               <div
                 key={photo.id}
-                className="relative aspect-square rounded-lg overflow-hidden border border-gray-200"
+                className="relative aspect-square rounded-lg overflow-hidden border border-line"
               >
                 <SecureImage
                   storagePath={photo.storagePath}
@@ -491,7 +492,7 @@ export default function IssueForm({
             {newPhotoFiles.map((file, index) => (
               <div
                 key={index}
-                className="relative aspect-square rounded-lg overflow-hidden border border-gray-200"
+                className="relative aspect-square rounded-lg overflow-hidden border border-line"
               >
                 <img
                   src={URL.createObjectURL(file)}
@@ -519,7 +520,7 @@ export default function IssueForm({
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="flex-1 py-3 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 disabled:opacity-50 font-medium min-h-[44px]"
+          className="flex-1 py-3 bg-subtle text-ink rounded-lg hover:bg-line disabled:opacity-50 font-medium min-h-[44px]"
         >
           Annuler
         </button>
@@ -527,7 +528,7 @@ export default function IssueForm({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="flex-1 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] disabled:opacity-50 font-medium min-h-[44px]"
+          className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 font-medium min-h-[44px]"
         >
           {saving ? (isEdit ? "Enregistrement…" : "Création…") : isEdit ? "Enregistrer" : "Créer"}
         </button>

@@ -57,13 +57,13 @@ export default function VisitPicker({ open, projectId, onSelect, onClose }: Prop
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-          <h2 className="text-base font-medium text-[#1A1A1A]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-line">
+          <h2 className="text-base font-medium text-ink">
             {showNewVisitForm ? "Nouvelle visite" : "À quelle visite ?"}
           </h2>
           <button
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-[#1A1A1A] rounded-lg flex-shrink-0"
+            className="w-9 h-9 flex items-center justify-center text-faint hover:text-ink rounded-lg flex-shrink-0"
             aria-label="Fermer"
           >
             <X size={20} />
@@ -78,7 +78,7 @@ export default function VisitPicker({ open, projectId, onSelect, onClose }: Prop
               onCancel={() => setShowNewVisitForm(false)}
             />
           ) : loading ? (
-            <div className="flex items-center justify-center py-10 gap-2 text-gray-500 text-sm">
+            <div className="flex items-center justify-center py-10 gap-2 text-muted text-sm">
               <Loader2 size={20} className="animate-spin" />
               Chargement…
             </div>
@@ -88,14 +88,14 @@ export default function VisitPicker({ open, projectId, onSelect, onClose }: Prop
             <div className="space-y-4">
               <button
                 onClick={() => setShowNewVisitForm(true)}
-                className="w-full inline-flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm font-medium text-[#1A1A1A] hover:border-[#E10600] hover:text-[#E10600] min-h-[44px]"
+                className="w-full inline-flex items-center justify-center gap-2 py-3 border-2 border-dashed border-line-strong rounded-lg text-sm font-medium text-ink hover:border-brand-600 hover:text-brand-600 min-h-[44px]"
               >
                 <Plus size={16} />
                 Nouvelle visite
               </button>
 
               {visits.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-muted text-center py-4">
                   Aucune visite pour ce projet — créez la première ci-dessus.
                 </p>
               ) : (
@@ -104,20 +104,20 @@ export default function VisitPicker({ open, projectId, onSelect, onClose }: Prop
                     <button
                       key={visit.id}
                       onClick={() => onSelect(visit)}
-                      className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-gray-200 hover:border-[#E10600] hover:bg-gray-50 min-h-[44px] text-left"
+                      className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-line hover:border-brand-600 hover:bg-subtle min-h-[44px] text-left"
                     >
                       <div className="min-w-0">
-                        <div className="text-sm text-[#1A1A1A] font-medium truncate">
+                        <div className="text-sm text-ink font-medium truncate">
                           {parseLocalDate(visit.visit_date).toLocaleDateString("fr-CA", {
                             day: "numeric",
                             month: "short",
                             year: "numeric",
                           })}
                         </div>
-                        <div className="text-xs text-gray-500 truncate">{visit.authorName}</div>
+                        <div className="text-xs text-muted truncate">{visit.authorName}</div>
                       </div>
                       {visit.phase && (
-                        <span className="px-2 py-1 bg-[#E10600]/10 text-[#E10600] rounded-md text-xs font-medium flex-shrink-0">
+                        <span className="px-2 py-1 bg-brand-600/10 text-brand-600 rounded-md text-xs font-medium flex-shrink-0">
                           {visit.phase}
                         </span>
                       )}

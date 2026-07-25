@@ -643,11 +643,11 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
   return (
     <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
       {/* Header */}
-      <div className="bg-[#1A1A1A] text-white px-4 py-3 flex items-center justify-between">
+      <div className="bg-ink text-white px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold">Annoter la photo</h2>
           {selectedTextId && (
-            <span className="text-sm text-gray-400 flex items-center gap-2">
+            <span className="text-sm text-faint flex items-center gap-2">
               <Move size={14} />
               Texte sélectionné - Glissez pour déplacer
             </span>
@@ -659,13 +659,13 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
       </div>
 
       {/* Toolbar */}
-      <div className="bg-[#1A1A1A] text-white px-4 py-3 flex items-center gap-3 border-t border-white/10 overflow-x-auto">
+      <div className="bg-ink text-white px-4 py-3 flex items-center gap-3 border-t border-white/10 overflow-x-auto">
         {/* Tools */}
         <div className="flex items-center gap-2 border-r border-white/20 pr-3">
           <button
             onClick={() => setActiveTool("pencil")}
             className={`p-2 rounded-lg transition-colors ${
-              activeTool === "pencil" ? "bg-[#E10600]" : "hover:bg-white/10"
+              activeTool === "pencil" ? "bg-brand-600" : "hover:bg-white/10"
             }`}
             title="Crayon"
           >
@@ -674,7 +674,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
           <button
             onClick={() => setActiveTool("arrow")}
             className={`p-2 rounded-lg transition-colors ${
-              activeTool === "arrow" ? "bg-[#E10600]" : "hover:bg-white/10"
+              activeTool === "arrow" ? "bg-brand-600" : "hover:bg-white/10"
             }`}
             title="Flèche"
           >
@@ -683,7 +683,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
           <button
             onClick={() => setActiveTool("rectangle")}
             className={`p-2 rounded-lg transition-colors ${
-              activeTool === "rectangle" ? "bg-[#E10600]" : "hover:bg-white/10"
+              activeTool === "rectangle" ? "bg-brand-600" : "hover:bg-white/10"
             }`}
             title="Rectangle"
           >
@@ -692,7 +692,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
           <button
             onClick={() => setActiveTool("circle")}
             className={`p-2 rounded-lg transition-colors ${
-              activeTool === "circle" ? "bg-[#E10600]" : "hover:bg-white/10"
+              activeTool === "circle" ? "bg-brand-600" : "hover:bg-white/10"
             }`}
             title="Cercle"
           >
@@ -701,7 +701,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
           <button
             onClick={() => setActiveTool("text")}
             className={`p-2 rounded-lg transition-colors ${
-              activeTool === "text" ? "bg-[#E10600]" : "hover:bg-white/10"
+              activeTool === "text" ? "bg-brand-600" : "hover:bg-white/10"
             }`}
             title="Texte"
           >
@@ -710,7 +710,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
           <button
             onClick={() => setActiveTool("eraser")}
             className={`p-2 rounded-lg transition-colors ${
-              activeTool === "eraser" ? "bg-[#E10600]" : "hover:bg-white/10"
+              activeTool === "eraser" ? "bg-brand-600" : "hover:bg-white/10"
             }`}
             title="Gomme"
           >
@@ -738,7 +738,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
                 }
               }}
               className={`w-8 h-8 rounded-full border-2 transition-transform ${
-                color === c ? "border-white scale-110" : "border-gray-400"
+                color === c ? "border-white scale-110" : "border-white/30"
               }`}
               style={{ backgroundColor: c }}
               title={c}
@@ -749,7 +749,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         {/* Line Width / Eraser Size */}
         {activeTool !== "text" && (
           <div className="flex items-center gap-2 border-r border-white/20 pr-3">
-            <span className="text-sm text-gray-400">
+            <span className="text-sm text-faint">
               {activeTool === "eraser" ? "Taille gomme:" : "Épaisseur:"}
             </span>
             <input
@@ -767,7 +767,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         {/* Font Size (for text tool or selected text) */}
         {(activeTool === "text" || selectedTextId) && (
           <div className="flex items-center gap-2 border-r border-white/20 pr-3">
-            <span className="text-sm text-gray-400">Taille:</span>
+            <span className="text-sm text-faint">Taille:</span>
             <input
               type="range"
               min="12"
@@ -843,7 +843,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="px-4 py-2 bg-[#E10600] rounded-lg hover:bg-[#C00500] transition-colors flex items-center gap-2 ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-brand-600 rounded-lg hover:bg-brand-700 transition-colors flex items-center gap-2 ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSaving ? (
               <>
@@ -904,7 +904,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
       {(textPosition || editingTextId) && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4">
+            <h3 className="text-lg font-semibold text-ink mb-4">
               {editingTextId ? "Modifier le texte" : "Ajouter du texte"}
             </h3>
             <input
@@ -912,7 +912,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               placeholder="Entrez votre texte..."
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-[#E10600] mb-4"
+              className="w-full px-4 py-3 border-2 border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600 mb-4"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -936,13 +936,13 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
                   setEditingTextId(null);
                   setTextInput("");
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2 border border-line-strong rounded-lg text-body font-medium hover:bg-subtle transition-colors"
               >
                 Annuler
               </button>
               <button
                 onClick={editingTextId ? handleUpdateText : handleTextSubmit}
-                className="flex-1 px-4 py-2 bg-[#E10600] text-white rounded-lg font-medium hover:bg-[#C00500] transition-colors"
+                className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors"
               >
                 {editingTextId ? "Modifier" : "Ajouter"}
               </button>

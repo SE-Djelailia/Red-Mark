@@ -81,7 +81,7 @@ export default function ProjectVisitCalendar({ projectId, month, onMonthChange }
         pillsByDate={pillsByDate}
         onDayClick={(key) => navigate(`/app/projects/${projectId}/visit/new?date=${key}`)}
       />
-      {loading && <div className="text-center text-sm text-gray-400 py-3">Chargement...</div>}
+      {loading && <div className="text-center text-sm text-faint py-3">Chargement...</div>}
     </div>
   );
 }

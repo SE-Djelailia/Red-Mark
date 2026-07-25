@@ -62,9 +62,9 @@ function CommentCard({
 
   return (
     <div className={`${isReply ? "ml-12 mt-3" : "mb-4"}`}>
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="bg-canvas rounded-lg p-4">
         <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#E10600] text-white flex items-center justify-center text-xs font-medium flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-medium flex-shrink-0">
             {comment.author
               ? comment.author
                   .split(" ")
@@ -75,10 +75,10 @@ function CommentCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-[#1A1A1A]">
+                <span className="text-sm font-medium text-ink">
                   {comment.author || "Anonyme"}
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted">
                   {(() => {
                     const date = new Date(comment.date);
                     const now = new Date();
@@ -111,14 +111,14 @@ function CommentCard({
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => onStartEdit(comment)}
-                    className="p-1 text-gray-400 hover:text-[#E10600] transition-colors"
+                    className="p-1 text-faint hover:text-brand-600 transition-colors"
                     title="Modifier"
                   >
                     <Edit2 size={14} />
                   </button>
                   <button
                     onClick={() => onDelete(comment.id)}
-                    className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                    className="p-1 text-faint hover:text-red-600 transition-colors"
                     title="Supprimer"
                   >
                     <Trash2 size={14} />
@@ -132,7 +132,7 @@ function CommentCard({
                 <textarea
                   value={editingCommentText}
                   onChange={(e) => onEditingTextChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent text-sm"
+                  className="w-full px-3 py-2 border border-line-strong rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent text-sm"
                   rows={3}
                   autoFocus
                 />
@@ -140,13 +140,13 @@ function CommentCard({
                   <button
                     onClick={onSaveEdit}
                     disabled={isSubmitting}
-                    className="px-3 py-1.5 bg-[#E10600] text-white rounded-lg text-xs hover:bg-[#C00500] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-1.5 bg-brand-600 text-white rounded-lg text-xs hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Enregistrer
                   </button>
                   <button
                     onClick={onCancelEdit}
-                    className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-xs hover:bg-gray-300 transition-colors"
+                    className="px-3 py-1.5 bg-subtle text-body rounded-lg text-xs hover:bg-line-strong transition-colors"
                   >
                     Annuler
                   </button>
@@ -154,12 +154,12 @@ function CommentCard({
               </div>
             ) : (
               <>
-                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                <p className="text-sm text-body leading-relaxed whitespace-pre-wrap">
                   {comment.text}
                 </p>
                 <button
                   onClick={() => onReply(comment.id)}
-                  className="mt-2 text-xs text-[#E10600] hover:text-[#C00500] flex items-center gap-1"
+                  className="mt-2 text-xs text-brand-600 hover:text-brand-800 flex items-center gap-1"
                 >
                   <Reply size={12} />
                   <span>Répondre</span>
@@ -440,12 +440,12 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
       {/* Comments List */}
       <div className="space-y-4">
         {isLoading ? (
-          <div className="text-center py-8 text-gray-500 text-sm">Chargement des commentaires...</div>
+          <div className="text-center py-8 text-muted text-sm">Chargement des commentaires...</div>
         ) : topLevelComments.length === 0 ? (
           <div className="text-center py-8">
-            <MessageSquare size={48} className="mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-500 text-sm">Aucun commentaire pour cette visite</p>
-            <p className="text-gray-400 text-xs mt-1">Soyez le premier à commenter!</p>
+            <MessageSquare size={48} className="mx-auto text-faint mb-3" />
+            <p className="text-muted text-sm">Aucun commentaire pour cette visite</p>
+            <p className="text-faint text-xs mt-1">Soyez le premier à commenter!</p>
           </div>
         ) : (
           topLevelComments.map((comment) => (
@@ -469,14 +469,14 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
       </div>
 
       {/* New Comment Input */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="bg-white border border-line rounded-lg p-4">
         {replyingTo && (
-          <div className="flex items-center gap-2 mb-2 text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded">
+          <div className="flex items-center gap-2 mb-2 text-xs text-body bg-blue-50 px-3 py-2 rounded">
             <Reply size={14} />
             <span>Répondre à {comments.find((c) => c.id === replyingTo)?.author}</span>
             <button
               onClick={() => setReplyingTo(null)}
-              className="ml-auto text-gray-500 hover:text-[#E10600]"
+              className="ml-auto text-muted hover:text-brand-600"
             >
               <X size={14} />
             </button>
@@ -488,28 +488,28 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
             value={newCommentText}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Ajouter un commentaire... (Utilisez @ pour mentionner)"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
+            className="w-full px-4 py-3 border border-line-strong rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
             rows={3}
           />
 
           {/* Mention Suggestions */}
           {showMentionSuggestions && filteredTeamMembers.length > 0 && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-10">
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-line rounded-lg shadow-lg max-h-48 overflow-y-auto z-10">
               {filteredTeamMembers.map((member) => (
                 <button
                   key={member.id}
                   onClick={() => handleMention(member.name)}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left hover:bg-subtle transition-colors flex items-center gap-2"
                 >
-                  <div className="w-6 h-6 rounded-full bg-[#E10600] text-white flex items-center justify-center text-xs font-medium">
+                  <div className="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-medium">
                     {member.name
                       .split(" ")
                       .map((n) => n[0])
                       .join("")}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-[#1A1A1A]">{member.name}</div>
-                    <div className="text-xs text-gray-500">{member.email}</div>
+                    <div className="text-sm font-medium text-ink">{member.name}</div>
+                    <div className="text-xs text-muted">{member.email}</div>
                   </div>
                 </button>
               ))}
@@ -522,7 +522,7 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
         <div className="flex items-center justify-between mt-3">
           <button
             onClick={() => setShowMentionSuggestions(!showMentionSuggestions)}
-            className="text-sm text-gray-600 hover:text-[#E10600] flex items-center gap-1"
+            className="text-sm text-body hover:text-brand-600 flex items-center gap-1"
           >
             <AtSign size={16} />
             <span>Mentionner</span>
@@ -531,7 +531,7 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
           <button
             onClick={handleSubmitComment}
             disabled={!newCommentText.trim() || isSubmitting}
-            className="px-4 py-2 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-h-[40px]"
+            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-h-[40px]"
           >
             <Send size={16} />
             <span>{isSubmitting ? "Envoi..." : "Publier"}</span>

@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { useProjectRole } from "../../hooks/useProjectRole";
 import { useSmartBack } from "../../hooks/useSmartBack";
 import VisitForm from "./VisitForm";
+import { usePageHeader } from "../../contexts/PageHeaderContext";
 
 // Thin host for the canonical VisitForm — owns the route, the header/back
 // button, and the permission gate. See IssueDetail.tsx for the same
@@ -15,27 +16,27 @@ export default function SiteVisitCreation() {
   const [searchParams] = useSearchParams();
   const prefilledDate = searchParams.get("date") || undefined;
 
+  usePageHeader("Nouvelle visite de chantier");
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-[#1A1A1A] text-white px-6 py-6 md:py-8">
+    <div className="min-h-screen bg-canvas">
+      {/* Toolbar — title now renders in the global light header. */}
+      <div className="px-4 sm:px-6 pt-4 max-w-2xl mx-auto">
         <button
           onClick={goBack}
-          className="flex items-center gap-2 text-gray-400 hover:text-white mb-4"
+          className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
           <span>Retour</span>
         </button>
-        <h1 className="text-2xl md:text-3xl">Nouvelle visite de chantier</h1>
       </div>
 
       {!projectRole.loading && !projectRole.canCreateIssues ? (
         <div className="px-4 py-6 max-w-2xl mx-auto">
-          <div className="bg-white rounded-xl p-8 border border-gray-200 text-center">
-            <p className="text-base text-[#1A1A1A] font-medium mb-2">
+          <div className="bg-white rounded-xl p-8 border border-line text-center">
+            <p className="text-base text-ink font-medium mb-2">
               Vous n'avez pas la permission de créer une visite sur ce projet.
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted">
               Contactez le propriétaire du projet ou un administrateur pour obtenir cet accès.
             </p>
           </div>

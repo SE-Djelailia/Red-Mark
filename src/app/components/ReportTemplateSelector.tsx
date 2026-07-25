@@ -141,14 +141,14 @@ export default function ReportTemplateSelector({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header - Sticky */}
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between rounded-t-xl">
+          <div className="px-6 py-4 border-b border-line flex items-center justify-between rounded-t-xl">
             <div>
-              <h2 className="text-xl font-semibold text-[#1A1A1A]">Générer un rapport</h2>
-              <p className="text-sm text-gray-600 mt-1">{projectName}</p>
+              <h2 className="text-xl font-semibold text-ink">Générer un rapport</h2>
+              <p className="text-sm text-body mt-1">{projectName}</p>
             </div>
             <button
               onClick={onClose}
-              className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+              className="w-10 h-10 flex items-center justify-center hover:bg-subtle rounded-full transition-colors"
             >
               <X size={24} />
             </button>
@@ -158,7 +158,7 @@ export default function ReportTemplateSelector({
           <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
             {/* Template Selection */}
             <div>
-              <h3 className="text-lg text-[#1A1A1A] mb-4">Choisir un modèle de rapport</h3>
+              <h3 className="text-lg text-ink mb-4">Choisir un modèle de rapport</h3>
               <div className="grid md:grid-cols-2 gap-4">
                 {templates.map((template) => (
                   <button
@@ -166,32 +166,32 @@ export default function ReportTemplateSelector({
                     onClick={() => setSelectedTemplate(template.id)}
                     className={`text-left p-5 rounded-xl border-2 transition-all hover:shadow-md min-h-[48px] ${
                       selectedTemplate === template.id
-                        ? "border-[#E10600] bg-[#E10600]/5"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-brand-600 bg-brand-600/5"
+                        : "border-line hover:border-line-strong"
                     }`}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h4 className="font-medium text-[#1A1A1A] mb-1">{template.name}</h4>
-                        <p className="text-sm text-gray-600">{template.description}</p>
+                        <h4 className="font-medium text-ink mb-1">{template.name}</h4>
+                        <p className="text-sm text-body">{template.description}</p>
                       </div>
                       {selectedTemplate === template.id && (
-                        <CheckCircle2 size={20} className="text-[#E10600] flex-shrink-0 ml-3" />
+                        <CheckCircle2 size={20} className="text-brand-600 flex-shrink-0 ml-3" />
                       )}
                     </div>
-                    <div className="border-t border-gray-100 pt-3 mt-3">
-                      <p className="text-xs text-gray-500 mb-2">Inclut:</p>
+                    <div className="border-t border-line pt-3 mt-3">
+                      <p className="text-xs text-muted mb-2">Inclut:</p>
                       <div className="flex flex-wrap gap-2">
                         {template.sections.slice(0, 3).map((section, idx) => (
                           <span
                             key={idx}
-                            className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded"
+                            className="text-xs px-2 py-1 bg-subtle text-body rounded"
                           >
                             {section}
                           </span>
                         ))}
                         {template.sections.length > 3 && (
-                          <span className="text-xs px-2 py-1 text-gray-500">
+                          <span className="text-xs px-2 py-1 text-muted">
                             +{template.sections.length - 3} autres
                           </span>
                         )}
@@ -205,41 +205,41 @@ export default function ReportTemplateSelector({
             {/* Options */}
             {selectedTemplate && (
               <div className="space-y-5">
-                <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-lg text-[#1A1A1A] mb-4">Options du rapport</h3>
+                <div className="border-t border-line pt-6">
+                  <h3 className="text-lg text-ink mb-4">Options du rapport</h3>
 
                   {/* Content Options */}
                   <div className="space-y-3 mb-5">
-                    <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors min-h-[56px]">
+                    <label className="flex items-center gap-3 p-4 bg-canvas rounded-lg cursor-pointer hover:bg-subtle transition-colors min-h-[56px]">
                       <input
                         type="checkbox"
                         checked={includePhotos}
                         onChange={(e) => setIncludePhotos(e.target.checked)}
-                        className="w-5 h-5 text-[#E10600] rounded focus:ring-[#E10600]"
+                        className="w-5 h-5 text-brand-600 rounded focus:ring-brand-600"
                       />
                       <div className="flex items-center gap-3 flex-1">
-                        <ImageIcon size={20} className="text-gray-600" />
+                        <ImageIcon size={20} className="text-body" />
                         <div>
-                          <div className="text-sm text-[#1A1A1A]">Inclure les photos</div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-sm text-ink">Inclure les photos</div>
+                          <div className="text-xs text-muted">
                             Ajouter toutes les photos du projet
                           </div>
                         </div>
                       </div>
                     </label>
 
-                    <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors min-h-[56px]">
+                    <label className="flex items-center gap-3 p-4 bg-canvas rounded-lg cursor-pointer hover:bg-subtle transition-colors min-h-[56px]">
                       <input
                         type="checkbox"
                         checked={includeIssues}
                         onChange={(e) => setIncludeIssues(e.target.checked)}
-                        className="w-5 h-5 text-[#E10600] rounded focus:ring-[#E10600]"
+                        className="w-5 h-5 text-brand-600 rounded focus:ring-brand-600"
                       />
                       <div className="flex items-center gap-3 flex-1">
-                        <AlertTriangle size={20} className="text-gray-600" />
+                        <AlertTriangle size={20} className="text-body" />
                         <div>
-                          <div className="text-sm text-[#1A1A1A]">Inclure les déficiences</div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-sm text-ink">Inclure les déficiences</div>
+                          <div className="text-xs text-muted">
                             Liste complète des déficiences et leur statut
                           </div>
                         </div>
@@ -249,7 +249,7 @@ export default function ReportTemplateSelector({
 
                   {/* Date Range */}
                   <div>
-                    <label className="block text-sm text-[#1A1A1A] mb-3">Période couverte</label>
+                    <label className="block text-sm text-ink mb-3">Période couverte</label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                       {[
                         { value: "all", label: "Tout" },
@@ -263,8 +263,8 @@ export default function ReportTemplateSelector({
                           onClick={() => setDateRange(option.value as any)}
                           className={`py-3 px-3 rounded-lg border-2 text-sm transition-all min-h-[48px] ${
                             dateRange === option.value
-                              ? "border-[#E10600] bg-[#E10600]/10"
-                              : "border-gray-200 hover:border-gray-300"
+                              ? "border-brand-600 bg-brand-600/10"
+                              : "border-line hover:border-line-strong"
                           }`}
                         >
                           {option.label}
@@ -275,21 +275,21 @@ export default function ReportTemplateSelector({
                     {dateRange === "custom" && (
                       <div className="grid md:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs text-gray-600 mb-2">Date de début</label>
+                          <label className="block text-xs text-body mb-2">Date de début</label>
                           <input
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
+                            className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-gray-600 mb-2">Date de fin</label>
+                          <label className="block text-xs text-body mb-2">Date de fin</label>
                           <input
                             type="date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
+                            className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
                           />
                         </div>
                       </div>
@@ -301,18 +301,18 @@ export default function ReportTemplateSelector({
           </div>
 
           {/* Footer - Sticky */}
-          <div className="px-6 py-4 border-t border-gray-200 flex gap-3 rounded-b-xl bg-white">
+          <div className="px-6 py-4 border-t border-line flex gap-3 rounded-b-xl bg-white">
             <button
               onClick={onClose}
               disabled={isGenerating}
-              className="flex-1 py-3 bg-gray-200 text-[#1A1A1A] rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium min-h-[48px]"
+              className="flex-1 py-3 bg-subtle text-ink rounded-lg hover:bg-line-strong transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium min-h-[48px]"
             >
               Annuler
             </button>
             <button
               onClick={handleGenerate}
               disabled={!selectedTemplate || isGenerating}
-              className="flex-1 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium min-h-[48px]"
+              className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium min-h-[48px]"
             >
               {isGenerating ? (
                 <>

@@ -59,16 +59,16 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <div className="p-6 border-b border-line flex items-center justify-between">
             <div>
-              <h2 className="text-xl text-[#1A1A1A] font-medium">Paramètres généraux</h2>
-              <p className="text-sm text-gray-600 mt-1">Gestion du stockage local</p>
+              <h2 className="text-xl text-ink font-medium">Paramètres généraux</h2>
+              <p className="text-sm text-body mt-1">Gestion du stockage local</p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-subtle rounded-lg transition-colors"
             >
-              <X size={24} className="text-gray-600" />
+              <X size={24} className="text-body" />
             </button>
           </div>
 
@@ -76,29 +76,29 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
           <div className="flex-1 overflow-y-auto p-6">
             {/* Storage Management */}
             <div className="mb-6">
-              <h3 className="text-sm font-medium text-[#1A1A1A] mb-3 flex items-center gap-2">
-                <HardDrive size={18} className="text-[#E10600]" />
+              <h3 className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
+                <HardDrive size={18} className="text-brand-600" />
                 Gestion du stockage
               </h3>
-              <div className="bg-gray-50 rounded-lg p-4 mb-3">
+              <div className="bg-canvas rounded-lg p-4 mb-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-700">Espace utilisé (cache local)</span>
-                  <span className="text-sm font-medium text-[#1A1A1A]">{storageUsed}</span>
+                  <span className="text-sm text-body">Espace utilisé (cache local)</span>
+                  <span className="text-sm font-medium text-ink">{storageUsed}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-subtle rounded-full h-2">
                   <div
-                    className="bg-[#E10600] h-2 rounded-full transition-all"
+                    className="bg-brand-600 h-2 rounded-full transition-all"
                     style={{ width: `${Math.max(storagePercent, storagePercent > 0 ? 2 : 0)}%` }}
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-muted mt-2">
                   Vos projets, visites et photos sont stockés dans le cloud (Supabase) et ne sont
                   pas affectés.
                 </p>
               </div>
               <button
                 onClick={() => setShowClearConfirm(true)}
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-gray-700 min-h-[48px]"
+                className="w-full px-4 py-3 bg-white border border-line-strong rounded-lg hover:bg-subtle transition-colors flex items-center justify-center gap-2 text-body min-h-[48px]"
               >
                 <Trash2 size={18} />
                 Vider le cache local
@@ -117,10 +117,10 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-gray-200 bg-gray-50">
+          <div className="p-6 border-t border-line bg-canvas">
             <button
               onClick={onClose}
-              className="w-full py-3 bg-[#1A1A1A] text-white rounded-lg hover:bg-black transition-colors font-medium"
+              className="w-full py-3 bg-ink text-white rounded-lg hover:bg-body transition-colors font-medium"
             >
               Fermer
             </button>
@@ -141,8 +141,8 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
             <div className="flex items-start gap-3 mb-4">
               <AlertTriangle size={24} className="text-orange-600 flex-shrink-0" />
               <div>
-                <h3 className="text-lg font-medium text-[#1A1A1A] mb-1">Vider le cache?</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="text-lg font-medium text-ink mb-1">Vider le cache?</h3>
+                <p className="text-sm text-body">
                   Cette action supprimera les données en cache local. Vos projets dans le cloud ne
                   seront pas affectés.
                 </p>
@@ -151,13 +151,13 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowClearConfirm(false)}
-                className="flex-1 py-3 bg-gray-200 text-[#1A1A1A] rounded-lg hover:bg-gray-300 font-medium"
+                className="flex-1 py-3 bg-subtle text-ink rounded-lg hover:bg-line-strong font-medium"
               >
                 Annuler
               </button>
               <button
                 onClick={handleClearCache}
-                className="flex-1 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] font-medium"
+                className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium"
               >
                 Vider
               </button>

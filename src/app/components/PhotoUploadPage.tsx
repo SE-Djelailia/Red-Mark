@@ -271,22 +271,22 @@ export default function PhotoUploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-canvas flex flex-col">
       {/* Header */}
-      <div className="bg-[#1A1A1A] text-white px-4 sm:px-6 py-4 sticky top-0 z-10">
+      <div className="bg-surface border-b border-line px-4 sm:px-6 py-3 sticky top-0 z-10">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
           <button
             onClick={goBack}
             disabled={isUploading}
-            className="flex items-center gap-2 text-gray-400 hover:text-white disabled:opacity-50"
+            className="flex items-center gap-2 text-muted hover:text-ink transition-colors disabled:opacity-50 min-h-[44px] text-sm font-medium"
           >
             <ArrowLeft size={20} />
             <span>Retour</span>
           </button>
-          <h1 className="text-lg sm:text-xl font-semibold">Ajouter des photos</h1>
+          <h1 className="text-base sm:text-lg font-semibold text-ink">Ajouter des photos</h1>
           <div className="flex items-center gap-1.5 text-xs">
-            <Navigation size={14} className={gpsCoords ? "text-green-400" : "text-gray-500"} />
-            <span className={gpsCoords ? "text-green-400" : "text-gray-500"}>
+            <Navigation size={14} className={gpsCoords ? "text-resolved" : "text-faint"} />
+            <span className={gpsCoords ? "text-resolved" : "text-faint"}>
               {gpsCoords ? "GPS" : "Pas de GPS"}
             </span>
           </div>
@@ -296,11 +296,11 @@ export default function PhotoUploadPage() {
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6 flex-1">
         {!projectRole.loading && !projectRole.canUploadPhotos ? (
-          <div className="bg-white rounded-xl p-8 border border-gray-200 text-center">
-            <p className="text-base text-[#1A1A1A] font-medium mb-2">
+          <div className="bg-white rounded-xl p-8 border border-line text-center">
+            <p className="text-base text-ink font-medium mb-2">
               Vous n'avez pas la permission d'ajouter des photos à ce projet.
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted">
               Contactez le propriétaire du projet ou un administrateur pour obtenir cet accès.
             </p>
           </div>
@@ -308,14 +308,14 @@ export default function PhotoUploadPage() {
         <>
         {/* Upload Area */}
         {photosToUpload.length === 0 ? (
-          <div className="bg-white rounded-xl p-8 border-2 border-dashed border-gray-300 hover:border-[#E10600] transition-colors">
+          <div className="bg-white rounded-xl p-8 border-2 border-dashed border-line-strong hover:border-brand-600 transition-colors">
             <div className="flex flex-col items-center justify-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center">
-                <Camera size={40} className="text-gray-600" />
+              <div className="w-20 h-20 rounded-full bg-subtle flex items-center justify-center">
+                <Camera size={40} className="text-body" />
               </div>
               <div className="text-center">
-                <p className="text-base text-[#1A1A1A] font-medium mb-2">Téléverser des photos</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-base text-ink font-medium mb-2">Téléverser des photos</p>
+                <p className="text-sm text-muted">
                   Sélectionnez jusqu'à 20 photos de votre chantier
                 </p>
               </div>
@@ -330,7 +330,7 @@ export default function PhotoUploadPage() {
                     input.onchange = (e: any) => handleFileSelect(e.target.files);
                     input.click();
                   }}
-                  className="w-full sm:w-auto px-6 py-3 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors text-base font-medium flex items-center justify-center gap-2 min-h-[48px]"
+                  className="w-full sm:w-auto px-6 py-3 bg-subtle text-ink rounded-lg hover:bg-line active:bg-line-strong transition-colors text-base font-medium flex items-center justify-center gap-2 min-h-[48px]"
                 >
                   <Camera size={20} />
                   <span>Galerie</span>
@@ -346,7 +346,7 @@ export default function PhotoUploadPage() {
                     input.onchange = (e: any) => handleFileSelect(e.target.files);
                     input.click();
                   }}
-                  className="w-full sm:w-auto px-6 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] active:bg-[#A00400] transition-colors text-base font-medium flex items-center justify-center gap-2 min-h-[48px]"
+                  className="w-full sm:w-auto px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors text-base font-medium flex items-center justify-center gap-2 min-h-[48px]"
                 >
                   <Camera size={20} />
                   <span>Caméra</span>
@@ -358,7 +358,7 @@ export default function PhotoUploadPage() {
           <>
             {/* Photo Count and Add More */}
             <div className="bg-white rounded-xl p-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-[#1A1A1A]">
+              <h3 className="text-base font-semibold text-ink">
                 {photosToUpload.length} photo{photosToUpload.length !== 1 ? "s" : ""} •{" "}
                 {selectedPhotoIndices.length} sélectionnée
                 {selectedPhotoIndices.length !== 1 ? "s" : ""}
@@ -373,7 +373,7 @@ export default function PhotoUploadPage() {
                   input.onchange = (e: any) => handleAddMorePhotos(e.target.files);
                   input.click();
                 }}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
+                className="px-4 py-2 bg-subtle text-body rounded-lg hover:bg-line active:bg-line-strong transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
               >
                 <Plus size={18} />
                 <span className="hidden sm:inline">Ajouter photos</span>
@@ -399,8 +399,8 @@ export default function PhotoUploadPage() {
                       }}
                       className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all group ${
                         isSelected
-                          ? "border-[#E10600] ring-2 ring-[#E10600]/30"
-                          : "border-gray-200 hover:border-gray-300 active:border-gray-400"
+                          ? "border-brand-600 ring-2 ring-brand-600/30"
+                          : "border-line hover:border-line-strong active:border-line-strong"
                       }`}
                     >
                       <img
@@ -413,8 +413,8 @@ export default function PhotoUploadPage() {
                       <div
                         className={`absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
                           isSelected
-                            ? "bg-[#E10600] border-[#E10600]"
-                            : "bg-white/90 border-gray-300"
+                            ? "bg-brand-600 border-brand-600"
+                            : "bg-white/90 border-line-strong"
                         }`}
                       >
                         {isSelected && <Check size={18} className="text-white" strokeWidth={3} />}
@@ -463,13 +463,13 @@ export default function PhotoUploadPage() {
                             {tags.slice(0, 2).map((tag, tagIndex) => (
                               <span
                                 key={tagIndex}
-                                className="px-1.5 py-0.5 bg-white/90 text-[#1A1A1A] rounded text-xs font-medium"
+                                className="px-1.5 py-0.5 bg-white/90 text-ink rounded text-xs font-medium"
                               >
                                 {tag}
                               </span>
                             ))}
                             {tags.length > 2 && (
-                              <span className="px-1.5 py-0.5 bg-white/90 text-[#1A1A1A] rounded text-xs font-medium">
+                              <span className="px-1.5 py-0.5 bg-white/90 text-ink rounded text-xs font-medium">
                                 +{tags.length - 2}
                               </span>
                             )}
@@ -482,18 +482,18 @@ export default function PhotoUploadPage() {
               </div>
 
               {/* Quick Selection Buttons */}
-              <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
+              <div className="flex gap-2 mt-4 pt-4 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setSelectedPhotoIndices(photosToUpload.map((_, i) => i))}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors text-sm font-medium min-h-[44px]"
+                  className="px-4 py-2 bg-subtle text-body rounded-lg hover:bg-line active:bg-line-strong transition-colors text-sm font-medium min-h-[44px]"
                 >
                   Tout sélectionner
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedPhotoIndices([])}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors text-sm font-medium min-h-[44px]"
+                  className="px-4 py-2 bg-subtle text-body rounded-lg hover:bg-line active:bg-line-strong transition-colors text-sm font-medium min-h-[44px]"
                 >
                   Désélectionner
                 </button>
@@ -504,7 +504,7 @@ export default function PhotoUploadPage() {
             {selectedPhotoIndices.length > 0 && (
               <div className="bg-white rounded-xl p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <label className="block text-base font-semibold text-[#1A1A1A]">
+                  <label className="block text-base font-semibold text-ink">
                     {selectedPhotoIndices.length} photo
                     {selectedPhotoIndices.length !== 1 ? "s" : ""} sélectionnée
                     {selectedPhotoIndices.length !== 1 ? "s" : ""}
@@ -523,7 +523,7 @@ export default function PhotoUploadPage() {
                 </div>
 
                 {/* Tags Section */}
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 mt-4">Tags</h3>
+                <h3 className="text-sm font-semibold text-body mb-3 mt-4">Tags</h3>
                 <div className="flex flex-col sm:flex-row gap-2 mb-4">
                   <input
                     type="text"
@@ -536,13 +536,13 @@ export default function PhotoUploadPage() {
                       }
                     }}
                     placeholder="Taper un tag et appuyer sur Entrée..."
-                    className="flex-1 px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent min-h-[48px]"
+                    className="flex-1 px-4 py-3 text-base border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent min-h-[48px]"
                   />
                   <button
                     type="button"
                     onClick={() => handleAddTag(currentTag)}
                     disabled={!currentTag.trim()}
-                    className="px-6 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] active:bg-[#A00400] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium min-h-[48px]"
+                    className="px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium min-h-[48px]"
                   >
                     <Plus size={20} />
                     <span>Ajouter</span>
@@ -551,7 +551,7 @@ export default function PhotoUploadPage() {
 
                 {/* Quick Tags */}
                 <div className="mb-4">
-                  <p className="text-sm text-gray-600 mb-2 font-medium">Tags rapides :</p>
+                  <p className="text-sm text-body mb-2 font-medium">Tags rapides :</p>
                   <div className="flex gap-2 flex-wrap">
                     {["Fissure", "Défaut", "Conforme", "À corriger", "Urgent", "Non-conforme"].map(
                       (tag) => (
@@ -559,7 +559,7 @@ export default function PhotoUploadPage() {
                           key={tag}
                           type="button"
                           onClick={() => handleAddTag(tag)}
-                          className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-[#E10600] active:bg-gray-100 transition-colors text-sm font-medium min-h-[44px]"
+                          className="px-4 py-2 bg-white border border-line-strong text-body rounded-lg hover:bg-subtle hover:border-brand-600 active:bg-subtle transition-colors text-sm font-medium min-h-[44px]"
                         >
                           + {tag}
                         </button>
@@ -571,12 +571,12 @@ export default function PhotoUploadPage() {
                 {/* Current Tags */}
                 {getSelectedPhotosTags().length > 0 && (
                   <div>
-                    <p className="text-sm text-gray-600 mb-2 font-medium">Tags actuels :</p>
+                    <p className="text-sm text-body mb-2 font-medium">Tags actuels :</p>
                     <div className="flex gap-2 flex-wrap">
                       {getSelectedPhotosTags().map((tag, index) => (
                         <div
                           key={index}
-                          className="flex items-center gap-2 px-4 py-2 bg-[#E10600] text-white rounded-lg text-sm font-medium min-h-[44px]"
+                          className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium min-h-[44px]"
                         >
                           <span>{tag}</span>
                           <button
@@ -601,14 +601,14 @@ export default function PhotoUploadPage() {
                 <button
                   onClick={goBack}
                   disabled={isUploading}
-                  className="flex-1 py-3 bg-gray-200 text-[#1A1A1A] rounded-lg hover:bg-gray-300 active:bg-gray-400 transition-colors font-semibold text-base min-h-[48px] disabled:opacity-50"
+                  className="flex-1 py-3 bg-subtle text-ink rounded-lg hover:bg-line-strong active:bg-line-strong transition-colors font-semibold text-base min-h-[48px] disabled:opacity-50"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={isUploading || photosToUpload.length === 0}
-                  className="flex-1 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] active:bg-[#A00400] transition-colors font-semibold text-base min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors font-semibold text-base min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isUploading ? (
                     <>
@@ -643,16 +643,16 @@ export default function PhotoUploadPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+            <div className="p-5 border-b border-line flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <MapPin size={20} className="text-[#E10600]" />
-                <h2 className="text-lg font-semibold text-[#1A1A1A]">Assigner une localisation</h2>
+                <MapPin size={20} className="text-brand-600" />
+                <h2 className="text-lg font-semibold text-ink">Assigner une localisation</h2>
               </div>
               <button
                 onClick={() => setShowLocationModal(false)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-subtle rounded-lg transition-colors"
               >
-                <X size={20} className="text-gray-600" />
+                <X size={20} className="text-body" />
               </button>
             </div>
 
@@ -671,8 +671,8 @@ export default function PhotoUploadPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                    <Building2 size={16} className="text-[#E10600]" />
+                  <label className="block text-sm font-bold text-body mb-2 flex items-center gap-2">
+                    <Building2 size={16} className="text-brand-600" />
                     Niveau / Étage
                   </label>
                   <input
@@ -680,7 +680,7 @@ export default function PhotoUploadPage() {
                     value={tempLevel}
                     onChange={(e) => setTempLevel(e.target.value)}
                     placeholder="Ex: Sous-sol, RDC, Niveau 1..."
-                    className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-[#E10600]"
+                    className="w-full px-4 py-3 text-base border-2 border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"
                     list="modal-level-options"
                   />
                   <datalist id="modal-level-options">
@@ -696,8 +696,8 @@ export default function PhotoUploadPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                    <MapPin size={16} className="text-[#E10600]" />
+                  <label className="block text-sm font-bold text-body mb-2 flex items-center gap-2">
+                    <MapPin size={16} className="text-brand-600" />
                     Pièce / Zone
                   </label>
                   <input
@@ -705,7 +705,7 @@ export default function PhotoUploadPage() {
                     value={tempRoom}
                     onChange={(e) => setTempRoom(e.target.value)}
                     placeholder="Ex: Cuisine, Hall, Bureau..."
-                    className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-[#E10600]"
+                    className="w-full px-4 py-3 text-base border-2 border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"
                     list="modal-room-options"
                   />
                   <datalist id="modal-room-options">
@@ -727,13 +727,13 @@ export default function PhotoUploadPage() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setShowLocationModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-3 border border-line-strong rounded-lg text-body font-medium hover:bg-subtle transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleAssignLocation}
-                  className="flex-1 px-4 py-3 bg-[#E10600] text-white rounded-lg font-medium hover:bg-[#C00500] transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors flex items-center justify-center gap-2"
                 >
                   <Check size={18} />
                   Assigner

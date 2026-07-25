@@ -76,11 +76,11 @@ export default function IconGenerator() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-canvas py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Générateur d'Icônes RedMark</h1>
-          <p className="text-gray-600 mb-8">
+          <h1 className="text-3xl font-bold text-ink mb-2">Générateur d'Icônes RedMark</h1>
+          <p className="text-body mb-8">
             Cliquez sur le bouton ci-dessous pour télécharger toutes les icônes nécessaires pour
             l'application PWA.
           </p>
@@ -111,7 +111,7 @@ export default function IconGenerator() {
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
                 </div>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-body">
                   {size}×{size}
                 </span>
               </div>
@@ -122,7 +122,7 @@ export default function IconGenerator() {
           <button
             onClick={downloadAllIcons}
             disabled={generating}
-            className="w-full bg-[#E10600] text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-[#C10500] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="w-full bg-brand-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-brand-700 transition-colors disabled:bg-line-strong disabled:cursor-not-allowed"
           >
             {generating ? "⏳ Génération en cours..." : "📥 Télécharger Toutes les Icônes"}
           </button>

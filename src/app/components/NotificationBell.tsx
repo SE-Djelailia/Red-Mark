@@ -160,15 +160,15 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
           <div className="fixed inset-0 z-40" onClick={() => setShowPanel(false)} />
 
           {/* Panel */}
-          <div className="absolute right-0 top-12 w-80 md:w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-[500px] flex flex-col">
+          <div className="absolute right-0 top-12 w-80 md:w-96 bg-surface rounded-xl shadow-lg border border-line z-50 max-h-[500px] flex flex-col">
             {/* Header */}
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-b border-line">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-[#1A1A1A]">Notifications</h3>
+                <h3 className="font-semibold text-ink">Notifications</h3>
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllRead}
-                    className="text-xs text-[#E10600] hover:underline"
+                    className="text-xs text-brand-strong hover:underline"
                   >
                     Tout marquer comme lu
                   </button>
@@ -176,13 +176,13 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
               </div>
 
               {/* Filter Tabs */}
-              <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+              <div className="flex gap-1 bg-subtle rounded-lg p-1">
                 <button
                   onClick={() => setFilter("all")}
                   className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                     filter === "all"
-                      ? "bg-white text-[#1A1A1A] shadow-sm"
-                      : "text-gray-600 hover:text-[#1A1A1A]"
+                      ? "bg-surface text-ink shadow-sm"
+                      : "text-muted hover:text-ink"
                   }`}
                 >
                   Toutes ({notifications.length})
@@ -191,8 +191,8 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
                   onClick={() => setFilter("unread")}
                   className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                     filter === "unread"
-                      ? "bg-white text-[#1A1A1A] shadow-sm"
-                      : "text-gray-600 hover:text-[#1A1A1A]"
+                      ? "bg-surface text-ink shadow-sm"
+                      : "text-muted hover:text-ink"
                   }`}
                 >
                   Non lues ({unreadCount})
@@ -201,8 +201,8 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
                   onClick={() => setFilter("read")}
                   className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                     filter === "read"
-                      ? "bg-white text-[#1A1A1A] shadow-sm"
-                      : "text-gray-600 hover:text-[#1A1A1A]"
+                      ? "bg-surface text-ink shadow-sm"
+                      : "text-muted hover:text-ink"
                   }`}
                 >
                   Lues ({notifications.length - unreadCount})
@@ -213,31 +213,31 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
             {/* Notification List */}
             <div className="overflow-y-auto flex-1">
               {filteredNotifications.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <Bell size={48} className="mx-auto mb-3 text-gray-300" />
+                <div className="p-8 text-center text-muted">
+                  <Bell size={48} className="mx-auto mb-3 text-faint" />
                   <p className="text-sm font-medium mb-2">
                     {filter === "all" && "Aucune notification"}
                     {filter === "unread" && "Aucune notification non lue"}
                     {filter === "read" && "Aucune notification lue"}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-faint">
                     {filter === "all" && "Les mentions et réponses apparaîtront ici"}
                     {filter === "unread" && "Toutes vos notifications sont lues"}
                     {filter === "read" && "Aucune notification marquée comme lue"}
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-line">
                   {filteredNotifications.map((notification) => (
                     <div
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification)}
-                      className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors relative ${
-                        !notification.read ? "bg-blue-50/50" : ""
+                      className={`p-4 cursor-pointer hover:bg-subtle transition-colors relative ${
+                        !notification.read ? "bg-brand-50/40" : ""
                       }`}
                     >
                       {!notification.read && (
-                        <div className="absolute left-2 top-1/2 -translate-y-1/2 w-2 h-2 bg-[#E10600] rounded-full" />
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-600 rounded-full" />
                       )}
 
                       <div className="flex items-start gap-3 ml-3">
@@ -245,17 +245,17 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
                           {getNotificationIcon(notification.type)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-[#1A1A1A] mb-1">
+                          <p className="text-sm text-ink mb-1">
                             <span className="font-medium">{notification.fromUserName}</span>{" "}
                             {notification.message}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted">
                             {getRelativeTime(notification.createdAt)}
                           </p>
                         </div>
                         <button
                           onClick={(e) => handleDeleteNotification(e, notification.id)}
-                          className="p-1 text-gray-400 hover:text-[#E10600] transition-colors flex-shrink-0"
+                          className="p-1 text-faint hover:text-brand-600 transition-colors flex-shrink-0"
                           title="Supprimer"
                         >
                           <X size={16} />

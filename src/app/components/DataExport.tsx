@@ -129,16 +129,16 @@ export default function DataExport({ onClose }: DataExportProps) {
       <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
         <div className="bg-white rounded-xl max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
           {/* Header */}
-          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <div className="p-6 border-b border-line flex items-center justify-between">
             <div>
-              <h2 className="text-xl text-[#1A1A1A] font-medium">Exporter les données</h2>
-              <p className="text-sm text-gray-600 mt-1">Téléchargez tous vos projets</p>
+              <h2 className="text-xl text-ink font-medium">Exporter les données</h2>
+              <p className="text-sm text-body mt-1">Téléchargez tous vos projets</p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-subtle rounded-lg transition-colors"
             >
-              <X size={24} className="text-gray-600" />
+              <X size={24} className="text-body" />
             </button>
           </div>
 
@@ -146,7 +146,7 @@ export default function DataExport({ onClose }: DataExportProps) {
           <div className="p-6">
             {/* Export Format */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-[#1A1A1A] mb-3">
+              <label className="block text-sm font-medium text-ink mb-3">
                 Format d'exportation
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -154,62 +154,62 @@ export default function DataExport({ onClose }: DataExportProps) {
                   onClick={() => setExportType("json")}
                   className={`px-4 py-3 rounded-lg border-2 transition-colors ${
                     exportType === "json"
-                      ? "border-[#E10600] bg-red-50"
-                      : "border-gray-300 hover:border-gray-400"
+                      ? "border-brand-600 bg-red-50"
+                      : "border-line-strong hover:border-line-strong"
                   }`}
                 >
-                  <Database size={24} className="mx-auto mb-1 text-gray-600" />
+                  <Database size={24} className="mx-auto mb-1 text-body" />
                   <div className="text-sm font-medium">JSON</div>
-                  <div className="text-xs text-gray-500">Données complètes</div>
+                  <div className="text-xs text-muted">Données complètes</div>
                 </button>
                 <button
                   onClick={() => setExportType("csv")}
                   className={`px-4 py-3 rounded-lg border-2 transition-colors ${
                     exportType === "csv"
-                      ? "border-[#E10600] bg-red-50"
-                      : "border-gray-300 hover:border-gray-400"
+                      ? "border-brand-600 bg-red-50"
+                      : "border-line-strong hover:border-line-strong"
                   }`}
                 >
-                  <FileText size={24} className="mx-auto mb-1 text-gray-600" />
+                  <FileText size={24} className="mx-auto mb-1 text-body" />
                   <div className="text-sm font-medium">CSV</div>
-                  <div className="text-xs text-gray-500">Tableur Excel</div>
+                  <div className="text-xs text-muted">Tableur Excel</div>
                 </button>
               </div>
             </div>
 
             {/* Options */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-[#1A1A1A] mb-3">
+              <label className="block text-sm font-medium text-ink mb-3">
                 Options d'exportation
               </label>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-canvas rounded-lg">
                   <div className="flex items-center gap-3">
                     <CheckCircle size={18} className="text-green-600" />
                     <div>
-                      <div className="text-sm text-[#1A1A1A]">Projets et visites</div>
-                      <div className="text-xs text-gray-500">Toujours inclus</div>
+                      <div className="text-sm text-ink">Projets et visites</div>
+                      <div className="text-xs text-muted">Toujours inclus</div>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-canvas rounded-lg">
                   <div className="flex items-center gap-3">
                     <CheckCircle size={18} className="text-green-600" />
                     <div>
-                      <div className="text-sm text-[#1A1A1A]">Métadonnées des photos</div>
-                      <div className="text-xs text-gray-500">Tags, localisation, descriptions</div>
+                      <div className="text-sm text-ink">Métadonnées des photos</div>
+                      <div className="text-xs text-muted">Tags, localisation, descriptions</div>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg opacity-50">
+                <div className="flex items-center justify-between p-3 bg-canvas rounded-lg opacity-50">
                   <div className="flex items-center gap-3">
-                    <Image size={18} className="text-gray-400" />
+                    <Image size={18} className="text-faint" />
                     <div>
-                      <div className="text-sm text-gray-600">Fichiers photos</div>
-                      <div className="text-xs text-gray-500">Bientôt disponible</div>
+                      <div className="text-sm text-body">Fichiers photos</div>
+                      <div className="text-xs text-muted">Bientôt disponible</div>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-500">Prochainement</div>
+                  <div className="text-xs text-muted">Prochainement</div>
                 </div>
               </div>
             </div>
@@ -230,8 +230,8 @@ export default function DataExport({ onClose }: DataExportProps) {
               disabled={exporting}
               className={`w-full py-4 rounded-lg transition-colors font-medium flex items-center justify-center gap-2 ${
                 exporting
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-[#E10600] text-white hover:bg-[#C00500]"
+                  ? "bg-line text-muted cursor-not-allowed"
+                  : "bg-brand-600 text-white hover:bg-brand-700"
               }`}
             >
               {exporting ? (

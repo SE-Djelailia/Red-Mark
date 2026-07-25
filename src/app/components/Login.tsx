@@ -45,12 +45,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white px-6">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-surface px-6">
       <div className="w-full max-w-sm">
         {/* Logo/Branding */}
         <div className="text-center mb-12 flex flex-col items-center">
           <RedMarkLogo size="lg" variant="full" className="mb-4" />
-          <p className="text-gray-600">Intelligence Photo de Chantier</p>
+          <p className="text-body">Intelligence Photo de Chantier</p>
         </div>
 
         {/* Login/Signup Form */}
@@ -58,7 +58,7 @@ export default function Login() {
           {isSignUp && (
             <>
               <div>
-                <label htmlFor="name" className="block text-sm text-[#1A1A1A] mb-2">
+                <label htmlFor="name" className="block text-sm text-ink mb-2">
                   Nom complet
                 </label>
                 <input
@@ -67,13 +67,13 @@ export default function Login() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Jean Dupont"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 transition-all"
+                  className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 transition-all"
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="firm" className="block text-sm text-[#1A1A1A] mb-2">
+                <label htmlFor="firm" className="block text-sm text-ink mb-2">
                   Firme d'architecture
                 </label>
                 <input
@@ -82,7 +82,7 @@ export default function Login() {
                   value={firm}
                   onChange={(e) => setFirm(e.target.value)}
                   placeholder="Jodoin Lamarre Pratte"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 transition-all"
+                  className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 transition-all"
                   required
                 />
               </div>
@@ -90,7 +90,7 @@ export default function Login() {
           )}
 
           <div>
-            <label htmlFor="email" className="block text-sm text-[#1A1A1A] mb-2">
+            <label htmlFor="email" className="block text-sm text-ink mb-2">
               Courriel
             </label>
             <input
@@ -99,13 +99,13 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="votre@courriel.com"
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 transition-all"
+              className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 transition-all"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm text-[#1A1A1A] mb-2">
+            <label htmlFor="password" className="block text-sm text-ink mb-2">
               Mot de passe
             </label>
             <div className="relative">
@@ -115,14 +115,14 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 transition-all pr-12"
+                className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 transition-all pr-12"
                 required
                 minLength={6}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#1A1A1A]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -132,7 +132,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] active:bg-[#A00400] transition-colors mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Chargement..." : isSignUp ? "S'inscrire" : "Se connecter"}
           </button>
@@ -141,7 +141,7 @@ export default function Login() {
         <div className="text-center mt-6">
           <button
             onClick={() => setIsSignUp(!isSignUp)}
-            className="text-sm text-gray-600 hover:text-[#E10600]"
+            className="text-sm text-body hover:text-brand-600"
           >
             {isSignUp ? "Déjà un compte? Se connecter" : "Nouveau? Créer un compte"}
           </button>

@@ -172,7 +172,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
       case "editor":
         return "bg-blue-100 text-blue-700";
       default:
-        return "bg-gray-100 text-gray-700";
+        return "bg-subtle text-body";
     }
   };
 
@@ -197,16 +197,16 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b border-line px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-[#1A1A1A]">Membres du projet</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <h2 className="text-xl font-semibold text-ink">Membres du projet</h2>
+            <p className="text-sm text-muted mt-1">
               {members.length} membre{members.length !== 1 ? "s" : ""}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-600 transition-colors"
+            className="w-10 h-10 bg-subtle hover:bg-line-strong rounded-full flex items-center justify-center text-body transition-colors"
           >
             <X size={20} />
           </button>
@@ -217,7 +217,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
           {canManage && !showInviteForm && (
             <button
               onClick={() => setShowInviteForm(true)}
-              className="w-full py-3 px-4 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors flex items-center justify-center gap-2 font-medium"
+              className="w-full py-3 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 font-medium"
             >
               <UserPlus size={20} />
               Inviter un membre
@@ -226,17 +226,17 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
 
           {/* Invite form */}
           {canManage && showInviteForm && (
-            <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-              <h3 className="text-sm font-semibold text-[#1A1A1A] flex items-center gap-2">
+            <div className="bg-canvas rounded-lg p-4 space-y-4">
+              <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
                 <Mail size={16} />
                 Inviter par courriel
               </h3>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted">
                 La personne doit déjà avoir un compte RedMark. Les invitations par courriel pour
                 créer un compte arrivent bientôt.
               </p>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-body mb-1">
                   Adresse courriel *
                 </label>
                 <input
@@ -245,15 +245,15 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                   onChange={(e) => setInviteEmail(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleInvite()}
                   placeholder="mc.bouchard@jlp.ca"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
+                  className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Rôle</label>
+                <label className="block text-xs font-medium text-body mb-1">Rôle</label>
                 <select
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value as "editor" | "commenter")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent"
+                  className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
                 >
                   <option value="editor">Éditeur — peut créer et modifier</option>
                   <option value="commenter">Commentateur — peut commenter seulement</option>
@@ -265,14 +265,14 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                     setShowInviteForm(false);
                     setInviteEmail("");
                   }}
-                  className="flex-1 py-2 bg-gray-200 text-[#1A1A1A] rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                  className="flex-1 py-2 bg-subtle text-ink rounded-lg hover:bg-line-strong transition-colors font-medium"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleInvite}
                   disabled={inviting}
-                  className="flex-1 py-2 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {inviting ? (
                     <>
@@ -288,30 +288,30 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
 
           {/* Members list */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-[#1A1A1A]">Membres actuels</h3>
+            <h3 className="text-sm font-semibold text-ink">Membres actuels</h3>
             {loading ? (
-              <div className="flex items-center justify-center py-8 gap-2 text-gray-500">
+              <div className="flex items-center justify-center py-8 gap-2 text-muted">
                 <Loader2 size={20} className="animate-spin" />
                 <span>Chargement…</span>
               </div>
             ) : members.length === 0 ? (
               <div className="text-center py-8">
-                <UserPlus size={48} className="mx-auto text-gray-300 mb-3" />
-                <p className="text-gray-500 text-sm">Aucun membre pour l'instant</p>
+                <UserPlus size={48} className="mx-auto text-faint mb-3" />
+                <p className="text-muted text-sm">Aucun membre pour l'instant</p>
               </div>
             ) : (
               members.map((member) => (
                 <div
                   key={member.id}
-                  className="bg-gray-50 rounded-lg p-4 flex items-start justify-between gap-3"
+                  className="bg-canvas rounded-lg p-4 flex items-start justify-between gap-3"
                 >
                   <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-[#E10600] text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-brand-600 text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
                       {(member.name || "?")[0].toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-sm font-medium text-[#1A1A1A] truncate">
+                        <span className="text-sm font-medium text-ink truncate">
                           {member.name}
                         </span>
                         <span
@@ -320,9 +320,9 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                           {getRoleLabel(member.role)}
                         </span>
                       </div>
-                      <div className="text-xs text-gray-500 truncate">{member.email}</div>
+                      <div className="text-xs text-muted truncate">{member.email}</div>
                       {member.created_at && (
-                        <div className="text-xs text-gray-400 mt-1">
+                        <div className="text-xs text-faint mt-1">
                           Ajouté le {new Date(member.created_at).toLocaleDateString("fr-CA")}
                         </div>
                       )}
@@ -336,7 +336,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                           onChange={(e) =>
                             handleUpdateRole(member.id, e.target.value as ProjectRole)
                           }
-                          className="text-xs px-2 py-1 border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-[#E10600]"
+                          className="text-xs px-2 py-1 border border-line-strong rounded bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <option value="editor">Éditeur</option>
@@ -351,7 +351,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                       </>
                     )}
                     {member.role === "owner" && (
-                      <div className="text-xs text-gray-500 flex items-center gap-1">
+                      <div className="text-xs text-muted flex items-center gap-1">
                         <Shield size={12} />
                         <span>Propriétaire</span>
                       </div>

@@ -6,6 +6,9 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/useAuth";
 import { parseLocalDate } from "../../lib/dateUtils";
 import { PriorityBadge, StatusBadge, PRIORITY_LABEL, STATUS_LABEL } from "./ui-kit/Badge";
+import { StatGrid, StatTile } from "./ui-kit/StatTile";
+import { inputClassName } from "./ui-kit/Input";
+import { usePageHeader } from "../../contexts/PageHeaderContext";
 
 type IssueWithProject = Issue & { projectName: string };
 
@@ -78,70 +81,67 @@ export default function IssueManagement() {
 
   const countByStatus = (status: string) => issues.filter((i) => i.status === status).length;
 
+  usePageHeader("Déficiences", "Toutes vos déficiences, tous projets confondus");
+
   return (
-    <div className="min-h-screen pb-20">
-      <div className="bg-[#1A1A1A] text-white px-6 py-6 md:py-8">
-        <h1 className="text-2xl md:text-3xl mb-4">Déficiences</h1>
-        <div className="grid grid-cols-2 gap-3">
-          {["open", "resolved"].map((s) => (
-            <div key={s} className="bg-white/10 rounded-lg p-3">
-              <div className="text-2xl font-bold">{countByStatus(s)}</div>
-              <div className="text-xs text-gray-400">{STATUS_LABEL[s as Issue["status"]]}</div>
-            </div>
-          ))}
+    <div className="min-h-screen pb-20 bg-canvas">
+      <div className="px-4 sm:px-6 py-5 max-w-2xl mx-auto space-y-5">
+        <StatGrid className="grid-cols-2">
+          <StatTile label={STATUS_LABEL.open} value={countByStatus("open")} emphasis />
+          <StatTile label={STATUS_LABEL.resolved} value={countByStatus("resolved")} />
+        </StatGrid>
+
+        <div className="space-y-3">
+          <div className="relative">
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Rechercher par titre, description, projet..."
+              className={`${inputClassName} pl-10`}
+            />
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as Issue["status"] | "all")}
+              className="h-10 px-3 bg-surface border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-brand-600"
+            >
+              <option value="all">Tous les statuts</option>
+              <option value="open">{STATUS_LABEL.open}</option>
+              <option value="resolved">{STATUS_LABEL.resolved}</option>
+            </select>
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value as Issue["priority"] | "all")}
+              className="h-10 px-3 bg-surface border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-brand-600"
+            >
+              <option value="all">Toutes les priorités</option>
+              <option value="critical">{PRIORITY_LABEL.critical}</option>
+              <option value="high">{PRIORITY_LABEL.high}</option>
+              <option value="medium">{PRIORITY_LABEL.medium}</option>
+              <option value="low">{PRIORITY_LABEL.low}</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <div className="px-4 py-4 bg-white border-b border-gray-200 space-y-3">
-        <div className="relative max-w-2xl mx-auto">
-          <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Rechercher par titre, description, projet..."
-            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
-          />
-        </div>
-        <div className="flex gap-3 overflow-x-auto pb-2 max-w-2xl mx-auto">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as Issue["status"] | "all")}
-            className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
-          >
-            <option value="all">Tous les statuts</option>
-            <option value="open">{STATUS_LABEL.open}</option>
-            <option value="resolved">{STATUS_LABEL.resolved}</option>
-          </select>
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value as Issue["priority"] | "all")}
-            className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
-          >
-            <option value="all">Toutes les priorités</option>
-            <option value="critical">{PRIORITY_LABEL.critical}</option>
-            <option value="high">{PRIORITY_LABEL.high}</option>
-            <option value="medium">{PRIORITY_LABEL.medium}</option>
-            <option value="low">{PRIORITY_LABEL.low}</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="px-4 py-6 space-y-3 max-w-2xl mx-auto">
+      <div className="px-4 sm:px-6 pb-6 space-y-3 max-w-2xl mx-auto">
         {loading ? (
-          <div className="flex items-center justify-center py-16 gap-3 text-gray-500">
+          <div className="flex items-center justify-center py-16 gap-3 text-muted">
             <Loader2 size={24} className="animate-spin" />
             <span>Chargement des déficiences...</span>
           </div>
         ) : error ? (
           <div className="text-center py-12">
-            <AlertCircle size={48} className="mx-auto text-red-300 mb-4" />
-            <p className="text-red-600">{error}</p>
+            <AlertCircle size={48} className="mx-auto text-brand-100 mb-4" />
+            <p className="text-brand-strong">{error}</p>
           </div>
         ) : filteredIssues.length === 0 ? (
           <div className="text-center py-12">
-            <AlertCircle size={48} className="mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-600">Aucune déficience trouvée</p>
+            <AlertCircle size={48} className="mx-auto text-faint mb-4" />
+            <p className="text-body">Aucune déficience trouvée</p>
           </div>
         ) : (
           filteredIssues.map((issue) => {
@@ -149,12 +149,12 @@ export default function IssueManagement() {
               <div
                 key={issue.id}
                 onClick={() => navigate(`/app/projects/${issue.projectId}/issues/${issue.id}`)}
-                className="bg-white rounded-xl border border-gray-200 p-4 hover:border-[#E10600] hover:shadow-md transition-all cursor-pointer"
+                className="bg-surface rounded-xl border border-line p-4 hover:border-brand-600 transition-all cursor-pointer"
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
-                    <h3 className="text-base font-medium text-[#1A1A1A] mb-1">{issue.title}</h3>
-                    <p className="text-sm text-gray-500">{issue.projectName}</p>
+                    <h3 className="text-base font-medium text-ink mb-1">{issue.title}</h3>
+                    <p className="text-sm text-muted">{issue.projectName}</p>
                   </div>
                   <div className="flex-shrink-0 ml-2">
                     <PriorityBadge priority={issue.priority} />
@@ -162,18 +162,18 @@ export default function IssueManagement() {
                 </div>
 
                 {issue.description && (
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{issue.description}</p>
+                  <p className="text-sm text-body mb-3 line-clamp-2">{issue.description}</p>
                 )}
 
                 <div className="flex items-center gap-3 text-xs flex-wrap">
                   <StatusBadge status={issue.status} />
                   {issue.discipline && (
-                    <div className="flex items-center gap-1 text-gray-500">
+                    <div className="flex items-center gap-1 text-muted">
                       <MapPin size={12} />
                       <span>{issue.discipline}</span>
                     </div>
                   )}
-                  <span className="text-gray-400 ml-auto">
+                  <span className="text-faint ml-auto">
                     {parseLocalDate(issue.createdDate).toLocaleDateString("fr-CA")}
                   </span>
                 </div>

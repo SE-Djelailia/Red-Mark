@@ -26,6 +26,7 @@ import {
   type AttendeeEntry,
 } from "../../lib/reportGenerator";
 import { useSmartBack } from "../../hooks/useSmartBack";
+import { usePageHeader } from "../../contexts/PageHeaderContext";
 
 const EMPTY_MANUAL_FIELDS: ReportManualFields = {
   noteNumber: "",
@@ -160,35 +161,35 @@ export default function ReportGenerator() {
     ? formatVisitTimeRange(selectedVisit.start_time, selectedVisit.end_time)
     : "";
 
+  usePageHeader("Générer un rapport", project?.name || undefined);
+
   return (
-    <div className="min-h-screen pb-20">
-      {/* Header */}
-      <div className="bg-[#1A1A1A] text-white px-6 py-6 md:py-8">
+    <div className="min-h-screen pb-20 bg-canvas">
+      {/* Toolbar — title/subtitle render in the global light header. */}
+      <div className="px-4 sm:px-6 pt-4 max-w-2xl mx-auto">
         <button
           onClick={goBack}
-          className="flex items-center gap-2 text-gray-400 hover:text-white mb-4"
+          className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
           <span>Retour</span>
         </button>
-        <h1 className="text-2xl md:text-3xl">Générer un rapport</h1>
-        <p className="text-gray-400 mt-1 text-sm">{project?.name || "Chargement..."}</p>
       </div>
 
       <div className="px-4 py-6 max-w-2xl mx-auto space-y-6">
         {/* Visit selector */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-line p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Calendar size={18} className="text-[#E10600]" />
-            <label className="text-sm font-semibold text-[#1A1A1A]">Visite de chantier</label>
+            <Calendar size={18} className="text-brand-600" />
+            <label className="text-sm font-semibold text-ink">Visite de chantier</label>
           </div>
           {!loading && visits.length === 0 ? (
-            <p className="text-sm text-gray-500">Aucune visite trouvée pour ce projet.</p>
+            <p className="text-sm text-muted">Aucune visite trouvée pour ce projet.</p>
           ) : (
             <select
               value={selectedVisitId}
               onChange={(e) => setSelectedVisitId(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
+              className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
             >
               {visits.map((visit) => (
                 <option key={visit.id} value={visit.id}>
@@ -201,31 +202,31 @@ export default function ReportGenerator() {
         </div>
 
         {/* Report metadata not yet captured elsewhere in the app */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-line p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Hash size={18} className="text-[#E10600]" />
-            <label className="text-sm font-semibold text-[#1A1A1A]">Informations du rapport</label>
+            <Hash size={18} className="text-brand-600" />
+            <label className="text-sm font-semibold text-ink">Informations du rapport</label>
           </div>
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">N° de note</label>
+                <label className="block text-xs text-body mb-1">N° de note</label>
                 <input
                   type="text"
                   value={manual.noteNumber}
                   onChange={(e) => updateManual("noteNumber", e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
+                  className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
                   placeholder="A001"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Nb pages</label>
+                <label className="block text-xs text-body mb-1">Nb pages</label>
                 <input
                   type="text"
                   value={manual.pageCount}
                   onChange={(e) => updateManual("pageCount", e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
+                  className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
                   placeholder="À déterminer"
                 />
               </div>
@@ -233,28 +234,28 @@ export default function ReportGenerator() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Transmis par</label>
+                <label className="block text-xs text-body mb-1">Transmis par</label>
                 <input
                   type="text"
                   value={manual.transmittedBy}
                   onChange={(e) => updateManual("transmittedBy", e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
+                  className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
                   placeholder="Courriel"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Heure de visite</label>
+                <label className="block text-xs text-body mb-1">Heure de visite</label>
                 {visitTimeRange ? (
-                  <div className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-600">
+                  <div className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-sm text-body">
                     {visitTimeRange}
-                    <span className="text-gray-400"> (de la visite)</span>
+                    <span className="text-faint"> (de la visite)</span>
                   </div>
                 ) : (
                   <input
                     type="text"
                     value={manual.time}
                     onChange={(e) => updateManual("time", e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
+                    className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
                     placeholder="9h00 - 10h00"
                   />
                 )}
@@ -262,12 +263,12 @@ export default function ReportGenerator() {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Objet de la visite</label>
+              <label className="block text-xs text-body mb-1">Objet de la visite</label>
               <input
                 type="text"
                 value={manual.subject}
                 onChange={(e) => updateManual("subject", e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
+                className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
                 placeholder="Visite de chantier / constatations."
               />
             </div>
@@ -275,16 +276,16 @@ export default function ReportGenerator() {
             {/* Dossier numbers */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs text-gray-600">
+                <label className="text-xs text-body">
                   Numéros de dossier
                   {project?.file_number && (
-                    <span className="text-gray-400"> (pré-rempli du projet, modifiable)</span>
+                    <span className="text-faint"> (pré-rempli du projet, modifiable)</span>
                   )}
                 </label>
                 <button
                   type="button"
                   onClick={() => addListEntry("dossierNumbers", { label: "", number: "" })}
-                  className="flex items-center gap-1 text-xs text-[#E10600] hover:text-[#C00500]"
+                  className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-800"
                 >
                   <Plus size={14} />
                   Ajouter
@@ -301,7 +302,7 @@ export default function ReportGenerator() {
                           label: e.target.value,
                         })
                       }
-                      className="w-24 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-sm focus:outline-none focus:border-[#E10600]"
+                      className="w-24 px-2 py-1.5 bg-canvas border border-line rounded text-sm focus:outline-none focus:border-brand-600"
                       placeholder="JLPa"
                     />
                     <input
@@ -312,14 +313,14 @@ export default function ReportGenerator() {
                           number: e.target.value,
                         })
                       }
-                      className="flex-1 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-sm focus:outline-none focus:border-[#E10600]"
+                      className="flex-1 px-2 py-1.5 bg-canvas border border-line rounded text-sm focus:outline-none focus:border-brand-600"
                       placeholder="Numéro"
                     />
                     {manual.dossierNumbers.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeListEntry("dossierNumbers", index)}
-                        className="p-1.5 text-gray-400 hover:text-red-600"
+                        className="p-1.5 text-faint hover:text-red-600"
                       >
                         <X size={16} />
                       </button>
@@ -332,11 +333,11 @@ export default function ReportGenerator() {
             {/* Distribution list */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs text-gray-600">Distribution du rapport</label>
+                <label className="text-xs text-body">Distribution du rapport</label>
                 <button
                   type="button"
                   onClick={() => addListEntry("distribution", { name: "", company: "" })}
-                  className="flex items-center gap-1 text-xs text-[#E10600] hover:text-[#C00500]"
+                  className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-800"
                 >
                   <Plus size={14} />
                   Ajouter
@@ -353,7 +354,7 @@ export default function ReportGenerator() {
                           name: e.target.value,
                         })
                       }
-                      className="flex-1 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-sm focus:outline-none focus:border-[#E10600]"
+                      className="flex-1 px-2 py-1.5 bg-canvas border border-line rounded text-sm focus:outline-none focus:border-brand-600"
                       placeholder="Nom"
                     />
                     <input
@@ -364,14 +365,14 @@ export default function ReportGenerator() {
                           company: e.target.value,
                         })
                       }
-                      className="flex-1 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-sm focus:outline-none focus:border-[#E10600]"
+                      className="flex-1 px-2 py-1.5 bg-canvas border border-line rounded text-sm focus:outline-none focus:border-brand-600"
                       placeholder="Compagnie"
                     />
                     {manual.distribution.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeListEntry("distribution", index)}
-                        className="p-1.5 text-gray-400 hover:text-red-600"
+                        className="p-1.5 text-faint hover:text-red-600"
                       >
                         <X size={16} />
                       </button>
@@ -384,12 +385,12 @@ export default function ReportGenerator() {
         </div>
 
         {/* Contractor */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-line p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Building2 size={18} className="text-[#E10600]" />
-            <label className="text-sm font-semibold text-[#1A1A1A]">Entrepreneur</label>
+            <Building2 size={18} className="text-brand-600" />
+            <label className="text-sm font-semibold text-ink">Entrepreneur</label>
             {project?.contractor_name && (
-              <span className="text-xs text-gray-400">(pré-rempli du projet, modifiable)</span>
+              <span className="text-xs text-faint">(pré-rempli du projet, modifiable)</span>
             )}
           </div>
 
@@ -398,21 +399,21 @@ export default function ReportGenerator() {
               type="text"
               value={manual.contractorContactNameTitle}
               onChange={(e) => updateManual("contractorContactNameTitle", e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
+              className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
               placeholder="Nom du contact, titre"
             />
             <input
               type="text"
               value={manual.contractorCompany}
               onChange={(e) => updateManual("contractorCompany", e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
+              className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
               placeholder="Nom de la compagnie"
             />
             <input
               type="text"
               value={manual.contractorAddress}
               onChange={(e) => updateManual("contractorAddress", e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
+              className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
               placeholder="Adresse"
             />
             <div className="grid grid-cols-2 gap-3">
@@ -420,14 +421,14 @@ export default function ReportGenerator() {
                 type="text"
                 value={manual.contractorPhone}
                 onChange={(e) => updateManual("contractorPhone", e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
+                className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
                 placeholder="Téléphone"
               />
               <input
                 type="email"
                 value={manual.contractorEmail}
                 onChange={(e) => updateManual("contractorEmail", e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
+                className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
                 placeholder="Courriel"
               />
             </div>
@@ -435,17 +436,17 @@ export default function ReportGenerator() {
         </div>
 
         {/* Attendees */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-line p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Users size={18} className="text-[#E10600]" />
-              <label className="text-sm font-semibold text-[#1A1A1A]">Assistaient</label>
+              <Users size={18} className="text-brand-600" />
+              <label className="text-sm font-semibold text-ink">Assistaient</label>
             </div>
             <button
               onClick={() =>
                 addListEntry("attendees", { name: "", company: "", title: "", initials: "" })
               }
-              className="flex items-center gap-1 px-3 py-1.5 bg-[#E10600] text-white rounded-lg text-xs hover:bg-[#C00500] transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-xs hover:bg-brand-700 transition-colors"
             >
               <Plus size={14} />
               Ajouter
@@ -454,56 +455,56 @@ export default function ReportGenerator() {
 
           <div className="space-y-3">
             {manual.attendees.map((attendee, index) => (
-              <div key={index} className="relative bg-gray-50 rounded-lg p-3 border border-gray-200">
+              <div key={index} className="relative bg-canvas rounded-lg p-3 border border-line">
                 {manual.attendees.length > 1 && (
                   <button
                     onClick={() => removeListEntry("attendees", index)}
-                    className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-600 transition-colors"
+                    className="absolute top-2 right-2 p-1 text-faint hover:text-red-600 transition-colors"
                   >
                     <X size={16} />
                   </button>
                 )}
                 <div className="grid grid-cols-2 gap-2 mb-2">
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Nom</label>
+                    <label className="block text-xs text-body mb-1">Nom</label>
                     <input
                       type="text"
                       value={attendee.name}
                       onChange={(e) =>
                         updateListEntry<AttendeeEntry>("attendees", index, { name: e.target.value })
                       }
-                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-sm focus:outline-none focus:border-[#E10600]"
+                      className="w-full px-2 py-1.5 bg-white border border-line rounded text-sm focus:outline-none focus:border-brand-600"
                       placeholder="Nom complet"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Compagnie</label>
+                    <label className="block text-xs text-body mb-1">Compagnie</label>
                     <input
                       type="text"
                       value={attendee.company}
                       onChange={(e) =>
                         updateListEntry<AttendeeEntry>("attendees", index, { company: e.target.value })
                       }
-                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-sm focus:outline-none focus:border-[#E10600]"
+                      className="w-full px-2 py-1.5 bg-white border border-line rounded text-sm focus:outline-none focus:border-brand-600"
                       placeholder="Entreprise"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Titre</label>
+                    <label className="block text-xs text-body mb-1">Titre</label>
                     <input
                       type="text"
                       value={attendee.title}
                       onChange={(e) =>
                         updateListEntry<AttendeeEntry>("attendees", index, { title: e.target.value })
                       }
-                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-sm focus:outline-none focus:border-[#E10600]"
+                      className="w-full px-2 py-1.5 bg-white border border-line rounded text-sm focus:outline-none focus:border-brand-600"
                       placeholder="Fonction"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Initiales</label>
+                    <label className="block text-xs text-body mb-1">Initiales</label>
                     <input
                       type="text"
                       value={attendee.initials}
@@ -512,7 +513,7 @@ export default function ReportGenerator() {
                           initials: e.target.value,
                         })
                       }
-                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-sm focus:outline-none focus:border-[#E10600]"
+                      className="w-full px-2 py-1.5 bg-white border border-line rounded text-sm focus:outline-none focus:border-brand-600"
                       placeholder="AB"
                       maxLength={4}
                     />
@@ -524,25 +525,25 @@ export default function ReportGenerator() {
         </div>
 
         {/* Prepared by */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-line p-5">
           <div className="flex items-center gap-2 mb-4">
-            <User size={18} className="text-[#E10600]" />
-            <label className="text-sm font-semibold text-[#1A1A1A]">Préparé par</label>
+            <User size={18} className="text-brand-600" />
+            <label className="text-sm font-semibold text-ink">Préparé par</label>
           </div>
           <input
             type="text"
             value={manual.preparedByNameTitle}
             onChange={(e) => updateManual("preparedByNameTitle", e.target.value)}
-            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E10600]"
+            className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
             placeholder="Nom, titre"
           />
         </div>
 
         {/* Visit summary preview */}
         {!loading && selectedVisit && (
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 className="text-sm text-[#1A1A1A] mb-2 font-semibold">Visite sélectionnée :</h3>
-            <p className="text-sm text-gray-600">
+          <div className="bg-white rounded-xl border border-line p-5">
+            <h3 className="text-sm text-ink mb-2 font-semibold">Visite sélectionnée :</h3>
+            <p className="text-sm text-body">
               {formatDateLong(selectedVisit.visit_date)}
               {selectedVisit.phase ? ` — ${selectedVisit.phase}` : ""}
             </p>
@@ -555,10 +556,10 @@ export default function ReportGenerator() {
           disabled={generating || loading || !selectedVisitId}
           className={`w-full py-4 rounded-xl flex items-center justify-center gap-3 transition-all ${
             generating
-              ? "bg-gray-400 cursor-not-allowed"
+              ? "bg-line-strong cursor-not-allowed"
               : generated
                 ? "bg-green-600 hover:bg-green-700"
-                : "bg-[#E10600] hover:bg-[#C00500] active:scale-[0.98]"
+                : "bg-brand-600 hover:bg-brand-700 active:scale-[0.98]"
           } text-white disabled:opacity-50 shadow-md`}
         >
           {generating ? (
@@ -582,7 +583,7 @@ export default function ReportGenerator() {
         {generated && (
           <button
             onClick={() => void handleGenerateReport()}
-            className="w-full py-4 bg-[#1A1A1A] text-white rounded-xl flex items-center justify-center gap-3 hover:bg-black active:scale-[0.98] transition-all shadow-md"
+            className="w-full py-4 bg-ink text-white rounded-xl flex items-center justify-center gap-3 hover:bg-body active:scale-[0.98] transition-all shadow-md"
           >
             <Send size={22} />
             <span>Télécharger à nouveau</span>

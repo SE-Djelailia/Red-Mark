@@ -29,7 +29,7 @@ export default function PhotoCaptureButtons({ onFilesSelected, disabled }: Props
         type="button"
         disabled={disabled}
         onClick={() => openPicker(false)}
-        className="flex-1 py-2.5 px-3 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 disabled:opacity-50 text-sm font-medium flex items-center justify-center gap-2 min-h-[44px]"
+        className="flex-1 py-2.5 px-3 bg-subtle text-ink rounded-lg hover:bg-line disabled:opacity-50 text-sm font-medium flex items-center justify-center gap-2 min-h-[44px]"
       >
         <ImageIcon size={16} />
         Galerie
@@ -38,7 +38,7 @@ export default function PhotoCaptureButtons({ onFilesSelected, disabled }: Props
         type="button"
         disabled={disabled}
         onClick={() => openPicker(true)}
-        className="flex-1 py-2.5 px-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] disabled:opacity-50 text-sm font-medium flex items-center justify-center gap-2 min-h-[44px]"
+        className="flex-1 py-2.5 px-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 text-sm font-medium flex items-center justify-center gap-2 min-h-[44px]"
       >
         <Camera size={16} />
         Caméra

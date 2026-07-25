@@ -4,6 +4,8 @@ import { updateProject, type Project } from "../../lib/supabaseApi";
 import { useAuth } from "../../contexts/useAuth";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { toast } from "sonner";
+import { inputClassName, labelClassName } from "./ui-kit/Input";
+import { ProjectStatusBadge } from "./ui-kit/ProjectStatus";
 
 interface ProjectEditModalProps {
   project: Project;
@@ -64,40 +66,19 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
     }
   }
 
-  const getStatusBadge = (status: Project["status"]) => {
-    const styles = {
-      planning: "bg-blue-100 text-blue-700",
-      "in-progress": "bg-green-100 text-green-700",
-      "on-hold": "bg-yellow-100 text-yellow-700",
-      completed: "bg-gray-100 text-gray-700",
-    };
-
-    const labels = {
-      planning: "Planification",
-      "in-progress": "En cours",
-      "on-hold": "En pause",
-      completed: "Complété",
-    };
-
-    return {
-      style: styles[status],
-      label: labels[status],
-    };
-  };
-
   return (
     <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={onClose}>
       <div className="min-h-screen px-4 py-4 sm:py-8 pb-20 flex items-center justify-center safe-area-bottom">
         <div
-          className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 my-4"
+          className="bg-surface rounded-2xl max-w-md w-full p-5 sm:p-6 my-4"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-[#1A1A1A]">Modifier le projet</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-ink">Modifier le projet</h2>
             <button
               onClick={onClose}
-              className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
+              className="w-10 h-10 flex items-center justify-center hover:bg-subtle rounded-full transition-colors flex-shrink-0"
               aria-label="Fermer"
             >
               <X size={24} />
@@ -107,75 +88,75 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={labelClassName}>
                 Nom du projet *
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                className={inputClassName}
                 placeholder="Ex: Tour du Centre-Ville"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Adresse *</label>
+              <label className={labelClassName}>Adresse *</label>
               <input
                 type="text"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                className={inputClassName}
                 placeholder="123 Rue Saint-Catherine, Montréal"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Client</label>
+              <label className={labelClassName}>Client</label>
               <input
                 type="text"
                 value={formData.client}
                 onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                className={inputClassName}
                 placeholder="Nom du client"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={labelClassName}>
                 Numéro de dossier
               </label>
               <input
                 type="text"
                 value={formData.fileNumber}
                 onChange={(e) => setFormData({ ...formData, fileNumber: e.target.value })}
-                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                className={inputClassName}
                 placeholder="Ex: JLPa-4521"
               />
             </div>
 
-            <div className="pt-2 border-t border-gray-100">
-              <p className="text-sm font-medium text-gray-700 mb-3 mt-4">
+            <div className="pt-2 border-t border-line">
+              <p className="text-sm font-medium text-body mb-3 mt-4">
                 Entrepreneur (pré-rempli dans les rapports)
               </p>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={labelClassName}>
                     Nom de l'entreprise
                   </label>
                   <input
                     type="text"
                     value={formData.contractorName}
                     onChange={(e) => setFormData({ ...formData, contractorName: e.target.value })}
-                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                    className={inputClassName}
                     placeholder="Ex: Construction ABC inc."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={labelClassName}>
                     Contact (nom, titre)
                   </label>
                   <input
@@ -184,42 +165,42 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
                     onChange={(e) =>
                       setFormData({ ...formData, contractorContact: e.target.value })
                     }
-                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                    className={inputClassName}
                     placeholder="Ex: Jean Tremblay, Surintendant"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Adresse</label>
+                  <label className={labelClassName}>Adresse</label>
                   <input
                     type="text"
                     value={formData.contractorAddress}
                     onChange={(e) =>
                       setFormData({ ...formData, contractorAddress: e.target.value })
                     }
-                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                    className={inputClassName}
                     placeholder="Ex: 456 Boul. Industriel, Laval"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
+                  <label className={labelClassName}>Téléphone</label>
                   <input
                     type="tel"
                     value={formData.contractorPhone}
                     onChange={(e) => setFormData({ ...formData, contractorPhone: e.target.value })}
-                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                    className={inputClassName}
                     placeholder="Ex: 450-555-1234"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Courriel</label>
+                  <label className={labelClassName}>Courriel</label>
                   <input
                     type="email"
                     value={formData.contractorEmail}
                     onChange={(e) => setFormData({ ...formData, contractorEmail: e.target.value })}
-                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                    className={inputClassName}
                     placeholder="Ex: jtremblay@abc.ca"
                   />
                 </div>
@@ -227,23 +208,23 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date de début</label>
+              <label className={labelClassName}>Date de début</label>
               <input
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                className={inputClassName}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Statut</label>
+              <label className={labelClassName}>Statut</label>
               <select
                 value={formData.status}
                 onChange={(e) =>
                   setFormData({ ...formData, status: e.target.value as Project["status"] })
                 }
-                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 min-h-[48px]"
+                className={inputClassName}
               >
                 <option value="planning">Planification</option>
                 <option value="in-progress">En cours</option>
@@ -251,11 +232,7 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
                 <option value="completed">Complété</option>
               </select>
               <div className="mt-2">
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(formData.status).style}`}
-                >
-                  {getStatusBadge(formData.status).label}
-                </span>
+                <ProjectStatusBadge status={formData.status} />
               </div>
             </div>
 
@@ -264,14 +241,14 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
                 type="button"
                 onClick={onClose}
                 disabled={isSaving}
-                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[48px] disabled:opacity-50"
+                className="flex-1 px-4 py-3 border border-line-strong text-body rounded-lg hover:bg-subtle active:bg-subtle transition-colors min-h-[48px] disabled:opacity-50"
               >
                 Annuler
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex-1 px-4 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] active:bg-[#A00400] transition-colors flex items-center justify-center gap-2 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors flex items-center justify-center gap-2 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>

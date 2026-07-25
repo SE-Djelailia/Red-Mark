@@ -58,8 +58,8 @@ export default function MigrationPrompt() {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle size={32} className="text-green-600" />
             </div>
-            <h2 className="text-xl font-semibold text-[#1A1A1A] mb-2">Migration réussie ! 🎉</h2>
-            <p className="text-gray-600 text-sm">
+            <h2 className="text-xl font-semibold text-ink mb-2">Migration réussie ! 🎉</h2>
+            <p className="text-body text-sm">
               Toutes vos données ont été transférées vers Supabase. Elles sont maintenant sécurisées
               dans le cloud !
             </p>
@@ -73,14 +73,14 @@ export default function MigrationPrompt() {
                   <Database size={24} className="text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-[#1A1A1A]">Migration vers Supabase</h2>
-                  <p className="text-xs text-gray-500">Base de données cloud sécurisée</p>
+                  <h2 className="text-lg font-semibold text-ink">Migration vers Supabase</h2>
+                  <p className="text-xs text-muted">Base de données cloud sécurisée</p>
                 </div>
               </div>
               {!migrating && (
                 <button
                   onClick={handleSkip}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-faint hover:text-body transition-colors"
                 >
                   <X size={20} />
                 </button>
@@ -114,7 +114,7 @@ export default function MigrationPrompt() {
               <button
                 onClick={handleMigrate}
                 disabled={migrating}
-                className="w-full py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] active:bg-[#A00400] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+                className="w-full py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
               >
                 {migrating ? (
                   <>
@@ -132,14 +132,14 @@ export default function MigrationPrompt() {
               {!migrating && (
                 <button
                   onClick={handleSkip}
-                  className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                  className="w-full py-3 bg-subtle text-body rounded-lg hover:bg-line transition-colors font-medium"
                 >
                   Plus tard
                 </button>
               )}
             </div>
 
-            <p className="text-xs text-gray-500 mt-4 text-center">
+            <p className="text-xs text-muted mt-4 text-center">
               Cette opération peut prendre quelques minutes selon la quantité de données.
             </p>
           </>

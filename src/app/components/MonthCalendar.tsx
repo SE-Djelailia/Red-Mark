@@ -42,29 +42,29 @@ export default function MonthCalendar({
   const days = getMonthGridDays(month.getFullYear(), month.getMonth());
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-xl border border-line overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-        <h2 className="text-base font-semibold text-[#1A1A1A] capitalize">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-line">
+        <h2 className="text-base font-semibold text-ink capitalize">
           {formatMonthYear(month)}
         </h2>
         <div className="flex items-center gap-1">
           <button
             onClick={() => onMonthChange(addMonths(month, -1))}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500"
+            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-subtle text-muted"
             aria-label="Mois précédent"
           >
             <ChevronLeft size={18} />
           </button>
           <button
             onClick={() => onMonthChange(new Date())}
-            className="px-3 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-600"
+            className="px-3 h-9 flex items-center justify-center rounded-lg hover:bg-subtle text-sm font-medium text-body"
           >
             Aujourd'hui
           </button>
           <button
             onClick={() => onMonthChange(addMonths(month, 1))}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500"
+            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-subtle text-muted"
             aria-label="Mois suivant"
           >
             <ChevronRight size={18} />
@@ -73,9 +73,9 @@ export default function MonthCalendar({
       </div>
 
       {/* Weekday row */}
-      <div className="grid grid-cols-7 border-b border-gray-100">
+      <div className="grid grid-cols-7 border-b border-line">
         {WEEKDAY_LABELS.map((d) => (
-          <div key={d} className="py-2 text-center text-xs font-medium text-gray-400">
+          <div key={d} className="py-2 text-center text-xs font-medium text-faint">
             {d}
           </div>
         ))}
@@ -95,18 +95,18 @@ export default function MonthCalendar({
             <div
               key={key}
               onClick={() => clickable && onDayClick?.(key)}
-              className={`min-h-[64px] sm:min-h-[96px] border-b border-r border-gray-100 p-1.5 sm:p-2 [&:nth-child(7n)]:border-r-0 ${
-                clickable ? "cursor-pointer hover:bg-gray-50" : ""
-              } ${!inMonth ? "bg-gray-50/50" : ""}`}
+              className={`min-h-[64px] sm:min-h-[96px] border-b border-r border-line p-1.5 sm:p-2 [&:nth-child(7n)]:border-r-0 ${
+                clickable ? "cursor-pointer hover:bg-subtle" : ""
+              } ${!inMonth ? "bg-canvas/50" : ""}`}
             >
               <div className="flex items-center justify-center mb-1">
                 <span
                   className={`text-xs sm:text-sm w-6 h-6 flex items-center justify-center rounded-full flex-shrink-0 ${
                     isToday
-                      ? "bg-[#E10600] text-white font-semibold"
+                      ? "bg-brand-600 text-white font-semibold"
                       : inMonth
-                        ? "text-[#1A1A1A]"
-                        : "text-gray-300"
+                        ? "text-ink"
+                        : "text-faint"
                   }`}
                 >
                   {day.getDate()}
@@ -146,12 +146,12 @@ export default function MonthCalendar({
                     </button>
                   )}
                   {pills.length > 2 && (
-                    <div className="sm:hidden text-[10px] text-gray-500 px-1.5">
+                    <div className="sm:hidden text-[10px] text-muted px-1.5">
                       +{pills.length - 2}
                     </div>
                   )}
                   {pills.length > 3 && (
-                    <div className="hidden sm:block text-xs text-gray-500 px-1.5">
+                    <div className="hidden sm:block text-xs text-muted px-1.5">
                       +{pills.length - 3}
                     </div>
                   )}

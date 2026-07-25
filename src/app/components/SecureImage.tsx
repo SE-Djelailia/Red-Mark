@@ -25,13 +25,13 @@ export default function SecureImage({
   if (loading) {
     return (
       <div
-        className={`bg-gray-200 flex items-center justify-center ${className}`}
+        className={`bg-subtle flex items-center justify-center ${className}`}
         role="status"
         aria-label="Chargement de l'image"
       >
         <div className="flex flex-col items-center gap-2">
-          <div className="w-8 h-8 border-3 border-gray-400 border-t-gray-600 rounded-full animate-spin" />
-          <span className="text-xs text-gray-500">Chargement...</span>
+          <div className="w-8 h-8 border-3 border-line border-t-muted rounded-full animate-spin" />
+          <span className="text-xs text-muted">Chargement...</span>
         </div>
       </div>
     );
@@ -40,11 +40,11 @@ export default function SecureImage({
   if (error || !url) {
     return (
       <div
-        className={`bg-gray-100 flex items-center justify-center ${className}`}
+        className={`bg-subtle flex items-center justify-center ${className}`}
         role="alert"
         aria-label="Erreur de chargement"
       >
-        <div className="flex flex-col items-center gap-2 text-gray-400">
+        <div className="flex flex-col items-center gap-2 text-faint">
           <Camera size={32} />
           <span className="text-xs">Image indisponible</span>
         </div>

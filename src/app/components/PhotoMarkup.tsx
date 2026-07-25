@@ -567,7 +567,7 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col h-screen">
       {/* Header */}
-      <div className="bg-[#1A1A1A] px-4 py-3 flex items-center justify-between flex-shrink-0">
+      <div className="bg-ink px-4 py-3 flex items-center justify-between flex-shrink-0">
         <h2 className="text-white text-lg">Annotation de photo</h2>
         <button
           onClick={onClose}
@@ -578,15 +578,15 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
       </div>
 
       {/* Toolbar */}
-      <div className="bg-[#1A1A1A] px-4 py-3 flex items-center gap-3 border-t border-gray-800 overflow-x-auto flex-shrink-0">
+      <div className="bg-ink px-4 py-3 flex items-center gap-3 border-t border-white/10 overflow-x-auto flex-shrink-0">
         {/* Drawing Tools */}
         <div className="flex gap-2">
           <button
             onClick={() => setTool("pencil")}
             className={`p-2 rounded-lg transition-colors ${
               tool === "pencil"
-                ? "bg-[#E10600] text-white"
-                : "bg-gray-800 text-gray-400 hover:text-white"
+                ? "bg-brand-600 text-white"
+                : "bg-white/10 text-faint hover:text-white"
             }`}
             title="Crayon"
           >
@@ -596,8 +596,8 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
             onClick={() => setTool("arrow")}
             className={`p-2 rounded-lg transition-colors ${
               tool === "arrow"
-                ? "bg-[#E10600] text-white"
-                : "bg-gray-800 text-gray-400 hover:text-white"
+                ? "bg-brand-600 text-white"
+                : "bg-white/10 text-faint hover:text-white"
             }`}
             title="Flèche"
           >
@@ -607,8 +607,8 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
             onClick={() => setTool("circle")}
             className={`p-2 rounded-lg transition-colors ${
               tool === "circle"
-                ? "bg-[#E10600] text-white"
-                : "bg-gray-800 text-gray-400 hover:text-white"
+                ? "bg-brand-600 text-white"
+                : "bg-white/10 text-faint hover:text-white"
             }`}
             title="Cercle"
           >
@@ -618,8 +618,8 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
             onClick={() => setTool("square")}
             className={`p-2 rounded-lg transition-colors ${
               tool === "square"
-                ? "bg-[#E10600] text-white"
-                : "bg-gray-800 text-gray-400 hover:text-white"
+                ? "bg-brand-600 text-white"
+                : "bg-white/10 text-faint hover:text-white"
             }`}
             title="Rectangle"
           >
@@ -629,8 +629,8 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
             onClick={() => setTool("text")}
             className={`p-2 rounded-lg transition-colors ${
               tool === "text"
-                ? "bg-[#E10600] text-white"
-                : "bg-gray-800 text-gray-400 hover:text-white"
+                ? "bg-brand-600 text-white"
+                : "bg-white/10 text-faint hover:text-white"
             }`}
             title="Texte"
           >
@@ -640,8 +640,8 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
             onClick={() => setTool("eraser")}
             className={`p-2 rounded-lg transition-colors ${
               tool === "eraser"
-                ? "bg-[#E10600] text-white"
-                : "bg-gray-800 text-gray-400 hover:text-white"
+                ? "bg-brand-600 text-white"
+                : "bg-white/10 text-faint hover:text-white"
             }`}
             title="Gomme"
           >
@@ -649,7 +649,7 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
           </button>
         </div>
 
-        <div className="w-px h-8 bg-gray-700" />
+        <div className="w-px h-8 bg-white/15" />
 
         {/* Colors */}
         <div className="flex gap-2">
@@ -658,7 +658,7 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
               key={c.hex}
               onClick={() => setColor(c.hex)}
               className={`w-8 h-8 rounded-full border-2 transition-transform ${
-                color === c.hex ? "border-white scale-110" : "border-gray-600 hover:scale-105"
+                color === c.hex ? "border-white scale-110" : "border-white/30 hover:scale-105"
               }`}
               style={{ backgroundColor: c.hex }}
               title={c.name}
@@ -666,7 +666,7 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
           ))}
         </div>
 
-        <div className="w-px h-8 bg-gray-700" />
+        <div className="w-px h-8 bg-white/15" />
 
         {/* Line Width */}
         <div className="flex gap-2">
@@ -676,8 +676,8 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
               onClick={() => setLineWidth(lw.value)}
               className={`px-3 py-2 rounded-lg transition-colors flex items-center justify-center ${
                 lineWidth === lw.value
-                  ? "bg-[#E10600] text-white"
-                  : "bg-gray-800 text-gray-400 hover:text-white"
+                  ? "bg-brand-600 text-white"
+                  : "bg-white/10 text-faint hover:text-white"
               }`}
               title={lw.label}
             >
@@ -693,7 +693,7 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
           ))}
         </div>
 
-        <div className="w-px h-8 bg-gray-700" />
+        <div className="w-px h-8 bg-white/15" />
 
         {/* Font Size */}
         <div className="flex gap-2">
@@ -703,8 +703,8 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
               onClick={() => setFontSize(fs.value)}
               className={`px-3 py-2 rounded-lg transition-colors ${
                 fontSize === fs.value
-                  ? "bg-[#E10600] text-white"
-                  : "bg-gray-800 text-gray-400 hover:text-white"
+                  ? "bg-brand-600 text-white"
+                  : "bg-white/10 text-faint hover:text-white"
               }`}
               title={fs.label}
             >
@@ -713,14 +713,14 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
           ))}
         </div>
 
-        <div className="w-px h-8 bg-gray-700" />
+        <div className="w-px h-8 bg-white/15" />
 
         {/* History */}
         <div className="flex gap-2">
           <button
             onClick={handleUndo}
             disabled={historyIndex < 0}
-            className="p-2 rounded-lg bg-gray-800 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="p-2 rounded-lg bg-white/10 text-faint hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             title="Annuler"
           >
             <Undo size={20} />
@@ -728,14 +728,14 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
           <button
             onClick={handleRedo}
             disabled={historyIndex >= history.length - 1}
-            className="p-2 rounded-lg bg-gray-800 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="p-2 rounded-lg bg-white/10 text-faint hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             title="Refaire"
           >
             <Redo size={20} />
           </button>
           <button
             onClick={handleClear}
-            className="p-2 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors"
+            className="p-2 rounded-lg bg-white/10 text-faint hover:text-white transition-colors"
             title="Effacer tout"
           >
             <Trash2 size={20} />
@@ -759,10 +759,10 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
       </div>
 
       {/* Footer Actions */}
-      <div className="bg-[#1A1A1A] px-4 py-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-gray-800 flex-shrink-0">
+      <div className="bg-ink px-4 py-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-white/10 flex-shrink-0">
         <button
           onClick={handleDownload}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-white/10 text-white rounded-lg hover:bg-white/15 transition-colors"
         >
           <Download size={18} />
           <span>Télécharger</span>
@@ -770,13 +770,13 @@ export default function PhotoMarkup({ imageUrl, onClose, onSave }: PhotoMarkupPr
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 sm:flex-none px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            className="flex-1 sm:flex-none px-6 py-3 bg-white/10 text-white rounded-lg hover:bg-white/15 transition-colors"
           >
             Annuler
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 sm:flex-none px-6 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors"
+            className="flex-1 sm:flex-none px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
           >
             Enregistrer
           </button>

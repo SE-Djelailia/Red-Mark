@@ -150,8 +150,8 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-medium text-[#1A1A1A]">Fichiers de plans (PDF)</h3>
-          <p className="text-xs text-gray-500">
+          <h3 className="text-sm font-medium text-ink">Fichiers de plans (PDF)</h3>
+          <p className="text-xs text-muted">
             Téléversez des plans PDF pour assigner des pages aux niveaux du projet
           </p>
         </div>
@@ -159,7 +159,7 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="inline-flex items-center gap-2 px-4 h-11 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] disabled:opacity-50 text-sm font-medium min-h-[44px]"
+            className="inline-flex items-center gap-2 px-4 h-11 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 text-sm font-medium min-h-[44px]"
           >
             <Upload size={16} />
             {uploading ? "Téléversement…" : "Ajouter un PDF"}
@@ -175,14 +175,14 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
       </div>
 
       {loading ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-500 text-sm">
+        <div className="bg-white rounded-xl border border-line p-6 text-center text-muted text-sm">
           Chargement…
         </div>
       ) : planFiles.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-          <FileText size={36} className="mx-auto text-gray-300 mb-2" />
-          <div className="text-sm text-gray-600 mb-1">Aucun fichier de plans</div>
-          <div className="text-xs text-gray-400">
+        <div className="bg-white rounded-xl border border-line p-8 text-center">
+          <FileText size={36} className="mx-auto text-faint mb-2" />
+          <div className="text-sm text-body mb-1">Aucun fichier de plans</div>
+          <div className="text-xs text-faint">
             Téléversez un PDF (jusqu'à 200 pages, 50 Mo max pour le moment) pour commencer
           </div>
         </div>
@@ -191,7 +191,7 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
           {planFiles.map((planFile) => (
             <div
               key={planFile.id}
-              className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 hover:border-[#E10600] hover:shadow-md transition-all"
+              className="bg-white rounded-xl border border-line p-4 flex items-center gap-3 hover:border-brand-600 hover:shadow-md transition-all"
             >
               <button
                 onClick={() =>
@@ -201,24 +201,24 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
                 }
                 className="flex-1 flex items-center gap-3 text-left min-w-0"
               >
-                <div className="w-12 h-12 rounded-lg bg-[#E10600]/10 text-[#E10600] flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-lg bg-brand-600/10 text-brand-600 flex items-center justify-center flex-shrink-0">
                   <FileText size={22} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-[#1A1A1A] font-medium truncate">{planFile.name}</div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-sm text-ink font-medium truncate">{planFile.name}</div>
+                  <div className="text-xs text-muted">
                     {planFile.pageCount ?? "?"} page{planFile.pageCount !== 1 ? "s" : ""}
                     {planFile.fileSizeBytes
                       ? ` · ${(planFile.fileSizeBytes / (1024 * 1024)).toFixed(1)} Mo`
                       : ""}
                   </div>
                 </div>
-                <ChevronRight size={18} className="text-gray-400 flex-shrink-0" />
+                <ChevronRight size={18} className="text-faint flex-shrink-0" />
               </button>
               {canManage && (
                 <button
                   onClick={() => setDeleteTarget(planFile)}
-                  className="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-[#E10600] hover:bg-red-50 rounded-lg"
+                  className="w-11 h-11 flex items-center justify-center text-faint hover:text-brand-600 hover:bg-red-50 rounded-lg"
                   aria-label="Supprimer le plan"
                 >
                   <Trash2 size={18} />

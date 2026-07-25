@@ -15,6 +15,17 @@ import { toast } from "sonner";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import ConfirmDialog from "./ConfirmDialog";
 import FloatingActions from "./FloatingActions";
+import { inputClassName } from "./ui-kit/Input";
+import { usePageHeader } from "../../contexts/PageHeaderContext";
+import { ProjectStatusBadge } from "./ui-kit/ProjectStatus";
+
+const STATUS_FILTERS: { value: Project["status"] | "all"; label: string }[] = [
+  { value: "all", label: "Tous" },
+  { value: "planning", label: "Planification" },
+  { value: "in-progress", label: "En cours" },
+  { value: "on-hold", label: "En pause" },
+  { value: "completed", label: "Complété" },
+];
 
 export default function ProjectList() {
   const { user, loading } = useAuth();
@@ -145,35 +156,17 @@ export default function ProjectList() {
     }
   }
 
-  const getStatusBadge = (status: Project["status"]) => {
-    const styles = {
-      planning: "bg-blue-100 text-blue-700",
-      "in-progress": "bg-green-100 text-green-700",
-      "on-hold": "bg-yellow-100 text-yellow-700",
-      completed: "bg-gray-100 text-gray-700",
-    };
-
-    const labels = {
-      planning: "Planification",
-      "in-progress": "En cours",
-      "on-hold": "En pause",
-      completed: "Complété",
-    };
-
-    return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium ${styles[status]}`}>
-        {labels[status]}
-      </span>
-    );
-  };
+  // Declared before the early returns below — a hook must run on every
+  // render, and the auth-loading / signed-out branches return early.
+  usePageHeader("Mes projets", "Gérez vos projets de construction");
 
   // Show loading while auth is initializing
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E10600] mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mx-auto mb-4"></div>
+          <p className="text-body">Chargement...</p>
         </div>
       </div>
     );
@@ -182,10 +175,10 @@ export default function ProjectList() {
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <p className="text-gray-500 text-lg mb-4">Veuillez vous connecter</p>
+        <p className="text-muted text-lg mb-4">Veuillez vous connecter</p>
         <button
           onClick={() => (window.location.href = "/")}
-          className="px-6 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors"
+          className="px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
         >
           Aller à la connexion
         </button>
@@ -207,12 +200,6 @@ export default function ProjectList() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-24 sm:pb-28">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] mb-2">Mes Projets</h1>
-        <p className="text-sm sm:text-base text-gray-600">Gérez vos projets de construction</p>
-      </div>
-
       {/* Search and Filters */}
       {projects.length > 0 && (
         <div className="mb-6 space-y-3">
@@ -220,75 +207,48 @@ export default function ProjectList() {
           <div className="relative">
             <Search
               size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-faint pointer-events-none"
             />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Rechercher par nom, adresse, client..."
-              className="w-full pl-10 pr-4 py-3 sm:py-3.5 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent min-h-[48px]"
+              className={`${inputClassName} pl-10`}
             />
           </div>
 
-          {/* Status Filters - Horizontal Scroll on Mobile */}
+          {/* Status filters. The design system uses one neutral pill shape
+              with a dark active state — the five different hues these used
+              to carry (blue/green/yellow/grey/red) encoded nothing the label
+              didn't already say. */}
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
-            <button
-              onClick={() => setFilterStatus("all")}
-              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap min-h-[44px] ${
-                filterStatus === "all"
-                  ? "bg-[#E10600] text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
-              }`}
-            >
-              Tous ({projects.length})
-            </button>
-            <button
-              onClick={() => setFilterStatus("planning")}
-              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap min-h-[44px] ${
-                filterStatus === "planning"
-                  ? "bg-blue-600 text-white"
-                  : "bg-blue-100 text-blue-700 hover:bg-blue-200 active:bg-blue-300"
-              }`}
-            >
-              Planification ({projects.filter((p) => p.status === "planning").length})
-            </button>
-            <button
-              onClick={() => setFilterStatus("in-progress")}
-              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap min-h-[44px] ${
-                filterStatus === "in-progress"
-                  ? "bg-green-600 text-white"
-                  : "bg-green-100 text-green-700 hover:bg-green-200 active:bg-green-300"
-              }`}
-            >
-              En cours ({projects.filter((p) => p.status === "in-progress").length})
-            </button>
-            <button
-              onClick={() => setFilterStatus("on-hold")}
-              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap min-h-[44px] ${
-                filterStatus === "on-hold"
-                  ? "bg-yellow-600 text-white"
-                  : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 active:bg-yellow-300"
-              }`}
-            >
-              En pause ({projects.filter((p) => p.status === "on-hold").length})
-            </button>
-            <button
-              onClick={() => setFilterStatus("completed")}
-              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap min-h-[44px] ${
-                filterStatus === "completed"
-                  ? "bg-gray-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300"
-              }`}
-            >
-              Complété ({projects.filter((p) => p.status === "completed").length})
-            </button>
+            {STATUS_FILTERS.map((f) => {
+              const count =
+                f.value === "all"
+                  ? projects.length
+                  : projects.filter((p) => p.status === f.value).length;
+              const active = filterStatus === f.value;
+              return (
+                <button
+                  key={f.value}
+                  onClick={() => setFilterStatus(f.value)}
+                  className={`px-3.5 h-9 rounded-full text-[13px] font-medium transition-colors whitespace-nowrap flex items-center ${
+                    active
+                      ? "bg-ink text-white"
+                      : "bg-subtle text-body hover:bg-line active:bg-line-strong"
+                  }`}
+                >
+                  {f.label} ({count})
+                </button>
+              );
+            })}
           </div>
 
           {/* Active Filters */}
           {(searchQuery || filterStatus !== "all") && (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-body">
                 {filteredProjects.length} résultat{filteredProjects.length > 1 ? "s" : ""}
               </span>
               <button
@@ -296,7 +256,7 @@ export default function ProjectList() {
                   setSearchQuery("");
                   setFilterStatus("all");
                 }}
-                className="text-sm text-[#E10600] hover:text-[#C00500] flex items-center gap-1"
+                className="text-sm text-brand-strong hover:text-brand-800 flex items-center gap-1"
               >
                 <X size={14} />
                 Réinitialiser
@@ -308,13 +268,13 @@ export default function ProjectList() {
 
       {/* Empty State */}
       {projects.length === 0 && (
-        <div className="text-center py-16 bg-gray-50 rounded-xl">
-          <Building2 size={64} className="mx-auto text-gray-300 mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Aucun projet</h3>
-          <p className="text-gray-600 mb-6">Commencez par créer votre premier projet</p>
+        <div className="text-center py-16 bg-canvas rounded-xl">
+          <Building2 size={64} className="mx-auto text-faint mb-4" />
+          <h3 className="text-xl font-semibold text-ink mb-2">Aucun projet</h3>
+          <p className="text-body mb-6">Commencez par créer votre premier projet</p>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-6 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors inline-flex items-center gap-2"
+            className="px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors inline-flex items-center gap-2"
           >
             <Plus size={20} />
             Créer un projet
@@ -327,15 +287,15 @@ export default function ProjectList() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProjects.length === 0 ? (
             <div className="col-span-full text-center py-12">
-              <Building2 size={48} className="mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun projet trouvé</h3>
-              <p className="text-gray-600 mb-4">Essayez de modifier vos critères de recherche</p>
+              <Building2 size={48} className="mx-auto text-faint mb-4" />
+              <h3 className="text-lg font-semibold text-ink mb-2">Aucun projet trouvé</h3>
+              <p className="text-body mb-4">Essayez de modifier vos critères de recherche</p>
               <button
                 onClick={() => {
                   setSearchQuery("");
                   setFilterStatus("all");
                 }}
-                className="text-sm text-[#E10600] hover:text-[#C00500]"
+                className="text-sm text-brand-strong hover:text-brand-800"
               >
                 Réinitialiser les filtres
               </button>
@@ -344,14 +304,14 @@ export default function ProjectList() {
             filteredProjects.map((project) => (
               <div
                 key={project.id}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                className="bg-surface rounded-xl shadow-sm border border-line p-6 hover:shadow-md transition-shadow"
               >
                 <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-lg font-semibold text-[#1A1A1A] flex-1">{project.name}</h3>
-                  {getStatusBadge(project.status)}
+                  <h3 className="text-lg font-semibold text-ink flex-1">{project.name}</h3>
+                  <ProjectStatusBadge status={project.status} />
                 </div>
 
-                <div className="space-y-3 text-sm text-gray-600">
+                <div className="space-y-3 text-sm text-body">
                   <div className="flex items-start gap-2">
                     <MapPin size={16} className="mt-0.5 flex-shrink-0" />
                     <span>{project.address}</span>
@@ -372,16 +332,16 @@ export default function ProjectList() {
                   )}
                 </div>
 
-                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+                <div className="flex gap-2 mt-4 pt-4 border-t border-line">
                   <button
                     onClick={() => (window.location.href = `/app/projects/${project.id}`)}
-                    className="flex-1 px-4 py-2 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors text-sm"
+                    className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm"
                   >
                     Ouvrir
                   </button>
                   <button
                     onClick={() => setDeleteTarget({ id: project.id, name: project.name })}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                    className="px-4 py-2 border border-line-strong text-body rounded-lg hover:bg-subtle transition-colors text-sm"
                   >
                     Supprimer
                   </button>
@@ -404,78 +364,78 @@ export default function ProjectList() {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
           <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold text-[#1A1A1A] mb-6">Nouveau Projet</h2>
+          <div className="bg-surface rounded-2xl max-w-md w-full p-6">
+            <h2 className="text-2xl font-bold text-ink mb-6">Nouveau Projet</h2>
 
             <form onSubmit={handleCreateProject} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-body mb-2">
                   Nom du projet *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
+                  className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
                   placeholder="Ex: Tour du Centre-Ville"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Adresse *</label>
+                <label className="block text-sm font-medium text-body mb-2">Adresse *</label>
                 <input
                   type="text"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
+                  className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
                   placeholder="123 Rue Saint-Catherine, Montréal"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Client</label>
+                <label className="block text-sm font-medium text-body mb-2">Client</label>
                 <input
                   type="text"
                   value={formData.client}
                   onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
+                  className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
                   placeholder="Nom du client"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Entrepreneur</label>
+                <label className="block text-sm font-medium text-body mb-2">Entrepreneur</label>
                 <input
                   type="text"
                   value={formData.contractor}
                   onChange={(e) => setFormData({ ...formData, contractor: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
+                  className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
                   placeholder="Nom de l'entrepreneur"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-body mb-2">
                   Date de début
                 </label>
                 <input
                   type="date"
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
+                  className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Statut</label>
+                <label className="block text-sm font-medium text-body mb-2">Statut</label>
                 <select
                   value={formData.status}
                   onChange={(e) =>
                     setFormData({ ...formData, status: e.target.value as Project["status"] })
                   }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
+                  className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
                 >
                   <option value="planning">Planification</option>
                   <option value="in-progress">En cours</option>
@@ -488,13 +448,13 @@ export default function ProjectList() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-3 border border-line-strong text-body rounded-lg hover:bg-subtle transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors"
+                  className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
                 >
                   Créer
                 </button>

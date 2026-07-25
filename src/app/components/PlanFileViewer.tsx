@@ -540,8 +540,8 @@ export default function PlanFileViewer() {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#1A1A1A] z-40 flex flex-col">
-      <div className="bg-[#1A1A1A] text-white px-4 py-3 flex items-center gap-3 border-b border-white/10">
+    <div className="fixed inset-0 bg-ink z-40 flex flex-col">
+      <div className="bg-ink text-white px-4 py-3 flex items-center gap-3 border-b border-white/10">
         <button
           onClick={goBack}
           className="w-11 h-11 flex items-center justify-center hover:bg-white/10 rounded-lg"
@@ -564,7 +564,7 @@ export default function PlanFileViewer() {
               setPendingPinCoords(null);
             }}
             className={`inline-flex items-center gap-2 px-3 h-11 rounded-lg text-sm font-medium min-h-[44px] ${
-              placementMode ? "bg-[#E10600] text-white" : "bg-white/10 text-white hover:bg-white/20"
+              placementMode ? "bg-brand-600 text-white" : "bg-white/10 text-white hover:bg-white/20"
             }`}
           >
             <MapPin size={16} />
@@ -595,7 +595,7 @@ export default function PlanFileViewer() {
               <button
                 onClick={handleAssignPage}
                 disabled={!assignLevelId || assigning}
-                className="px-4 h-11 bg-[#1A1A1A] text-white rounded-lg text-sm font-medium disabled:opacity-50 min-h-[44px]"
+                className="px-4 h-11 bg-ink text-white rounded-lg text-sm font-medium disabled:opacity-50 min-h-[44px]"
               >
                 {assigning ? "Assignation…" : "Assigner"}
               </button>
@@ -665,7 +665,7 @@ export default function PlanFileViewer() {
                   >
                     <span
                       className={`w-6 h-6 rounded-full border-2 border-white shadow-md flex items-center justify-center ${
-                        locationHasOpenIssue[pin.locationId] ? "bg-[#E10600]" : "bg-green-600"
+                        locationHasOpenIssue[pin.locationId] ? "bg-brand-600" : "bg-green-600"
                       }`}
                     >
                       <MapPin size={13} className="text-white" fill="currentColor" />
@@ -681,21 +681,21 @@ export default function PlanFileViewer() {
       <div className="absolute right-4 bottom-28 flex flex-col gap-2">
         <button
           onClick={zoomIn}
-          className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-[#1A1A1A] hover:bg-gray-100"
+          className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-ink hover:bg-subtle"
           aria-label="Zoom avant"
         >
           <Plus size={22} />
         </button>
         <button
           onClick={zoomOut}
-          className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-[#1A1A1A] hover:bg-gray-100"
+          className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-ink hover:bg-subtle"
           aria-label="Zoom arrière"
         >
           <Minus size={22} />
         </button>
         <button
           onClick={resetView}
-          className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-[#1A1A1A] hover:bg-gray-100"
+          className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-ink hover:bg-subtle"
           aria-label="Réinitialiser"
         >
           <Maximize2 size={20} />
@@ -703,23 +703,23 @@ export default function PlanFileViewer() {
       </div>
 
       {placementMode && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-[#1A1A1A]/90 text-white text-xs px-3 py-2 rounded-full pointer-events-none">
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-ink/90 text-white text-xs px-3 py-2 rounded-full pointer-events-none">
           Touchez le plan pour placer un pin
         </div>
       )}
 
       {/* Page navigation */}
       {numPages > 1 && (
-        <div className="bg-white border-t border-gray-200 px-4 py-3 flex items-center justify-center gap-3">
+        <div className="bg-white border-t border-line px-4 py-3 flex items-center justify-center gap-3">
           <button
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage <= 1}
-            className="w-11 h-11 flex items-center justify-center rounded-lg text-[#1A1A1A] hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
+            className="w-11 h-11 flex items-center justify-center rounded-lg text-ink hover:bg-subtle disabled:opacity-30 disabled:hover:bg-transparent"
             aria-label="Page précédente"
           >
             <ChevronLeft size={22} />
           </button>
-          <div className="flex items-center gap-2 text-sm text-gray-700">
+          <div className="flex items-center gap-2 text-sm text-body">
             <input
               type="number"
               min={1}
@@ -728,14 +728,14 @@ export default function PlanFileViewer() {
               onChange={(e) => setPageInput(e.target.value)}
               onBlur={submitPageInput}
               onKeyDown={(e) => e.key === "Enter" && submitPageInput()}
-              className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center min-h-[44px]"
+              className="w-14 px-2 py-2 border border-line-strong rounded-lg text-center min-h-[44px]"
             />
-            <span className="text-gray-500">/ {numPages}</span>
+            <span className="text-muted">/ {numPages}</span>
           </div>
           <button
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage >= numPages}
-            className="w-11 h-11 flex items-center justify-center rounded-lg text-[#1A1A1A] hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
+            className="w-11 h-11 flex items-center justify-center rounded-lg text-ink hover:bg-subtle disabled:opacity-30 disabled:hover:bg-transparent"
             aria-label="Page suivante"
           >
             <ChevronRight size={22} />

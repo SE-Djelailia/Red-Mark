@@ -7,6 +7,7 @@ import { useAuth } from "../../contexts/useAuth";
 import { uploadIssuePhotos, WEATHER_EVIDENCE_TAG } from "../../lib/issuePhotoUpload";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
 import type { SiteVisit } from "../../lib/supabase";
+import { inputClassName, labelClassName, textareaClassName } from "./ui-kit/Input";
 
 const DEFAULT_PHASES = ["Fondation", "Charpente", "ÉMÉ", "Finitions", "Extérieur"];
 const CUSTOM_PHASES_KEY = "redmark_custom_phases";
@@ -186,18 +187,18 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
       <div className="space-y-5">
         {/* Visit Date */}
         <div>
-          <label className="block text-sm text-[#1A1A1A] mb-2">Date de visite</label>
+          <label className={labelClassName}>Date de visite</label>
           <div className="relative">
             <input
               type="date"
               value={visitDate}
               onChange={(e) => setVisitDate(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 pr-12"
+              className={`${inputClassName} pr-12`}
               required
             />
             <Calendar
               size={20}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-faint pointer-events-none"
             />
           </div>
         </div>
@@ -205,32 +206,32 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
         {/* Start/End Time — both optional */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm text-[#1A1A1A] mb-2">De</label>
+            <label className={labelClassName}>De</label>
             <div className="relative">
               <input
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 pr-10"
+                className={`${inputClassName} pr-10`}
               />
               <Clock
                 size={16}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-faint pointer-events-none"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm text-[#1A1A1A] mb-2">À</label>
+            <label className={labelClassName}>À</label>
             <div className="relative">
               <input
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 pr-10"
+                className={`${inputClassName} pr-10`}
               />
               <Clock
                 size={16}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-faint pointer-events-none"
               />
             </div>
           </div>
@@ -238,7 +239,7 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
 
         {/* Phase Combobox */}
         <div>
-          <label className="block text-sm text-[#1A1A1A] mb-2">Phase</label>
+          <label className={labelClassName}>Phase</label>
           <div className="relative" ref={dropdownRef}>
             <div className="relative">
               <input
@@ -251,17 +252,17 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
                 onFocus={() => setShowPhaseDropdown(true)}
                 onKeyDown={handlePhaseInputKeyDown}
                 placeholder="Sélectionner ou créer une phase..."
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 pr-10"
+                className={`${inputClassName} pr-10`}
                 required
               />
               <ChevronDown
                 size={20}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-faint pointer-events-none"
               />
             </div>
 
             {showPhaseDropdown && (
-              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              <div className="absolute z-10 w-full mt-2 bg-surface border border-line rounded-lg shadow-lg max-h-60 overflow-y-auto">
                 {filteredPhases.length > 0 ? (
                   <div>
                     {filteredPhases.map((p) => (
@@ -269,9 +270,9 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
                         key={p}
                         type="button"
                         onClick={() => handleSelectPhase(p)}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                        className="w-full px-4 py-3 text-left hover:bg-subtle transition-colors border-b border-line last:border-b-0"
                       >
-                        <span className="text-sm text-[#1A1A1A]">{p}</span>
+                        <span className="text-sm text-ink">{p}</span>
                       </button>
                     ))}
                   </div>
@@ -281,11 +282,11 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
                   <button
                     type="button"
                     onClick={handleAddNewPhase}
-                    className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-t border-gray-200 bg-blue-50"
+                    className="w-full px-4 py-3 text-left hover:bg-subtle transition-colors border-t border-line bg-subtle"
                   >
                     <div className="flex items-center gap-2">
-                      <Plus size={16} className="text-[#E10600]" />
-                      <span className="text-sm text-[#E10600] font-medium">
+                      <Plus size={16} className="text-brand-600" />
+                      <span className="text-sm text-brand-600 font-medium">
                         Créer "{phaseInput}"
                       </span>
                     </div>
@@ -293,7 +294,7 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
                 )}
 
                 {filteredPhases.length === 0 && !isNewPhase && phaseInput && (
-                  <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                  <div className="px-4 py-6 text-center text-muted text-sm">
                     Aucune phase trouvée
                   </div>
                 )}
@@ -304,29 +305,29 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
 
         {/* Notes */}
         <div>
-          <label className="block text-sm text-[#1A1A1A] mb-2">Notes</label>
+          <label className={labelClassName}>Notes</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Ajouter des notes et observations de la visite..."
             rows={4}
-            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20 resize-none"
+            className={textareaClassName}
             required
           />
         </div>
 
         {/* Weather */}
         <div>
-          <label className="block text-sm text-[#1A1A1A] mb-2">Météo</label>
+          <label className={labelClassName}>Météo</label>
           <div className="relative">
             <Cloud
               size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-faint pointer-events-none"
             />
             <select
               value={weather}
               onChange={(e) => setWeather(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/20"
+              className={`${inputClassName} pl-11`}
             >
               <option value="">Non spécifiée</option>
               {WEATHER_OPTIONS.map((w) => (
@@ -341,17 +342,17 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
         {/* Temperature */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm text-[#1A1A1A]">Température</label>
+            <label className="text-sm text-ink">Température</label>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-[#1A1A1A] flex items-center gap-1">
-                <Thermometer size={14} className="text-gray-400" />
+              <span className="text-sm font-medium text-ink flex items-center gap-1">
+                <Thermometer size={14} className="text-faint" />
                 {temperature === null ? "Non spécifiée" : `${temperature}°C`}
               </span>
               {temperature !== null && (
                 <button
                   type="button"
                   onClick={() => setTemperature(null)}
-                  className="text-xs text-[#E10600] hover:text-[#C00500] font-medium"
+                  className="text-xs text-brand-strong hover:text-brand-800 font-medium"
                 >
                   Effacer
                 </button>
@@ -365,9 +366,9 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
             step={1}
             value={temperature ?? TEMPERATURE_DEFAULT}
             onChange={(e) => setTemperature(Number(e.target.value))}
-            className="w-full accent-[#E10600]"
+            className="w-full accent-brand-600"
           />
-          <div className="flex items-center justify-between mt-1 text-xs text-gray-400">
+          <div className="flex items-center justify-between mt-1 text-xs text-faint">
             <span>{TEMPERATURE_MIN}°C</span>
             <span>{TEMPERATURE_MAX}°C</span>
           </div>
@@ -376,8 +377,8 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
         {/* Weather evidence — optional photo (sky, weather-app screenshot,
             etc.), stored as a regular visit photo tagged "Météo". */}
         <div>
-          <label className="block text-sm text-[#1A1A1A] mb-2 flex items-center gap-2">
-            <Camera size={16} className="text-gray-400" />
+          <label className={`${labelClassName} flex items-center gap-2`}>
+            <Camera size={16} className="text-faint" />
             Preuve météo (optionnel)
           </label>
           <PhotoCaptureButtons
@@ -389,7 +390,7 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
               {weatherPhotos.map((file, index) => (
                 <div
                   key={index}
-                  className="relative aspect-square rounded-lg overflow-hidden border border-gray-200"
+                  className="relative aspect-square rounded-lg overflow-hidden border border-line"
                 >
                   <img
                     src={URL.createObjectURL(file)}
@@ -417,14 +418,14 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="flex-1 py-3 bg-white border border-gray-300 text-[#1A1A1A] rounded-lg hover:bg-gray-50 disabled:opacity-50 font-medium min-h-[48px]"
+            className="flex-1 py-3 bg-surface border border-line-strong text-ink rounded-lg hover:bg-subtle disabled:opacity-50 font-medium min-h-[48px]"
           >
             Annuler
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[48px] font-medium"
+            className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[48px] font-medium"
           >
             {isSubmitting && <ButtonLoader />}
             <span>{isSubmitting ? "Enregistrement..." : "Enregistrer la visite"}</span>
