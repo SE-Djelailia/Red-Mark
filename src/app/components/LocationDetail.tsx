@@ -26,6 +26,7 @@ import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
 import { getCommentsForLocationActivity, type Comment } from "../../lib/commentsApi";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { useSmartBack } from "../../hooks/useSmartBack";
+import { usePageHeader } from "../../contexts/PageHeaderContext";
 import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole } from "../../hooks/useProjectRole";
 import { parseLocalDate } from "../../lib/dateUtils";
@@ -301,23 +302,37 @@ export default function LocationDetail() {
     }
   };
 
+  // Declared before the early returns below so the hook order stays stable
+  // regardless of load state — hence the nullable-safe derivation here
+  // rather than reusing levelName, which is computed further down.
+  usePageHeader(
+    location
+      ? `${location.locationNumber}${location.name ? ` — ${location.name}` : ""}`
+      : undefined,
+    location
+      ? [levels.find((l) => l.id === location.levelId)?.name, location.discipline]
+          .filter(Boolean)
+          .join(" · ") || undefined
+      : undefined,
+  );
+
   if (locationLoadError) {
     return (
       <div className="min-h-screen flex items-center justify-center px-6">
         <div className="text-center max-w-sm">
-          <AlertCircle size={40} className="mx-auto text-[#E10600] mb-3" />
-          <p className="text-base text-[#1A1A1A] font-medium mb-2">Impossible de charger ce local</p>
-          <p className="text-sm text-gray-500 mb-6">{locationLoadError}</p>
+          <AlertCircle size={40} className="mx-auto text-brand-600 mb-3" />
+          <p className="text-base text-ink font-medium mb-2">Impossible de charger ce local</p>
+          <p className="text-sm text-muted mb-6">{locationLoadError}</p>
           <div className="flex gap-3 justify-center">
             <button
               onClick={goBack}
-              className="px-4 h-11 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 text-sm font-medium min-h-[44px]"
+              className="px-4 h-11 bg-subtle text-ink rounded-lg hover:bg-line text-sm font-medium min-h-[44px]"
             >
               Retour
             </button>
             <button
               onClick={() => loadLocation()}
-              className="px-4 h-11 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] text-sm font-medium min-h-[44px]"
+              className="px-4 h-11 bg-brand-600 text-white rounded-lg hover:bg-brand-700 text-sm font-medium min-h-[44px]"
             >
               Réessayer
             </button>
@@ -329,7 +344,7 @@ export default function LocationDetail() {
 
   if (loadingLocation || !location) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500 text-sm">
+      <div className="min-h-screen flex items-center justify-center text-muted text-sm">
         Chargement…
       </div>
     );
@@ -355,12 +370,12 @@ export default function LocationDetail() {
       render: () => (
         <>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-[#1A1A1A] font-medium truncate">{issue.title}</span>
+            <span className="text-sm text-ink font-medium truncate">{issue.title}</span>
             <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-700 flex-shrink-0">
               Ouverte
             </span>
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-muted">
             Déficience créée · {PRIORITY_LABEL[issue.priority]}
           </div>
         </>
@@ -375,12 +390,12 @@ export default function LocationDetail() {
         render: () => (
           <>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm text-[#1A1A1A] font-medium truncate">{issue.title}</span>
+              <span className="text-sm text-ink font-medium truncate">{issue.title}</span>
               <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-700 flex-shrink-0">
                 Résolue
               </span>
             </div>
-            <div className="text-xs text-gray-500">Déficience marquée résolue</div>
+            <div className="text-xs text-muted">Déficience marquée résolue</div>
           </>
         ),
       });
@@ -399,9 +414,9 @@ export default function LocationDetail() {
       onClick: () => setLightboxPhoto(photo),
       thumbnailUrl: photo.url,
       render: () => (
-        <div className="text-sm text-[#1A1A1A]">
+        <div className="text-sm text-ink">
           Photo ajoutée
-          {photo.description && <span className="text-gray-500"> · {photo.description}</span>}
+          {photo.description && <span className="text-muted"> · {photo.description}</span>}
         </div>
       ),
     });
@@ -431,14 +446,14 @@ export default function LocationDetail() {
       onClick,
       render: () => (
         <div
-          className={`bg-gray-50 rounded-2xl rounded-tl-sm px-3 py-2 inline-block max-w-full ${
-            onClick ? "hover:bg-gray-100 transition-colors" : ""
+          className={`bg-canvas rounded-2xl rounded-tl-sm px-3 py-2 inline-block max-w-full ${
+            onClick ? "hover:bg-subtle transition-colors" : ""
           }`}
         >
-          <div className="text-xs text-gray-500 mb-0.5">
-            <span className="font-medium text-[#1A1A1A]">{comment.author}</span> {sourceLabel}
+          <div className="text-xs text-muted mb-0.5">
+            <span className="font-medium text-ink">{comment.author}</span> {sourceLabel}
           </div>
-          <div className="text-sm text-[#1A1A1A] truncate">{comment.text}</div>
+          <div className="text-sm text-ink truncate">{comment.text}</div>
         </div>
       ),
     });
@@ -451,7 +466,7 @@ export default function LocationDetail() {
       kind: "visit",
       onClick: () => navigate(`/app/projects/${projectId}/visits/${visit.id}`),
       render: () => (
-        <div className="text-sm text-[#1A1A1A]">Visite{visit.phase ? ` · ${visit.phase}` : ""}</div>
+        <div className="text-sm text-ink">Visite{visit.phase ? ` · ${visit.phase}` : ""}</div>
       ),
     });
   }
@@ -476,38 +491,29 @@ export default function LocationDetail() {
     "issue-logged": { icon: AlertCircle, color: "text-red-600 bg-red-50" },
     "issue-resolved": { icon: CheckCircle2, color: "text-green-600 bg-green-50" },
     photo: { icon: ImageIcon, color: "text-blue-600 bg-blue-50" },
-    comment: { icon: MessageSquare, color: "text-gray-600 bg-gray-100" },
+    comment: { icon: MessageSquare, color: "text-body bg-subtle" },
     visit: { icon: Calendar, color: "text-purple-600 bg-purple-50" },
   };
 
   return (
-    <div className="min-h-screen pb-20 bg-gray-50">
-      {/* Header */}
-      <div className="bg-[#1A1A1A] text-white px-6 py-6 md:py-8">
+    <div className="min-h-screen pb-20 bg-canvas">
+      {/* Toolbar — title/subtitle now render in the global light header. */}
+      <div className="px-4 sm:px-6 pt-4 max-w-2xl mx-auto">
         <button
           onClick={goBack}
-          className="flex items-center gap-2 text-gray-400 hover:text-white mb-4"
+          className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
           <span>Retour</span>
         </button>
-        <h1 className="text-xl md:text-2xl mb-1">
-          {location.locationNumber}
-          {location.name ? ` — ${location.name}` : ""}
-        </h1>
-        {(levelName || location.discipline) && (
-          <div className="text-sm text-gray-400">
-            {[levelName, location.discipline].filter(Boolean).join(" · ")}
-          </div>
-        )}
       </div>
 
       <div className="px-4 pt-4 max-w-2xl mx-auto">
-        <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden">
+        <div className="inline-flex rounded-lg border border-line-strong overflow-hidden">
           <button
             onClick={() => setView("overview")}
             className={`px-4 py-2 text-sm font-medium min-h-[40px] transition-colors ${
-              view === "overview" ? "bg-[#E10600] text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+              view === "overview" ? "bg-brand-600 text-white" : "bg-surface text-body hover:bg-subtle"
             }`}
           >
             Aperçu
@@ -515,7 +521,7 @@ export default function LocationDetail() {
           <button
             onClick={() => setView("activity")}
             className={`px-4 py-2 text-sm font-medium min-h-[40px] transition-colors ${
-              view === "activity" ? "bg-[#E10600] text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+              view === "activity" ? "bg-brand-600 text-white" : "bg-surface text-body hover:bg-subtle"
             }`}
           >
             Activité
@@ -525,26 +531,26 @@ export default function LocationDetail() {
 
       {view === "activity" ? (
         <div className="px-4 py-6 max-w-2xl mx-auto">
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-[#1A1A1A] mb-3">
+          <div className="bg-surface rounded-xl border border-line p-5">
+            <h2 className="text-sm font-semibold text-ink mb-3">
               Historique ({loadingActivity ? "…" : timeline.length})
             </h2>
             {loadingActivity ? (
-              <div className="text-sm text-gray-500">Chargement…</div>
+              <div className="text-sm text-muted">Chargement…</div>
             ) : timeline.length === 0 ? (
-              <div className="text-sm text-gray-500 text-center py-6">
+              <div className="text-sm text-muted text-center py-6">
                 Aucune activité enregistrée à ce local pour le moment.
               </div>
             ) : (
               <div className="space-y-6">
                 {timelineGroups.map((group) => (
                   <div key={group.dayKey}>
-                    <div className="text-xs font-semibold text-gray-500 mb-3 pl-1">
+                    <div className="text-xs font-semibold text-muted mb-3 pl-1">
                       {formatDateHeader(group.dayKey)}
                     </div>
                     <div className="relative">
                       {group.entries.length > 1 && (
-                        <div className="absolute left-4 top-4 bottom-4 w-px bg-gray-200" />
+                        <div className="absolute left-4 top-4 bottom-4 w-px bg-subtle" />
                       )}
                       <div className="space-y-3">
                         {group.entries.map((entry) => {
@@ -562,7 +568,7 @@ export default function LocationDetail() {
                                 {entry.thumbnailUrl ? (
                                   <button
                                     onClick={entry.onClick}
-                                    className="w-8 h-8 rounded-lg overflow-hidden border-2 border-white shadow-sm bg-gray-100"
+                                    className="w-8 h-8 rounded-lg overflow-hidden border-2 border-white shadow-sm bg-subtle"
                                   >
                                     <img
                                       src={entry.thumbnailUrl}
@@ -583,13 +589,13 @@ export default function LocationDetail() {
                                 onClick={entry.onClick}
                                 className={`flex-1 min-w-0 flex items-start justify-between gap-3 rounded-lg text-left ${
                                   entry.onClick && !isComment
-                                    ? "hover:bg-gray-50 -mx-1 px-1 py-0.5 cursor-pointer"
+                                    ? "hover:bg-subtle -mx-1 px-1 py-0.5 cursor-pointer"
                                     : ""
                                 }`}
                               >
                                 <div className="min-w-0 flex-1">{entry.render()}</div>
                                 {time && (
-                                  <div className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap pt-0.5">
+                                  <div className="text-xs text-faint flex-shrink-0 whitespace-nowrap pt-0.5">
                                     {time}
                                   </div>
                                 )}
@@ -608,50 +614,50 @@ export default function LocationDetail() {
       ) : (
       <div className="px-4 py-6 max-w-2xl mx-auto space-y-6">
         {/* Metadata card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-2 text-sm">
+        <div className="bg-surface rounded-xl border border-line p-5 space-y-2 text-sm">
           <div className="flex items-center gap-3">
             {(() => {
               const TypeIcon = LOCATION_TYPE_ICONS[location.type];
-              return <TypeIcon size={16} className="text-gray-500" />;
+              return <TypeIcon size={16} className="text-muted" />;
             })()}
-            <span className="text-gray-500">Type :</span>
-            <span className="text-gray-700">{LOCATION_TYPE_LABELS[location.type]}</span>
+            <span className="text-muted">Type :</span>
+            <span className="text-body">{LOCATION_TYPE_LABELS[location.type]}</span>
           </div>
           <div className="flex items-center gap-3">
-            <Layers size={16} className="text-gray-500" />
-            <span className="text-gray-500">Niveau :</span>
-            <span className="text-gray-700">{levelName || "—"}</span>
+            <Layers size={16} className="text-muted" />
+            <span className="text-muted">Niveau :</span>
+            <span className="text-body">{levelName || "—"}</span>
           </div>
           {location.discipline && (
             <div className="flex items-center gap-3">
               <span className="w-4" />
-              <span className="text-gray-500">Discipline :</span>
-              <span className="text-gray-700">{location.discipline}</span>
+              <span className="text-muted">Discipline :</span>
+              <span className="text-body">{location.discipline}</span>
             </div>
           )}
         </div>
 
         {/* Parent/child locations — only shown when there's something to show */}
         {(parentLocation || childLocations.length > 0) && (
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+          <div className="bg-surface rounded-xl border border-line p-5 space-y-3">
             {parentLocation && (
               <div>
-                <div className="text-xs text-gray-500 mb-1.5">Emplacement parent</div>
+                <div className="text-xs text-muted mb-1.5">Emplacement parent</div>
                 <button
                   onClick={() => navigate(`/app/projects/${projectId}/locations/${parentLocation.id}`)}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-gray-200 hover:border-[#E10600] hover:bg-gray-50 min-h-[44px] text-left"
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-line hover:border-brand-600 hover:bg-subtle min-h-[44px] text-left"
                 >
-                  <span className="text-sm text-[#1A1A1A] font-medium truncate">
+                  <span className="text-sm text-ink font-medium truncate">
                     {parentLocation.locationNumber}
                     {parentLocation.name ? ` — ${parentLocation.name}` : ""}
                   </span>
-                  <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />
+                  <ChevronRight size={16} className="text-faint flex-shrink-0" />
                 </button>
               </div>
             )}
             {childLocations.length > 0 && (
               <div>
-                <div className="text-xs text-gray-500 mb-1.5">
+                <div className="text-xs text-muted mb-1.5">
                   Emplacements enfants ({childLocations.length})
                 </div>
                 <div className="space-y-1.5">
@@ -659,13 +665,13 @@ export default function LocationDetail() {
                     <button
                       key={child.id}
                       onClick={() => navigate(`/app/projects/${projectId}/locations/${child.id}`)}
-                      className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-gray-200 hover:border-[#E10600] hover:bg-gray-50 min-h-[44px] text-left"
+                      className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-line hover:border-brand-600 hover:bg-subtle min-h-[44px] text-left"
                     >
-                      <span className="text-sm text-[#1A1A1A] font-medium truncate">
+                      <span className="text-sm text-ink font-medium truncate">
                         {child.locationNumber}
                         {child.name ? ` — ${child.name}` : ""}
                       </span>
-                      <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />
+                      <ChevronRight size={16} className="text-faint flex-shrink-0" />
                     </button>
                   ))}
                 </div>
@@ -675,16 +681,16 @@ export default function LocationDetail() {
         )}
 
         {/* Issues section */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-surface rounded-xl border border-line p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-[#1A1A1A] flex items-center gap-2">
-              <AlertCircle size={18} className="text-gray-500" />
+            <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
+              <AlertCircle size={18} className="text-muted" />
               Déficiences ({loadingIssues ? "…" : issuesLoadError ? "?" : issues.length})
             </h2>
             {projectRole.canCreateIssues && (
               <button
                 onClick={startAddIssue}
-                className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-[#1A1A1A] min-h-[40px]"
+                className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-lg text-sm font-medium text-ink min-h-[40px]"
               >
                 <Plus size={14} />
                 Ajouter
@@ -692,7 +698,7 @@ export default function LocationDetail() {
             )}
           </div>
           {loadingIssues ? (
-            <div className="text-sm text-gray-500">Chargement…</div>
+            <div className="text-sm text-muted">Chargement…</div>
           ) : issuesLoadError ? (
             <div className="text-sm text-red-600 flex items-center gap-2">
               Impossible de charger les déficiences.
@@ -701,17 +707,17 @@ export default function LocationDetail() {
               </button>
             </div>
           ) : issues.length === 0 ? (
-            <div className="text-sm text-gray-500">Aucune déficience à ce local pour le moment.</div>
+            <div className="text-sm text-muted">Aucune déficience à ce local pour le moment.</div>
           ) : (
             <div className="space-y-1.5">
               {issues.map((issue) => (
                 <button
                   key={issue.id}
                   onClick={() => navigate(`/app/projects/${projectId}/issues/${issue.id}`)}
-                  className="w-full text-left px-3 py-2.5 rounded-lg border border-gray-200 hover:border-[#E10600] hover:bg-gray-50 min-h-[44px]"
+                  className="w-full text-left px-3 py-2.5 rounded-lg border border-line hover:border-brand-600 hover:bg-subtle min-h-[44px]"
                 >
-                  <div className="text-sm text-[#1A1A1A] font-medium truncate">{issue.title}</div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-sm text-ink font-medium truncate">{issue.title}</div>
+                  <div className="text-xs text-muted">
                     {STATUS_LABEL[issue.status]} · {issue.createdDate}
                   </div>
                 </button>
@@ -721,16 +727,16 @@ export default function LocationDetail() {
         </div>
 
         {/* Photos section */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-surface rounded-xl border border-line p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-[#1A1A1A] flex items-center gap-2">
-              <ImageIcon size={18} className="text-gray-500" />
+            <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
+              <ImageIcon size={18} className="text-muted" />
               Photos ({loadingPhotos ? "…" : photosLoadError ? "?" : photos.length})
             </h2>
             {projectRole.canUploadPhotos && (
               <button
                 onClick={startAddPhotos}
-                className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-[#1A1A1A] min-h-[40px]"
+                className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-lg text-sm font-medium text-ink min-h-[40px]"
               >
                 <Camera size={14} />
                 Ajouter
@@ -738,7 +744,7 @@ export default function LocationDetail() {
             )}
           </div>
           {loadingPhotos ? (
-            <div className="text-sm text-gray-500">Chargement…</div>
+            <div className="text-sm text-muted">Chargement…</div>
           ) : photosLoadError ? (
             <div className="text-sm text-red-600 flex items-center gap-2">
               Impossible de charger les photos.
@@ -747,14 +753,14 @@ export default function LocationDetail() {
               </button>
             </div>
           ) : photos.length === 0 ? (
-            <div className="text-sm text-gray-500">Aucune photo à ce local pour le moment.</div>
+            <div className="text-sm text-muted">Aucune photo à ce local pour le moment.</div>
           ) : (
             <div className="grid grid-cols-3 gap-2">
               {photos.map((photo) => (
                 <button
                   key={photo.id}
                   onClick={() => setLightboxPhoto(photo)}
-                  className="aspect-square rounded-lg overflow-hidden bg-gray-100"
+                  className="aspect-square rounded-lg overflow-hidden bg-subtle"
                 >
                   <img src={photo.url} alt="" className="w-full h-full object-cover" />
                 </button>
@@ -774,7 +780,7 @@ export default function LocationDetail() {
           <div className="flex items-center justify-end px-6 py-4">
             <button
               onClick={() => setLightboxPhoto(null)}
-              className="w-11 h-11 flex items-center justify-center text-white hover:bg-white/10 rounded-full transition-colors"
+              className="w-11 h-11 flex items-center justify-center text-white hover:bg-surface/10 rounded-full transition-colors"
               aria-label="Fermer"
             >
               <X size={24} />
@@ -813,16 +819,16 @@ export default function LocationDetail() {
           onClick={closePendingAction}
         >
           <div
-            className="relative max-w-2xl w-full bg-white rounded-lg p-6 max-h-[90vh] overflow-y-auto"
+            className="relative max-w-2xl w-full bg-surface rounded-lg p-6 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={closePendingAction}
-              className="absolute top-4 right-4 w-10 h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-600 transition-colors z-10"
+              className="absolute top-4 right-4 w-10 h-10 bg-subtle hover:bg-line-strong rounded-full flex items-center justify-center text-body transition-colors z-10"
             >
               ✕
             </button>
-            <h2 className="text-xl font-semibold text-[#1A1A1A] mb-6">Nouvelle déficience</h2>
+            <h2 className="text-xl font-semibold text-ink mb-6">Nouvelle déficience</h2>
             <IssueForm
               projectId={projectId || ""}
               visitId={activeVisit.id}
@@ -846,16 +852,16 @@ export default function LocationDetail() {
           onClick={closePendingAction}
         >
           <div
-            className="relative max-w-2xl w-full bg-white rounded-lg p-6 max-h-[90vh] overflow-y-auto"
+            className="relative max-w-2xl w-full bg-surface rounded-lg p-6 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={closePendingAction}
-              className="absolute top-4 right-4 w-10 h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-600 transition-colors z-10"
+              className="absolute top-4 right-4 w-10 h-10 bg-subtle hover:bg-line-strong rounded-full flex items-center justify-center text-body transition-colors z-10"
             >
               ✕
             </button>
-            <h2 className="text-xl font-semibold text-[#1A1A1A] mb-6">Ajouter des photos</h2>
+            <h2 className="text-xl font-semibold text-ink mb-6">Ajouter des photos</h2>
             <PhotoCaptureButtons
               onFilesSelected={(files) => setNewPhotoFiles((prev) => [...prev, ...Array.from(files)])}
               disabled={uploadingPhotos}
@@ -865,7 +871,7 @@ export default function LocationDetail() {
                 {newPhotoFiles.map((file, index) => (
                   <div
                     key={index}
-                    className="relative aspect-square rounded-lg overflow-hidden border border-gray-200"
+                    className="relative aspect-square rounded-lg overflow-hidden border border-line"
                   >
                     <img
                       src={URL.createObjectURL(file)}
@@ -891,14 +897,14 @@ export default function LocationDetail() {
               <button
                 onClick={closePendingAction}
                 disabled={uploadingPhotos}
-                className="flex-1 py-3 bg-gray-200 text-[#1A1A1A] rounded-lg hover:bg-gray-300 transition-colors font-medium disabled:opacity-50 min-h-[48px]"
+                className="flex-1 py-3 bg-subtle text-ink rounded-lg hover:bg-line-strong transition-colors font-medium disabled:opacity-50 min-h-[48px]"
               >
                 Annuler
               </button>
               <button
                 onClick={handleSavePhotos}
                 disabled={uploadingPhotos || newPhotoFiles.length === 0}
-                className="flex-1 py-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors font-medium disabled:opacity-50 min-h-[48px]"
+                className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 min-h-[48px]"
               >
                 {uploadingPhotos ? "Envoi…" : "Enregistrer"}
               </button>

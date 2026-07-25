@@ -75,49 +75,50 @@ export default function IssueDetail() {
   };
 
   return (
-    <div className="min-h-screen pb-20 bg-gray-50">
-      {/* Header */}
-      <div className="bg-[#1A1A1A] text-white px-6 py-4 md:py-5">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen pb-20 bg-canvas">
+      {/* Toolbar — the dark band is gone; back/delete now sit on the canvas
+          directly under the global light header. */}
+      <div className="px-4 sm:px-6 pt-4">
+        <div className="flex items-center justify-between max-w-2xl mx-auto">
           <button
             onClick={goBack}
-            className="flex items-center gap-2 text-gray-400 hover:text-white min-h-[44px]"
+            className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={18} />
             <span>Retour</span>
           </button>
           {canEditIssue(projectRole, issue?.createdBy) && (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors"
+              className="w-10 h-10 flex items-center justify-center text-muted hover:text-brand-600 hover:bg-subtle rounded-lg transition-colors"
               title="Supprimer"
             >
-              <Trash2 size={20} />
+              <Trash2 size={18} />
             </button>
           )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="px-4 py-6 max-w-2xl mx-auto space-y-6">
+      <div className="px-4 sm:px-6 py-5 max-w-2xl mx-auto space-y-6">
         {isLoadingIssue && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4 text-sm text-gray-500 text-center">
+          <div className="bg-surface rounded-xl border border-line p-4 text-sm text-muted text-center">
             Chargement de la déficience...
           </div>
         )}
 
         {loadError && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+          <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 text-sm text-brand-strong">
             {loadError}
           </div>
         )}
 
         {saveError && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 flex items-center justify-between gap-3">
+          <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 text-sm text-brand-strong flex items-center justify-between gap-3">
             <span>{saveError}</span>
             <button
               onClick={() => setSaveError(null)}
-              className="text-red-700 hover:text-red-900 font-medium flex-shrink-0"
+              className="text-brand-strong hover:text-brand-800 font-medium flex-shrink-0"
             >
               ✕
             </button>

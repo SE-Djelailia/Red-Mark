@@ -60,7 +60,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
 
   if (editing) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-surface rounded-xl border border-line p-5">
         <IssueForm
           projectId={projectId}
           visitId={issue.visitId}
@@ -79,13 +79,13 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-surface rounded-xl border border-line p-5">
         <div className="flex items-start justify-between gap-3 mb-3">
-          <h1 className="text-lg font-semibold text-[#1A1A1A]">{issue.title}</h1>
+          <h1 className="text-lg font-semibold text-ink">{issue.title}</h1>
           {canEditIssue(projectRole, issue.createdBy) && (
             <button
               onClick={() => setEditing(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-[#1A1A1A] min-h-[40px] flex-shrink-0"
+              className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-lg text-sm font-medium text-ink min-h-[40px] flex-shrink-0"
             >
               <Edit size={14} />
               Modifier
@@ -97,44 +97,44 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
           <PriorityBadge priority={issue.priority} />
           <StatusBadge status={issue.status} />
           {issue.discipline && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-600">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-line text-xs font-medium text-muted">
               {issue.discipline}
             </span>
           )}
         </div>
 
-        {issue.description && <p className="text-sm text-gray-600 mb-4">{issue.description}</p>}
+        {issue.description && <p className="text-sm text-body mb-4">{issue.description}</p>}
 
         <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2 text-gray-600">
-            <Calendar size={14} className="text-gray-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 text-body">
+            <Calendar size={14} className="text-faint flex-shrink-0" />
             Créée le {issue.createdDate}
           </div>
           {issue.dueDate && (
-            <div className="flex items-center gap-2 text-gray-600">
-              <Calendar size={14} className="text-gray-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-body">
+              <Calendar size={14} className="text-faint flex-shrink-0" />
               Échéance : {issue.dueDate}
             </div>
           )}
           {assigneeDisplay && (
-            <div className="flex items-center gap-2 text-gray-600">
-              <User size={14} className="text-gray-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-body">
+              <User size={14} className="text-faint flex-shrink-0" />
               Assigné à {assigneeDisplay}
             </div>
           )}
           {location && (
-            <div className="flex items-center gap-2 text-gray-600">
-              <MapPin size={14} className="text-gray-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-body">
+              <MapPin size={14} className="text-faint flex-shrink-0" />
               {location.locationNumber}
               {location.name ? ` — ${location.name}` : ""}
             </div>
           )}
           {issue.tags.length > 0 && (
-            <div className="flex items-start gap-2 text-gray-600">
-              <Tag size={14} className="text-gray-400 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 text-body">
+              <Tag size={14} className="text-faint flex-shrink-0 mt-0.5" />
               <div className="flex flex-wrap gap-1.5">
                 {issue.tags.map((t) => (
-                  <span key={t} className="px-2 py-0.5 bg-gray-100 rounded-full text-xs">
+                  <span key={t} className="px-2 py-0.5 bg-subtle rounded-full text-xs">
                     {t}
                   </span>
                 ))}
@@ -146,16 +146,16 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
 
       {/* Photos */}
       {issue.photos.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-[#1A1A1A] mb-3 flex items-center gap-2">
-            <Camera size={18} className="text-gray-500" />
+        <div className="bg-surface rounded-xl border border-line p-5">
+          <h2 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
+            <Camera size={18} className="text-muted" />
             Photos ({issue.photos.length})
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {issue.photos.map((photo) => (
               <div
                 key={photo.id}
-                className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-gray-200"
+                className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-subtle"
                 onClick={() => setSelectedPhoto(photo)}
               >
                 <SecureImage
@@ -173,10 +173,10 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
       )}
 
       {/* Comments */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-surface rounded-xl border border-line p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-[#1A1A1A] flex items-center gap-2">
-            <MessageSquare size={18} className="text-gray-500" />
+          <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
+            <MessageSquare size={18} className="text-muted" />
             Commentaires ({comments.length})
           </h2>
         </div>

@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import {
   ArrowLeft,
-  Calendar,
   Camera,
   Tag,
   MapPin,
@@ -32,6 +31,7 @@ import CollapsibleSection from "./CollapsibleSection";
 import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import { PLANS_ENABLED } from "../../lib/featureFlags";
 import { useSmartBack } from "../../hooks/useSmartBack";
+import { usePageHeader } from "../../contexts/PageHeaderContext";
 import ConfirmDialog from "./ConfirmDialog";
 import type { SiteVisit } from "../../lib/supabase";
 import { supabase } from "../../lib/supabase";
@@ -461,56 +461,47 @@ export default function VisitDetail() {
     }
   };
 
+  // Project name + date carry the context the dark band used to show.
+  usePageHeader(
+    "Visite du site",
+    isLoading
+      ? undefined
+      : [projectName, visit?.date ? formatDateLongWithWeekday(visit.date) : null]
+          .filter(Boolean)
+          .join(" · "),
+  );
+
   return (
-    <div className="min-h-screen pb-20 bg-gray-50">
-      {/* Header */}
-      <div className="bg-[#1A1A1A] text-white px-6 py-6 md:py-8">
-        <button
-          onClick={goBack}
-          className="flex items-center gap-2 text-gray-400 hover:text-white mb-4 min-h-[44px]"
-        >
-          <ArrowLeft size={20} />
-          <span>Retour</span>
-        </button>
+    <div className="min-h-screen pb-20 bg-canvas">
+      {/* Toolbar — title/subtitle moved into the global light header via
+          usePageHeader(); only the navigation and actions remain here. */}
+      <div className="px-4 sm:px-6 pt-4">
+        <div className="flex items-center justify-between max-w-2xl mx-auto">
+          <button
+            onClick={goBack}
+            className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
+          >
+            <ArrowLeft size={18} />
+            <span>Retour</span>
+          </button>
 
-        {isLoading ? (
-          <div className="animate-pulse">
-            <div className="h-4 bg-white/20 rounded w-48 mb-2"></div>
-            <div className="h-8 bg-white/30 rounded w-64 mb-3"></div>
-            <div className="h-4 bg-white/20 rounded w-56"></div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => console.log("Share visit")}
+              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-lg transition-colors"
+              title="Partager"
+            >
+              <Share2 size={18} />
+            </button>
+            <button
+              onClick={() => console.log("Download report")}
+              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-lg transition-colors"
+              title="Télécharger le rapport"
+            >
+              <Download size={18} />
+            </button>
           </div>
-        ) : (
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <p className="text-sm text-gray-400 mb-2">{projectName}</p>
-              <h1 className="text-xl md:text-2xl mb-3">Visite du site</h1>
-
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <Calendar size={16} />
-                  <span>{formatDateLongWithWeekday(visit?.date || "")}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 ml-4">
-              <button
-                onClick={() => console.log("Share visit")}
-                className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors"
-                title="Partager"
-              >
-                <Share2 size={20} />
-              </button>
-              <button
-                onClick={() => console.log("Download report")}
-                className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors"
-                title="Télécharger le rapport"
-              >
-                <Download size={20} />
-              </button>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Content */}
@@ -519,22 +510,22 @@ export default function VisitDetail() {
             phantom "Zone non spécifiée" field removed from the visits list
             — attendees was never a real column) and Photos dropped (the
             Photos section below already shows the count). */}
-        <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+        <div className="bg-surface rounded-xl border border-line px-4 py-3">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
             <div className="flex items-center gap-1.5">
-              <Tag size={14} className="text-gray-400 flex-shrink-0" />
-              <span className="font-medium text-[#1A1A1A]">{visit?.phase}</span>
+              <Tag size={14} className="text-faint flex-shrink-0" />
+              <span className="font-medium text-ink">{visit?.phase}</span>
             </div>
             {visit?.weather && (
               <div className="flex items-center gap-1.5">
-                <Cloud size={14} className="text-gray-400 flex-shrink-0" />
-                <span className="text-[#1A1A1A]">{visit.weather}</span>
+                <Cloud size={14} className="text-faint flex-shrink-0" />
+                <span className="text-ink">{visit.weather}</span>
               </div>
             )}
             {visit?.temperature && (
               <div className="flex items-center gap-1.5">
-                <Thermometer size={14} className="text-gray-400 flex-shrink-0" />
-                <span className="text-[#1A1A1A]">{visit.temperature}</span>
+                <Thermometer size={14} className="text-faint flex-shrink-0" />
+                <span className="text-ink">{visit.temperature}</span>
               </div>
             )}
             {projectRole.canUploadPhotos && (
@@ -551,7 +542,7 @@ export default function VisitDetail() {
                   };
                   input.click();
                 }}
-                className="flex items-center gap-1.5 text-[#E10600] hover:text-[#C00500] disabled:opacity-50 ml-auto"
+                className="flex items-center gap-1.5 text-brand-strong hover:text-brand-800 disabled:opacity-50 ml-auto"
               >
                 <Camera size={14} className="flex-shrink-0" />
                 <span className="text-xs font-medium">
@@ -568,7 +559,7 @@ export default function VisitDetail() {
         {visit && (
           <CollapsibleSection
             title="Notes de visite"
-            icon={<FileText size={16} className="text-gray-500" />}
+            icon={<FileText size={16} className="text-muted" />}
             defaultOpen={!!visit.notes?.trim()}
           >
           {isEditingNotes ? (
@@ -578,7 +569,7 @@ export default function VisitDetail() {
                 onChange={(e) => setEditedNotes(e.target.value)}
                 placeholder="Ajouter des notes..."
                 rows={6}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E10600] focus:border-transparent resize-none"
+                className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent resize-none"
                 autoFocus
               />
               <div className="flex gap-3">
@@ -587,14 +578,14 @@ export default function VisitDetail() {
                     setIsEditingNotes(false);
                     setEditedNotes(visit?.notes || "");
                   }}
-                  className="flex-1 py-2.5 bg-gray-200 text-[#1A1A1A] rounded-lg hover:bg-gray-300 transition-colors font-medium min-h-[44px]"
+                  className="flex-1 py-2.5 bg-subtle text-ink rounded-lg hover:bg-line-strong transition-colors font-medium min-h-[44px]"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleSaveNotes}
                   disabled={!editedNotes.trim()}
-                  className="flex-1 py-2.5 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                  className="flex-1 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
                   Sauvegarder
                 </button>
@@ -602,14 +593,14 @@ export default function VisitDetail() {
             </div>
           ) : (
             <div>
-              <p className="text-sm text-gray-700 leading-relaxed mb-4">{visit?.notes}</p>
+              <p className="text-sm text-body leading-relaxed mb-4">{visit?.notes}</p>
               <div className="flex justify-end">
                 <button
                   onClick={() => {
                     setIsEditingNotes(true);
                     setEditedNotes(visit?.notes || "");
                   }}
-                  className="py-2.5 px-4 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 transition-colors font-medium flex items-center gap-2 min-h-[44px]"
+                  className="py-2.5 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
                 >
                   <Edit size={16} />
                   <span>Modifier les notes</span>
@@ -624,16 +615,16 @@ export default function VisitDetail() {
             file manager itself is a fair amount of content. Hidden
             entirely while PLANS_ENABLED is off (see featureFlags.ts). */}
         {PLANS_ENABLED && projectId && (
-          <CollapsibleSection title="Plans" icon={<LayoutGrid size={16} className="text-gray-500" />}>
+          <CollapsibleSection title="Plans" icon={<LayoutGrid size={16} className="text-muted" />}>
             <PlanFilesManager projectId={projectId} visitId={visitId} />
           </CollapsibleSection>
         )}
 
         {/* Photos Grid — stays always visible, this is core content */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-surface rounded-xl border border-line p-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-[#1A1A1A] flex items-center gap-2">
-              <Camera size={18} className="text-gray-500" />
+            <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
+              <Camera size={18} className="text-muted" />
               Photos ({visit?.photos.length})
             </h2>
             {visit && visit.photos.length > 0 && projectRole.canCreateIssues && (
@@ -642,7 +633,7 @@ export default function VisitDetail() {
                   setIsSelectionMode(!isSelectionMode);
                   setSelectedPhotoIds([]);
                 }}
-                className="py-2 px-3 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium min-h-[44px]"
+                className="py-2 px-3 bg-subtle text-ink rounded-lg hover:bg-line transition-colors text-sm font-medium min-h-[44px]"
               >
                 {isSelectionMode ? "Annuler" : "Sélectionner"}
               </button>
@@ -673,7 +664,7 @@ export default function VisitDetail() {
                     {/* Tag Filters */}
                     {allTags.length > 0 && (
                       <div>
-                        <label className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
+                        <label className="text-xs font-medium text-body mb-2 flex items-center gap-1">
                           <Tag size={14} />
                           Filtrer par tag
                         </label>
@@ -682,8 +673,8 @@ export default function VisitDetail() {
                             onClick={() => setSelectedTagFilter(null)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                               selectedTagFilter === null
-                                ? "bg-[#E10600] text-white"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                ? "bg-brand-600 text-white"
+                                : "bg-subtle text-body hover:bg-line"
                             }`}
                           >
                             Tous
@@ -696,8 +687,8 @@ export default function VisitDetail() {
                               }
                               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                                 selectedTagFilter === tag
-                                  ? "bg-[#E10600] text-white"
-                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                  ? "bg-brand-600 text-white"
+                                  : "bg-subtle text-body hover:bg-line"
                               }`}
                             >
                               {tag}
@@ -710,7 +701,7 @@ export default function VisitDetail() {
                     {/* Location Filters */}
                     {allLocations.length > 0 && (
                       <div>
-                        <label className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
+                        <label className="text-xs font-medium text-body mb-2 flex items-center gap-1">
                           <MapPin size={14} />
                           Filtrer par localisation
                         </label>
@@ -753,7 +744,7 @@ export default function VisitDetail() {
 
           {isSelectionMode && selectedPhotoIds.length > 0 && (
             <div className="mb-3 flex items-center justify-between bg-blue-50 border border-blue-200 p-3 rounded-lg">
-              <span className="text-sm text-[#1A1A1A] font-medium">
+              <span className="text-sm text-ink font-medium">
                 {selectedPhotoIds.length} photo{selectedPhotoIds.length !== 1 ? "s" : ""}{" "}
                 sélectionnée{selectedPhotoIds.length !== 1 ? "s" : ""}
               </span>
@@ -761,7 +752,7 @@ export default function VisitDetail() {
                 {projectRole.canCreateIssues && (
                   <button
                     onClick={handleCreateIssueFromPhotos}
-                    className="py-2 px-3 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
+                    className="py-2 px-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
                   >
                     <AlertCircle size={16} />
                     Créer déficience
@@ -802,7 +793,7 @@ export default function VisitDetail() {
                 return (
                   <div
                     key={photo.id}
-                    className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-gray-200 ${isSelected ? "ring-2 ring-[#E10600]" : ""}`}
+                    className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-subtle ${isSelected ? "ring-2 ring-brand-600" : ""}`}
                     onClick={(e) => handlePhotoClick(photo.id, e)}
                   >
                     <SecureImage
@@ -837,13 +828,13 @@ export default function VisitDetail() {
                           {photo.tags.slice(0, 2).map((tag) => (
                             <span
                               key={tag}
-                              className="px-2 py-0.5 bg-white/90 text-[#1A1A1A] rounded text-xs"
+                              className="px-2 py-0.5 bg-surface/90 text-ink rounded text-xs"
                             >
                               {tag}
                             </span>
                           ))}
                           {photo.tags.length > 2 && (
-                            <span className="px-2 py-0.5 bg-white/90 text-[#1A1A1A] rounded text-xs">
+                            <span className="px-2 py-0.5 bg-surface/90 text-ink rounded text-xs">
                               +{photo.tags.length - 2}
                             </span>
                           )}
@@ -852,7 +843,7 @@ export default function VisitDetail() {
                     )}
                     {isSelectionMode && canManagePhoto(projectRole, photo.user_id) && (
                       <div
-                        className={`absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all ${isSelected ? "bg-[#E10600] border-[#E10600]" : "bg-white/90 border-gray-300"}`}
+                        className={`absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all ${isSelected ? "bg-brand-600 border-brand-600" : "bg-surface/90 border-line-strong"}`}
                       >
                         {isSelected && (
                           <svg
@@ -879,16 +870,16 @@ export default function VisitDetail() {
             is now a single compact line instead of a large card. Same
             fields as before (title, description, priority, status, linked
             photos, assignee), just condensed. */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-surface rounded-xl border border-line p-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-[#1A1A1A] flex items-center gap-2">
-              <AlertCircle size={18} className="text-gray-500" />
+            <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
+              <AlertCircle size={18} className="text-muted" />
               Déficiences ({issues.length})
             </h2>
             {projectRole.canCreateIssues && (
               <button
                 onClick={handleCreateIssue}
-                className="py-2.5 px-4 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 transition-colors font-medium flex items-center gap-2 min-h-[44px]"
+                className="py-2.5 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
               >
                 <Edit size={16} />
                 <span>Ajouter une déficience</span>
@@ -897,7 +888,7 @@ export default function VisitDetail() {
           </div>
 
           {issues.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-6">
+            <p className="text-sm text-muted text-center py-6">
               Aucune déficience pour cette visite.
             </p>
           ) : (
@@ -908,18 +899,18 @@ export default function VisitDetail() {
                   onClick={() =>
                     navigate(`/app/projects/${projectId}/visits/${visitId}/issues/${issue.id}`)
                   }
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors min-h-[44px]"
+                  className="flex items-center gap-2 px-3 py-2 bg-canvas rounded-lg cursor-pointer hover:bg-subtle transition-colors min-h-[44px]"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-sm font-medium text-[#1A1A1A] truncate">
+                      <span className="text-sm font-medium text-ink truncate">
                         {issue.title}
                       </span>
                       <PriorityBadge priority={issue.priority} />
                       <StatusBadge status={issue.status} />
                     </div>
                     {(issue.description || issue.assignedTo) && (
-                      <div className="text-xs text-gray-500 truncate mt-0.5">
+                      <div className="text-xs text-muted truncate mt-0.5">
                         {issue.description}
                         {issue.description && issue.assignedTo ? " · " : ""}
                         {issue.assignedTo}
@@ -950,8 +941,8 @@ export default function VisitDetail() {
                         );
                       })}
                       {issue.photos.length > 2 && (
-                        <div className="w-8 h-8 rounded bg-gray-200 flex items-center justify-center flex-shrink-0">
-                          <span className="text-[10px] font-medium text-gray-600">
+                        <div className="w-8 h-8 rounded bg-subtle flex items-center justify-center flex-shrink-0">
+                          <span className="text-[10px] font-medium text-body">
                             +{issue.photos.length - 2}
                           </span>
                         </div>
@@ -962,7 +953,7 @@ export default function VisitDetail() {
                   {canEditIssue(projectRole, issue.createdBy) && (
                     <button
                       onClick={(e) => handleEditIssue(issue, e)}
-                      className="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-[#1A1A1A] flex-shrink-0"
+                      className="w-11 h-11 flex items-center justify-center text-faint hover:text-ink flex-shrink-0"
                       title="Modifier"
                     >
                       <Edit size={14} />
@@ -978,7 +969,7 @@ export default function VisitDetail() {
             by default; this used to show a full card just to say "Aucune
             note vocale", now that's hidden until expanded. */}
         {visitId && (
-          <CollapsibleSection title="Notes vocales" icon={<Mic size={16} className="text-gray-500" />}>
+          <CollapsibleSection title="Notes vocales" icon={<Mic size={16} className="text-muted" />}>
             <VoiceNotesSection visitId={visitId} bare />
           </CollapsibleSection>
         )}
@@ -991,12 +982,12 @@ export default function VisitDetail() {
         />
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <h2 className="text-sm font-semibold text-[#1A1A1A] mb-3">Actions rapides</h2>
+        <div className="bg-surface rounded-xl border border-line p-4">
+          <h2 className="text-sm font-semibold text-ink mb-3">Actions rapides</h2>
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => navigate(`/app/projects/${projectId}/report`)}
-              className="py-3 px-4 bg-[#E10600] text-white rounded-lg hover:bg-[#C00500] transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+              className="py-3 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 min-h-[48px]"
             >
               <FileText size={18} />
               <span className="text-sm font-medium">Générer rapport</span>
@@ -1004,7 +995,7 @@ export default function VisitDetail() {
             {projectRole.canUploadPhotos && (
               <button
                 onClick={() => navigate(`/app/projects/${projectId}/visits/${visitId}/add-photos`)}
-                className="py-3 px-4 bg-gray-100 text-[#1A1A1A] rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+                className="py-3 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors flex items-center justify-center gap-2 min-h-[48px]"
               >
                 <Camera size={18} />
                 <span className="text-sm font-medium">Ajouter photos</span>
@@ -1027,7 +1018,7 @@ export default function VisitDetail() {
                   e.stopPropagation();
                   handleOpenAnnotator(selectedPhoto);
                 }}
-                className="px-4 py-2 bg-[#E10600] hover:bg-[#C00500] rounded-lg flex items-center gap-2 text-white transition-colors font-medium"
+                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 rounded-lg flex items-center gap-2 text-white transition-colors font-medium"
                 title="Annoter"
               >
                 <Pencil size={18} />
@@ -1035,7 +1026,7 @@ export default function VisitDetail() {
               </button>
               <button
                 onClick={() => setSelectedPhoto(null)}
-                className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
+                className="w-10 h-10 bg-surface/10 hover:bg-surface/20 rounded-full flex items-center justify-center text-white transition-colors"
               >
                 ✕
               </button>
@@ -1068,7 +1059,7 @@ export default function VisitDetail() {
                 {selectedPhoto.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="px-3 py-1.5 bg-white/90 text-[#1A1A1A] rounded-lg text-sm font-medium"
+                    className="px-3 py-1.5 bg-surface/90 text-ink rounded-lg text-sm font-medium"
                   >
                     {tag}
                   </span>
@@ -1089,16 +1080,16 @@ export default function VisitDetail() {
           onClick={() => setShowIssueModal(false)}
         >
           <div
-            className="relative max-w-2xl w-full bg-white rounded-lg p-6 max-h-[90vh] overflow-y-auto"
+            className="relative max-w-2xl w-full bg-surface rounded-lg p-6 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setShowIssueModal(false)}
-              className="absolute top-4 right-4 w-10 h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-600 transition-colors z-10"
+              className="absolute top-4 right-4 w-10 h-10 bg-subtle hover:bg-line-strong rounded-full flex items-center justify-center text-body transition-colors z-10"
             >
               ✕
             </button>
-            <h2 className="text-xl font-semibold text-[#1A1A1A] mb-6">
+            <h2 className="text-xl font-semibold text-ink mb-6">
               {editingIssue ? "Modifier la déficience" : "Nouvelle déficience"}
             </h2>
             <IssueForm
