@@ -141,7 +141,9 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen pb-20 bg-canvas">
       <div className="px-4 sm:px-6 lg:px-8 py-5 max-w-6xl mx-auto space-y-6">
-        <div className="flex justify-end -mb-2">
+        {/* Phone has no refresh control in the spec — the tab-visibility and
+            realtime listeners already reload; this is a desktop convenience. */}
+        <div className="hidden lg:flex justify-end -mb-2">
           <button
             onClick={() => loadData(true)}
             disabled={refreshing}
