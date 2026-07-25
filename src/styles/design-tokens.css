@@ -1,0 +1,96 @@
+/**
+ * RedMark design tokens — Step 1 (foundations).
+ *
+ * Tailwind 4 is configured CSS-first: this `@theme` block IS the config,
+ * there is no tailwind.config.js (and adding one would fight this).
+ * Registering a token here generates the matching utilities, so
+ * `--color-surface` gives `bg-surface` / `text-surface` / `border-surface`,
+ * `--color-brand-600` gives `text-brand-600`, and so on.
+ *
+ * Imported AFTER theme.css (the vendored shadcn/ui token layer) so this
+ * wins on any overlap. The only name shared by both layers is `muted`:
+ * shadcn used it for a near-white background (#ececf0), the design system
+ * uses it for secondary text (#71717A). Redefining is safe here because
+ * nothing live consumes the shadcn tokens — all 48 components in
+ * app/components/ui/ are unimported dead code.
+ *
+ * Step 1 deliberately does NOT restyle components. The app still uses
+ * hardcoded hex (#E10600, #1A1A1A) and gray-* utilities in ~1600 places;
+ * migrating those onto these tokens is Step 2.
+ */
+
+/* `static` forces every variable below to be emitted even when no utility
+ * references it yet. Without it Tailwind 4 tree-shakes unused theme vars,
+ * which would leave most of these tokens unavailable to hand-written CSS
+ * (var(--color-ink)) until Step 2 happens to use the matching utility. */
+@theme static {
+  /* ---- Neutrals ---- */
+  --color-ink: #1a1a1a; /* headings, primary text */
+  --color-body: #3f3f46; /* body copy */
+  --color-muted: #71717a; /* secondary text */
+  --color-faint: #a1a1aa; /* tertiary text, placeholders */
+  --color-line: #e4e4e7; /* default borders, dividers */
+  --color-line-strong: #d4d4d8; /* emphasized borders */
+  --color-subtle: #f4f4f5; /* subtle fills, hover states */
+  --color-canvas: #fafafa; /* app background */
+  --color-surface: #ffffff; /* cards, sheets, elevated surfaces */
+
+  /* ---- Brand (red) ---- */
+  --color-brand-50: #fef2f1; /* tinted backgrounds */
+  --color-brand-100: #f9dcd9; /* tinted borders */
+  --color-brand-600: #e10600; /* primary accent — current app red */
+  --color-brand-700: #c00500; /* hover */
+  --color-brand-800: #8f0400; /* active/pressed */
+
+  /* ---- Semantic status ---- */
+  --color-open: #e10600; /* déficience ouverte (same value as brand-600,
+                            kept separate so status and brand can diverge) */
+  --color-resolved: #15803d; /* déficience résolue */
+  --color-warn: #a16207; /* warnings, due-soon */
+
+  /* ---- Type ----
+   * System stack per the design system. Nothing set font-family before
+   * this (fonts.css is empty), so the app was inheriting Tailwind's
+   * ui-sans-serif default — this makes the intent explicit.
+   */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji";
+
+  /* Type scale, pinned for documentation. These match Tailwind's own
+   * defaults exactly (12 / 14 / 16 / 18 / 20 / 24 / 30px), so declaring
+   * them changes nothing visually — it just makes the intended scale
+   * explicit and guards against a future Tailwind default drifting.
+   * Line-heights are intentionally left to Tailwind's paired defaults. */
+  --text-xs: 0.75rem; /* 12px — meta, captions */
+  --text-sm: 0.875rem; /* 14px — secondary UI text */
+  --text-base: 1rem; /* 16px — body */
+  --text-lg: 1.125rem; /* 18px — section headings */
+  --text-xl: 1.25rem; /* 20px — page headings */
+  --text-2xl: 1.5rem; /* 24px */
+  --text-3xl: 1.875rem; /* 30px — display */
+}
+
+/**
+ * Radius tokens are recorded here but deliberately NOT wired to
+ * --radius-lg / --radius-xl yet. theme.css currently derives those from
+ * --radius: 0.625rem, making rounded-lg 10px and rounded-xl 14px; adopting
+ * the design values (which are Tailwind's stock 8px/12px) would shift 356
+ * rounded-lg and 80 rounded-xl usages by 2px each. That lands in Step 2
+ * with the component restyling, not here.
+ */
+:root {
+  --ds-radius-lg: 0.5rem;
+  --ds-radius-xl: 0.75rem;
+}
+
+@layer base {
+  /* Canvas background. theme.css's `body { @apply bg-background }` resolves
+   * to #FFFFFF; this later rule in the same cascade layer supersedes it.
+   * Text colour is intentionally left alone in Step 1 — a lot of elements
+   * inherit it, so moving it onto the ink/body tokens belongs with the
+   * component work rather than a foundations pass. */
+  body {
+    background-color: var(--color-canvas);
+  }
+}
