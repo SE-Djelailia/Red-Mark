@@ -8,7 +8,6 @@ import BottomNav from "./BottomNav";
 import OfflineIndicator from "./OfflineIndicator";
 import PWAInstallPrompt from "./PWAInstallPrompt";
 import PWAUpdateNotification from "./PWAUpdateNotification";
-import PilotBanner from "./PilotBanner";
 import AppHeader from "./AppHeader";
 
 export default function Layout() {
@@ -64,7 +63,6 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16 md:pb-20">
       <AppHeader />
-      <PilotBanner />
       <OfflineIndicator />
       <PWAInstallPrompt />
       <PWAUpdateNotification />
