@@ -1,31 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ArrowUpRight,
-  Check,
-  Circle as CircleIcon,
-  Crop,
-  Pencil,
-  Redo2,
-  RotateCw,
-  Square,
-  Trash2,
-  Type,
-  Undo2,
-  X,
-} from "lucide-react";
+import { RotateCw, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import ConfirmDialog from "./ConfirmDialog";
 import CropOverlay from "./CropOverlay";
+import AnnotatorToolbar from "./AnnotatorToolbar";
 import { getPhotoSignedUrl } from "../../lib/supabaseApi";
 import { usePrepareImage, FULL_CROP, type CropRect } from "../../hooks/usePrepareImage";
 import {
   DEFAULT_COLOR,
-  MARKUP_COLORS,
+  annotationBounds,
   createId,
   drawAnnotation,
+  hitTest,
   hitTestText,
+  nextPinNumber,
+  renumberPins,
   textBounds,
   type Annotation,
+  type MarkType,
   type Point,
   type Tool,
 } from "../../lib/annotationModel";
@@ -41,15 +33,10 @@ interface PhotoAnnotatorProps {
   onSave?: (photoId: string, annotatedImageBlob: Blob) => Promise<void>;
 }
 
-const TOOLS: { tool: Tool; icon: typeof Pencil; label: string }[] = [
-  { tool: "pencil", icon: Pencil, label: "Crayon" },
-  { tool: "arrow", icon: ArrowUpRight, label: "Flèche" },
-  { tool: "rectangle", icon: Square, label: "Rectangle" },
-  { tool: "circle", icon: CircleIcon, label: "Cercle" },
-  { tool: "text", icon: Type, label: "Texte" },
-];
-
-const DRAW_TOOLS: Tool[] = ["pencil", "arrow", "rectangle", "circle"];
+// Tools that drag out a shape and therefore care about stroke width.
+const DRAW_TOOLS: Tool[] = ["pencil", "arrow", "rectangle", "circle", "cloud", "dimension", "pin"];
+/** Drag-to-size tools: only their start and current corner matter. */
+const DRAG_TOOLS: Tool[] = ["arrow", "rectangle", "circle", "cloud", "dimension"];
 
 // Stroke width and font size are authored against a reference width so a
 // "3px" line looks the same on a 4032px photo as on an 800px one. Without
@@ -89,6 +76,14 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
   const [hoveredTextId, setHoveredTextId] = useState<string | null>(null);
   const [textDragOffset, setTextDragOffset] = useState<Point | null>(null);
   const [textPrompt, setTextPrompt] = useState<{ point: Point; value: string } | null>(null);
+
+  // Eraser: the mark currently armed for deletion. First tap highlights,
+  // second tap on the same mark deletes. A confirmation step matters here
+  // because a fat-fingered tap on a phone would otherwise destroy work
+  // with no warning.
+  const [eraseTargetId, setEraseTargetId] = useState<string | null>(null);
+  // Dimension label being typed for a just-drawn (or re-selected) cote.
+  const [dimensionPrompt, setDimensionPrompt] = useState<{ id: string; value: string } | null>(null);
 
   const hasAnnotations = annotations.length > 0;
 
@@ -161,6 +156,27 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     annotations.forEach((a) => drawAnnotation(ctx, a));
     if (draft) drawAnnotation(ctx, draft);
 
+    // Eraser target: a heavy dashed box around whatever the next tap will
+    // delete, so the confirmation step actually shows what is at risk.
+    if (eraseTargetId) {
+      const target = annotations.find((a) => a.id === eraseTargetId);
+      const bounds = target ? annotationBounds(ctx, target) : null;
+      if (bounds) {
+        const pad = 8 * naturalScale();
+        ctx.save();
+        ctx.strokeStyle = "#E10600";
+        ctx.lineWidth = Math.max(2, 2.5 * naturalScale());
+        ctx.setLineDash([10 * naturalScale(), 6 * naturalScale()]);
+        ctx.strokeRect(
+          bounds.x - pad,
+          bounds.y - pad,
+          bounds.width + pad * 2,
+          bounds.height + pad * 2,
+        );
+        ctx.restore();
+      }
+    }
+
     // Text affordances: a dashed box on hover and a solid box with corner
     // handles when selected, so "this is draggable / editable" is visible
     // before the user commits to a gesture rather than after.
@@ -196,7 +212,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         }
       }
     }
-  }, [annotations, draft, selectedTextId, hoveredTextId, naturalScale]);
+  }, [annotations, draft, selectedTextId, hoveredTextId, eraseTargetId, naturalScale]);
 
   useEffect(() => {
     if (!imageLoaded) return;
@@ -234,11 +250,45 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     setAnnotations(next);
   };
 
+  // Tap tolerance in natural pixels. Sized from the on-screen scale so a
+  // fingertip covers roughly the same physical area regardless of how far
+  // the photo is scaled down for display — a fixed natural-pixel value
+  // would be an unhittable sliver on a 4032px photo shown at 390px.
+  const hitTolerance = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return 12;
+    const rect = canvas.getBoundingClientRect();
+    const displayScale = rect.width > 0 ? canvas.width / rect.width : 1;
+    return 12 * displayScale;
+  }, []);
+
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (mode !== "annotate" || !imageLoaded) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
     const point = pointFromEvent(e);
     const ctx = measureCtx();
+
+    // ---- eraser: highlight, then confirm -----------------------------
+    if (activeTool === "eraser") {
+      const hit = ctx ? hitTest(ctx, annotations, point, hitTolerance()) : null;
+      if (!hit) {
+        setEraseTargetId(null); // tap on empty space deselects
+        return;
+      }
+      if (hit.id === eraseTargetId) {
+        // Second tap on the armed mark — delete it. Pins renumber so the
+        // sequence stays 1..n with no gap.
+        pushHistory(renumberPins(annotations.filter((a) => a.id !== hit.id)));
+        setEraseTargetId(null);
+      } else {
+        // Tapping a different mark moves the highlight rather than
+        // deleting, so an inaccurate first tap is always recoverable.
+        setEraseTargetId(hit.id);
+      }
+      return;
+    }
+    setEraseTargetId(null);
+
+    e.currentTarget.setPointerCapture(e.pointerId);
 
     // Text selection takes priority over starting a new mark.
     if (ctx) {
@@ -256,9 +306,25 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
       return;
     }
 
+    // ---- pin: a tap, not a drag --------------------------------------
+    if (activeTool === "pin") {
+      pushHistory([
+        ...annotations,
+        {
+          id: createId(),
+          type: "pin",
+          points: [point],
+          color,
+          lineWidth: currentLineWidth(),
+          index: nextPinNumber(annotations),
+        },
+      ]);
+      return;
+    }
+
     setDraft({
       id: createId(),
-      type: activeTool,
+      type: activeTool as MarkType,
       points: [point],
       color,
       lineWidth: currentLineWidth(),
@@ -266,7 +332,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (mode !== "annotate") return;
+    if (mode !== "annotate" || activeTool === "eraser") return;
     const point = pointFromEvent(e);
 
     if (textDragOffset && selectedTextId) {
@@ -289,10 +355,11 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
 
     setDraft((prev) => {
       if (!prev) return prev;
-      // Freehand accumulates every point; the shape tools only need their
-      // start and current corner.
-      const points =
-        prev.type === "pencil" ? [...prev.points, point] : [prev.points[0], point];
+      // Freehand accumulates every point; the drag-to-size tools only need
+      // their start and current corner.
+      const points = DRAG_TOOLS.includes(prev.type)
+        ? [prev.points[0], point]
+        : [...prev.points, point];
       return { ...prev, points };
     });
   };
@@ -314,6 +381,25 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     }
     pushHistory([...annotations, draft]);
     setDraft(null);
+
+    // A cote is meaningless without its label, so ask for it immediately
+    // rather than making the user find a separate field afterwards.
+    if (draft.type === "dimension") {
+      setDimensionPrompt({ id: draft.id, value: "" });
+    }
+  };
+
+  const commitDimensionLabel = () => {
+    if (!dimensionPrompt) return;
+    const value = dimensionPrompt.value.trim();
+    pushHistory(
+      annotations.map((a) =>
+        a.id === dimensionPrompt.id
+          ? { ...a, text: value || undefined, fontSize: currentFontSize() }
+          : a,
+      ),
+    );
+    setDimensionPrompt(null);
   };
 
   const commitText = () => {
@@ -348,6 +434,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     setHistoryStep(step);
     setAnnotations(history[step]);
     setSelectedTextId(null);
+    setEraseTargetId(null);
   };
 
   const redo = () => {
@@ -356,11 +443,13 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     setHistoryStep(step);
     setAnnotations(history[step]);
     setSelectedTextId(null);
+    setEraseTargetId(null);
   };
 
   const clearAll = () => {
     pushHistory([]);
     setSelectedTextId(null);
+    setEraseTargetId(null);
     setShowClearConfirm(false);
   };
 
@@ -425,9 +514,27 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
   const canRedo = historyStep < history.length - 1;
   const showStrokeRow = mode === "annotate" && DRAW_TOOLS.includes(activeTool);
   const showFontRow = mode === "annotate" && activeTool === "text";
+  const eraseTarget = eraseTargetId
+    ? (annotations.find((a) => a.id === eraseTargetId) ?? null)
+    : null;
 
   const iconButton =
     "w-10 h-10 flex items-center justify-center rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
+
+  const handleColorChange = (value: string) => {
+    setColor(value);
+    if (selectedTextId) {
+      pushHistory(
+        annotations.map((a) => (a.id === selectedTextId ? { ...a, color: value } : a)),
+      );
+    }
+  };
+
+  const handleToolChange = (tool: Tool) => {
+    setActiveTool(tool);
+    // Leaving the eraser must not leave a mark armed for deletion.
+    if (tool !== "eraser") setEraseTargetId(null);
+  };
 
   return (
     // Backdrop stays dark: a photo reads accurately against a neutral dark
@@ -436,128 +543,82 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
       {/* Single compact toolbar. The previous three stacked bars cost ~180px
           of vertical space and scrolled horizontally on a phone. */}
       <div className="bg-surface border-b border-line flex-shrink-0">
-        <div className="h-14 px-2 sm:px-4 flex items-center gap-1 sm:gap-2">
-          <button onClick={onClose} className={`${iconButton} text-muted hover:bg-subtle`} title="Fermer">
-            <X size={20} />
-          </button>
+        {mode === "annotate" ? (
+          <AnnotatorToolbar
+            activeTool={activeTool}
+            onToolChange={handleToolChange}
+            color={color}
+            onColorChange={handleColorChange}
+            onClose={onClose}
+            onPrepare={() => setMode("prepare")}
+            prepareDisabled={hasAnnotations}
+            onUndo={undo}
+            canUndo={canUndo}
+            onRedo={redo}
+            canRedo={canRedo}
+            onClear={() => setShowClearConfirm(true)}
+            canClear={hasAnnotations}
+            onSave={handleSave}
+            isSaving={isSaving}
+            saveDisabled={isSaving || !imageLoaded}
+          />
+        ) : (
+          <div className="h-14 px-2 sm:px-4 flex items-center gap-1 sm:gap-2">
+            <button onClick={onClose} className={`${iconButton} text-muted hover:bg-subtle`} title="Fermer">
+              <X size={20} />
+            </button>
+            <span className="text-sm font-medium text-ink ml-1">Préparer l'image</span>
+            <div className="ml-auto flex items-center gap-1">
+              <button
+                onClick={() => setRotation((r) => (r + 90) % 360)}
+                title="Pivoter 90°"
+                className={`${iconButton} text-body hover:bg-subtle`}
+              >
+                <RotateCw size={18} />
+              </button>
+              <button
+                onClick={cancelPrepare}
+                className="h-10 px-3 rounded-lg text-sm font-medium text-body hover:bg-subtle transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={applyPrepareStep}
+                disabled={isApplying}
+                className="h-10 px-4 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors disabled:opacity-50"
+              >
+                {isApplying ? "…" : "Appliquer"}
+              </button>
+            </div>
+          </div>
+        )}
 
-          {mode === "annotate" ? (
-            <>
-              <div className="flex items-center gap-0.5 sm:gap-1">
-                {TOOLS.map(({ tool, icon: Icon, label }) => (
-                  <button
-                    key={tool}
-                    onClick={() => setActiveTool(tool)}
-                    title={label}
-                    aria-label={label}
-                    aria-pressed={activeTool === tool}
-                    className={`${iconButton} ${
-                      activeTool === tool
-                        ? "bg-brand-50 text-brand-600"
-                        : "text-body hover:bg-subtle"
-                    }`}
-                  >
-                    <Icon size={19} />
-                  </button>
-                ))}
-              </div>
-
-              <div className="w-px h-6 bg-line mx-0.5 sm:mx-1" />
-
-              <div className="flex items-center gap-1.5">
-                {MARKUP_COLORS.map((c) => (
-                  <button
-                    key={c.value}
-                    onClick={() => {
-                      setColor(c.value);
-                      if (selectedTextId) {
-                        pushHistory(
-                          annotations.map((a) =>
-                            a.id === selectedTextId ? { ...a, color: c.value } : a,
-                          ),
-                        );
-                      }
-                    }}
-                    title={c.label}
-                    aria-label={c.label}
-                    aria-pressed={color === c.value}
-                    className={`w-6 h-6 rounded-full border transition-transform ${
-                      color === c.value
-                        ? "border-ink scale-110 ring-2 ring-brand-600/30"
-                        : "border-line-strong"
-                    }`}
-                    style={{ backgroundColor: c.value }}
-                  />
-                ))}
-              </div>
-
-              <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
-                <button
-                  onClick={() => setMode("prepare")}
-                  disabled={hasAnnotations}
-                  title={
-                    hasAnnotations
-                      ? "Recadrer/pivoter n'est possible qu'avant d'annoter"
-                      : "Préparer l'image"
-                  }
-                  className={`${iconButton} text-body hover:bg-subtle`}
-                >
-                  <Crop size={18} />
-                </button>
-                <button onClick={undo} disabled={!canUndo} title="Annuler" className={`${iconButton} text-body hover:bg-subtle`}>
-                  <Undo2 size={18} />
-                </button>
-                <button onClick={redo} disabled={!canRedo} title="Rétablir" className={`${iconButton} text-body hover:bg-subtle`}>
-                  <Redo2 size={18} />
-                </button>
-                <button
-                  onClick={() => setShowClearConfirm(true)}
-                  disabled={!hasAnnotations}
-                  title="Tout effacer"
-                  className={`${iconButton} text-body hover:bg-subtle`}
-                >
-                  <Trash2 size={18} />
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={isSaving || !imageLoaded}
-                  className="ml-1 h-10 px-3 sm:px-4 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  <Check size={16} />
-                  <span className="hidden sm:inline">
-                    {isSaving ? "Enregistrement…" : "Enregistrer"}
-                  </span>
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <span className="text-sm font-medium text-ink ml-1">Préparer l'image</span>
-              <div className="ml-auto flex items-center gap-1">
-                <button
-                  onClick={() => setRotation((r) => (r + 90) % 360)}
-                  title="Pivoter 90°"
-                  className={`${iconButton} text-body hover:bg-subtle`}
-                >
-                  <RotateCw size={18} />
-                </button>
-                <button
-                  onClick={cancelPrepare}
-                  className="h-10 px-3 rounded-lg text-sm font-medium text-body hover:bg-subtle transition-colors"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={applyPrepareStep}
-                  disabled={isApplying}
-                  className="h-10 px-4 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors disabled:opacity-50"
-                >
-                  {isApplying ? "…" : "Appliquer"}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+        {/* Eraser confirmation row. The second tap on the mark itself also
+            deletes; this gives the same action a labelled target for
+            anyone who would rather press a button than tap twice. */}
+        {mode === "annotate" && activeTool === "eraser" && (
+          <div className="h-11 px-3 sm:px-4 flex items-center gap-3 border-t border-line">
+            <span className="text-xs text-muted truncate">
+              {eraseTarget
+                ? "Touchez de nouveau la marque pour la supprimer"
+                : "Touchez une marque à supprimer"}
+            </span>
+            {eraseTarget && (
+              <button
+                onClick={() => {
+                  pushHistory(
+                    renumberPins(annotations.filter((a) => a.id !== eraseTarget.id)),
+                  );
+                  setEraseTargetId(null);
+                }}
+                className="ml-auto h-8 px-2.5 rounded-lg text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors flex items-center gap-1.5 flex-shrink-0"
+              >
+                <Trash2 size={13} />
+                Supprimer
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Contextual row — only the control relevant to the active tool,
             so the bar stays one row on a phone. */}
@@ -641,7 +702,9 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
                   ? "pointer-events-none"
                   : activeTool === "text"
                     ? "cursor-text"
-                    : "cursor-crosshair"
+                    : activeTool === "eraser"
+                      ? "cursor-pointer"
+                      : "cursor-crosshair"
               }`}
             />
 
@@ -679,6 +742,32 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         )}
       </div>
 
+      {/* Cote label entry. Anchored to the bar rather than to the tap
+          point: the line has just been drawn across the photo, and a
+          popover sitting on top of it would hide what is being labelled. */}
+      {dimensionPrompt && (
+        <div className="flex-shrink-0 bg-surface border-t border-line px-3 sm:px-4 py-2 flex items-center gap-2">
+          <span className="text-xs text-muted whitespace-nowrap">Cote</span>
+          <input
+            autoFocus
+            value={dimensionPrompt.value}
+            onChange={(e) => setDimensionPrompt({ ...dimensionPrompt, value: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitDimensionLabel();
+              if (e.key === "Escape") setDimensionPrompt(null);
+            }}
+            placeholder="ex. 15 cm"
+            className="flex-1 min-w-0 h-9 px-2 text-sm bg-surface text-ink border border-line rounded-md focus:outline-none focus:border-brand-600"
+          />
+          <button
+            onClick={commitDimensionLabel}
+            className="h-9 px-3 rounded-md bg-brand-600 text-white text-sm font-medium flex-shrink-0"
+          >
+            OK
+          </button>
+        </div>
+      )}
+
       {/* Persistent hint — the text tool's drag/edit capabilities were
           previously only hinted at after a selection had been made. */}
       {mode === "annotate" && (
@@ -686,9 +775,15 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
           <p className="text-xs text-white/60">
             {selectedTextId
               ? "Glissez pour déplacer · changez la couleur ou la taille ci-dessus"
-              : activeTool === "text"
-                ? "Touchez la photo pour ajouter du texte · touchez un texte pour le déplacer"
-                : "Dessinez sur la photo · touchez un texte existant pour le modifier"}
+              : activeTool === "eraser"
+                ? "Touchez une marque pour la cibler, puis de nouveau pour la supprimer"
+                : activeTool === "text"
+                  ? "Touchez la photo pour ajouter du texte · touchez un texte pour le déplacer"
+                  : activeTool === "pin"
+                    ? "Touchez la photo pour poser un repère numéroté"
+                    : activeTool === "dimension"
+                      ? "Glissez pour tracer la cote, puis saisissez son étiquette"
+                      : "Dessinez sur la photo · touchez un texte existant pour le modifier"}
           </p>
         </div>
       )}
