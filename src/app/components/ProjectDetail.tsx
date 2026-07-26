@@ -119,8 +119,7 @@ function mapVisitRow(visit: any): SiteVisit {
   };
 }
 
-type MainTab = "visits" | "gallery" | "plans" | "locations";
-type GallerySubTab = "photos" | "issues";
+type MainTab = "visits" | "issues" | "photos" | "plans" | "locations";
 
 export default function ProjectDetail() {
   const navigate = useNavigate();
@@ -137,31 +136,34 @@ export default function ProjectDetail() {
   // one per tab click, so the back button still only takes one press to
   // actually leave the page.
   const [searchParams, setSearchParams] = useSearchParams();
-  const requestedTab = (searchParams.get("tab") as MainTab) || "visits";
+  const rawTab = searchParams.get("tab");
+
+  // The old "gallery" tab held Photos and Déficiences as sub-tabs; both are
+  // now top-level. Those URLs still live in the back/forward history of any
+  // session that was open across the change, and in any bookmark, so they
+  // are translated rather than left to fall through to a tab that renders
+  // nothing. The ?sub= value is honoured too, so a back-nav that was on
+  // gallery/issues returns to Déficiences rather than dumping the user on
+  // Photos. This can be deleted once those histories have aged out.
+  const migrateLegacyTab = (tab: string | null): MainTab => {
+    if (tab === "gallery") return searchParams.get("sub") === "issues" ? "issues" : "photos";
+    return (tab as MainTab) || "visits";
+  };
+
+  const requestedTab = migrateLegacyTab(rawTab);
   // Falls back to "visits" if a stale/typed-in URL asks for the Plans tab
   // while the feature is flagged off, rather than rendering an empty tab
   // with no way to reach it from the tab bar.
   const activeTab: MainTab = requestedTab === "plans" && !PLANS_ENABLED ? "visits" : requestedTab;
-  const gallerySubTab: GallerySubTab = (searchParams.get("sub") as GallerySubTab) || "photos";
 
   const setActiveTab = (tab: MainTab) => {
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
         next.set("tab", tab);
-        if (tab !== "gallery") next.delete("sub");
-        return next;
-      },
-      { replace: true },
-    );
-  };
-
-  const setGallerySubTab = (sub: GallerySubTab) => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.set("tab", "gallery");
-        next.set("sub", sub);
+        // "sub" only ever belonged to the old gallery tab. Drop it so a
+        // migrated URL doesn't carry a dead param forward.
+        next.delete("sub");
         return next;
       },
       { replace: true },
@@ -171,7 +173,8 @@ export default function ProjectDetail() {
   // Visits tab's List/Calendar toggle and visible calendar month — same
   // URL-state reasoning as tab/sub above, so navigating to a visit from the
   // calendar and back restores both the view mode and the month.
-  const visitsView: "list" | "calendar" = searchParams.get("view") === "calendar" ? "calendar" : "list";
+  const visitsView: "list" | "calendar" =
+    searchParams.get("view") === "calendar" ? "calendar" : "list";
   const visitsMonthParam = searchParams.get("month"); // "YYYY-MM"
   const visitsMonth =
     visitsMonthParam && /^\d{4}-\d{2}$/.test(visitsMonthParam)
@@ -214,6 +217,10 @@ export default function ProjectDetail() {
   // one, then we hand off to VisitDetail's own issue-creation modal via
   // ?action=new-issue rather than duplicating IssueForm hosting here.
   const [showVisitPickerForIssue, setShowVisitPickerForIssue] = useState(false);
+  // Same reasoning for "Ajouter des photos" from the Photos tab: a photo
+  // needs a visit_id, so the picker resolves one and we hand off to the
+  // existing per-visit upload page.
+  const [showVisitPickerForPhotos, setShowVisitPickerForPhotos] = useState(false);
   const [showVisitModal, setShowVisitModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<SiteVisit | null>(null);
@@ -268,6 +275,7 @@ export default function ProjectDetail() {
   useModalOpen(showVisitModal && !!selectedVisit);
   useModalOpen(showLocationsImportModal);
   useModalOpen(showVisitPickerForIssue);
+  useModalOpen(showVisitPickerForPhotos);
 
   // Photo filter states
   const [photoSearchQuery, setPhotoSearchQuery] = useState("");
@@ -380,7 +388,9 @@ export default function ProjectDetail() {
   const secondaryStats = [
     totalVisitsCount > 0 ? `${totalVisitsCount} visite${totalVisitsCount !== 1 ? "s" : ""}` : null,
     totalPhotosCount > 0 ? `${totalPhotosCount} photo${totalPhotosCount !== 1 ? "s" : ""}` : null,
-    comments.length > 0 ? `${comments.length} commentaire${comments.length !== 1 ? "s" : ""}` : null,
+    comments.length > 0
+      ? `${comments.length} commentaire${comments.length !== 1 ? "s" : ""}`
+      : null,
   ].filter((s): s is string => s !== null);
 
   // Project name moves into the global light header; the address is the
@@ -583,11 +593,11 @@ export default function ProjectDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (activeTab === "gallery" && gallerySubTab === "photos" && !galleryPhotosFetchStarted) {
+    if (activeTab === "photos" && !galleryPhotosFetchStarted) {
       setGalleryPhotosFetchStarted(true);
       loadGalleryPhotos();
     }
-  }, [activeTab, gallerySubTab, galleryPhotosFetchStarted, loadGalleryPhotos]);
+  }, [activeTab, galleryPhotosFetchStarted, loadGalleryPhotos]);
 
   useEffect(() => {
     const fetchIssues = async () => {
@@ -621,22 +631,21 @@ export default function ProjectDetail() {
   }, [id]);
 
   useEffect(() => {
-    const needsLocations =
-      activeTab === "locations" || (activeTab === "gallery" && gallerySubTab === "issues");
+    // The Déficiences tab needs locations too — they populate its
+    // "Tous les locaux" filter, which renders empty without this fetch.
+    const needsLocations = activeTab === "locations" || activeTab === "issues";
     if (needsLocations && !locationsFetchStarted) {
       setLocationsFetchStarted(true);
       loadLocationsAndLevels();
     }
-  }, [activeTab, gallerySubTab, locationsFetchStarted, loadLocationsAndLevels]);
+  }, [activeTab, locationsFetchStarted, loadLocationsAndLevels]);
 
   if (projectLoadError) {
     return (
       <div className="min-h-screen flex items-center justify-center px-6">
         <div className="text-center max-w-sm">
           <AlertCircle size={40} className="mx-auto text-brand-600 mb-3" />
-          <p className="text-base text-ink font-medium mb-2">
-            Impossible de charger ce projet
-          </p>
+          <p className="text-base text-ink font-medium mb-2">Impossible de charger ce projet</p>
           <p className="text-sm text-muted mb-6">{projectLoadError}</p>
           <div className="flex gap-3 justify-center">
             <button
@@ -676,16 +685,20 @@ export default function ProjectDetail() {
         icon: Calendar,
         onClick: () => navigate(`/app/projects/${id}/visit/new`),
       });
-    } else if (activeTab === "gallery") {
+    } else if (activeTab === "issues") {
       floatingMenu.push({
         label: "Nouvelle déficience",
         icon: AlertCircle,
         onClick: () => setShowVisitPickerForIssue(true),
       });
+    } else if (activeTab === "photos") {
+      // Photos belong to a visit, same as déficiences — so this goes
+      // through VisitPicker to establish one rather than uploading into
+      // the project directly, which would orphan the photos.
       floatingMenu.push({
-        label: "Nouvelle visite",
-        icon: Calendar,
-        onClick: () => navigate(`/app/projects/${id}/visit/new`),
+        label: "Ajouter des photos",
+        icon: Camera,
+        onClick: () => setShowVisitPickerForPhotos(true),
       });
     } else if (activeTab === "locations") {
       floatingMenu.push({
@@ -768,9 +781,7 @@ export default function ProjectDetail() {
             <span className="text-[26px] font-semibold tracking-tight tabular-nums leading-none text-open">
               {issues.length}
             </span>
-            <span className="text-xs text-muted">
-              déficience{issues.length !== 1 ? "s" : ""}
-            </span>
+            <span className="text-xs text-muted">déficience{issues.length !== 1 ? "s" : ""}</span>
           </div>
           {secondaryStats.length > 0 && (
             <div className="text-xs text-faint">{secondaryStats.join(" · ")}</div>
@@ -847,13 +858,28 @@ export default function ProjectDetail() {
             )}
           </button>
           <button
-            onClick={() => setActiveTab("gallery")}
+            onClick={() => setActiveTab("issues")}
             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === "gallery" ? "text-brand-600" : "text-body hover:text-ink"
+              activeTab === "issues" ? "text-brand-600" : "text-body hover:text-ink"
             }`}
           >
-            Galerie ({totalPhotosCount})
-            {activeTab === "gallery" && (
+            {/* Four tabs at flex-1 leave ~94px each on a 375px phone, which
+                "Déficiences (12)" overruns — so it abbreviates below sm and
+                spells out from sm up, where there is room. */}
+            <span className="sm:hidden">Déf. ({issues.length})</span>
+            <span className="hidden sm:inline">Déficiences ({issues.length})</span>
+            {activeTab === "issues" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-600" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("photos")}
+            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+              activeTab === "photos" ? "text-brand-600" : "text-body hover:text-ink"
+            }`}
+          >
+            Photos ({totalPhotosCount})
+            {activeTab === "photos" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-600" />
             )}
           </button>
@@ -915,134 +941,107 @@ export default function ProjectDetail() {
 
             {visitsView === "calendar" ? (
               id && (
-                <ProjectVisitCalendar projectId={id} month={visitsMonth} onMonthChange={setVisitsMonth} />
+                <ProjectVisitCalendar
+                  projectId={id}
+                  month={visitsMonth}
+                  onMonthChange={setVisitsMonth}
+                />
               )
             ) : (
               <>
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-2">
-              <select
-                value={visitPhaseFilter}
-                onChange={(e) => setVisitPhaseFilter(e.target.value)}
-                className="px-3 py-2 bg-surface border border-line-strong rounded-lg text-sm min-h-[44px]"
-              >
-                <option value="">Toutes les phases</option>
-                {visitPhasesInUse.map((phase) => (
-                  <option key={phase} value={phase}>
-                    {phase.charAt(0).toUpperCase() + phase.slice(1)}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="date"
-                value={visitDateFrom}
-                onChange={(e) => setVisitDateFrom(e.target.value)}
-                aria-label="Du"
-                className="px-3 py-2 bg-surface border border-line-strong rounded-lg text-sm min-h-[44px]"
-              />
-              <input
-                type="date"
-                value={visitDateTo}
-                onChange={(e) => setVisitDateTo(e.target.value)}
-                aria-label="Au"
-                className="px-3 py-2 bg-surface border border-line-strong rounded-lg text-sm min-h-[44px]"
-              />
-              <button
-                onClick={toggleVisitOpenIssuesOnly}
-                className={`px-3 py-2 rounded-lg text-sm font-medium min-h-[44px] transition-colors ${
-                  visitOpenIssuesOnly
-                    ? "bg-brand-600 text-white"
-                    : "bg-surface border border-line-strong text-body hover:border-brand-600"
-                }`}
-              >
-                Déficiences ouvertes
-              </button>
-              {(visitPhaseFilter || visitDateFrom || visitDateTo || visitOpenIssuesOnly) && (
-                <button
-                  onClick={() => {
-                    setVisitPhaseFilter("");
-                    setVisitDateFrom("");
-                    setVisitDateTo("");
-                    setVisitOpenIssuesOnly(false);
-                  }}
-                  className="px-3 py-2 text-sm text-body hover:text-brand-600"
-                >
-                  Effacer
-                </button>
-              )}
-            </div>
-
-            {isLoadingVisits ? (
-              <VisitCardSkeleton />
-            ) : siteVisits.length === 0 ? (
-              <div className="text-center py-12">
-                <Calendar size={48} className="mx-auto text-faint mb-4" />
-                <p className="text-muted">Aucune visite ne correspond à ces filtres.</p>
-              </div>
-            ) : (
-              <>
-                <div className="bg-surface rounded-xl border border-line overflow-hidden">
-                  {siteVisits.map((visit) => (
-                    <VisitCard
-                      key={visit.id}
-                      visit={visit}
-                      onOpen={() => navigate(`/app/projects/${id}/visits/${visit.id}`)}
-                    />
-                  ))}
-                </div>
-                {visitsHasMore && (
-                  <button
-                    onClick={() => loadVisits(false)}
-                    disabled={loadingMoreVisits}
-                    className="w-full py-3 bg-surface border border-line rounded-xl text-sm font-medium text-ink hover:border-brand-600 hover:text-brand-600 disabled:opacity-50 transition-colors min-h-[48px]"
+                {/* Filters */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={visitPhaseFilter}
+                    onChange={(e) => setVisitPhaseFilter(e.target.value)}
+                    className="px-3 py-2 bg-surface border border-line-strong rounded-lg text-sm min-h-[44px]"
                   >
-                    {loadingMoreVisits ? "Chargement…" : "Charger plus de visites"}
+                    <option value="">Toutes les phases</option>
+                    {visitPhasesInUse.map((phase) => (
+                      <option key={phase} value={phase}>
+                        {phase.charAt(0).toUpperCase() + phase.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="date"
+                    value={visitDateFrom}
+                    onChange={(e) => setVisitDateFrom(e.target.value)}
+                    aria-label="Du"
+                    className="px-3 py-2 bg-surface border border-line-strong rounded-lg text-sm min-h-[44px]"
+                  />
+                  <input
+                    type="date"
+                    value={visitDateTo}
+                    onChange={(e) => setVisitDateTo(e.target.value)}
+                    aria-label="Au"
+                    className="px-3 py-2 bg-surface border border-line-strong rounded-lg text-sm min-h-[44px]"
+                  />
+                  <button
+                    onClick={toggleVisitOpenIssuesOnly}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium min-h-[44px] transition-colors ${
+                      visitOpenIssuesOnly
+                        ? "bg-brand-600 text-white"
+                        : "bg-surface border border-line-strong text-body hover:border-brand-600"
+                    }`}
+                  >
+                    Déficiences ouvertes
                   </button>
+                  {(visitPhaseFilter || visitDateFrom || visitDateTo || visitOpenIssuesOnly) && (
+                    <button
+                      onClick={() => {
+                        setVisitPhaseFilter("");
+                        setVisitDateFrom("");
+                        setVisitDateTo("");
+                        setVisitOpenIssuesOnly(false);
+                      }}
+                      className="px-3 py-2 text-sm text-body hover:text-brand-600"
+                    >
+                      Effacer
+                    </button>
+                  )}
+                </div>
+
+                {isLoadingVisits ? (
+                  <VisitCardSkeleton />
+                ) : siteVisits.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Calendar size={48} className="mx-auto text-faint mb-4" />
+                    <p className="text-muted">Aucune visite ne correspond à ces filtres.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-surface rounded-xl border border-line overflow-hidden">
+                      {siteVisits.map((visit) => (
+                        <VisitCard
+                          key={visit.id}
+                          visit={visit}
+                          onOpen={() => navigate(`/app/projects/${id}/visits/${visit.id}`)}
+                        />
+                      ))}
+                    </div>
+                    {visitsHasMore && (
+                      <button
+                        onClick={() => loadVisits(false)}
+                        disabled={loadingMoreVisits}
+                        className="w-full py-3 bg-surface border border-line rounded-xl text-sm font-medium text-ink hover:border-brand-600 hover:text-brand-600 disabled:opacity-50 transition-colors min-h-[48px]"
+                      >
+                        {loadingMoreVisits ? "Chargement…" : "Charger plus de visites"}
+                      </button>
+                    )}
+                  </>
                 )}
-              </>
-            )}
               </>
             )}
           </div>
         )}
 
-        {/* Gallery Tab */}
-        {activeTab === "gallery" && (
+        {/* Photos Tab */}
+        {activeTab === "photos" && (
           <div className="space-y-4">
-            {/* Sub Tabs */}
-            <div className="flex max-w-2xl mx-auto">
-              <button
-                onClick={() => setGallerySubTab("photos")}
-                className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-                  gallerySubTab === "photos"
-                    ? "text-brand-600"
-                    : "text-body hover:text-ink"
-                }`}
-              >
-                Photos ({totalPhotosCount})
-                {gallerySubTab === "photos" && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-600" />
-                )}
-              </button>
-              <button
-                onClick={() => setGallerySubTab("issues")}
-                className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-                  gallerySubTab === "issues"
-                    ? "text-brand-600"
-                    : "text-body hover:text-ink"
-                }`}
-              >
-                Déficiences ({issues.length})
-                {gallerySubTab === "issues" && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-600" />
-                )}
-              </button>
-            </div>
-
-            {/* Photos Sub Tab */}
-            {gallerySubTab === "photos" && loadingGalleryPhotos ? (
+            {loadingGalleryPhotos ? (
               <PhotoGridSkeleton />
-            ) : gallerySubTab === "photos" && galleryPhotosLoadError ? (
+            ) : galleryPhotosLoadError ? (
               <div className="text-center py-12">
                 <Camera size={48} className="mx-auto text-faint mb-4" />
                 <p className="text-muted mb-2">{galleryPhotosLoadError}</p>
@@ -1054,7 +1053,6 @@ export default function ProjectDetail() {
                 </button>
               </div>
             ) : (
-              gallerySubTab === "photos" && (
               <div className="space-y-4">
                 {/* Search and Filters */}
                 <div className="space-y-3">
@@ -1197,88 +1195,83 @@ export default function ProjectDetail() {
                   </div>
                 )}
               </div>
-              )
+            )}
+          </div>
+        )}
+
+        {/* Déficiences Tab */}
+        {activeTab === "issues" && (
+          <div className="space-y-4">
+            {locations.length > 0 && (
+              <select
+                value={issueLocationFilter}
+                onChange={(e) => setIssueLocationFilter(e.target.value)}
+                className="w-full px-4 py-3 bg-surface border border-line-strong rounded-lg text-sm min-h-[48px]"
+              >
+                <option value="">Tous les locaux</option>
+                {locations.map((loc) => (
+                  <option key={loc.id} value={loc.id}>
+                    {loc.locationNumber}
+                    {loc.name ? ` — ${loc.name}` : ""}
+                  </option>
+                ))}
+              </select>
             )}
 
-            {/* Issues Sub Tab */}
-            {gallerySubTab === "issues" && (
-              <div className="space-y-4">
-                {locations.length > 0 && (
-                  <select
-                    value={issueLocationFilter}
-                    onChange={(e) => setIssueLocationFilter(e.target.value)}
-                    className="w-full px-4 py-3 bg-surface border border-line-strong rounded-lg text-sm min-h-[48px]"
-                  >
-                    <option value="">Tous les locaux</option>
-                    {locations.map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        {loc.locationNumber}
-                        {loc.name ? ` — ${loc.name}` : ""}
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                {filteredIssues.length === 0 && issueLocationFilter ? (
-                  <div className="text-center py-8">
-                    <MapPin size={40} className="mx-auto text-faint mb-3" />
-                    <p className="text-muted text-sm mb-2">
-                      Aucune déficience pour ce local
-                    </p>
+            {filteredIssues.length === 0 && issueLocationFilter ? (
+              <div className="text-center py-8">
+                <MapPin size={40} className="mx-auto text-faint mb-3" />
+                <p className="text-muted text-sm mb-2">Aucune déficience pour ce local</p>
+                <button
+                  onClick={() => setIssueLocationFilter("")}
+                  className="text-sm text-brand-strong hover:text-brand-800"
+                >
+                  Effacer le filtre
+                </button>
+              </div>
+            ) : (
+              <div className="bg-surface rounded-xl border border-line overflow-hidden">
+                {filteredIssues.map((issue) => {
+                  const locationLabel = resolveLocationLabel(issue);
+                  return (
                     <button
-                      onClick={() => setIssueLocationFilter("")}
-                      className="text-sm text-brand-strong hover:text-brand-800"
+                      key={issue.id}
+                      onClick={() => navigate(`/app/projects/${id}/issues/${issue.id}`)}
+                      className="w-full flex items-center gap-3 px-4 py-3 bg-surface border-b border-line hover:bg-subtle transition-colors min-h-[44px] text-left"
                     >
-                      Effacer le filtre
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-ink truncate">{issue.title}</div>
+                        <div className="flex items-center gap-1.5 text-xs text-muted mt-0.5 flex-wrap">
+                          <span className="whitespace-nowrap">
+                            {parseLocalDate(issue.createdDate).toLocaleDateString("fr-CA", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                          {locationLabel && (
+                            <span className="flex items-center gap-1 min-w-0">
+                              <span>·</span>
+                              <MapPin size={10} className="flex-shrink-0" />
+                              <span className="truncate">{locationLabel}</span>
+                            </span>
+                          )}
+                          {issue.photos.length > 0 && (
+                            <span className="flex items-center gap-1 flex-shrink-0">
+                              <span>·</span>
+                              <Camera size={10} />
+                              {issue.photos.length}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <PriorityBadge priority={issue.priority} />
+                        <StatusBadge status={issue.status} />
+                      </div>
                     </button>
-                  </div>
-                ) : (
-                  <div className="bg-surface rounded-xl border border-line overflow-hidden">
-                    {filteredIssues.map((issue) => {
-                      const locationLabel = resolveLocationLabel(issue);
-                      return (
-                        <button
-                          key={issue.id}
-                          onClick={() => navigate(`/app/projects/${id}/issues/${issue.id}`)}
-                          className="w-full flex items-center gap-3 px-4 py-3 bg-surface border-b border-line hover:bg-subtle transition-colors min-h-[44px] text-left"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-ink truncate">
-                              {issue.title}
-                            </div>
-                            <div className="flex items-center gap-1.5 text-xs text-muted mt-0.5 flex-wrap">
-                              <span className="whitespace-nowrap">
-                                {parseLocalDate(issue.createdDate).toLocaleDateString("fr-CA", {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                })}
-                              </span>
-                              {locationLabel && (
-                                <span className="flex items-center gap-1 min-w-0">
-                                  <span>·</span>
-                                  <MapPin size={10} className="flex-shrink-0" />
-                                  <span className="truncate">{locationLabel}</span>
-                                </span>
-                              )}
-                              {issue.photos.length > 0 && (
-                                <span className="flex items-center gap-1 flex-shrink-0">
-                                  <span>·</span>
-                                  <Camera size={10} />
-                                  {issue.photos.length}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <PriorityBadge priority={issue.priority} />
-                            <StatusBadge status={issue.status} />
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1311,6 +1304,18 @@ export default function ProjectDetail() {
             navigate(`/app/projects/${id}/visits/${visit.id}?action=new-issue`);
           }}
           onClose={() => setShowVisitPickerForIssue(false)}
+        />
+      )}
+
+      {id && (
+        <VisitPicker
+          open={showVisitPickerForPhotos}
+          projectId={id}
+          onSelect={(visit) => {
+            setShowVisitPickerForPhotos(false);
+            navigate(`/app/projects/${id}/visits/${visit.id}/add-photos`);
+          }}
+          onClose={() => setShowVisitPickerForPhotos(false)}
         />
       )}
 
@@ -1671,9 +1676,7 @@ export default function ProjectDetail() {
                                 .join("")}
                             </div>
                             <div>
-                              <div className="text-xs font-medium text-ink">
-                                {comment.author}
-                              </div>
+                              <div className="text-xs font-medium text-ink">{comment.author}</div>
                               <div className="text-xs text-muted">
                                 {new Date(comment.date).toLocaleDateString("fr-CA")}
                               </div>
