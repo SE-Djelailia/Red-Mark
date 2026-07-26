@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import {
   ArrowLeft,
@@ -21,7 +21,6 @@ import {
   getSiteVisit,
   getProject,
   getPhotos,
-  uploadPhoto,
   updateSiteVisit,
   deletePhoto,
   saveAnnotatedPhoto,
@@ -34,8 +33,6 @@ import { PLANS_ENABLED } from "../../lib/featureFlags";
 import { useSmartBack } from "../../hooks/useSmartBack";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
 import ConfirmDialog from "./ConfirmDialog";
-import type { SiteVisit } from "../../lib/supabase";
-import { supabase } from "../../lib/supabase";
 import { formatDateLongWithWeekday } from "../../lib/dateUtils";
 import VisitComments from "./VisitComments";
 import IssueForm from "./IssueForm";
@@ -44,7 +41,6 @@ import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole, canEditIssue, canManagePhoto } from "../../hooks/useProjectRole";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
-import { compressImage } from "../../lib/imageCompression";
 import { uploadIssuePhotos, WEATHER_EVIDENCE_TAG } from "../../lib/issuePhotoUpload";
 import SecureImage from "./SecureImage";
 import { toast } from "sonner";
@@ -86,8 +82,8 @@ export default function VisitDetail() {
   const [visit, setVisit] = useState<VisitDisplay | null>(null);
   const [projectName, setProjectName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [uploadingWeatherPhoto, setUploadingWeatherPhoto] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Photo selection for deletion
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -116,54 +112,83 @@ export default function VisitDetail() {
   const [initialIssuePhotos, setInitialIssuePhotos] = useState<Issue["photos"]>([]);
   const [showDeletePhotosConfirm, setShowDeletePhotosConfirm] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const apiVisit = await getSiteVisit(visitId || "");
-        const photos = await getPhotos(apiVisit.id);
-
-        const transformedVisit: VisitDisplay = {
-          id: apiVisit.id,
-          date: apiVisit.visit_date,
-          phase: apiVisit.phase.charAt(0).toUpperCase() + apiVisit.phase.slice(1),
-          tags: [],
-          photoCount: photos.length,
-          notes: apiVisit.notes,
-          photos: photos.map((p) => ({
-            id: p.id,
-            url: p.file_url || "", // Deprecated, kept for backward compatibility
-            storage_path: p.storage_path,
-            user_id: p.user_id,
-            tags: p.tags || [],
-            location: p.location || undefined,
-          })),
-          weather: apiVisit.weather,
-          temperature: apiVisit.temperature,
-          createdBy: apiVisit.user_id,
-        };
-
-        setVisit(transformedVisit);
-        setEditedNotes(transformedVisit.notes);
-
-        // Load issues from Supabase
-        if (visitId) {
-          const visitIssues = await getIssuesByVisit(visitId);
-          setIssues(visitIssues);
-        }
-
-        if (projectId) {
-          const project = await getProject(projectId);
-          setProjectName(project.name);
-        }
-      } catch (error) {
-        console.error("Error fetching visit:", error);
-      } finally {
-        setIsLoading(false);
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      if (!visitId) {
+        setLoadError("Visite introuvable.");
+        return;
       }
-    };
 
-    fetchData();
+      // getSiteVisit is typed `SiteVisit | null` and the row can genuinely
+      // be absent — deleted visit, stale link, or RLS filtering it out for
+      // a non-member. Previously every field below was read straight off
+      // the result, so any of those cases threw inside the effect and left
+      // the screen blank with only a console error.
+      const apiVisit = await getSiteVisit(visitId);
+      if (!apiVisit) {
+        setLoadError("Cette visite n'existe plus ou vous n'y avez pas accès.");
+        return;
+      }
+
+      const photos = await getPhotos(apiVisit.id);
+
+      // phase/notes are optional on SiteVisit. `apiVisit.phase.charAt(0)`
+      // crashed outright on a visit saved without a phase — a real runtime
+      // fault, not just a type complaint.
+      const phase = apiVisit.phase ?? "";
+      const transformedVisit: VisitDisplay = {
+        id: apiVisit.id,
+        date: apiVisit.visit_date,
+        phase: phase ? phase.charAt(0).toUpperCase() + phase.slice(1) : "—",
+        tags: [],
+        photoCount: photos.length,
+        notes: apiVisit.notes ?? "",
+        photos: photos.map((p) => ({
+          id: p.id,
+          url: p.file_url || "", // Deprecated, kept for backward compatibility
+          storage_path: p.storage_path,
+          user_id: p.user_id,
+          tags: p.tags || [],
+          location: p.location || undefined,
+        })),
+        weather: apiVisit.weather,
+        temperature: apiVisit.temperature,
+        createdBy: apiVisit.user_id,
+      };
+
+      setVisit(transformedVisit);
+      setEditedNotes(transformedVisit.notes);
+
+      // Load issues from Supabase
+      const visitIssues = await getIssuesByVisit(visitId);
+      setIssues(visitIssues);
+
+      // The project name is decoration on this screen — a missing project
+      // shouldn't blank out a visit that loaded fine, so it degrades to an
+      // empty label rather than failing the whole fetch.
+      if (projectId) {
+        const project = await getProject(projectId);
+        setProjectName(project?.name ?? "");
+      }
+    } catch (error) {
+      console.error("Error fetching visit:", error);
+      setLoadError(
+        getRlsErrorMessage(
+          error,
+          "Impossible de charger cette visite.",
+          "Vous n'avez pas accès à cette visite.",
+        ),
+      );
+    } finally {
+      setIsLoading(false);
+    }
   }, [visitId, projectId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleSaveNotes = async () => {
     if (editedNotes.trim() && visitId) {
@@ -184,63 +209,8 @@ export default function VisitDetail() {
     }
   };
 
-  const currentUserId = user?.id || null;
   const projectRole = useProjectRole(projectId);
 
-  // Photo upload handler
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !visitId || !projectId) return;
-
-    if (!user?.id) {
-      alert("Session expirée. Veuillez vous reconnecter.");
-      navigate("/");
-      return;
-    }
-
-    const files = Array.from(e.target.files);
-
-    try {
-      // Upload each photo with compression
-      for (const file of files) {
-        // Compress image before upload
-        const compressedFile = await compressImage(file);
-
-        const uploadedPhoto = await uploadPhoto(compressedFile, user.id, projectId, visitId, {
-          tags: [],
-        });
-
-        // Add to local state
-        setVisit((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            photos: [
-              ...prev.photos,
-              {
-                id: uploadedPhoto.id,
-                url: uploadedPhoto.file_url || "",
-                storage_path: uploadedPhoto.storage_path,
-                user_id: uploadedPhoto.user_id,
-                tags: uploadedPhoto.tags || [],
-                location: uploadedPhoto.location || undefined,
-              },
-            ],
-            photoCount: prev.photoCount + 1,
-          };
-        });
-      }
-
-      alert(`${files.length} photo(s) ajoutée(s) avec succès!`);
-    } catch (error) {
-      console.error("Error uploading photos:", error);
-      alert("Erreur lors de l'ajout des photos");
-    }
-
-    // Reset input
-    if (e.target) {
-      e.target.value = "";
-    }
-  };
 
   // Weather evidence — a regular visit photo tagged "Météo" (a sky photo,
   // a weather-app screenshot, etc.), via the same shared capture/compress/
@@ -475,6 +445,38 @@ export default function VisitDetail() {
           .filter(Boolean)
           .join(" · "),
   );
+
+  // Explicit not-found / no-access state. Placed after usePageHeader so the
+  // hook order is identical on every render. Matches LocationDetail's and
+  // ProjectDetail's load-error pattern: say what failed, offer Retour and
+  // Réessayer, rather than leaving a blank screen behind a console error.
+  if (!isLoading && (loadError || !visit)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6 bg-canvas">
+        <div className="text-center max-w-sm">
+          <AlertCircle size={40} className="mx-auto text-brand-600 mb-3" />
+          <p className="text-base text-ink font-medium mb-2">Impossible d'afficher cette visite</p>
+          <p className="text-sm text-muted mb-6">
+            {loadError || "Cette visite n'existe plus ou vous n'y avez pas accès."}
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={goBack}
+              className="px-4 h-11 bg-subtle text-ink rounded-lg hover:bg-line text-sm font-medium min-h-[44px]"
+            >
+              Retour
+            </button>
+            <button
+              onClick={() => fetchData()}
+              className="px-4 h-11 bg-brand-600 text-white rounded-lg hover:bg-brand-700 text-sm font-medium min-h-[44px]"
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-20 bg-canvas">

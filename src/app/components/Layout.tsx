@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { Navigate } from "react-router";
 import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
@@ -10,9 +10,11 @@ import OfflineIndicator from "./OfflineIndicator";
 import PWAInstallPrompt from "./PWAInstallPrompt";
 import PWAUpdateNotification from "./PWAUpdateNotification";
 import AppHeader from "./AppHeader";
+import ErrorBoundary from "./ErrorBoundary";
 
 export default function Layout() {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   // Drain any photos queued while offline as soon as connectivity comes back.
   useEffect(() => {
@@ -68,7 +70,14 @@ export default function Layout() {
         <OfflineIndicator />
         <PWAInstallPrompt />
         <PWAUpdateNotification />
-        <Outlet />
+        {/* Per-route boundary wrapping ONLY the routed screen. A crash in
+            one screen leaves the header and bottom nav mounted, so the user
+            can navigate somewhere else instead of being stuck — the whole
+            point on a site visit. Keyed on the pathname so navigating away
+            clears the fallback automatically. */}
+        <ErrorBoundary resetKeys={[location.pathname]}>
+          <Outlet />
+        </ErrorBoundary>
         <BottomNav />
       </div>
     </PageHeaderProvider>

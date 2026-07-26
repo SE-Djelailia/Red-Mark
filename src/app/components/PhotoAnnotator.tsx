@@ -1,21 +1,34 @@
-import { useState, useRef, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  X,
+  ArrowUpRight,
+  Check,
+  Circle as CircleIcon,
+  Crop,
   Pencil,
-  Type,
-  Circle,
+  Redo2,
+  RotateCw,
   Square,
-  ArrowRight,
-  Undo,
-  Redo,
-  Save,
   Trash2,
-  Eraser,
-  Move,
-  Palette,
+  Type,
+  Undo2,
+  X,
 } from "lucide-react";
-import { useModalOpen } from "../../hooks/useModalOpen";
+import { toast } from "sonner";
 import ConfirmDialog from "./ConfirmDialog";
+import CropOverlay from "./CropOverlay";
+import { getPhotoSignedUrl } from "../../lib/supabaseApi";
+import { usePrepareImage, FULL_CROP, type CropRect } from "../../hooks/usePrepareImage";
+import {
+  DEFAULT_COLOR,
+  MARKUP_COLORS,
+  createId,
+  drawAnnotation,
+  hitTestText,
+  textBounds,
+  type Annotation,
+  type Point,
+  type Tool,
+} from "../../lib/annotationModel";
 
 interface PhotoAnnotatorProps {
   photo: {
@@ -28,945 +41,668 @@ interface PhotoAnnotatorProps {
   onSave?: (photoId: string, annotatedImageBlob: Blob) => Promise<void>;
 }
 
-type Tool = "pencil" | "arrow" | "rectangle" | "circle" | "text" | "eraser";
+const TOOLS: { tool: Tool; icon: typeof Pencil; label: string }[] = [
+  { tool: "pencil", icon: Pencil, label: "Crayon" },
+  { tool: "arrow", icon: ArrowUpRight, label: "Flèche" },
+  { tool: "rectangle", icon: Square, label: "Rectangle" },
+  { tool: "circle", icon: CircleIcon, label: "Cercle" },
+  { tool: "text", icon: Type, label: "Texte" },
+];
 
-interface DrawingPoint {
-  x: number;
-  y: number;
-}
+const DRAW_TOOLS: Tool[] = ["pencil", "arrow", "rectangle", "circle"];
 
-interface Annotation {
-  id: string;
-  type: Tool;
-  points: DrawingPoint[];
-  color: string;
-  lineWidth: number;
-  text?: string;
-  fontSize?: number;
-}
+// Stroke width and font size are authored against a reference width so a
+// "3px" line looks the same on a 4032px photo as on an 800px one. Without
+// this, marks drawn on a high-res photo are invisibly thin.
+const REFERENCE_WIDTH = 1200;
 
 export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) {
-  useModalOpen();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Measuring context for text hit-testing — kept off-DOM so it never
+  // depends on the visible canvas's current transform state.
+  const measureRef = useRef<CanvasRenderingContext2D | null>(null);
+
+  const [sourceUrl, setSourceUrl] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const { preparedUrl, isApplying, applyPrepare } = usePrepareImage(sourceUrl);
+
+  const [mode, setMode] = useState<"annotate" | "prepare">("annotate");
+  const [crop, setCrop] = useState<CropRect>(FULL_CROP);
+  const [rotation, setRotation] = useState(0);
 
   const [activeTool, setActiveTool] = useState<Tool>("pencil");
-  const [color, setColor] = useState("#E10600");
-  const [lineWidth, setLineWidth] = useState(3);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const [color, setColor] = useState<string>(DEFAULT_COLOR);
+  const [strokeScale, setStrokeScale] = useState(3);
+  const [fontScale, setFontScale] = useState(18);
+
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
-  const [currentAnnotation, setCurrentAnnotation] = useState<Annotation | null>(null);
+  const [draft, setDraft] = useState<Annotation | null>(null);
   const [history, setHistory] = useState<Annotation[][]>([[]]);
   const [historyStep, setHistoryStep] = useState(0);
+
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [textInput, setTextInput] = useState("");
-  const [textPosition, setTextPosition] = useState<DrawingPoint | null>(null);
-  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
-  const [isDraggingText, setIsDraggingText] = useState(false);
-  const [dragOffset, setDragOffset] = useState<DrawingPoint>({ x: 0, y: 0 });
-  const [editingTextId, setEditingTextId] = useState<string | null>(null);
-  const [fontSize, setFontSize] = useState(16);
-  const [hoveredTextId, setHoveredTextId] = useState<string | null>(null);
-  const [cursorPos, setCursorPos] = useState<DrawingPoint | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [showDeleteTextConfirm, setShowDeleteTextConfirm] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  // Load image as blob to avoid CORS issues
+  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
+  const [hoveredTextId, setHoveredTextId] = useState<string | null>(null);
+  const [textDragOffset, setTextDragOffset] = useState<Point | null>(null);
+  const [textPrompt, setTextPrompt] = useState<{ point: Point; value: string } | null>(null);
+
+  const hasAnnotations = annotations.length > 0;
+
+  // ---- image loading -------------------------------------------------
+  // Fetched to a blob URL rather than used cross-origin: a signed URL from
+  // another origin taints the canvas, and a tainted canvas cannot be
+  // exported with toBlob().
   useEffect(() => {
-    async function loadImageAsBlob() {
+    let cancelled = false;
+    let objectUrl: string | null = null;
+
+    (async () => {
       try {
-        // Get signed URL from SecureImage hook
-        const { getPhotoSignedUrl } = await import("../../lib/supabaseApi");
         const signedUrl = await getPhotoSignedUrl(photo.storage_path);
-
-        // Fetch as blob
         const response = await fetch(signedUrl);
+        if (!response.ok) throw new Error(String(response.status));
         const blob = await response.blob();
-
-        // Create local object URL
-        const objectUrl = URL.createObjectURL(blob);
-        setImageUrl(objectUrl);
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setSourceUrl(objectUrl);
       } catch (error) {
-        console.error("Error loading image:", error);
+        console.error("Error loading image for annotation:", error);
+        if (!cancelled) setLoadError("Impossible de charger la photo.");
       }
-    }
+    })();
 
-    loadImageAsBlob();
-
-    // Cleanup
     return () => {
-      if (imageUrl) {
-        URL.revokeObjectURL(imageUrl);
-      }
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [photo.storage_path]);
 
-  // Initialize canvas when image loads
   useEffect(() => {
-    if (imageLoaded && imageRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const img = imageRef.current;
+    setImageLoaded(false);
+  }, [preparedUrl]);
 
-      canvas.width = img.width;
-      canvas.height = img.height;
+  // ---- natural-resolution canvas -------------------------------------
+  // The backing store matches the photo's true pixel size; CSS scales it
+  // down for display. Annotations are therefore authored and exported at
+  // full resolution no matter how small the on-screen view is.
+  const syncCanvasSize = useCallback(() => {
+    const canvas = canvasRef.current;
+    const img = imageRef.current;
+    if (!canvas || !img || !img.naturalWidth) return;
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+  }, []);
 
-      redrawCanvas();
-    }
-  }, [imageLoaded, annotations, cursorPos, activeTool]);
+  const naturalScale = useCallback(() => {
+    const img = imageRef.current;
+    if (!img || !img.naturalWidth) return 1;
+    return img.naturalWidth / REFERENCE_WIDTH;
+  }, []);
 
-  const redrawCanvas = () => {
+  const currentLineWidth = useCallback(
+    () => Math.max(1, strokeScale * naturalScale()),
+    [strokeScale, naturalScale],
+  );
+  const currentFontSize = useCallback(
+    () => Math.max(8, fontScale * naturalScale()),
+    [fontScale, naturalScale],
+  );
+
+  const redraw = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!ctx || !canvas) return;
 
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    annotations.forEach((a) => drawAnnotation(ctx, a));
+    if (draft) drawAnnotation(ctx, draft);
 
-    // Draw all annotations
-    annotations.forEach((annotation) => {
-      drawAnnotation(ctx, annotation);
-    });
-
-    // Draw current annotation
-    if (currentAnnotation) {
-      drawAnnotation(ctx, currentAnnotation);
-    }
-
-    // Draw eraser cursor
-    if (activeTool === "eraser" && cursorPos) {
-      const eraserRadius = lineWidth * 5;
-      ctx.strokeStyle = "#FF0000";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.arc(cursorPos.x, cursorPos.y, eraserRadius, 0, 2 * Math.PI);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-  };
-
-  const drawAnnotation = (ctx: CanvasRenderingContext2D, annotation: Annotation) => {
-    ctx.strokeStyle = annotation.color;
-    ctx.lineWidth = annotation.lineWidth;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-
-    const points = annotation.points;
-    if (points.length === 0) return;
-
-    switch (annotation.type) {
-      case "pencil":
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-        points.forEach((point) => {
-          ctx.lineTo(point.x, point.y);
-        });
-        ctx.stroke();
-        break;
-
-      case "arrow":
-        if (points.length >= 2) {
-          const start = points[0];
-          const end = points[points.length - 1];
-          drawArrow(ctx, start.x, start.y, end.x, end.y);
-        }
-        break;
-
-      case "rectangle":
-        if (points.length >= 2) {
-          const start = points[0];
-          const end = points[points.length - 1];
-          ctx.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);
-        }
-        break;
-
-      case "circle":
-        if (points.length >= 2) {
-          const start = points[0];
-          const end = points[points.length - 1];
-          const radius = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
-          ctx.beginPath();
-          ctx.arc(start.x, start.y, radius, 0, 2 * Math.PI);
-          ctx.stroke();
-        }
-        break;
-
-      case "text":
-        if (annotation.text && points.length > 0) {
-          const textFontSize = annotation.fontSize || annotation.lineWidth * 8;
-          ctx.font = `${textFontSize}px Arial`;
-          ctx.fillStyle = annotation.color;
-          ctx.fillText(annotation.text, points[0].x, points[0].y);
-
-          // Draw selection box if selected or hovered
-          if (annotation.id === selectedTextId || annotation.id === hoveredTextId) {
-            const metrics = ctx.measureText(annotation.text);
-            const textWidth = metrics.width;
-            const textHeight = textFontSize;
-
-            ctx.strokeStyle = annotation.id === selectedTextId ? "#0066FF" : "#00AAFF";
-            ctx.lineWidth = 2;
-            ctx.setLineDash(annotation.id === selectedTextId ? [5, 5] : [3, 3]);
-            ctx.strokeRect(
-              points[0].x - 5,
-              points[0].y - textHeight,
-              textWidth + 10,
-              textHeight + 10,
-            );
-            ctx.setLineDash([]);
+    // Text affordances: a dashed box on hover and a solid box with corner
+    // handles when selected, so "this is draggable / editable" is visible
+    // before the user commits to a gesture rather than after.
+    const highlightId = selectedTextId || hoveredTextId;
+    if (highlightId) {
+      const target = annotations.find((a) => a.id === highlightId);
+      if (target) {
+        const bounds = textBounds(ctx, target);
+        if (bounds) {
+          const pad = 6 * naturalScale();
+          const selected = target.id === selectedTextId;
+          ctx.save();
+          ctx.strokeStyle = "#E10600";
+          ctx.lineWidth = Math.max(1, 1.5 * naturalScale());
+          if (!selected) ctx.setLineDash([6 * naturalScale(), 4 * naturalScale()]);
+          ctx.strokeRect(
+            bounds.x - pad,
+            bounds.y - pad,
+            bounds.width + pad * 2,
+            bounds.height + pad * 2,
+          );
+          if (selected) {
+            const h = 4 * naturalScale();
+            ctx.fillStyle = "#E10600";
+            [
+              [bounds.x - pad, bounds.y - pad],
+              [bounds.x + bounds.width + pad, bounds.y - pad],
+              [bounds.x - pad, bounds.y + bounds.height + pad],
+              [bounds.x + bounds.width + pad, bounds.y + bounds.height + pad],
+            ].forEach(([hx, hy]) => ctx.fillRect(hx - h, hy - h, h * 2, h * 2));
           }
+          ctx.restore();
         }
-        break;
+      }
     }
+  }, [annotations, draft, selectedTextId, hoveredTextId, naturalScale]);
+
+  useEffect(() => {
+    if (!imageLoaded) return;
+    syncCanvasSize();
+    redraw();
+  }, [imageLoaded, redraw, syncCanvasSize]);
+
+  const measureCtx = () => {
+    if (!measureRef.current) {
+      measureRef.current = document.createElement("canvas").getContext("2d");
+    }
+    return measureRef.current;
   };
 
-  const drawArrow = (
-    ctx: CanvasRenderingContext2D,
-    fromX: number,
-    fromY: number,
-    toX: number,
-    toY: number,
-  ) => {
-    const headLength = 15;
-    const angle = Math.atan2(toY - fromY, toX - fromX);
-
-    // Draw line
-    ctx.beginPath();
-    ctx.moveTo(fromX, fromY);
-    ctx.lineTo(toX, toY);
-    ctx.stroke();
-
-    // Draw arrowhead
-    ctx.beginPath();
-    ctx.moveTo(toX, toY);
-    ctx.lineTo(
-      toX - headLength * Math.cos(angle - Math.PI / 6),
-      toY - headLength * Math.sin(angle - Math.PI / 6),
-    );
-    ctx.moveTo(toX, toY);
-    ctx.lineTo(
-      toX - headLength * Math.cos(angle + Math.PI / 6),
-      toY - headLength * Math.sin(angle + Math.PI / 6),
-    );
-    ctx.stroke();
-  };
-
-  const getCanvasPoint = (e: React.MouseEvent<HTMLCanvasElement>): DrawingPoint => {
+  // ---- pointer input -------------------------------------------------
+  // Pointer Events unify mouse, touch and pen in one code path, so the
+  // annotator works with a finger on the phone and an Apple Pencil on the
+  // iPad without a second set of handlers. The previous implementation
+  // bound mouse events only, so drawing did not work on touch at all.
+  const pointFromEvent = (e: React.PointerEvent<HTMLCanvasElement>): Point => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
-
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: ((e.clientX - rect.left) / rect.width) * canvas.width,
+      y: ((e.clientY - rect.top) / rect.height) * canvas.height,
     };
   };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const point = getCanvasPoint(e);
+  const pushHistory = (next: Annotation[]) => {
+    const trimmed = history.slice(0, historyStep + 1);
+    trimmed.push(next);
+    setHistory(trimmed);
+    setHistoryStep(trimmed.length - 1);
+    setAnnotations(next);
+  };
 
-    // Check if clicking on a text annotation
-    const clickedText = annotations.find((ann) => {
-      if (ann.type === "text" && ann.text && ann.points.length > 0) {
-        const canvas = canvasRef.current;
-        if (!canvas) return false;
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (mode !== "annotate" || !imageLoaded) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const point = pointFromEvent(e);
+    const ctx = measureCtx();
 
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return false;
-
-        const textFontSize = ann.fontSize || ann.lineWidth * 8;
-        ctx.font = `${textFontSize}px Arial`;
-        const metrics = ctx.measureText(ann.text);
-        const textWidth = metrics.width;
-        const textHeight = textFontSize;
-
-        const p = ann.points[0];
-        return (
-          point.x >= p.x - 5 &&
-          point.x <= p.x + textWidth + 5 &&
-          point.y >= p.y - textHeight &&
-          point.y <= p.y + 10
-        );
+    // Text selection takes priority over starting a new mark.
+    if (ctx) {
+      const hit = hitTestText(ctx, annotations, point);
+      if (hit) {
+        setSelectedTextId(hit.id);
+        setTextDragOffset({ x: point.x - hit.points[0].x, y: point.y - hit.points[0].y });
+        return;
       }
-      return false;
-    });
-
-    if (clickedText) {
-      setSelectedTextId(clickedText.id);
-      setIsDraggingText(true);
-      setDragOffset({
-        x: point.x - clickedText.points[0].x,
-        y: point.y - clickedText.points[0].y,
-      });
-      return;
     }
-
-    // Deselect text if clicking elsewhere
     setSelectedTextId(null);
 
     if (activeTool === "text") {
-      setTextPosition(point);
+      setTextPrompt({ point, value: "" });
       return;
     }
 
-    if (activeTool === "eraser") {
-      setIsDrawing(true);
-      // Start erasing
-      return;
-    }
-
-    setIsDrawing(true);
-
-    setCurrentAnnotation({
-      id: `ann_${Date.now()}`,
+    setDraft({
+      id: createId(),
       type: activeTool,
       points: [point],
       color,
-      lineWidth,
-      fontSize,
+      lineWidth: currentLineWidth(),
     });
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const point = getCanvasPoint(e);
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (mode !== "annotate") return;
+    const point = pointFromEvent(e);
 
-    // Update cursor position for eraser indicator
-    setCursorPos(point);
-
-    // Check if hovering over text (when not drawing)
-    if (!isDrawing && !isDraggingText && activeTool !== "eraser") {
-      const hoveredText = annotations.find((ann) => {
-        if (ann.type === "text" && ann.text && ann.points.length > 0) {
-          const canvas = canvasRef.current;
-          if (!canvas) return false;
-
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return false;
-
-          const textFontSize = ann.fontSize || ann.lineWidth * 8;
-          ctx.font = `${textFontSize}px Arial`;
-          const metrics = ctx.measureText(ann.text);
-          const textWidth = metrics.width;
-          const textHeight = textFontSize;
-
-          const p = ann.points[0];
-          return (
-            point.x >= p.x - 5 &&
-            point.x <= p.x + textWidth + 5 &&
-            point.y >= p.y - textHeight &&
-            point.y <= p.y + 10
-          );
-        }
-        return false;
-      });
-
-      const newHoveredId = hoveredText ? hoveredText.id : null;
-      if (newHoveredId !== hoveredTextId) {
-        setHoveredTextId(newHoveredId);
-        redrawCanvas();
-      }
-    }
-
-    // Handle text dragging
-    if (isDraggingText && selectedTextId) {
-      const newAnnotations = annotations.map((ann) => {
-        if (ann.id === selectedTextId) {
-          return {
-            ...ann,
-            points: [
-              {
-                x: point.x - dragOffset.x,
-                y: point.y - dragOffset.y,
-              },
-            ],
-          };
-        }
-        return ann;
-      });
-      setAnnotations(newAnnotations);
-      redrawCanvas();
+    if (textDragOffset && selectedTextId) {
+      setAnnotations((prev) =>
+        prev.map((a) =>
+          a.id === selectedTextId
+            ? { ...a, points: [{ x: point.x - textDragOffset.x, y: point.y - textDragOffset.y }] }
+            : a,
+        ),
+      );
       return;
     }
 
-    if (!isDrawing) return;
-
-    // Handle eraser
-    if (activeTool === "eraser") {
-      const eraserRadius = lineWidth * 5;
-      const remainingAnnotations = annotations.filter((ann) => {
-        // Don't erase text annotations with eraser
-        if (ann.type === "text") return true;
-
-        // Check if any point is within eraser radius
-        return !ann.points.some((p) => {
-          const dist = Math.sqrt(Math.pow(p.x - point.x, 2) + Math.pow(p.y - point.y, 2));
-          return dist < eraserRadius;
-        });
-      });
-
-      if (remainingAnnotations.length !== annotations.length) {
-        setAnnotations(remainingAnnotations);
-        redrawCanvas();
-      }
+    if (!draft) {
+      const ctx = measureCtx();
+      const hit = ctx ? hitTestText(ctx, annotations, point) : null;
+      setHoveredTextId(hit?.id ?? null);
       return;
     }
 
-    if (!currentAnnotation) return;
-
-    if (activeTool === "pencil") {
-      setCurrentAnnotation({
-        ...currentAnnotation,
-        points: [...currentAnnotation.points, point],
-      });
-    } else {
-      setCurrentAnnotation({
-        ...currentAnnotation,
-        points: [currentAnnotation.points[0], point],
-      });
-    }
-
-    redrawCanvas();
+    setDraft((prev) => {
+      if (!prev) return prev;
+      // Freehand accumulates every point; the shape tools only need their
+      // start and current corner.
+      const points =
+        prev.type === "pencil" ? [...prev.points, point] : [prev.points[0], point];
+      return { ...prev, points };
+    });
   };
 
-  const handleMouseUp = () => {
-    // Handle text drag end
-    if (isDraggingText) {
-      setIsDraggingText(false);
-      // Update history
-      const newHistory = history.slice(0, historyStep + 1);
-      newHistory.push([...annotations]);
-      setHistory(newHistory);
-      setHistoryStep(newHistory.length - 1);
+  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    if (textDragOffset) {
+      setTextDragOffset(null);
+      pushHistory(annotations);
       return;
     }
-
-    if (!isDrawing) return;
-
-    setIsDrawing(false);
-
-    // For eraser, history was already updated during movement
-    if (activeTool === "eraser") {
-      const newHistory = history.slice(0, historyStep + 1);
-      newHistory.push([...annotations]);
-      setHistory(newHistory);
-      setHistoryStep(newHistory.length - 1);
+    if (!draft) return;
+    // A tap with a shape tool produces a degenerate mark — drop it.
+    if (draft.type !== "pencil" && draft.points.length < 2) {
+      setDraft(null);
       return;
     }
-
-    if (!currentAnnotation) return;
-
-    const newAnnotations = [...annotations, currentAnnotation];
-    setAnnotations(newAnnotations);
-
-    // Update history
-    const newHistory = history.slice(0, historyStep + 1);
-    newHistory.push(newAnnotations);
-    setHistory(newHistory);
-    setHistoryStep(newHistory.length - 1);
-
-    setCurrentAnnotation(null);
+    pushHistory([...annotations, draft]);
+    setDraft(null);
   };
 
-  const handleTextSubmit = () => {
-    if (!textInput.trim() || !textPosition) return;
-
-    const textAnnotation: Annotation = {
-      id: `text_${Date.now()}`,
-      type: "text",
-      points: [textPosition],
-      color,
-      lineWidth,
-      text: textInput,
-      fontSize,
-    };
-
-    const newAnnotations = [...annotations, textAnnotation];
-    setAnnotations(newAnnotations);
-
-    // Update history
-    const newHistory = history.slice(0, historyStep + 1);
-    newHistory.push(newAnnotations);
-    setHistory(newHistory);
-    setHistoryStep(newHistory.length - 1);
-
-    setTextInput("");
-    setTextPosition(null);
-  };
-
-  const handleEditSelectedText = () => {
-    if (!selectedTextId) return;
-
-    const selectedText = annotations.find((ann) => ann.id === selectedTextId);
-    if (selectedText && selectedText.type === "text") {
-      setEditingTextId(selectedTextId);
-      setTextInput(selectedText.text || "");
-      setColor(selectedText.color);
-      setFontSize(selectedText.fontSize || 16);
-    }
-  };
-
-  const handleUpdateText = () => {
-    if (!editingTextId || !textInput.trim()) return;
-
-    const newAnnotations = annotations.map((ann) => {
-      if (ann.id === editingTextId) {
-        return {
-          ...ann,
-          text: textInput,
+  const commitText = () => {
+    if (!textPrompt) return;
+    const value = textPrompt.value.trim();
+    if (value) {
+      pushHistory([
+        ...annotations,
+        {
+          id: createId(),
+          type: "text",
+          points: [textPrompt.point],
           color,
-          fontSize,
-        };
-      }
-      return ann;
-    });
-
-    setAnnotations(newAnnotations);
-
-    // Update history
-    const newHistory = history.slice(0, historyStep + 1);
-    newHistory.push(newAnnotations);
-    setHistory(newHistory);
-    setHistoryStep(newHistory.length - 1);
-
-    setEditingTextId(null);
-    setTextInput("");
-    redrawCanvas();
+          lineWidth: currentLineWidth(),
+          text: value,
+          fontSize: currentFontSize(),
+        },
+      ]);
+    }
+    setTextPrompt(null);
   };
 
-  const handleDeleteSelectedText = () => {
+  const deleteSelectedText = () => {
     if (!selectedTextId) return;
-    setShowDeleteTextConfirm(true);
-  };
-
-  const confirmDeleteSelectedText = () => {
-    setShowDeleteTextConfirm(false);
-    if (!selectedTextId) return;
-
-    const newAnnotations = annotations.filter((ann) => ann.id !== selectedTextId);
-    setAnnotations(newAnnotations);
-
-    // Update history
-    const newHistory = history.slice(0, historyStep + 1);
-    newHistory.push(newAnnotations);
-    setHistory(newHistory);
-    setHistoryStep(newHistory.length - 1);
-
+    pushHistory(annotations.filter((a) => a.id !== selectedTextId));
     setSelectedTextId(null);
-    redrawCanvas();
   };
 
-  const handleUndo = () => {
-    if (historyStep > 0) {
-      setHistoryStep(historyStep - 1);
-      setAnnotations(history[historyStep - 1]);
-    }
+  const undo = () => {
+    if (historyStep <= 0) return;
+    const step = historyStep - 1;
+    setHistoryStep(step);
+    setAnnotations(history[step]);
+    setSelectedTextId(null);
   };
 
-  const handleRedo = () => {
-    if (historyStep < history.length - 1) {
-      setHistoryStep(historyStep + 1);
-      setAnnotations(history[historyStep + 1]);
-    }
+  const redo = () => {
+    if (historyStep >= history.length - 1) return;
+    const step = historyStep + 1;
+    setHistoryStep(step);
+    setAnnotations(history[step]);
+    setSelectedTextId(null);
   };
 
-  const handleClear = () => {
-    setShowClearConfirm(true);
-  };
-
-  const confirmClear = () => {
+  const clearAll = () => {
+    pushHistory([]);
+    setSelectedTextId(null);
     setShowClearConfirm(false);
-    const newAnnotations: Annotation[] = [];
-    setAnnotations(newAnnotations);
-
-    const newHistory = history.slice(0, historyStep + 1);
-    newHistory.push(newAnnotations);
-    setHistory(newHistory);
-    setHistoryStep(newHistory.length - 1);
   };
 
-  const handleSave = async () => {
-    const canvas = canvasRef.current;
-    const image = imageRef.current;
-    if (!canvas || !image || !onSave || isSaving) return;
-
+  // ---- prepare mode --------------------------------------------------
+  const applyPrepareStep = async () => {
     try {
-      setIsSaving(true);
-
-      // Create a new canvas to combine image + annotations
-      const compositeCanvas = document.createElement("canvas");
-      compositeCanvas.width = canvas.width;
-      compositeCanvas.height = canvas.height;
-      const compositeCtx = compositeCanvas.getContext("2d");
-
-      if (!compositeCtx) {
-        setIsSaving(false);
-        return;
-      }
-
-      // Draw the original image
-      compositeCtx.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-      // Draw all annotations on top
-      annotations.forEach((annotation) => {
-        drawAnnotation(compositeCtx, annotation);
-      });
-
-      // Convert to blob for upload (wrapped in promise)
-      const blob = await new Promise<Blob | null>((resolve) => {
-        compositeCanvas.toBlob(
-          (blob) => {
-            resolve(blob);
-          },
-          "image/jpeg",
-          0.95,
-        );
-      });
-
-      if (blob) {
-        await onSave(photo.id, blob);
-        onClose();
-      }
+      await applyPrepare(crop, rotation);
+      setCrop(FULL_CROP);
+      setRotation(0);
+      setMode("annotate");
     } catch (error) {
-      console.error("Error creating annotated image:", error);
-      alert("Erreur lors de la sauvegarde de l'annotation");
+      console.error("Error preparing image:", error);
+      toast.error("Impossible de préparer l'image.");
+    }
+  };
+
+  const cancelPrepare = () => {
+    setCrop(FULL_CROP);
+    setRotation(0);
+    setMode("annotate");
+  };
+
+  // ---- save ----------------------------------------------------------
+  const handleSave = async () => {
+    const img = imageRef.current;
+    if (!img || !onSave || isSaving) return;
+
+    setIsSaving(true);
+    try {
+      // Export at natural resolution — the whole point of the coordinate
+      // change. Sizing this to the on-screen canvas is what silently
+      // downsampled every previously annotated photo.
+      const out = document.createElement("canvas");
+      out.width = img.naturalWidth;
+      out.height = img.naturalHeight;
+      const ctx = out.getContext("2d");
+      if (!ctx) throw new Error("Canvas indisponible.");
+
+      ctx.drawImage(img, 0, 0, out.width, out.height);
+      annotations.forEach((a) => drawAnnotation(ctx, a));
+
+      // JPEG at 0.92: these are photographs, where PNG would balloon a
+      // 12-megapixel frame to tens of megabytes over a site's cellular
+      // connection for no visible benefit. Re-annotation re-encodes, but
+      // at full resolution that generational loss is negligible.
+      const blob = await new Promise<Blob | null>((resolve) =>
+        out.toBlob((b) => resolve(b), "image/jpeg", 0.92),
+      );
+      if (!blob) throw new Error("Échec de l'export de l'image.");
+
+      await onSave(photo.id, blob);
+      onClose();
+    } catch (error) {
+      console.error("Error saving annotation:", error);
+      toast.error("Erreur lors de la sauvegarde de l'annotation.");
     } finally {
       setIsSaving(false);
     }
   };
 
+  const canUndo = historyStep > 0;
+  const canRedo = historyStep < history.length - 1;
+  const showStrokeRow = mode === "annotate" && DRAW_TOOLS.includes(activeTool);
+  const showFontRow = mode === "annotate" && activeTool === "text";
+
+  const iconButton =
+    "w-10 h-10 flex items-center justify-center rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
+
   return (
+    // Backdrop stays dark: a photo reads accurately against a neutral dark
+    // surround. Only the chrome is light — same rule as the photo lightbox.
     <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-ink text-white px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold">Annoter la photo</h2>
-          {selectedTextId && (
-            <span className="text-sm text-faint flex items-center gap-2">
-              <Move size={14} />
-              Texte sélectionné - Glissez pour déplacer
-            </span>
+      {/* Single compact toolbar. The previous three stacked bars cost ~180px
+          of vertical space and scrolled horizontally on a phone. */}
+      <div className="bg-surface border-b border-line flex-shrink-0">
+        <div className="h-14 px-2 sm:px-4 flex items-center gap-1 sm:gap-2">
+          <button onClick={onClose} className={`${iconButton} text-muted hover:bg-subtle`} title="Fermer">
+            <X size={20} />
+          </button>
+
+          {mode === "annotate" ? (
+            <>
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                {TOOLS.map(({ tool, icon: Icon, label }) => (
+                  <button
+                    key={tool}
+                    onClick={() => setActiveTool(tool)}
+                    title={label}
+                    aria-label={label}
+                    aria-pressed={activeTool === tool}
+                    className={`${iconButton} ${
+                      activeTool === tool
+                        ? "bg-brand-50 text-brand-600"
+                        : "text-body hover:bg-subtle"
+                    }`}
+                  >
+                    <Icon size={19} />
+                  </button>
+                ))}
+              </div>
+
+              <div className="w-px h-6 bg-line mx-0.5 sm:mx-1" />
+
+              <div className="flex items-center gap-1.5">
+                {MARKUP_COLORS.map((c) => (
+                  <button
+                    key={c.value}
+                    onClick={() => {
+                      setColor(c.value);
+                      if (selectedTextId) {
+                        pushHistory(
+                          annotations.map((a) =>
+                            a.id === selectedTextId ? { ...a, color: c.value } : a,
+                          ),
+                        );
+                      }
+                    }}
+                    title={c.label}
+                    aria-label={c.label}
+                    aria-pressed={color === c.value}
+                    className={`w-6 h-6 rounded-full border transition-transform ${
+                      color === c.value
+                        ? "border-ink scale-110 ring-2 ring-brand-600/30"
+                        : "border-line-strong"
+                    }`}
+                    style={{ backgroundColor: c.value }}
+                  />
+                ))}
+              </div>
+
+              <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
+                <button
+                  onClick={() => setMode("prepare")}
+                  disabled={hasAnnotations}
+                  title={
+                    hasAnnotations
+                      ? "Recadrer/pivoter n'est possible qu'avant d'annoter"
+                      : "Préparer l'image"
+                  }
+                  className={`${iconButton} text-body hover:bg-subtle`}
+                >
+                  <Crop size={18} />
+                </button>
+                <button onClick={undo} disabled={!canUndo} title="Annuler" className={`${iconButton} text-body hover:bg-subtle`}>
+                  <Undo2 size={18} />
+                </button>
+                <button onClick={redo} disabled={!canRedo} title="Rétablir" className={`${iconButton} text-body hover:bg-subtle`}>
+                  <Redo2 size={18} />
+                </button>
+                <button
+                  onClick={() => setShowClearConfirm(true)}
+                  disabled={!hasAnnotations}
+                  title="Tout effacer"
+                  className={`${iconButton} text-body hover:bg-subtle`}
+                >
+                  <Trash2 size={18} />
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving || !imageLoaded}
+                  className="ml-1 h-10 px-3 sm:px-4 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Check size={16} />
+                  <span className="hidden sm:inline">
+                    {isSaving ? "Enregistrement…" : "Enregistrer"}
+                  </span>
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="text-sm font-medium text-ink ml-1">Préparer l'image</span>
+              <div className="ml-auto flex items-center gap-1">
+                <button
+                  onClick={() => setRotation((r) => (r + 90) % 360)}
+                  title="Pivoter 90°"
+                  className={`${iconButton} text-body hover:bg-subtle`}
+                >
+                  <RotateCw size={18} />
+                </button>
+                <button
+                  onClick={cancelPrepare}
+                  className="h-10 px-3 rounded-lg text-sm font-medium text-body hover:bg-subtle transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={applyPrepareStep}
+                  disabled={isApplying}
+                  className="h-10 px-4 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors disabled:opacity-50"
+                >
+                  {isApplying ? "…" : "Appliquer"}
+                </button>
+              </div>
+            </>
           )}
         </div>
-        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-          <X size={24} />
-        </button>
-      </div>
 
-      {/* Toolbar */}
-      <div className="bg-ink text-white px-4 py-3 flex items-center gap-3 border-t border-white/10 overflow-x-auto">
-        {/* Tools */}
-        <div className="flex items-center gap-2 border-r border-white/20 pr-3">
-          <button
-            onClick={() => setActiveTool("pencil")}
-            className={`p-2 rounded-lg transition-colors ${
-              activeTool === "pencil" ? "bg-brand-600" : "hover:bg-white/10"
-            }`}
-            title="Crayon"
-          >
-            <Pencil size={20} />
-          </button>
-          <button
-            onClick={() => setActiveTool("arrow")}
-            className={`p-2 rounded-lg transition-colors ${
-              activeTool === "arrow" ? "bg-brand-600" : "hover:bg-white/10"
-            }`}
-            title="Flèche"
-          >
-            <ArrowRight size={20} />
-          </button>
-          <button
-            onClick={() => setActiveTool("rectangle")}
-            className={`p-2 rounded-lg transition-colors ${
-              activeTool === "rectangle" ? "bg-brand-600" : "hover:bg-white/10"
-            }`}
-            title="Rectangle"
-          >
-            <Square size={20} />
-          </button>
-          <button
-            onClick={() => setActiveTool("circle")}
-            className={`p-2 rounded-lg transition-colors ${
-              activeTool === "circle" ? "bg-brand-600" : "hover:bg-white/10"
-            }`}
-            title="Cercle"
-          >
-            <Circle size={20} />
-          </button>
-          <button
-            onClick={() => setActiveTool("text")}
-            className={`p-2 rounded-lg transition-colors ${
-              activeTool === "text" ? "bg-brand-600" : "hover:bg-white/10"
-            }`}
-            title="Texte"
-          >
-            <Type size={20} />
-          </button>
-          <button
-            onClick={() => setActiveTool("eraser")}
-            className={`p-2 rounded-lg transition-colors ${
-              activeTool === "eraser" ? "bg-brand-600" : "hover:bg-white/10"
-            }`}
-            title="Gomme"
-          >
-            <Eraser size={20} />
-          </button>
-        </div>
-
-        {/* Colors */}
-        <div className="flex items-center gap-2 border-r border-white/20 pr-3">
-          {["#E10600", "#FFFFFF", "#FFD700", "#00FF00", "#0000FF", "#000000"].map((c) => (
-            <button
-              key={c}
-              onClick={() => {
-                setColor(c);
-                // If text is selected, update its color immediately
-                if (selectedTextId) {
-                  const newAnnotations = annotations.map((ann) => {
-                    if (ann.id === selectedTextId) {
-                      return { ...ann, color: c };
-                    }
-                    return ann;
-                  });
-                  setAnnotations(newAnnotations);
-                  redrawCanvas();
-                }
-              }}
-              className={`w-8 h-8 rounded-full border-2 transition-transform ${
-                color === c ? "border-white scale-110" : "border-white/30"
-              }`}
-              style={{ backgroundColor: c }}
-              title={c}
-            />
-          ))}
-        </div>
-
-        {/* Line Width / Eraser Size */}
-        {activeTool !== "text" && (
-          <div className="flex items-center gap-2 border-r border-white/20 pr-3">
-            <span className="text-sm text-faint">
-              {activeTool === "eraser" ? "Taille gomme:" : "Épaisseur:"}
+        {/* Contextual row — only the control relevant to the active tool,
+            so the bar stays one row on a phone. */}
+        {(showStrokeRow || showFontRow) && (
+          <div className="h-11 px-3 sm:px-4 flex items-center gap-3 border-t border-line">
+            <span className="text-xs text-muted whitespace-nowrap">
+              {showFontRow ? "Taille du texte" : "Épaisseur"}
             </span>
             <input
               type="range"
-              min="1"
-              max="10"
-              value={lineWidth}
-              onChange={(e) => setLineWidth(Number(e.target.value))}
-              className="w-24"
-            />
-            <span className="text-sm w-6">{lineWidth}</span>
-          </div>
-        )}
-
-        {/* Font Size (for text tool or selected text) */}
-        {(activeTool === "text" || selectedTextId) && (
-          <div className="flex items-center gap-2 border-r border-white/20 pr-3">
-            <span className="text-sm text-faint">Taille:</span>
-            <input
-              type="range"
-              min="12"
-              max="72"
-              value={fontSize}
+              min={showFontRow ? 10 : 1}
+              max={showFontRow ? 48 : 12}
+              value={showFontRow ? fontScale : strokeScale}
               onChange={(e) => {
-                const newSize = Number(e.target.value);
-                setFontSize(newSize);
-                // If text is selected, update it immediately
-                if (selectedTextId) {
-                  const newAnnotations = annotations.map((ann) => {
-                    if (ann.id === selectedTextId) {
-                      return { ...ann, fontSize: newSize };
-                    }
-                    return ann;
-                  });
-                  setAnnotations(newAnnotations);
-                  redrawCanvas();
+                const v = Number(e.target.value);
+                if (showFontRow) {
+                  setFontScale(v);
+                  if (selectedTextId) {
+                    setAnnotations((prev) =>
+                      prev.map((a) =>
+                        a.id === selectedTextId
+                          ? { ...a, fontSize: Math.max(8, v * naturalScale()) }
+                          : a,
+                      ),
+                    );
+                  }
+                } else {
+                  setStrokeScale(v);
                 }
               }}
-              className="w-24"
+              className="flex-1 max-w-xs accent-brand-600"
             />
-            <span className="text-sm w-8">{fontSize}px</span>
-          </div>
-        )}
-
-        {/* Text editing tools when text is selected */}
-        {selectedTextId && (
-          <div className="flex items-center gap-2 border-r border-white/20 pr-3">
-            <button
-              onClick={handleEditSelectedText}
-              className="px-3 py-1.5 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1 text-sm"
-              title="Modifier le texte"
-            >
-              <Type size={16} />
-              Modifier
-            </button>
-            <button
-              onClick={handleDeleteSelectedText}
-              className="px-3 py-1.5 bg-red-600 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1 text-sm"
-              title="Supprimer"
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleUndo}
-            disabled={historyStep <= 0}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Annuler"
-          >
-            <Undo size={20} />
-          </button>
-          <button
-            onClick={handleRedo}
-            disabled={historyStep >= history.length - 1}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Rétablir"
-          >
-            <Redo size={20} />
-          </button>
-          <button
-            onClick={handleClear}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-            title="Tout effacer"
-          >
-            <Trash2 size={20} />
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="px-4 py-2 bg-brand-600 rounded-lg hover:bg-brand-700 transition-colors flex items-center gap-2 ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSaving ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Sauvegarde...
-              </>
-            ) : (
-              <>
-                <Save size={20} />
-                Enregistrer
-              </>
+            <span className="text-xs text-ink tabular-nums w-6">
+              {showFontRow ? fontScale : strokeScale}
+            </span>
+            {selectedTextId && (
+              <button
+                onClick={deleteSelectedText}
+                className="ml-auto h-8 px-2.5 rounded-lg text-xs font-medium text-brand-strong hover:bg-brand-50 transition-colors flex items-center gap-1.5"
+              >
+                <Trash2 size={13} />
+                Supprimer le texte
+              </button>
             )}
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* Canvas Area */}
-      <div ref={containerRef} className="flex-1 overflow-auto flex items-center justify-center p-4">
-        {!imageUrl ? (
+      {/* Canvas area */}
+      <div className="flex-1 overflow-auto flex items-center justify-center p-3 sm:p-6">
+        {loadError ? (
+          <p className="text-white/80 text-sm">{loadError}</p>
+        ) : !preparedUrl ? (
           <div className="flex items-center gap-3 text-white">
-            <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            <span>Chargement de l'image...</span>
+            <div className="w-7 h-7 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <span className="text-sm">Chargement de l'image…</span>
           </div>
         ) : (
-          <div className="relative inline-block">
+          <div className="relative inline-block max-w-full">
             <img
               ref={imageRef}
-              src={imageUrl}
-              alt="Photo"
-              className="max-w-full max-h-full"
+              src={preparedUrl}
+              alt="Photo à annoter"
+              className="block max-w-full max-h-[70vh] select-none"
+              draggable={false}
               onLoad={() => setImageLoaded(true)}
             />
+
             <canvas
               ref={canvasRef}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              className={`absolute top-0 left-0 ${
-                activeTool === "eraser"
-                  ? "cursor-not-allowed"
-                  : isDraggingText
-                    ? "cursor-move"
-                    : hoveredTextId
-                      ? "cursor-pointer"
-                      : "cursor-crosshair"
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              onPointerLeave={() => setHoveredTextId(null)}
+              // touch-none stops the browser scrolling/zooming the page
+              // mid-stroke, which would otherwise make drawing on a phone
+              // pan the view instead of drawing.
+              className={`absolute inset-0 w-full h-full touch-none ${
+                mode === "prepare"
+                  ? "pointer-events-none"
+                  : activeTool === "text"
+                    ? "cursor-text"
+                    : "cursor-crosshair"
               }`}
-              style={{
-                width: imageRef.current?.width || "100%",
-                height: imageRef.current?.height || "100%",
-              }}
             />
+
+            {mode === "prepare" && <CropOverlay crop={crop} onChange={setCrop} />}
+
+            {/* Inline text entry, placed where the user tapped. */}
+            {textPrompt && (
+              <div
+                className="absolute z-10 bg-surface border border-line rounded-lg shadow-lg p-2 flex items-center gap-2"
+                style={{
+                  left: `${(textPrompt.point.x / (canvasRef.current?.width || 1)) * 100}%`,
+                  top: `${(textPrompt.point.y / (canvasRef.current?.height || 1)) * 100}%`,
+                }}
+              >
+                <input
+                  autoFocus
+                  value={textPrompt.value}
+                  onChange={(e) => setTextPrompt({ ...textPrompt, value: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitText();
+                    if (e.key === "Escape") setTextPrompt(null);
+                  }}
+                  placeholder="Texte…"
+                  className="h-9 px-2 text-sm bg-surface text-ink border border-line rounded-md focus:outline-none focus:border-brand-600 w-40"
+                />
+                <button
+                  onClick={commitText}
+                  className="h-9 px-3 rounded-md bg-brand-600 text-white text-sm font-medium"
+                >
+                  OK
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Text Input Modal */}
-      {(textPosition || editingTextId) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-ink mb-4">
-              {editingTextId ? "Modifier le texte" : "Ajouter du texte"}
-            </h3>
-            <input
-              type="text"
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              placeholder="Entrez votre texte..."
-              className="w-full px-4 py-3 border-2 border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600 mb-4"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  if (editingTextId) {
-                    handleUpdateText();
-                  } else {
-                    handleTextSubmit();
-                  }
-                }
-                if (e.key === "Escape") {
-                  setTextPosition(null);
-                  setEditingTextId(null);
-                  setTextInput("");
-                }
-              }}
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setTextPosition(null);
-                  setEditingTextId(null);
-                  setTextInput("");
-                }}
-                className="flex-1 px-4 py-2 border border-line-strong rounded-lg text-body font-medium hover:bg-subtle transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={editingTextId ? handleUpdateText : handleTextSubmit}
-                className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors"
-              >
-                {editingTextId ? "Modifier" : "Ajouter"}
-              </button>
-            </div>
-          </div>
+      {/* Persistent hint — the text tool's drag/edit capabilities were
+          previously only hinted at after a selection had been made. */}
+      {mode === "annotate" && (
+        <div className="flex-shrink-0 px-4 py-2 text-center">
+          <p className="text-xs text-white/60">
+            {selectedTextId
+              ? "Glissez pour déplacer · changez la couleur ou la taille ci-dessus"
+              : activeTool === "text"
+                ? "Touchez la photo pour ajouter du texte · touchez un texte pour le déplacer"
+                : "Dessinez sur la photo · touchez un texte existant pour le modifier"}
+          </p>
         </div>
       )}
 
-      <ConfirmDialog
-        open={showDeleteTextConfirm}
-        title="Supprimer ce texte ?"
-        confirmLabel="Supprimer"
-        destructive
-        onCancel={() => setShowDeleteTextConfirm(false)}
-        onConfirm={confirmDeleteSelectedText}
-      />
       <ConfirmDialog
         open={showClearConfirm}
         title="Effacer toutes les annotations ?"
         confirmLabel="Effacer"
         destructive
         onCancel={() => setShowClearConfirm(false)}
-        onConfirm={confirmClear}
+        onConfirm={clearAll}
       />
     </div>
   );
 }
+
+export default PhotoAnnotator;

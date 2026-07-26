@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, Outlet } from "react-router";
 import { SupabaseAuthProvider } from "../contexts/SupabaseAuthContext"; // ✅ Using Supabase Auth
 import { ModalOpenProvider } from "../contexts/ModalOpenContext";
 import Layout from "./components/Layout";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Login from "./components/Login";
 import ProjectList from "./components/ProjectList";
 import ProjectDetail from "./components/ProjectDetail";
@@ -26,8 +27,15 @@ function RootLayout() {
   return (
     <SupabaseAuthProvider>
       <ModalOpenProvider>
-        <MigrationPrompt />
-        <Outlet />
+        {/* Top-level net, inside the auth provider so the fallback can still
+            reach session/context if it ever needs to. Catches anything the
+            per-route boundary in Layout doesn't — including crashes in the
+            unauthenticated routes (Login, SecurityPrivacy) and in the
+            chrome itself. */}
+        <ErrorBoundary>
+          <MigrationPrompt />
+          <Outlet />
+        </ErrorBoundary>
       </ModalOpenProvider>
     </SupabaseAuthProvider>
   );

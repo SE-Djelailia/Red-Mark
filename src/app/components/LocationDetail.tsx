@@ -35,6 +35,7 @@ import VisitPicker from "./VisitPicker";
 import IssueForm from "./IssueForm";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
 import FloatingActions from "./FloatingActions";
+import ErrorBoundary from "./ErrorBoundary";
 import { PRIORITY_LABEL, STATUS_LABEL } from "./ui-kit/Badge";
 
 // Timeline entries are grouped by day; this formats the group header
@@ -542,6 +543,13 @@ export default function LocationDetail() {
                 Aucune activité enregistrée à ce local pour le moment.
               </div>
             ) : (
+              // Targeted boundary: this timeline is where a null date once
+              // crashed the whole app. Entries come from four merged
+              // sources (issues, photos, comments, visits) with differing
+              // date shapes, so it stays the most data-shape-sensitive
+              // render on the screen. If it breaks again, the location's
+              // metadata, photos and déficiences above remain usable.
+              <ErrorBoundary variant="section" label="l'activité de ce local">
               <div className="space-y-6">
                 {timelineGroups.map((group) => (
                   <div key={group.dayKey}>
@@ -608,6 +616,7 @@ export default function LocationDetail() {
                   </div>
                 ))}
               </div>
+              </ErrorBoundary>
             )}
           </div>
         </div>
