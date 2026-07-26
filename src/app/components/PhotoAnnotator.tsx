@@ -34,9 +34,9 @@ interface PhotoAnnotatorProps {
 }
 
 // Tools that drag out a shape and therefore care about stroke width.
-const DRAW_TOOLS: Tool[] = ["pencil", "arrow", "rectangle", "circle", "cloud", "dimension", "pin"];
+const DRAW_TOOLS: Tool[] = ["pencil", "arrow", "rectangle", "circle", "dimension", "pin"];
 /** Drag-to-size tools: only their start and current corner matter. */
-const DRAG_TOOLS: Tool[] = ["arrow", "rectangle", "circle", "cloud", "dimension"];
+const DRAG_TOOLS: Tool[] = ["arrow", "rectangle", "circle", "dimension"];
 
 // Stroke width and font size are authored against a reference width so a
 // "3px" line looks the same on a 4032px photo as on an 800px one. Without
@@ -539,7 +539,13 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
   return (
     // Backdrop stays dark: a photo reads accurately against a neutral dark
     // surround. Only the chrome is light — same rule as the photo lightbox.
-    <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
+    //
+    // z-[60] is the app's full-screen-overlay tier (the same one every
+    // modal uses). This was z-50 — the SAME level as BottomNav, which
+    // renders after the routed screen in Layout, so at equal z-index the
+    // nav won on DOM order and covered the bottom of the annotator,
+    // clipping the cote label field out of reach on a phone.
+    <div className="fixed inset-0 bg-black/95 z-[60] flex flex-col">
       {/* Single compact toolbar. The previous three stacked bars cost ~180px
           of vertical space and scrolled horizontally on a phone. */}
       <div className="bg-surface border-b border-line flex-shrink-0">
@@ -742,36 +748,12 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         )}
       </div>
 
-      {/* Cote label entry. Anchored to the bar rather than to the tap
-          point: the line has just been drawn across the photo, and a
-          popover sitting on top of it would hide what is being labelled. */}
-      {dimensionPrompt && (
-        <div className="flex-shrink-0 bg-surface border-t border-line px-3 sm:px-4 py-2 flex items-center gap-2">
-          <span className="text-xs text-muted whitespace-nowrap">Cote</span>
-          <input
-            autoFocus
-            value={dimensionPrompt.value}
-            onChange={(e) => setDimensionPrompt({ ...dimensionPrompt, value: e.target.value })}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commitDimensionLabel();
-              if (e.key === "Escape") setDimensionPrompt(null);
-            }}
-            placeholder="ex. 15 cm"
-            className="flex-1 min-w-0 h-9 px-2 text-sm bg-surface text-ink border border-line rounded-md focus:outline-none focus:border-brand-600"
-          />
-          <button
-            onClick={commitDimensionLabel}
-            className="h-9 px-3 rounded-md bg-brand-600 text-white text-sm font-medium flex-shrink-0"
-          >
-            OK
-          </button>
-        </div>
-      )}
-
       {/* Persistent hint — the text tool's drag/edit capabilities were
-          previously only hinted at after a selection had been made. */}
-      {mode === "annotate" && (
-        <div className="flex-shrink-0 px-4 py-2 text-center">
+          previously only hinted at after a selection had been made.
+          Hidden while the cote field is open so the input keeps the
+          bottom edge to itself. */}
+      {mode === "annotate" && !dimensionPrompt && (
+        <div className="flex-shrink-0 px-4 py-2 text-center safe-area-bottom">
           <p className="text-xs text-white/60">
             {selectedTextId
               ? "Glissez pour déplacer · changez la couleur ou la taille ci-dessus"
@@ -785,6 +767,36 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
                       ? "Glissez pour tracer la cote, puis saisissez son étiquette"
                       : "Dessinez sur la photo · touchez un texte existant pour le modifier"}
           </p>
+        </div>
+      )}
+
+      {/* Cote label entry. Anchored to the bar rather than to the tap
+          point: the line has just been drawn across the photo, and a
+          popover sitting on top of it would hide what is being labelled.
+          Rendered LAST so it owns the bottom edge — it previously sat
+          above the hint row, which pushed it further up the screen.
+          safe-area-bottom keeps it clear of the home indicator on a
+          notched phone. */}
+      {dimensionPrompt && (
+        <div className="flex-shrink-0 bg-surface border-t border-line px-3 sm:px-4 py-2 safe-area-bottom flex items-center gap-2">
+          <span className="text-xs text-muted whitespace-nowrap">Cote</span>
+          <input
+            autoFocus
+            value={dimensionPrompt.value}
+            onChange={(e) => setDimensionPrompt({ ...dimensionPrompt, value: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitDimensionLabel();
+              if (e.key === "Escape") setDimensionPrompt(null);
+            }}
+            placeholder="ex. 15 cm"
+            className="flex-1 min-w-0 h-11 px-2 text-sm bg-surface text-ink border border-line rounded-md focus:outline-none focus:border-brand-600"
+          />
+          <button
+            onClick={commitDimensionLabel}
+            className="h-11 px-4 rounded-md bg-brand-600 text-white text-sm font-medium flex-shrink-0"
+          >
+            OK
+          </button>
         </div>
       )}
 

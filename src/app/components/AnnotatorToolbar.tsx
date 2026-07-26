@@ -4,7 +4,6 @@ import {
   Check,
   ChevronDown,
   Circle as CircleIcon,
-  Cloud,
   Crop,
   Eraser,
   MapPin,
@@ -22,13 +21,13 @@ import { MARKUP_COLORS, type Tool } from "../../lib/annotationModel";
 
 // TOOLBAR CAPACITY — the constraint this layout exists to satisfy.
 //
-// The full control set is 8 tools + 4 colours + close + prepare + undo +
-// redo + clear + save = 19 discrete controls. No flat arrangement fits
+// The full control set is 7 tools + 4 colours + close + prepare + undo +
+// redo + clear + save = 18 discrete controls. No flat arrangement fits
 // that on a phone; the version this replaces tried, needed ~609px, and
 // silently clipped Enregistrer off the right edge of every handset.
 //
 // So below `sm:` only three tools stay top-level — the ones used most on
-// site (eraser, pencil, arrow). Everything else (rectangle, circle, cloud,
+// site (eraser, pencil, arrow). Everything else (rectangle, circle,
 // dimension, pin, text) collapses into one tool menu that wears the active
 // tool's icon; the four colours collapse to a single swatch button; and
 // prepare/undo/redo/clear collapse into an overflow menu.
@@ -67,7 +66,6 @@ export const PRIMARY_TOOLS: ToolDef[] = [
 export const MENU_TOOLS: ToolDef[] = [
   { tool: "rectangle", icon: Square, label: "Rectangle" },
   { tool: "circle", icon: CircleIcon, label: "Cercle" },
-  { tool: "cloud", icon: Cloud, label: "Nuage de révision" },
   { tool: "dimension", icon: Move3d, label: "Cote" },
   { tool: "pin", icon: MapPin, label: "Repère numéroté" },
   { tool: "text", icon: Type, label: "Texte" },

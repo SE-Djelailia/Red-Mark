@@ -19,7 +19,6 @@ export type Tool =
   | "arrow"
   | "rectangle"
   | "circle"
-  | "cloud"
   | "dimension"
   | "pin"
   | "text";
@@ -86,57 +85,6 @@ function drawArrow(ctx: CanvasRenderingContext2D, from: Point, to: Point, lineWi
     to.x - headLength * Math.cos(angle + Math.PI / 6),
     to.y - headLength * Math.sin(angle + Math.PI / 6),
   );
-  ctx.stroke();
-}
-
-/**
- * Standard architectural revision cloud: a chain of outward-bulging arcs
- * around the perimeter of the dragged rectangle.
- *
- * The scallop radius is derived from the perimeter and then rounded to a
- * whole number of arcs per side, so the bumps meet exactly at the corners
- * instead of leaving a stub — a cloud with a flat corner reads as a
- * drawing error on a construction document.
- */
-function drawCloud(ctx: CanvasRenderingContext2D, a: Point, b: Point, lineWidth: number) {
-  const x0 = Math.min(a.x, b.x);
-  const y0 = Math.min(a.y, b.y);
-  const w = Math.abs(b.x - a.x);
-  const h = Math.abs(b.y - a.y);
-  if (w < 1 || h < 1) return;
-
-  // Target scallop size relative to the box, clamped so a large cloud does
-  // not become a hundred tiny bumps nor a small one a single lobe.
-  const target = Math.max(lineWidth * 4, Math.min(w, h) / 4);
-  const perSide = (length: number) => Math.max(1, Math.round(length / (target * 2)));
-  const nx = perSide(w);
-  const ny = perSide(h);
-  const stepX = w / nx;
-  const stepY = h / ny;
-
-  ctx.beginPath();
-
-  // Each scallop is a 180°+ arc centred on the midpoint of its segment,
-  // bulging away from the box centre. Sweeping slightly beyond a half
-  // circle makes neighbouring arcs overlap, which is what gives the cloud
-  // its continuous bumpy outline rather than a row of separate humps.
-  const bump = (cx: number, cy: number, r: number, faceAngle: number) => {
-    ctx.arc(cx, cy, r, faceAngle - Math.PI * 0.75, faceAngle + Math.PI * 0.75);
-  };
-
-  for (let i = 0; i < nx; i++) {
-    bump(x0 + stepX * (i + 0.5), y0, stepX / 2, -Math.PI / 2); // top
-  }
-  for (let i = 0; i < ny; i++) {
-    bump(x0 + w, y0 + stepY * (i + 0.5), stepY / 2, 0); // right
-  }
-  for (let i = nx - 1; i >= 0; i--) {
-    bump(x0 + stepX * (i + 0.5), y0 + h, stepX / 2, Math.PI / 2); // bottom
-  }
-  for (let i = ny - 1; i >= 0; i--) {
-    bump(x0, y0 + stepY * (i + 0.5), stepY / 2, Math.PI); // left
-  }
-
   ctx.stroke();
 }
 
@@ -291,11 +239,6 @@ export function drawAnnotation(ctx: CanvasRenderingContext2D, annotation: Annota
       ctx.beginPath();
       ctx.arc((a.x + b.x) / 2, (a.y + b.y) / 2, radius, 0, 2 * Math.PI);
       ctx.stroke();
-      break;
-    }
-    case "cloud": {
-      if (points.length < 2) return;
-      drawCloud(ctx, points[0], points[points.length - 1], lineWidth);
       break;
     }
     case "dimension": {
@@ -469,13 +412,7 @@ export function hitTestAnnotation(
     case "dimension":
       return points.length >= 2 && distanceToSegment(point, a, b) <= slop;
     case "rectangle":
-    case "cloud":
-      // The cloud's scallops bulge outside the box, so it gets extra slop
-      // rather than a full arc-by-arc test — close enough for a fingertip.
-      return (
-        points.length >= 2 &&
-        distanceToRectEdge(point, a, b) <= (type === "cloud" ? slop * 2.5 : slop)
-      );
+      return points.length >= 2 && distanceToRectEdge(point, a, b) <= slop;
     case "circle": {
       if (points.length < 2) return false;
       const radius = Math.hypot(b.x - a.x, b.y - a.y) / 2;
