@@ -38,7 +38,12 @@ export interface Issue {
   // not be used directly for display against the private storage bucket —
   // use `storagePath` with SecureImage/getPhotosSignedUrls instead, same as
   // the visit page and getPhotosByLocation.
-  photos: { id: string; url: string; storagePath?: string }[];
+  // storagePath and visitId are REQUIRED: annotation is a universal photo
+  // action, and both are needed to save one (the path to read, the visit to
+  // write the annotated copy under). photos.visit_id is NOT NULL in the
+  // schema, so every photo genuinely has a visit — making these optional
+  // would only hide a missing field behind a silently disabled button.
+  photos: { id: string; url: string; storagePath: string; visitId: string }[];
   tags: string[];
   location: string;
   locationId?: string | null;
@@ -134,16 +139,21 @@ async function attachPhotos(rows: Omit<Issue, "photos">[]): Promise<Issue[]> {
   const ids = rows.map((r) => r.id);
   const { data, error } = await supabase
     .from("photos")
-    .select("id, file_url, storage_path, issue_id")
+    .select("id, file_url, storage_path, issue_id, visit_id")
     .in("issue_id", ids);
 
-  const byIssue: Record<string, { id: string; url: string; storagePath: string }[]> = {};
+  const byIssue: Record<string, Issue["photos"]> = {};
   if (error) {
     console.error("Error fetching photos for issues:", error);
   } else {
     for (const p of data || []) {
       if (!p.issue_id) continue;
-      (byIssue[p.issue_id] ??= []).push({ id: p.id, url: p.file_url, storagePath: p.storage_path });
+      (byIssue[p.issue_id] ??= []).push({
+        id: p.id,
+        url: p.file_url,
+        storagePath: p.storage_path,
+        visitId: p.visit_id,
+      });
     }
   }
   return rows.map((r) => ({ ...r, photos: byIssue[r.id] || [] }));
@@ -283,6 +293,31 @@ export async function getIssueStatusesByLocations(
 // supabaseApi.ts's SiteVisitPageFilters.visitIds) — deliberately not an
 // embedded/inner-join count, which would break pagination correctness for
 // visits with more than one open issue.
+/**
+ * Cross-project sibling of getVisitIdsWithOpenIssues, for the Dashboard
+ * calendar's red/green pills. Same predicate — a visit counts as "open" if
+ * any of its issues is not resolved — widened to several projects in one
+ * query rather than one query per project.
+ */
+export async function getVisitIdsWithOpenIssuesAcrossProjects(
+  projectIds: string[],
+): Promise<Set<string>> {
+  if (projectIds.length === 0) return new Set();
+
+  const { data, error } = await supabase
+    .from("issues")
+    .select("visit_id")
+    .in("project_id", projectIds)
+    .neq("status", "resolved")
+    .not("visit_id", "is", null);
+
+  if (error) {
+    console.error("Error fetching visit ids with open issues across projects:", error);
+    return new Set();
+  }
+  return new Set((data || []).map((r) => r.visit_id).filter((v): v is string => !!v));
+}
+
 export async function getVisitIdsWithOpenIssues(projectId: string): Promise<Set<string>> {
   const { data, error } = await supabase
     .from("issues")

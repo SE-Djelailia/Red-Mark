@@ -88,7 +88,12 @@ interface SiteVisit {
   tags: string[];
   photoCount: number;
   notes: string;
-  photos: { id: string; url: string; tags: string[] }[];
+  // storage_path matches what the photo lightbox requires, so this grid
+  // can open a photo that is fully annotatable. It was the lighter shape
+  // here that originally justified gating the annotate button — the gate
+  // then wrongly applied to the Gallery tab too. If this modal is ever
+  // revived, whatever populates it must supply the path.
+  photos: { id: string; url: string; tags: string[]; storage_path: string }[];
 }
 
 interface Comment {
@@ -229,15 +234,18 @@ export default function ProjectDetail() {
   // storage_path and visit_id are carried so the annotator can save without
   // a second fetch — PhotoAnnotator resolves its own signed URL from the
   // path, and saveAnnotatedPhoto needs the visit to build the new path.
+  // storage_path is REQUIRED, not optional: annotation is a universal photo
+  // action, so any surface that can open a photo must supply enough to
+  // annotate it. Making it required means a future photo grid that forgets
+  // the field is a compile error rather than a silently greyed-out button —
+  // which is exactly how the Photos tab regressed.
   const [selectedPhoto, setSelectedPhoto] = useState<{
     id: string;
     url: string;
     tags: string[];
     date?: string;
     phase?: string;
-    // Present only for gallery photos (full rows). The visit-modal grid
-    // carries a lighter shape, so the annotate action is gated on these.
-    storage_path?: string;
+    storage_path: string;
     visit_id?: string;
   } | null>(null);
   const [siteVisits, setSiteVisits] = useState<SiteVisit[]>([]);
@@ -323,6 +331,12 @@ export default function ProjectDetail() {
     phase: p.site_visits?.phase
       ? p.site_visits.phase.charAt(0).toUpperCase() + p.site_visits.phase.slice(1)
       : "",
+    // Carried through so "Annoter" works from the Photos tab. getPhotosByProject
+    // selects "*", so both fields were already fetched — this mapping simply
+    // dropped them, which left the lightbox's annotate button permanently
+    // disabled for every photo opened from the gallery.
+    storage_path: p.storage_path,
+    visit_id: p.visit_id,
   }));
 
   // Filter photos based on search and filters
@@ -1482,12 +1496,9 @@ export default function ProjectDetail() {
             className="px-6 py-3 bg-ink border-b border-ink flex gap-3 safe-area-bottom"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Only gallery photos carry the storage_path the annotator
-                needs; the visit-modal grid passes a lighter shape. */}
             <button
               onClick={() => setShowAnnotator(true)}
-              disabled={!selectedPhoto.storage_path}
-              className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2"
             >
               <Pencil size={18} />
               <span>Annoter</span>
@@ -1534,9 +1545,9 @@ export default function ProjectDetail() {
           screen uses. This used to render PhotoMarkup, whose onSave only
           logged a blob: URL and then claimed success, silently losing every
           annotation made from this screen. */}
-      {showAnnotator && selectedPhoto?.storage_path && (
+      {showAnnotator && selectedPhoto && (
         <PhotoAnnotator
-          photo={{ ...selectedPhoto, storage_path: selectedPhoto.storage_path }}
+          photo={selectedPhoto}
           onClose={() => setShowAnnotator(false)}
           onSave={handleSaveAnnotation}
         />

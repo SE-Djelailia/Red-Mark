@@ -720,43 +720,24 @@ export async function getPhotosSignedUrls(storagePaths: string[]): Promise<strin
 // DASHBOARD API
 // ============================================
 
+// Les décomptes de visites et de photos ont été retirés avec leurs tuiles :
+// ce sont des notions par projet, et un total tous projets confondus n'est
+// pas une donnée sur laquelle on agit. Deux requêtes `count` de moins à
+// chaque chargement du tableau de bord.
 export interface DashboardStats {
   totalProjects: number;
-  totalVisits: number;
-  photosThisWeek: number;
   openIssues: number;
   resolvedIssues: number;
 }
 
 export async function getDashboardStats(userId: string): Promise<DashboardStats> {
   try {
-    // Date 7 jours en arrière (photos de la semaine)
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-
     // Récupère tous les projets (possédés + partagés) pour avoir le bon décompte
     const projects = await getProjects(userId);
     const projectIds = projects.map((p) => p.id);
 
     // Décomptes en parallèle via `head: true` (ne transfère pas les lignes, juste le count)
-    const [totalVisits, photosThisWeek, openIssues, resolvedIssues] = await Promise.all([
-      resolveCount(
-        projectIds.length
-          ? supabase
-              .from("site_visits")
-              .select("id", { count: "exact", head: true })
-              .in("project_id", projectIds)
-          : null,
-      ),
-      resolveCount(
-        projectIds.length
-          ? supabase
-              .from("photos")
-              .select("id", { count: "exact", head: true })
-              .in("project_id", projectIds)
-              .gte("created_at", weekAgo.toISOString())
-          : null,
-      ),
+    const [openIssues, resolvedIssues] = await Promise.all([
       resolveCount(
         projectIds.length
           ? supabase
@@ -779,8 +760,6 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
 
     return {
       totalProjects: projects.length,
-      totalVisits,
-      photosThisWeek,
       openIssues,
       resolvedIssues,
     };
@@ -790,9 +769,23 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
   }
 }
 
-export async function getRecentVisitsAcrossProjects(
+/**
+ * Every visit across the given projects within one month, for the
+ * Dashboard's cross-project calendar.
+ *
+ * Bounded by visit_date rather than fetching all visits and filtering
+ * client-side — a user with a few years of projects would otherwise pull
+ * the entire history to render one month. The project name is joined in
+ * the same query (pills are labelled by project), so there is no second
+ * round trip per row.
+ *
+ * `projectIds` comes from getProjects(user.id), so it only ever contains
+ * projects the user can see; RLS on site_visits is the floor beneath that.
+ */
+export async function getVisitsForMonthAcrossProjects(
   projectIds: string[],
-  limit = 5,
+  monthStart: string, // "YYYY-MM-DD"
+  monthEnd: string, // "YYYY-MM-DD"
 ): Promise<(SiteVisit & { projectName: string })[]> {
   if (projectIds.length === 0) return [];
 
@@ -800,11 +793,12 @@ export async function getRecentVisitsAcrossProjects(
     .from("site_visits")
     .select("*, projects(name)")
     .in("project_id", projectIds)
-    .order("visit_date", { ascending: false })
-    .limit(limit);
+    .gte("visit_date", monthStart)
+    .lte("visit_date", monthEnd)
+    .order("visit_date", { ascending: true });
 
   if (error) {
-    console.error("❌ Error fetching recent visits across projects:", error);
+    console.error("❌ Error fetching visits for month across projects:", error);
     throw error;
   }
 

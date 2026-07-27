@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
-import { Calendar, User, MapPin, Tag, MessageSquare, Camera, Edit } from "lucide-react";
+import { Calendar, User, MapPin, Tag, MessageSquare, Camera, Edit, Pencil } from "lucide-react";
+import { toast } from "sonner";
 import { getCommentsForIssue } from "../../lib/commentsApi";
 import { getProjectTeammates, type Comment, type Teammate } from "../../lib/commentsApi";
 import { getLocation, type Location } from "../../lib/locationsApi";
 import type { Issue } from "../../lib/issuesApi";
+import { saveAnnotatedPhoto } from "../../lib/supabaseApi";
+import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import { useProjectRole, canEditIssue } from "../../hooks/useProjectRole";
+import { useAuth } from "../../contexts/useAuth";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import CommentThread from "./CommentThread";
 import SecureImage from "./SecureImage";
 import IssueForm from "./IssueForm";
+import { PhotoAnnotator } from "./PhotoAnnotator";
 import { PriorityBadge, StatusBadge } from "./ui-kit/Badge";
 
 interface Props {
@@ -23,10 +28,56 @@ interface Props {
 // IssueForm for the edit affordance.
 export default function IssueView({ issue, projectId, onIssueUpdated, highlightCommentId }: Props) {
   const projectRole = useProjectRole(projectId);
+  const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [editing, setEditing] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<Issue["photos"][number] | null>(null);
+  const [showAnnotator, setShowAnnotator] = useState(false);
   useModalOpen(!!selectedPhoto);
+
+  // Annotation is gated the same way the "Modifier" button above is, so the
+  // action set stays consistent within this screen. This is stricter than
+  // the storage/RLS policy allows (an editor may annotate a teammate's
+  // photo) — deliberately: RLS is the security floor, this is the product
+  // decision about who is offered the action.
+  const canAnnotate = canEditIssue(projectRole, issue.createdBy);
+
+  const handleSaveAnnotation = async (photoId: string, annotatedImageBlob: Blob) => {
+    const target = issue.photos.find((p) => p.id === photoId);
+    if (!user?.id || !target) {
+      toast.error("Photo introuvable");
+      return;
+    }
+    try {
+      const updated = await saveAnnotatedPhoto(
+        { id: target.id, storage_path: target.storagePath },
+        annotatedImageBlob,
+        user.id,
+        projectId,
+        target.visitId,
+      );
+      // Push the new path up so IssueDetail re-renders. SecureImage's
+      // usePhotoUrl keys its effect on storagePath, so the changed path
+      // re-resolves the signed URL on its own — no cache-busting needed.
+      onIssueUpdated({
+        ...issue,
+        photos: issue.photos.map((p) =>
+          p.id === photoId ? { ...p, storagePath: updated.storage_path, url: updated.file_url } : p,
+        ),
+      });
+      setSelectedPhoto(null);
+      toast.success("Annotations sauvegardées");
+    } catch (error) {
+      console.error("Error saving annotation:", error);
+      toast.error(
+        getRlsErrorMessage(
+          error,
+          "Erreur lors de l'enregistrement de l'annotation",
+          "Seul l'auteur de la photo peut enregistrer une annotation pour le moment.",
+        ),
+      );
+    }
+  };
   const [location, setLocation] = useState<Location | null>(null);
   const [assigneeName, setAssigneeName] = useState<string | null>(null);
 
@@ -210,8 +261,29 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
               className="w-full h-auto rounded-lg"
               onClick={(e) => e.stopPropagation()}
             />
+            {canAnnotate && (
+              <div className="mt-3 flex" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => setShowAnnotator(true)}
+                  className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-brand-800 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+                >
+                  <Pencil size={18} />
+                  <span>Annoter</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
+      )}
+
+      {/* Photo annotation — same canonical annotator and non-destructive
+          save path the visit and project screens use. */}
+      {showAnnotator && selectedPhoto && (
+        <PhotoAnnotator
+          photo={{ id: selectedPhoto.id, storage_path: selectedPhoto.storagePath }}
+          onClose={() => setShowAnnotator(false)}
+          onSave={handleSaveAnnotation}
+        />
       )}
     </div>
   );

@@ -2,7 +2,6 @@ import { useNavigate } from "react-router";
 import { useAuth } from "../../contexts/useAuth";
 import {
   getDashboardStats,
-  getRecentVisitsAcrossProjects,
   getRecentActivity,
   getProjects,
   type DashboardStats,
@@ -11,7 +10,6 @@ import {
 import { getRecentIssuesAcrossProjects } from "../../lib/issuesApi";
 import { supabase } from "../../lib/supabase";
 import { formatDateShort, formatRelativeDate } from "../../lib/dateUtils";
-import type { Project } from "../../lib/supabase";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Calendar, Plus, RefreshCw } from "lucide-react";
 import FloatingActions from "./FloatingActions";
@@ -19,10 +17,10 @@ import { PriorityBadge } from "./ui-kit/Badge";
 import { Card, Section, SectionAction, ListRow, ListRows } from "./ui-kit/Card";
 import { StatGrid, StatTile } from "./ui-kit/StatTile";
 import ActivityIcon from "./ui-kit/ActivityIcon";
+import DashboardVisitCalendar from "./DashboardVisitCalendar";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
 
 type RecentIssue = Awaited<ReturnType<typeof getRecentIssuesAcrossProjects>>[number];
-type RecentVisit = Awaited<ReturnType<typeof getRecentVisitsAcrossProjects>>[number];
 
 // "Mardi 24 mars · 3 projets actifs" — the spec's dateline under the title.
 function formatDateline(projectCount: number): string {
@@ -41,14 +39,13 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalProjects: 0,
-    totalVisits: 0,
-    photosThisWeek: 0,
     openIssues: 0,
     resolvedIssues: 0,
   });
   const [recentIssues, setRecentIssues] = useState<RecentIssue[]>([]);
-  const [recentVisits, setRecentVisits] = useState<RecentVisit[]>([]);
-  const [recentProjects, setRecentProjects] = useState<Project[]>([]);
+  // Lifted out of loadData so the calendar can scope its own month query to
+  // the same set of projects the rest of the dashboard is built from.
+  const [projectIds, setProjectIds] = useState<string[]>([]);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [activityExpanded, setActivityExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -64,24 +61,18 @@ export default function Dashboard() {
       if (showSpinner) setRefreshing(true);
       try {
         const projects = await getProjects(user.id);
-        const projectIds = projects.map((p) => p.id);
+        const ids = projects.map((p) => p.id);
 
-        const [statsData, issuesData, visitsData, activityData] = await Promise.all([
+        const [statsData, issuesData, activityData] = await Promise.all([
           getDashboardStats(user.id),
-          getRecentIssuesAcrossProjects(projectIds, OPEN_ISSUES_COUNT, "open"),
-          getRecentVisitsAcrossProjects(projectIds, 5),
-          getRecentActivity(projectIds, 15),
+          getRecentIssuesAcrossProjects(ids, OPEN_ISSUES_COUNT, "open"),
+          getRecentActivity(ids, 15),
         ]);
 
+        setProjectIds(ids);
         setStats(statsData);
         setRecentIssues(issuesData);
-        setRecentVisits(visitsData);
         setActivity(activityData);
-        setRecentProjects(
-          [...projects]
-            .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-            .slice(0, 5),
-        );
       } catch (error) {
         console.error("Erreur lors du chargement du tableau de bord:", error);
       } finally {
@@ -154,29 +145,30 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Stat tiles — hairline-joined so the four read as one panel.
-            Only the open-déficiences figure is red; the rest are ink. */}
-        <StatGrid className="grid-cols-2 lg:grid-cols-4">
+        {/* Stat tiles — hairline-joined so the pair reads as one panel.
+            Only the open-déficiences figure is red; the rest are ink.
+            Photos and visits were dropped: both are per-project concepts,
+            and a count summed across every project is not a number anyone
+            acts on. What remains is exactly the two that drill down. */}
+        <StatGrid className="grid-cols-2">
           <StatTile
-            label="Déf. ouvertes"
+            label="Déficiences ouvertes"
             value={loading ? "—" : stats.openIssues}
             suffix={loading ? undefined : `/ ${stats.openIssues + stats.resolvedIssues}`}
             emphasis
             onClick={() => navigate("/app/issues")}
           />
-          <StatTile label="Photos · 7 j" value={loading ? "—" : stats.photosThisWeek} />
           <StatTile
             label="Projets"
             value={loading ? "—" : stats.totalProjects}
             onClick={() => navigate("/app/projects")}
           />
-          <StatTile label="Visites" value={loading ? "—" : stats.totalVisits} />
         </StatGrid>
 
-        {/* Wide column carries the two actionable lists (déficiences +
-            activité); the narrow rail carries the reference lists. */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6 lg:items-start">
-          <div className="space-y-6">
+        {/* Single column now. The two-column split existed to give the
+            narrow rail "Projets récents" and "Visites récentes"; with both
+            removed the rail had no content, so the grid went with them. */}
+        <div className="space-y-6">
             {/* Open deficiencies — an actionable "still needs attention"
                 list, not a chronological feed, so only open issues appear. */}
             <Section
@@ -260,64 +252,12 @@ export default function Dashboard() {
                 )}
               </Card>
             </Section>
-          </div>
 
-          {/* Narrow rail — stacks under the main column on phone, sits
-              beside it from lg up. */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
-            <Section title="Projets récents">
-              <Card className="overflow-hidden">
-                {loading ? (
-                  <div className="py-5 text-center text-sm text-faint">Chargement...</div>
-                ) : recentProjects.length === 0 ? (
-                  <div className="py-5 text-center text-sm text-muted">Aucun projet</div>
-                ) : (
-                  <ListRows>
-                    {recentProjects.map((project) => (
-                      <ListRow
-                        key={project.id}
-                        onClick={() => navigate(`/app/projects/${project.id}`)}
-                      >
-                        <div className="text-sm font-medium text-ink truncate">{project.name}</div>
-                        {project.address && (
-                          <div className="text-xs text-muted truncate">{project.address}</div>
-                        )}
-                      </ListRow>
-                    ))}
-                  </ListRows>
-                )}
-              </Card>
+            {/* Cross-project visit calendar — month grid on iPad/desktop,
+                agenda list on a phone (see DashboardVisitCalendar). */}
+            <Section title="Calendrier des visites">
+              <DashboardVisitCalendar projectIds={projectIds} />
             </Section>
-
-            <Section title="Visites récentes">
-              <Card className="overflow-hidden">
-                {loading ? (
-                  <div className="py-5 text-center text-sm text-faint">Chargement...</div>
-                ) : recentVisits.length === 0 ? (
-                  <div className="py-5 text-center text-sm text-muted">Aucune visite</div>
-                ) : (
-                  <ListRows>
-                    {recentVisits.map((visit) => (
-                      <ListRow
-                        key={visit.id}
-                        onClick={() =>
-                          navigate(`/app/projects/${visit.project_id}/visits/${visit.id}`)
-                        }
-                      >
-                        <div className="text-sm font-medium text-ink truncate">
-                          {visit.projectName}
-                          {visit.phase ? ` — ${visit.phase}` : ""}
-                        </div>
-                        <div className="text-xs text-muted">
-                          {formatDateShort(visit.visit_date)}
-                        </div>
-                      </ListRow>
-                    ))}
-                  </ListRows>
-                )}
-              </Card>
-            </Section>
-          </div>
         </div>
       </div>
 

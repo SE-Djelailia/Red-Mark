@@ -284,10 +284,17 @@ export default function VisitDetail() {
     }
 
     setEditingIssue(null);
+    // visitId comes from the route — these are this visit's own photos, so
+    // it is the correct visit for every one of them by construction.
     const preSelected =
       visit?.photos
         .filter((p) => selectedPhotoIds.includes(p.id))
-        .map((p) => ({ id: p.id, url: p.url, storagePath: p.storage_path })) || [];
+        .map((p) => ({
+          id: p.id,
+          url: p.url,
+          storagePath: p.storage_path,
+          visitId: visitId || "",
+        })) || [];
     setInitialIssuePhotos(preSelected);
     setIsSelectionMode(false);
     setSelectedPhotoIds([]);

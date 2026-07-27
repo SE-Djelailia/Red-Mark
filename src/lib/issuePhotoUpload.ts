@@ -62,7 +62,12 @@ export async function uploadIssuePhotos(
           context.visitId,
           { locationId: context.locationId || undefined, tags },
         );
-        uploaded.push({ id: photo.id, url: photo.file_url, storagePath: photo.storage_path });
+        uploaded.push({
+          id: photo.id,
+          url: photo.file_url,
+          storagePath: photo.storage_path,
+          visitId: context.visitId,
+        });
       } catch (uploadError) {
         if (!isNetworkError(uploadError)) throw uploadError;
         await addToQueue({
