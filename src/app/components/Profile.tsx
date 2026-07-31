@@ -19,6 +19,8 @@ import GeneralSettings from "./GeneralSettings";
 import DataExport from "./DataExport";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { inputClassName } from "./ui-kit/Input";
+import { Card, Section } from "./ui-kit/Card";
+import { StatGrid, StatTile } from "./ui-kit/StatTile";
 
 // Left behind by settings that were removed as non-functional stubs: the
 // Notifications and Report-Templates sections entirely, plus the general
@@ -138,194 +140,196 @@ export default function Profile() {
   const userRole = user.user_metadata?.role || "architect";
 
   return (
-    <div className="min-h-screen pb-20">
-      {/* Header */}
-      <div className="bg-surface border-b border-line px-6 py-6 md:py-8">
-        <div className="max-w-2xl mx-auto">
-          {/* Avatar */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-full bg-brand-600 text-white flex items-center justify-center text-xl font-semibold">
+    <div className="min-h-screen pb-20 bg-canvas">
+      {/* Same container as the Dashboard: max-w-6xl, matching gutters and
+          vertical rhythm, so the two screens line up at every breakpoint. */}
+      <div className="px-4 sm:px-6 lg:px-8 py-5 max-w-6xl mx-auto space-y-6">
+        {/* Identity + counters. Stacked on a phone; side by side from lg,
+            where the identity card alone would leave half the row empty. */}
+        <div className="grid gap-6 lg:grid-cols-2 items-stretch">
+          <Card className="p-4 sm:p-5 flex items-center gap-4">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-brand-600 text-white flex items-center justify-center text-xl font-semibold flex-shrink-0">
               {userName
                 .split(" ")
                 .map((n) => n[0])
                 .join("")
                 .toUpperCase()}
             </div>
-            <div>
-              <h1 className="text-2xl font-semibold text-ink mb-1">{userName}</h1>
-              <p className="text-muted text-sm capitalize">{userRole}</p>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-semibold text-ink truncate">{userName}</h1>
+              <p className="text-muted text-sm capitalize truncate">{userRole}</p>
             </div>
-          </div>
+          </Card>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-canvas border border-line rounded-lg p-3 text-center">
-              <div className="text-2xl font-semibold text-ink mb-1">{loading ? "-" : stats.projectCount}</div>
-              <div className="text-xs text-muted">Projets</div>
-            </div>
-            <div className="bg-canvas border border-line rounded-lg p-3 text-center">
-              <div className="text-2xl font-semibold text-ink mb-1">{loading ? "-" : stats.totalVisits}</div>
-              <div className="text-xs text-muted">Visites</div>
-            </div>
-            <div className="bg-canvas border border-line rounded-lg p-3 text-center">
-              <div className="text-2xl font-semibold text-ink mb-1">{loading ? "-" : stats.totalPhotos}</div>
-              <div className="text-xs text-muted">Photos</div>
-            </div>
-          </div>
+          {/* Hairline-joined tiles, same primitive as the Dashboard's. */}
+          <StatGrid className="grid-cols-3">
+            <StatTile label="Projets" value={loading ? "—" : stats.projectCount} />
+            <StatTile label="Visites" value={loading ? "—" : stats.totalVisits} />
+            <StatTile label="Photos" value={loading ? "—" : stats.totalPhotos} />
+          </StatGrid>
         </div>
-      </div>
 
-      {/* Profile Info */}
-      <div className="px-4 py-6 max-w-2xl mx-auto">
-        <div className="bg-surface rounded-xl border border-line mb-6">
-          <div className="px-4 py-3 border-b border-line flex items-center justify-between">
-            <h2 className="text-base font-semibold text-ink">Mes informations</h2>
-            {isEditing ? (
-              <div className="flex items-center gap-2">
+        {/* Two-column from lg: details take the wider column, the settings
+            menu and account actions ride alongside instead of below the
+            fold. items-start keeps the short right column from stretching. */}
+        <div className="grid gap-6 lg:grid-cols-3 items-start">
+          <Section
+            title="Mes informations"
+            className="lg:col-span-2"
+            action={
+              isEditing ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    disabled={isSaving}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-body hover:bg-subtle rounded-lg transition-colors disabled:opacity-50 min-h-[36px]"
+                  >
+                    <X size={16} />
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleSaveProfile}
+                    disabled={isSaving}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 min-h-[36px]"
+                  >
+                    <Check size={16} />
+                    {isSaving ? "Enregistrement…" : "Enregistrer"}
+                  </button>
+                </div>
+              ) : (
                 <button
-                  onClick={() => setIsEditing(false)}
-                  disabled={isSaving}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-body hover:bg-subtle rounded-lg transition-colors disabled:opacity-50 min-h-[36px]"
+                  onClick={startEditing}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-brand-600 hover:bg-brand-50 rounded-lg transition-colors min-h-[36px]"
                 >
-                  <X size={16} />
-                  Annuler
+                  <Pencil size={16} />
+                  Modifier
                 </button>
+              )
+            }
+          >
+            {/* Four fields in a 2×2 grid from sm — one tall column of
+                half-empty rows is the main thing wasting width here.
+                Borders are per-cell rather than divide-y, which only
+                separates DOM siblings and would draw the wrong lines
+                once the cells reflow into two columns. */}
+            <Card className="overflow-hidden grid sm:grid-cols-2">
+              <div className="p-4 flex items-center gap-3 border-t border-line first:border-t-0 sm:[&:nth-child(2)]:border-t-0 sm:[&:nth-child(odd)]:border-r">
+                <User size={20} className="text-faint flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-muted mb-1">Nom</div>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      className={inputClassName}
+                      placeholder="Votre nom complet"
+                    />
+                  ) : (
+                    <div className="text-sm text-ink">{userName}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Read-only: the email is the auth identity. */}
+              <div className="p-4 flex items-center gap-3 border-t border-line first:border-t-0 sm:[&:nth-child(2)]:border-t-0 sm:[&:nth-child(odd)]:border-r">
+                <Mail size={20} className="text-faint flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-muted mb-1">Courriel</div>
+                  <div className="text-sm text-ink break-all">{user.email}</div>
+                  {isEditing && (
+                    <div className="text-xs text-faint mt-1">
+                      Le courriel ne peut pas être modifié ici.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 flex items-center gap-3 border-t border-line first:border-t-0 sm:[&:nth-child(2)]:border-t-0 sm:[&:nth-child(odd)]:border-r">
+                <Building2 size={20} className="text-faint flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-muted mb-1">Entreprise</div>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={form.firm}
+                      onChange={(e) => setForm({ ...form, firm: e.target.value })}
+                      className={inputClassName}
+                      placeholder="Nom de votre entreprise"
+                    />
+                  ) : (
+                    <div className="text-sm text-ink">{userFirm}</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 flex items-center gap-3 border-t border-line first:border-t-0 sm:[&:nth-child(2)]:border-t-0 sm:[&:nth-child(odd)]:border-r">
+                <Settings size={20} className="text-faint flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-muted mb-1">Rôle</div>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={form.role}
+                      onChange={(e) => setForm({ ...form, role: e.target.value })}
+                      className={inputClassName}
+                      placeholder="Ex : Architecte, Technologue"
+                    />
+                  ) : (
+                    <div className="text-sm text-ink capitalize">{userRole}</div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </Section>
+
+          <div className="space-y-6">
+            {/* One panel with hairline rows rather than two free-floating
+                cards — same treatment as the Dashboard's lists. */}
+            <Section title="Paramètres">
+              <Card className="overflow-hidden divide-y divide-line">
                 <button
-                  onClick={handleSaveProfile}
-                  disabled={isSaving}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 min-h-[36px]"
+                  onClick={() => setShowDataExport(true)}
+                  className="w-full px-4 py-3 min-h-11 flex items-center justify-between gap-3 text-left hover:bg-subtle transition-colors"
                 >
-                  <Check size={16} />
-                  {isSaving ? "Enregistrement…" : "Enregistrer"}
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={startEditing}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm text-brand-600 hover:bg-brand-50 rounded-lg transition-colors min-h-[36px]"
-              >
-                <Pencil size={16} />
-                Modifier
-              </button>
-            )}
-          </div>
-
-          <div className="divide-y divide-line">
-            <div className="p-4 flex items-center gap-3">
-              <User size={20} className="text-faint flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="text-xs text-muted mb-1">Nom</div>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className={inputClassName}
-                    placeholder="Votre nom complet"
-                  />
-                ) : (
-                  <div className="text-sm text-ink">{userName}</div>
-                )}
-              </div>
-            </div>
-
-            {/* Read-only: the email is the auth identity. */}
-            <div className="p-4 flex items-center gap-3">
-              <Mail size={20} className="text-faint flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="text-xs text-muted mb-1">Courriel</div>
-                <div className="text-sm text-ink break-all">{user.email}</div>
-                {isEditing && (
-                  <div className="text-xs text-faint mt-1">
-                    Le courriel ne peut pas être modifié ici.
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Download size={20} className="text-muted flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-sm text-ink">Exporter les données</div>
+                      <div className="text-xs text-muted">Télécharger tous les projets</div>
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
+                  <ChevronRight size={20} className="text-faint flex-shrink-0" />
+                </button>
 
-            <div className="p-4 flex items-center gap-3">
-              <Building2 size={20} className="text-faint flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="text-xs text-muted mb-1">Entreprise</div>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={form.firm}
-                    onChange={(e) => setForm({ ...form, firm: e.target.value })}
-                    className={inputClassName}
-                    placeholder="Nom de votre entreprise"
-                  />
-                ) : (
-                  <div className="text-sm text-ink">{userFirm}</div>
-                )}
-              </div>
-            </div>
+                <button
+                  onClick={() => setShowGeneralSettings(true)}
+                  className="w-full px-4 py-3 min-h-11 flex items-center justify-between gap-3 text-left hover:bg-subtle transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Settings size={20} className="text-muted flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-sm text-ink">Paramètres généraux</div>
+                      <div className="text-xs text-muted">Stockage local</div>
+                    </div>
+                  </div>
+                  <ChevronRight size={20} className="text-faint flex-shrink-0" />
+                </button>
+              </Card>
+            </Section>
 
-            <div className="p-4 flex items-center gap-3">
-              <Settings size={20} className="text-faint flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="text-xs text-muted mb-1">Rôle</div>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={form.role}
-                    onChange={(e) => setForm({ ...form, role: e.target.value })}
-                    className={inputClassName}
-                    placeholder="Ex : Architecte, Technologue"
-                  />
-                ) : (
-                  <div className="text-sm text-ink capitalize">{userRole}</div>
-                )}
-              </div>
-            </div>
+            <Section title="Compte">
+              <button
+                onClick={() => setShowLogoutConfirm(true)}
+                className="w-full bg-surface rounded-xl border border-open/30 p-4 min-h-11 flex items-center justify-center gap-3 text-open hover:bg-open/5 transition-colors"
+              >
+                <LogOut size={20} />
+                <span>Se déconnecter</span>
+              </button>
+            </Section>
+
+            <div className="text-center text-xs text-faint">RedMark v1.0.0</div>
           </div>
-        </div>
-
-        {/* Settings Menu */}
-        <div className="space-y-3">
-          <h2 className="text-base font-semibold text-ink mb-3">Paramètres</h2>
-
-          <button
-            onClick={() => setShowDataExport(true)}
-            className="w-full bg-surface rounded-xl border border-line p-4 flex items-center justify-between hover:border-brand-600 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Download size={20} className="text-muted" />
-              <div className="text-left">
-                <div className="text-sm text-ink">Exporter les données</div>
-                <div className="text-xs text-muted">Télécharger tous les projets</div>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-faint" />
-          </button>
-
-          <button
-            onClick={() => setShowGeneralSettings(true)}
-            className="w-full bg-surface rounded-xl border border-line p-4 flex items-center justify-between hover:border-brand-600 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Settings size={20} className="text-muted" />
-              <div className="text-left">
-                <div className="text-sm text-ink">Paramètres généraux</div>
-                <div className="text-xs text-muted">Stockage local</div>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-faint" />
-          </button>
-        </div>
-
-        {/* Logout Button */}
-        <button
-          onClick={() => setShowLogoutConfirm(true)}
-          className="w-full mt-8 bg-surface rounded-xl border border-open/30 p-4 flex items-center justify-center gap-3 text-open hover:bg-open/5 transition-colors"
-        >
-          <LogOut size={20} />
-          <span>Se déconnecter</span>
-        </button>
-
-        {/* App Version */}
-        <div className="text-center mt-8 text-sm text-muted">
-          <p>RedMark v1.0.0</p>
         </div>
       </div>
 
