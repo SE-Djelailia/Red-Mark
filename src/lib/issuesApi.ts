@@ -381,34 +381,6 @@ export async function getAllUserIssues(
 // optional status filter lets the Dashboard ask for open issues specifically
 // (distinct from "Activité récente", which already covers all recent
 // issue/visit events regardless of status).
-export async function getRecentIssuesAcrossProjects(
-  projectIds: string[],
-  limit = 5,
-  status?: Issue["status"],
-): Promise<(Issue & { projectName: string })[]> {
-  if (projectIds.length === 0) return [];
-
-  let query = supabase
-    .from("issues")
-    .select("*, projects(name)")
-    .in("project_id", projectIds)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (status) query = query.eq("status", status);
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("Error fetching recent issues across projects:", error);
-    throw error;
-  }
-
-  const base = (data || []).map((row: any) => ({
-    ...rowToIssueBase(row),
-    projectName: row.projects?.name ?? "Projet inconnu",
-  }));
-  return (await attachPhotos(base)) as (Issue & { projectName: string })[];
-}
 
 // Create a new issue
 export async function createIssue(
