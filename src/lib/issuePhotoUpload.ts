@@ -12,15 +12,9 @@
 import { toast } from "sonner";
 import { uploadPhoto } from "./supabaseApi";
 import { addToQueue } from "./uploadQueue";
+import { isRetriableUploadError } from "./networkErrors";
 import { compressImage } from "./imageCompression";
 import type { Issue } from "./issuesApi";
-
-// Network failures surface as TypeError (fetch's own error type) rather than the
-// PostgrestError/StorageError objects Supabase throws for validation/permission
-// failures — same check used by PhotoUploadPage.tsx.
-function isNetworkError(error: unknown): boolean {
-  return !navigator.onLine || error instanceof TypeError;
-}
 
 // Marks a photo as weather evidence (e.g. a sky photo or a weather-app
 // screenshot) rather than adding a dedicated column/table for it — it's a
@@ -41,6 +35,8 @@ export interface UploadIssuePhotosContext {
 export interface UploadIssuePhotosResult {
   uploaded: Issue["photos"];
   queuedCount: number;
+  /** Photos that could be neither uploaded nor queued — genuinely lost. */
+  failedCount: number;
 }
 
 export async function uploadIssuePhotos(
@@ -48,42 +44,58 @@ export async function uploadIssuePhotos(
   context: UploadIssuePhotosContext,
 ): Promise<UploadIssuePhotosResult> {
   let queuedCount = 0;
+  let failedCount = 0;
   const uploaded: Issue["photos"] = [];
   const tags = context.tags || [];
 
+  // Each file is independent — one rejection must not abandon the rest.
   for (const file of files) {
+    let compressed = file;
     try {
-      const compressed = await compressImage(file);
-      try {
-        const photo = await uploadPhoto(
-          compressed,
-          context.userId,
-          context.projectId,
-          context.visitId,
-          { locationId: context.locationId || undefined, tags },
-        );
-        uploaded.push({
-          id: photo.id,
-          url: photo.file_url,
-          storagePath: photo.storage_path,
-          visitId: context.visitId,
-        });
-      } catch (uploadError) {
-        if (!isNetworkError(uploadError)) throw uploadError;
-        await addToQueue({
-          file: compressed,
-          userId: context.userId,
-          projectId: context.projectId,
-          visitId: context.visitId,
-          tags,
-          locationId: context.locationId || undefined,
-        });
-        queuedCount++;
+      compressed = await compressImage(file);
+    } catch (compressError) {
+      console.error("❌ Compression failed, using original:", file.name, compressError);
+    }
+
+    try {
+      const photo = await uploadPhoto(
+        compressed,
+        context.userId,
+        context.projectId,
+        context.visitId,
+        { locationId: context.locationId || undefined, tags },
+      );
+      uploaded.push({
+        id: photo.id,
+        url: photo.file_url,
+        storagePath: photo.storage_path,
+        visitId: context.visitId,
+      });
+    } catch (uploadError) {
+      if (isRetriableUploadError(uploadError)) {
+        try {
+          await addToQueue({
+            file: compressed,
+            userId: context.userId,
+            projectId: context.projectId,
+            visitId: context.visitId,
+            tags,
+            locationId: context.locationId || undefined,
+          });
+          queuedCount++;
+        } catch (queueError) {
+          console.error("❌ Could not queue photo:", file.name, queueError);
+          failedCount++;
+          toast.error(`Photo non enregistrée : ${file.name}`);
+        }
+      } else {
+        failedCount++;
+        const message = (uploadError as Error)?.message || String(uploadError);
+        console.error("❌ Upload rejected for", file.name, uploadError);
+        toast.error(`Échec de l'envoi de ${file.name} : ${message}`);
       }
-    } catch (e: any) {
-      toast.error(`Échec de l'envoi d'une photo : ${e.message || e}`);
     }
   }
 
-  return { uploaded, queuedCount };
+  return { uploaded, queuedCount, failedCount };
 }

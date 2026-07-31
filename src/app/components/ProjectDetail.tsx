@@ -46,7 +46,6 @@ import { usePageHeader } from "../../contexts/PageHeaderContext";
 import { getIssuesByProject, getVisitIdsWithOpenIssues } from "../../lib/issuesApi";
 import { parseLocalDate } from "../../lib/dateUtils";
 import { PhotoAnnotator } from "./PhotoAnnotator";
-import ReportTemplateSelector from "./ReportTemplateSelector";
 import ProjectMembersModal from "./ProjectMembersModal";
 import ProjectForm from "./ProjectForm";
 import PlanFilesManager from "./PlanFilesManager";
@@ -109,11 +108,19 @@ interface Comment {
 // DB row type: same pre-existing hand-written-type-vs-raw-row mismatch as
 // the rest of this file (see e.g. supabaseApi.ts's SiteVisit/Photo/Issue
 // interfaces not matching generated DB types), not something new.
+/** "fondation" -> "Fondation". Tolerates null/empty: site_visits.phase is a
+ *  nullable column, and this runs over every visit in the list, so one row
+ *  saved without a phase used to take out the whole Visites tab. */
+function capitalizePhase(phase: unknown): string {
+  if (typeof phase !== "string" || phase.length === 0) return "—";
+  return phase.charAt(0).toUpperCase() + phase.slice(1);
+}
+
 function mapVisitRow(visit: any): SiteVisit {
   return {
     id: visit.id,
     date: visit.visit_date,
-    phase: visit.phase.charAt(0).toUpperCase() + visit.phase.slice(1), // Capitalize
+    phase: capitalizePhase(visit.phase),
     authorName: visit.authorName,
     // Dead-code compat only — see SiteVisit's comment.
     room: "",
@@ -211,10 +218,8 @@ export default function ProjectDetail() {
   };
 
   const [issueLocationFilter, setIssueLocationFilter] = useState("");
-  const [showShareModal, setShowShareModal] = useState(false);
   const [showProjectInfo, setShowProjectInfo] = useState(false);
   const [showCommentModal, setShowCommentModal] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [showLocationsImportModal, setShowLocationsImportModal] = useState(false);
   // "Nouvelle déficience" from the floating-actions menu has no visit in
@@ -275,9 +280,9 @@ export default function ProjectDetail() {
   const [galleryPhotoUrls, setGalleryPhotoUrls] = useState<Record<string, string>>({});
   const [loadingGalleryPhotos, setLoadingGalleryPhotos] = useState(false);
   const [galleryPhotosLoadError, setGalleryPhotosLoadError] = useState<string | null>(null);
+  const [issuesLoadError, setIssuesLoadError] = useState<string | null>(null);
   const [galleryPhotosFetchStarted, setGalleryPhotosFetchStarted] = useState(false);
   const [totalPhotosCount, setTotalPhotosCount] = useState(0);
-  useModalOpen(showShareModal);
   useModalOpen(showCommentModal);
   useModalOpen(!!selectedPhoto && !showAnnotator);
   useModalOpen(showVisitModal && !!selectedVisit);
@@ -613,20 +618,30 @@ export default function ProjectDetail() {
     }
   }, [activeTab, galleryPhotosFetchStarted, loadGalleryPhotos]);
 
-  useEffect(() => {
-    const fetchIssues = async () => {
-      if (!id) return;
-
-      try {
-        const projectIssues = await getIssuesByProject(id);
-        setIssues(projectIssues);
-      } catch (error) {
-        console.error("❌ Error fetching issues:", error);
-      }
-    };
-
-    fetchIssues();
+  // Extracted so the error state has something to retry with. A failure here
+  // used to log only, leaving the Déficiences tab showing "0" and an empty
+  // list — indistinguishable from a site with nothing outstanding.
+  const loadIssues = useCallback(async () => {
+    if (!id) return;
+    setIssuesLoadError(null);
+    try {
+      const projectIssues = await getIssuesByProject(id);
+      setIssues(projectIssues);
+    } catch (error: any) {
+      console.error("❌ Error fetching issues:", error);
+      setIssuesLoadError(
+        getRlsErrorMessage(
+          error,
+          "Impossible de charger les déficiences.",
+          "Vous n'avez pas accès aux déficiences de ce projet.",
+        ),
+      );
+    }
   }, [id]);
+
+  useEffect(() => {
+    loadIssues();
+  }, [loadIssues]);
 
   const loadLocationsAndLevels = useCallback(async () => {
     if (!id) return;
@@ -773,14 +788,14 @@ export default function ProjectDetail() {
                 <Upload size={20} />
               </button>
             )}
+            {/* Goes to the real generator, which produces an actual .docx
+                from the template. This used to open ReportTemplateSelector,
+                which faked a 2.5s delay and alerted success without ever
+                producing a file. */}
             <button
-              onClick={() => setShowShareModal(true)}
-              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-lg transition-colors"
-            >
-              <Share2 size={20} />
-            </button>
-            <button
-              onClick={() => setShowReportModal(true)}
+              onClick={() => navigate(`/app/projects/${id}/report`)}
+              title="Générer un rapport"
+              aria-label="Générer un rapport"
               className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-lg transition-colors"
             >
               <FileText size={20} />
@@ -1216,7 +1231,21 @@ export default function ProjectDetail() {
         {/* Déficiences Tab */}
         {activeTab === "issues" && (
           <div className="space-y-4">
-            {locations.length > 0 && (
+            {/* An empty list must not be able to mean "load failed" — on site
+                that reads as "nothing outstanding". */}
+            {issuesLoadError && (
+              <div className="text-center py-12">
+                <AlertCircle size={48} className="mx-auto text-faint mb-4" />
+                <p className="text-muted mb-2">{issuesLoadError}</p>
+                <button
+                  onClick={loadIssues}
+                  className="text-sm text-brand-strong hover:text-brand-800 font-medium"
+                >
+                  Réessayer
+                </button>
+              </div>
+            )}
+            {!issuesLoadError && locations.length > 0 && (
               <select
                 value={issueLocationFilter}
                 onChange={(e) => setIssueLocationFilter(e.target.value)}
@@ -1232,7 +1261,7 @@ export default function ProjectDetail() {
               </select>
             )}
 
-            {filteredIssues.length === 0 && issueLocationFilter ? (
+            {issuesLoadError ? null : filteredIssues.length === 0 && issueLocationFilter ? (
               <div className="text-center py-8">
                 <MapPin size={40} className="mx-auto text-faint mb-3" />
                 <p className="text-muted text-sm mb-2">Aucune déficience pour ce local</p>
@@ -1333,63 +1362,6 @@ export default function ProjectDetail() {
         />
       )}
 
-      {/* Share Modal */}
-      {showShareModal && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 overflow-y-auto"
-          onClick={() => setShowShareModal(false)}
-        >
-          <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
-            <div
-              className="bg-surface rounded-xl w-full max-w-md"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="px-6 pt-6 pb-4 border-b border-line">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl text-ink font-medium">Partager le projet</h2>
-                  <button
-                    onClick={() => setShowShareModal(false)}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-subtle rounded-full transition-colors"
-                  >
-                    <X size={24} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-6">
-                <p className="text-sm text-body mb-4">
-                  Inviter des collègues de JLP pour collaborer et commenter
-                </p>
-                <input
-                  type="email"
-                  placeholder="Courriel du collègue..."
-                  className="w-full px-4 py-3 bg-canvas border border-line rounded-lg mb-4 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
-                />
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowShareModal(false)}
-                    className="flex-1 py-3 bg-subtle text-ink rounded-lg hover:bg-line-strong font-medium min-h-[48px]"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowShareModal(false);
-                      alert("Invitation envoyée!");
-                    }}
-                    className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium min-h-[48px]"
-                  >
-                    Inviter
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Comment Modal */}
       {showCommentModal && (
         <div
@@ -1451,15 +1423,6 @@ export default function ProjectDetail() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Report Modal */}
-      {showReportModal && (
-        <ReportTemplateSelector
-          projectId={id || "1"}
-          projectName={project?.name}
-          onClose={() => setShowReportModal(false)}
-        />
       )}
 
       {/* Photo Detail Modal */}

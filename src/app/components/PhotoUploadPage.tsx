@@ -6,16 +6,12 @@ import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
 import { compressImage } from "../../lib/imageCompression";
 import { addToQueue } from "../../lib/uploadQueue";
+import { isRetriableUploadError } from "../../lib/networkErrors";
 import { useProjectRole } from "../../hooks/useProjectRole";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { useSmartBack } from "../../hooks/useSmartBack";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
 
-// Network failures surface as TypeError (fetch's own error type) rather than the
-// PostgrestError/StorageError objects Supabase throws for validation/permission failures.
-function isNetworkError(error: unknown): boolean {
-  return !navigator.onLine || error instanceof TypeError;
-}
 
 export default function PhotoUploadPage() {
   const navigate = useNavigate();
@@ -184,8 +180,13 @@ export default function PhotoUploadPage() {
     setIsUploading(true);
     let successCount = 0;
     let queuedCount = 0;
+    const failures: string[] = [];
+
     try {
-      // Upload each photo (with automatic compression and individual location)
+      // Every photo is handled independently. A single failure used to
+      // propagate out of this loop, so photo 3 of 10 failing meant photos
+      // 4–10 were never uploaded AND never queued — silently dropped with
+      // one generic toast. Nothing in here may throw past the iteration.
       for (let i = 0; i < photosToUpload.length; i++) {
         const file = photosToUpload[i];
         const tags = photoTags[i.toString()] || [];
@@ -202,8 +203,16 @@ export default function PhotoUploadPage() {
               }
             : undefined;
 
-        // Compress image before upload to reduce storage and bandwidth
-        const compressedFile = await compressImage(file);
+        // Compression can throw on its own (corrupt file, canvas OOM on a
+        // very large image), so it is inside the per-photo guard too.
+        let compressedFile: File;
+        try {
+          compressedFile = await compressImage(file);
+        } catch (compressError) {
+          console.error(`❌ Compression failed for ${file.name}:`, compressError);
+          // Fall back to the original bytes rather than losing the photo.
+          compressedFile = file;
+        }
 
         try {
           await uploadPhoto(compressedFile, user.id, projectId, visitId, {
@@ -212,30 +221,35 @@ export default function PhotoUploadPage() {
           });
           successCount++;
         } catch (uploadError) {
-          if (!isNetworkError(uploadError)) {
-            // Not a connectivity issue (e.g. validation/permission error) —
-            // let the outer catch handle it with the generic error toast.
-            throw uploadError;
+          if (isRetriableUploadError(uploadError)) {
+            try {
+              await addToQueue({
+                file: compressedFile,
+                userId: user.id,
+                projectId,
+                visitId,
+                tags,
+                location: locationObj,
+              });
+              queuedCount++;
+              console.warn("⚠️ Upload failed, queued for later:", file.name, uploadError);
+            } catch (queueError) {
+              // Queueing itself failed (IndexedDB unavailable/full). This is
+              // the only path where a photo is genuinely lost, so it must be
+              // named rather than counted silently.
+              console.error("❌ Could not queue photo:", file.name, queueError);
+              failures.push(file.name);
+            }
+          } else {
+            // The server gave a verdict (permission, size, validation) —
+            // retrying would never succeed, so report it against this photo
+            // and carry on with the rest.
+            console.error("❌ Upload rejected for", file.name, uploadError);
+            failures.push(file.name);
           }
-
-          console.warn("⚠️ Upload failed due to network, queueing for later:", uploadError);
-          await addToQueue({
-            file: compressedFile,
-            userId: user.id,
-            projectId,
-            visitId,
-            tags,
-            location: locationObj,
-          });
-          queuedCount++;
         }
       }
 
-      if (queuedCount > 0) {
-        toast.info(
-          `${queuedCount} photo(s) enregistrée(s) localement, envoi automatique dès le retour en ligne.`,
-        );
-      }
       if (successCount > 0) {
         toast.success(`${successCount} photo(s) ajoutée(s) avec succès!`);
 
@@ -252,9 +266,27 @@ export default function PhotoUploadPage() {
           visitId,
         });
       }
-      navigate(`/app/projects/${projectId}/visits/${visitId}`);
+      if (queuedCount > 0) {
+        toast.info(
+          `${queuedCount} photo(s) enregistrée(s) localement, envoi automatique dès le retour en ligne.`,
+        );
+      }
+      if (failures.length > 0) {
+        // Named, not just counted — the user needs to know which photos to
+        // retake or retry, and these are the only ones not safely stored.
+        toast.error(
+          `${failures.length} photo(s) non enregistrée(s) : ${failures.slice(0, 3).join(", ")}` +
+            (failures.length > 3 ? `…` : ""),
+          { duration: 10000 },
+        );
+      }
+
+      // Only leave the page if nothing needs the user's attention here.
+      if (failures.length === 0) {
+        navigate(`/app/projects/${projectId}/visits/${visitId}`);
+      }
     } catch (error) {
-      console.error("❌ Error uploading photos:", error);
+      console.error("❌ Unexpected error uploading photos:", error);
       toast.error(`Erreur lors de l'ajout des photos: ${error}`);
     } finally {
       setIsUploading(false);

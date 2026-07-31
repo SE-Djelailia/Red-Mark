@@ -9,12 +9,7 @@ import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
 import SecureImage from "./SecureImage";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
 import { inputClassName, labelClassName, textareaClassName } from "./ui-kit/Input";
-
-const PRIORITIES: { value: Issue["priority"]; label: string; dot: string }[] = [
-  { value: "high", label: "Élevé", dot: "bg-orange-500" },
-  { value: "medium", label: "Moyen", dot: "bg-subtle0" },
-  { value: "low", label: "Faible", dot: "bg-canvas0" },
-];
+import { PRIORITY_OPTIONS } from "./ui-kit/Badge";
 
 const DISCIPLINES = ["Architecture", "Structure", "Mécanique", "Électricité", "Plomberie"];
 
@@ -270,7 +265,7 @@ export default function IssueForm({
       <div>
         <label className={labelClassName}>Priorité</label>
         <div className="grid grid-cols-3 gap-2">
-          {PRIORITIES.map((p) => (
+          {PRIORITY_OPTIONS.map((p) => (
             <button
               key={p.value}
               type="button"

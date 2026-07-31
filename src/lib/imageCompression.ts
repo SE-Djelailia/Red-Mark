@@ -3,14 +3,23 @@
  */
 
 interface CompressionOptions {
-  maxWidth?: number;
-  maxHeight?: number;
+  /** Cap on the LONGEST side, in pixels. Aspect ratio is preserved. */
+  maxDimension?: number;
   quality?: number; // 0.0 to 1.0
 }
 
-const DEFAULT_OPTIONS: CompressionOptions = {
-  maxWidth: 1920, // Full HD width
-  maxHeight: 1080, // Full HD height
+// A single longest-side cap, deliberately not a width/height pair.
+//
+// The previous defaults were maxWidth 1920 / maxHeight 1080 applied as
+// min(both ratios), which punished portrait photos badly: a 3024×4032 phone
+// photo — the natural way to shoot a wall defect — came out at 810×1080,
+// only 27% scale, while the same photo in landscape kept 1440×1080. Capping
+// the longest side treats both orientations identically.
+//
+// 2560 keeps enough detail to read a crack width or a label in a defect
+// photo, which is the evidentiary point of these images.
+const DEFAULT_OPTIONS: Required<CompressionOptions> = {
+  maxDimension: 2560,
   quality: 0.85, // 85% quality - good balance between size and quality
 };
 
@@ -39,14 +48,16 @@ export async function compressImage(file: File, options: CompressionOptions = {}
       const img = new Image();
 
       img.onload = () => {
-        // Calculate new dimensions while maintaining aspect ratio
+        // Scale by the longest side only, so portrait and landscape shots of
+        // the same subject end up with the same amount of detail.
         let width = img.width;
         let height = img.height;
 
-        if (width > opts.maxWidth! || height > opts.maxHeight!) {
-          const ratio = Math.min(opts.maxWidth! / width, opts.maxHeight! / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
+        const longest = Math.max(width, height);
+        if (longest > opts.maxDimension) {
+          const ratio = opts.maxDimension / longest;
+          width = Math.max(1, Math.round(width * ratio));
+          height = Math.max(1, Math.round(height * ratio));
         }
 
         // Create canvas and draw resized image

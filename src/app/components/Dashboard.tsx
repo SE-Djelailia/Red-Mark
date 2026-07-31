@@ -8,10 +8,11 @@ import {
   type ActivityEntry,
 } from "../../lib/supabaseApi";
 import { getRecentIssuesAcrossProjects } from "../../lib/issuesApi";
+import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import { supabase } from "../../lib/supabase";
 import { formatDateShort, formatRelativeDate } from "../../lib/dateUtils";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Calendar, Plus, RefreshCw } from "lucide-react";
+import { AlertCircle, Calendar, Plus, RefreshCw } from "lucide-react";
 import FloatingActions from "./FloatingActions";
 import { PriorityBadge } from "./ui-kit/Badge";
 import { Card, Section, SectionAction, ListRow, ListRows } from "./ui-kit/Card";
@@ -46,6 +47,7 @@ export default function Dashboard() {
   // Lifted out of loadData so the calendar can scope its own month query to
   // the same set of projects the rest of the dashboard is built from.
   const [projectIds, setProjectIds] = useState<string[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [activityExpanded, setActivityExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -59,6 +61,7 @@ export default function Dashboard() {
     async (showSpinner = false) => {
       if (!user?.id) return;
       if (showSpinner) setRefreshing(true);
+      setLoadError(null);
       try {
         const projects = await getProjects(user.id);
         const ids = projects.map((p) => p.id);
@@ -75,6 +78,11 @@ export default function Dashboard() {
         setActivity(activityData);
       } catch (error) {
         console.error("Erreur lors du chargement du tableau de bord:", error);
+        // Without this the dashboard renders zeros and empty lists, which on
+        // site reads as "nothing outstanding" rather than "load failed".
+        setLoadError(
+          getRlsErrorMessage(error, "Impossible de charger le tableau de bord."),
+        );
       } finally {
         setLoading(false);
         if (showSpinner) setRefreshing(false);
@@ -145,6 +153,22 @@ export default function Dashboard() {
           </button>
         </div>
 
+        {/* Shown above everything: zeros and empty lists below would
+            otherwise read as "nothing outstanding" rather than a failure. */}
+        {loadError && (
+          <div className="bg-brand-50 border border-brand-100 rounded-xl px-4 py-3 flex items-center gap-3">
+            <AlertCircle size={18} className="text-brand-strong flex-shrink-0" aria-hidden="true" />
+            <p className="flex-1 text-sm text-brand-strong">{loadError}</p>
+            <button
+              onClick={() => loadData(true)}
+              disabled={refreshing}
+              className="text-sm font-medium text-brand-strong hover:underline disabled:opacity-50 flex-shrink-0"
+            >
+              Réessayer
+            </button>
+          </div>
+        )}
+
         {/* Stat tiles — hairline-joined so the pair reads as one panel.
             Only the open-déficiences figure is red; the rest are ink.
             Photos and visits were dropped: both are per-project concepts,
@@ -153,14 +177,16 @@ export default function Dashboard() {
         <StatGrid className="grid-cols-2">
           <StatTile
             label="Déficiences ouvertes"
-            value={loading ? "—" : stats.openIssues}
-            suffix={loading ? undefined : `/ ${stats.openIssues + stats.resolvedIssues}`}
+            value={loading || loadError ? "—" : stats.openIssues}
+            suffix={
+              loading || loadError ? undefined : `/ ${stats.openIssues + stats.resolvedIssues}`
+            }
             emphasis
             onClick={() => navigate("/app/issues")}
           />
           <StatTile
             label="Projets"
-            value={loading ? "—" : stats.totalProjects}
+            value={loading || loadError ? "—" : stats.totalProjects}
             onClick={() => navigate("/app/projects")}
           />
         </StatGrid>

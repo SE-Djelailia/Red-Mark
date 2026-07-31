@@ -8,17 +8,11 @@ import type { Location } from "../../lib/locationsApi";
 import { createIssue, updateIssue, getIssuesByLocation, type Issue } from "../../lib/issuesApi";
 import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
-import { STATUS_LABEL } from "./ui-kit/Badge";
+import { STATUS_LABEL, PRIORITY_OPTIONS } from "./ui-kit/Badge";
 
 // Same 3-choice priority set as IssueForm (the canonical spec deliberately
 // excludes "critical") — this lite variant must not be able to create data
 // the canonical form couldn't also produce.
-const PRIORITIES: { value: Issue["priority"]; label: string; dot: string }[] = [
-  { value: "high", label: "Élevé", dot: "bg-orange-500" },
-  { value: "medium", label: "Moyen", dot: "bg-blue-500" },
-  { value: "low", label: "Faible", dot: "bg-canvas0" },
-];
-
 interface Props {
   open: boolean;
   projectId: string;
@@ -239,7 +233,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
               <div>
                 <label className="block text-sm text-ink mb-2">Priorité</label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {PRIORITIES.map((p) => (
+                  {PRIORITY_OPTIONS.map((p) => (
                     <button
                       key={p.value}
                       onClick={() => setPriority(p.value)}
