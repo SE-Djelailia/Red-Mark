@@ -8,6 +8,8 @@ import type { Project, SiteVisit, Photo } from "./supabase";
 import type { Issue } from "./issuesApi";
 import { getPhotos, getPhotosSignedUrls } from "./supabaseApi";
 import { getIssuesByVisit } from "./issuesApi";
+import { getObservationsByVisit, type Observation } from "./observationsApi";
+import { getLocations, type Location } from "./locationsApi";
 import { formatDateLong, extractDateOnly } from "./dateUtils";
 
 const TEMPLATE_URL = "/templates/note-visite-chantier.docx";
@@ -75,25 +77,68 @@ interface PhotoRow {
   photo3?: PhotoSlot;
 }
 
-function groupIssuesIntoZones(issues: Issue[]): Zone[] {
+/**
+ * Build the OBSERVATIONS ET ACTIONS section.
+ *
+ * Observations come first, grouped by location and labelled
+ * "AS1-51 — Toilette – Phase 1" (the phase comes from the visit, since
+ * locations carry no phase of their own). Déficiences follow under a
+ * sub-heading — a temporary arrangement until they get their own template
+ * section; the report reads as one numbered list either way.
+ *
+ * Numbering is a single running counter across every group, matching the
+ * firm's note format (1.1, 1.2, 1.3 … continuing past each heading).
+ */
+function buildObservationZones(
+  observations: Observation[],
+  issues: Issue[],
+  locations: Location[],
+  visitPhase?: string | null,
+): Zone[] {
   const zones: Zone[] = [];
-  const zoneByName = new Map<string, Zone>();
+  const zoneByKey = new Map<string, Zone>();
   let counter = 1;
 
-  for (const issue of issues) {
-    const zoneName = issue.location || "Zone non spécifiée";
-    let zone = zoneByName.get(zoneName);
+  const phaseSuffix = visitPhase ? ` – ${visitPhase}` : "";
+  const locationById = new Map(locations.map((l) => [l.id, l]));
+
+  const zoneFor = (key: string, name: string): Zone => {
+    let zone = zoneByKey.get(key);
     if (!zone) {
-      zone = { zoneName, items: [] };
-      zoneByName.set(zoneName, zone);
+      zone = { zoneName: name, items: [] };
+      zoneByKey.set(key, zone);
       zones.push(zone);
     }
-    zone.items.push({
+    return zone;
+  };
+
+  for (const obs of observations) {
+    const loc = obs.locationId ? locationById.get(obs.locationId) : undefined;
+    const zoneName = loc
+      ? `${loc.name ? `${loc.locationNumber} — ${loc.name}` : loc.locationNumber}${phaseSuffix}`
+      : "Zone non spécifiée";
+    zoneFor(obs.locationId ?? "__none__", zoneName).items.push({
       number: `1.${counter}`,
-      text: issue.description || issue.title,
-      actionBy: issue.assignedTo || "",
+      text: obs.text,
+      actionBy: obs.actionBy || "",
     });
     counter++;
+  }
+
+  // Déficiences keep their own grouping (by the free-text label on the
+  // issue, which is all they carry) under a single sub-heading, so the
+  // reader can tell records from things needing action.
+  if (issues.length > 0) {
+    const heading = zoneFor("__deficiences__", "Déficiences");
+    for (const issue of issues) {
+      const label = issue.location ? `${issue.location} — ` : "";
+      heading.items.push({
+        number: `1.${counter}`,
+        text: `${label}${issue.description || issue.title}`,
+        actionBy: issue.assignedTo || "",
+      });
+      counter++;
+    }
   }
 
   return zones;
@@ -164,6 +209,27 @@ function forceFieldUpdateOnOpen(zip: PizZip): void {
   if (patched !== xml) zip.file(path, patched);
 }
 
+// The template's placeholders were authored with a yellow highlight so the
+// person tagging the document could find them. docxtemplater preserves run
+// formatting when it substitutes text, so that highlight survived onto the
+// rendered values — most visibly on {generalNotes}, a full free-text
+// paragraph under GÉNÉRALITÉS ET AVANCEMENT that came out as a block of
+// yellow.
+//
+// The highlights have been stripped from the template file itself; this is
+// a safety net so re-saving the template from Word with highlights on
+// cannot reintroduce the bug. Body only — the footers' highlights are on
+// page-number fields and are left alone.
+function stripBodyHighlights(zip: PizZip): void {
+  const path = "word/document.xml";
+  const file = zip.file(path);
+  if (!file) return;
+
+  const xml = file.asText();
+  const stripped = xml.replace(/<w:highlight\s+w:val="yellow"\s*\/>/g, "");
+  if (stripped !== xml) zip.file(path, stripped);
+}
+
 async function fetchTemplate(): Promise<ArrayBuffer> {
   const res = await fetch(TEMPLATE_URL);
   if (!res.ok) {
@@ -204,13 +270,17 @@ export async function generateSiteVisitReport(
   visit: SiteVisit,
   manual: ReportManualFields,
 ): Promise<void> {
-  const [templateBuffer, issues, photos] = await Promise.all([
+  const [templateBuffer, issues, photos, observations, locations] = await Promise.all([
     fetchTemplate(),
     getIssuesByVisit(visit.id),
     getPhotos(visit.id),
+    getObservationsByVisit(visit.id),
+    // Only needed to resolve location labels; an empty list degrades to
+    // "Zone non spécifiée" rather than failing the whole report.
+    getLocations(visit.project_id).catch(() => [] as Location[]),
   ]);
 
-  const zones = groupIssuesIntoZones(issues);
+  const zones = buildObservationZones(observations, issues, locations, visit.phase);
   const photoRows = await buildPhotoRows(photos);
 
   const data = {
@@ -241,6 +311,9 @@ export async function generateSiteVisitReport(
   };
 
   const zip = new PizZip(templateBuffer);
+  // Before rendering: the highlight lives in the placeholder's run
+  // properties, which docxtemplater carries over to the substituted value.
+  stripBodyHighlights(zip);
   const imageModule = new ImageModule({ centered: false, getImage, getSize });
   const doc = new Docxtemplater(zip, {
     paragraphLoop: true,

@@ -316,6 +316,19 @@ CREATE TABLE IF NOT EXISTS "public"."notifications" (
 ALTER TABLE "public"."notifications" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."observations" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "project_id" "uuid" NOT NULL,
+    "visit_id" "uuid" NOT NULL,
+    "location_id" "uuid",
+    "user_id" "uuid" NOT NULL,
+    "text" "text" NOT NULL,
+    "action_by" "text",
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
 CREATE TABLE IF NOT EXISTS "public"."photos" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -510,6 +523,9 @@ ALTER TABLE ONLY "public"."notifications"
 
 
 
+ALTER TABLE ONLY "public"."observations"
+    ADD CONSTRAINT "observations_pkey" PRIMARY KEY ("id");
+
 ALTER TABLE ONLY "public"."photos"
     ADD CONSTRAINT "photos_pkey" PRIMARY KEY ("id");
 
@@ -672,6 +688,14 @@ CREATE INDEX "idx_notifications_read" ON "public"."notifications" USING "btree" 
 CREATE INDEX "idx_notifications_user_id" ON "public"."notifications" USING "btree" ("user_id");
 
 
+
+CREATE INDEX "idx_observations_location_id" ON "public"."observations" USING "btree" ("location_id");
+
+CREATE INDEX "idx_observations_project_id" ON "public"."observations" USING "btree" ("project_id");
+
+CREATE INDEX "idx_observations_visit_id" ON "public"."observations" USING "btree" ("visit_id");
+
+CREATE INDEX "idx_observations_visit_sort" ON "public"."observations" USING "btree" ("visit_id", "sort_order");
 
 CREATE INDEX "idx_photos_issue_id" ON "public"."photos" USING "btree" ("issue_id");
 
@@ -979,6 +1003,18 @@ ALTER TABLE ONLY "public"."notifications"
 
 
 
+ALTER TABLE ONLY "public"."observations"
+    ADD CONSTRAINT "observations_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."locations"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."observations"
+    ADD CONSTRAINT "observations_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."observations"
+    ADD CONSTRAINT "observations_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."observations"
+    ADD CONSTRAINT "observations_visit_id_fkey" FOREIGN KEY ("visit_id") REFERENCES "public"."site_visits"("id") ON DELETE CASCADE;
+
 ALTER TABLE ONLY "public"."photos"
     ADD CONSTRAINT "photos_issue_id_fkey" FOREIGN KEY ("issue_id") REFERENCES "public"."issues"("id") ON DELETE SET NULL;
 
@@ -1098,6 +1134,16 @@ CREATE POLICY "Admins have full access to levels" ON "public"."levels" USING ("p
 CREATE POLICY "Admins have full access to locations" ON "public"."locations" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
+
+CREATE POLICY "Admins have full access to observations" ON "public"."observations" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
+
+CREATE POLICY "Editors can create observations" ON "public"."observations" FOR INSERT WITH CHECK ((("auth"."uid"() = "user_id") AND "public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"])));
+
+CREATE POLICY "Editors can delete observations" ON "public"."observations" FOR DELETE USING ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
+
+CREATE POLICY "Editors can update observations" ON "public"."observations" FOR UPDATE USING ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"])) WITH CHECK ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
+
+CREATE POLICY "Members can view observations" ON "public"."observations" FOR SELECT USING ("public"."is_project_member"("project_id"));
 
 CREATE POLICY "Admins have full access to photos" ON "public"."photos" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
@@ -1365,6 +1411,8 @@ ALTER TABLE "public"."locations" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."notifications" ENABLE ROW LEVEL SECURITY;
 
+
+ALTER TABLE "public"."observations" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."photos" ENABLE ROW LEVEL SECURITY;
 
@@ -1669,6 +1717,10 @@ GRANT ALL ON TABLE "public"."notifications" TO "authenticated";
 GRANT ALL ON TABLE "public"."notifications" TO "service_role";
 
 
+
+GRANT ALL ON TABLE "public"."observations" TO "anon";
+GRANT ALL ON TABLE "public"."observations" TO "authenticated";
+GRANT ALL ON TABLE "public"."observations" TO "service_role";
 
 GRANT ALL ON TABLE "public"."photos" TO "anon";
 GRANT ALL ON TABLE "public"."photos" TO "authenticated";

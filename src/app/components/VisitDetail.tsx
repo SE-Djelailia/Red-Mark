@@ -45,6 +45,7 @@ import { uploadIssuePhotos, WEATHER_EVIDENCE_TAG } from "../../lib/issuePhotoUpl
 import SecureImage from "./SecureImage";
 import { toast } from "sonner";
 import { PhotoAnnotator } from "./PhotoAnnotator";
+import ObservationsSection from "./ObservationsSection";
 import FloatingActions from "./FloatingActions";
 import { PriorityBadge, StatusBadge } from "./ui-kit/Badge";
 
@@ -879,6 +880,18 @@ export default function VisitDetail() {
               })}
           </div>
         </div>
+
+        {/* Observations — the factual record of the visit. Sits above
+            déficiences because that mirrors the report, where OBSERVATIONS
+            ET ACTIONS carries the observations first and the déficiences
+            follow under a sub-heading. */}
+        {projectId && visitId && (
+          <ObservationsSection
+            projectId={projectId}
+            visitId={visitId}
+            canEdit={projectRole.canCreateIssues}
+          />
+        )}
 
         {/* Deficiences — stays always visible (core content), but each row
             is now a single compact line instead of a large card. Same

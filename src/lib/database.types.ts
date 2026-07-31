@@ -341,6 +341,67 @@ export type Database = {
         }
         Relationships: []
       }
+      observations: {
+        Row: {
+          action_by: string | null
+          created_at: string | null
+          id: string
+          location_id: string | null
+          project_id: string
+          sort_order: number
+          text: string
+          updated_at: string | null
+          user_id: string
+          visit_id: string
+        }
+        Insert: {
+          action_by?: string | null
+          created_at?: string | null
+          id?: string
+          location_id?: string | null
+          project_id: string
+          sort_order?: number
+          text: string
+          updated_at?: string | null
+          user_id: string
+          visit_id: string
+        }
+        Update: {
+          action_by?: string | null
+          created_at?: string | null
+          id?: string
+          location_id?: string | null
+          project_id?: string
+          sort_order?: number
+          text?: string
+          updated_at?: string | null
+          user_id?: string
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "observations_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observations_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "site_visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       photos: {
         Row: {
           created_at: string | null
