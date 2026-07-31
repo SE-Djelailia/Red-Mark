@@ -1,8 +1,16 @@
 import { useState } from "react";
+import { Logo, drawAppIcon } from "./ui-kit/Logo";
+
+const ICON_SIZES = [72, 96, 128, 144, 152, 192, 384, 512];
 
 export default function IconGenerator() {
   const [generating, setGenerating] = useState(false);
 
+  // Draws via the shared drawAppIcon so a generated PNG is pixel-identical
+  // to the in-app <Logo variant="app" /> — same polygons, same inset, same
+  // corner radius. drawAppIcon uses the literal BRAND_RED constant because
+  // Canvas 2D cannot resolve CSS custom properties (a token here would
+  // silently paint black).
   const generateIcon = (size: number): Promise<Blob> => {
     return new Promise((resolve) => {
       const canvas = document.createElement("canvas");
@@ -10,26 +18,7 @@ export default function IconGenerator() {
       canvas.height = size;
       const ctx = canvas.getContext("2d")!;
 
-      // Red gradient background
-      const gradient = ctx.createLinearGradient(0, 0, size, size);
-      gradient.addColorStop(0, "#FF0000");
-      gradient.addColorStop(0.5, "#E10600");
-      gradient.addColorStop(1, "#C10500");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, size, size);
-
-      // White checkmark
-      ctx.strokeStyle = "#FFFFFF";
-      ctx.lineWidth = size * 0.12;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-
-      // Draw checkmark path
-      ctx.beginPath();
-      ctx.moveTo(size * 0.25, size * 0.5);
-      ctx.lineTo(size * 0.42, size * 0.68);
-      ctx.lineTo(size * 0.75, size * 0.32);
-      ctx.stroke();
+      drawAppIcon(ctx, size);
 
       canvas.toBlob((blob) => {
         resolve(blob!);
@@ -39,10 +28,9 @@ export default function IconGenerator() {
 
   const downloadAllIcons = async () => {
     setGenerating(true);
-    const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
 
     try {
-      for (const size of sizes) {
+      for (const size of ICON_SIZES) {
         const blob = await generateIcon(size);
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -85,32 +73,11 @@ export default function IconGenerator() {
             l'application PWA.
           </p>
 
-          {/* Icon Previews */}
+          {/* Icon Previews — the same component the PNGs are drawn from. */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-            {[72, 96, 128, 144, 152, 192, 384, 512].map((size) => (
+            {ICON_SIZES.map((size) => (
               <div key={size} className="flex flex-col items-center">
-                <div
-                  className="rounded-lg flex items-center justify-center mb-2 relative overflow-hidden"
-                  style={{
-                    width: Math.min(size, 128),
-                    height: Math.min(size, 128),
-                    background: "linear-gradient(135deg, #FF0000 0%, #E10600 50%, #C10500 100%)",
-                  }}
-                >
-                  {/* SVG Checkmark */}
-                  <svg
-                    width={Math.min(size, 128) * 0.6}
-                    height={Math.min(size, 128) * 0.6}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                </div>
+                <Logo size={Math.min(size, 128)} variant="app" className="mb-2" decorative />
                 <span className="text-sm text-body">
                   {size}×{size}
                 </span>

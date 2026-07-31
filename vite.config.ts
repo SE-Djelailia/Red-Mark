@@ -27,13 +27,17 @@ export default defineConfig({
         orientation: "portrait-primary",
         scope: "/",
         start_url: "/",
+        // SVG first (scales to any launcher size), with PNGs for the
+        // platforms that still refuse SVG icons.
+        //
+        // purpose is "any", NOT "any maskable": a maskable icon is cropped
+        // to the launcher's shape (Android can cut ~20% off each edge), and
+        // this mark runs corner-to-corner — masking would slice the ends off
+        // the X. A dedicated padded asset would be needed to claim maskable.
         icons: [
-          {
-            src: "/icon.svg",
-            sizes: "512x512",
-            type: "image/svg+xml",
-            purpose: "any maskable",
-          },
+          { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
+          { src: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
         ],
         shortcuts: [
           {

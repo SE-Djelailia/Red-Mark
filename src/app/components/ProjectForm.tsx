@@ -1,83 +1,115 @@
 import { useState } from "react";
 import { X, Check } from "lucide-react";
-import { updateProject, type Project } from "../../lib/supabaseApi";
+import { toast } from "sonner";
+import { createProject, updateProject, type Project } from "../../lib/supabaseApi";
 import { useAuth } from "../../contexts/useAuth";
 import { useModalOpen } from "../../hooks/useModalOpen";
-import { toast } from "sonner";
+import { getTodayForInput } from "../../lib/dateUtils";
 import { inputClassName, labelClassName } from "./ui-kit/Input";
-import { ProjectStatusBadge } from "./ui-kit/ProjectStatus";
+import { ProjectStatusBadge, PROJECT_STATUS_OPTIONS } from "./ui-kit/ProjectStatus";
 
-interface ProjectEditModalProps {
-  project: Project;
-  onClose: () => void;
-  onSave: (project: Project) => void;
+interface Props {
+  // When present, the form edits this project; when absent, it creates a
+  // new one. Same shape as IssueForm's `issue` prop.
+  project?: Project | null;
+  onSaved: (project: Project) => void;
+  onCancel: () => void;
 }
 
-export default function ProjectEditModal({ project, onClose, onSave }: ProjectEditModalProps) {
+// Single project form, shared by create and edit.
+//
+// These were two separate implementations: an inline modal in ProjectList
+// (create) and ProjectEditModal (edit). They had drifted badly — create was
+// missing all six report fields (file_number + the five contractor fields),
+// and rendered an "Entrepreneur" input whose value was never passed to
+// createProject, so anything typed there was silently discarded.
+//
+// Create and edit now differ in exactly three things: initial values, which
+// API call runs on submit, and the title/button labels.
+export default function ProjectForm({ project, onCancel, onSaved }: Props) {
   useModalOpen();
   const { user } = useAuth();
+  const isEdit = !!project;
   const [isSaving, setIsSaving] = useState(false);
+
   const [formData, setFormData] = useState({
-    name: project.name,
-    address: project.address || "",
-    client: project.client_name || "",
-    startDate: project.start_date || "",
-    status: project.status,
-    fileNumber: project.file_number || "",
-    contractorName: project.contractor_name || "",
-    contractorContact: project.contractor_contact || "",
-    contractorAddress: project.contractor_address || "",
-    contractorPhone: project.contractor_phone || "",
-    contractorEmail: project.contractor_email || "",
+    name: project?.name ?? "",
+    address: project?.address ?? "",
+    client: project?.client_name ?? "",
+    // Create seeds today's date as a convenience; edit shows whatever is
+    // stored, including empty.
+    startDate: project ? (project.start_date ?? "") : getTodayForInput(),
+    status: project?.status ?? ("planning" as Project["status"]),
+    fileNumber: project?.file_number ?? "",
+    contractorName: project?.contractor_name ?? "",
+    contractorContact: project?.contractor_contact ?? "",
+    contractorAddress: project?.contractor_address ?? "",
+    contractorPhone: project?.contractor_phone ?? "",
+    contractorEmail: project?.contractor_email ?? "",
   });
+
+  const set = <K extends keyof typeof formData>(key: K, value: (typeof formData)[K]) =>
+    setFormData((prev) => ({ ...prev, [key]: value }));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isSaving) return;
 
     if (!formData.name || !formData.address || !user) {
       toast.error("Veuillez remplir les champs requis");
       return;
     }
 
+    // One payload for both paths, so a field can never be wired into the
+    // form but dropped on the way to the database.
+    const fields = {
+      name: formData.name,
+      address: formData.address,
+      client_name: formData.client,
+      start_date: formData.startDate || undefined,
+      status: formData.status,
+      file_number: formData.fileNumber || undefined,
+      contractor_name: formData.contractorName || undefined,
+      contractor_contact: formData.contractorContact || undefined,
+      contractor_address: formData.contractorAddress || undefined,
+      contractor_phone: formData.contractorPhone || undefined,
+      contractor_email: formData.contractorEmail || undefined,
+    };
+
     setIsSaving(true);
     try {
-      const updatedProject = await updateProject(project.id, {
-        name: formData.name,
-        address: formData.address,
-        client_name: formData.client,
-        start_date: formData.startDate || undefined,
-        status: formData.status,
-        file_number: formData.fileNumber || undefined,
-        contractor_name: formData.contractorName || undefined,
-        contractor_contact: formData.contractorContact || undefined,
-        contractor_address: formData.contractorAddress || undefined,
-        contractor_phone: formData.contractorPhone || undefined,
-        contractor_email: formData.contractorEmail || undefined,
-      });
+      const saved = project
+        ? await updateProject(project.id, fields)
+        : // The handle_new_project DB trigger auto-enrols the creator as a
+          // project_members owner — no client-side seeding needed.
+          await createProject({ user_id: user.id, ...fields });
 
-      onSave(updatedProject);
-      toast.success("Projet mis à jour avec succès!");
-      onClose();
+      onSaved(saved);
+      toast.success(isEdit ? "Projet mis à jour avec succès!" : `Projet "${saved.name}" créé avec succès!`);
+      onCancel();
     } catch (error) {
-      console.error("Erreur lors de la mise à jour du projet:", error);
-      toast.error("Erreur lors de la mise à jour du projet");
+      console.error(isEdit ? "Erreur lors de la mise à jour du projet:" : "❌ Error creating project:", error);
+      toast.error(
+        isEdit ? "Erreur lors de la mise à jour du projet" : "Erreur lors de la création du projet",
+      );
     } finally {
       setIsSaving(false);
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={onCancel}>
       <div className="min-h-screen px-4 py-4 sm:py-8 pb-20 flex items-center justify-center safe-area-bottom">
         <div
           className="bg-surface rounded-2xl max-w-md w-full p-5 sm:p-6 my-4"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-ink">Modifier le projet</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-ink">
+              {isEdit ? "Modifier le projet" : "Nouveau projet"}
+            </h2>
             <button
-              onClick={onClose}
+              onClick={onCancel}
               className="w-10 h-10 flex items-center justify-center hover:bg-subtle rounded-full transition-colors flex-shrink-0"
               aria-label="Fermer"
             >
@@ -85,16 +117,13 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
             </button>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className={labelClassName}>
-                Nom du projet *
-              </label>
+              <label className={labelClassName}>Nom du projet *</label>
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => set("name", e.target.value)}
                 className={inputClassName}
                 placeholder="Ex: Tour du Centre-Ville"
                 required
@@ -106,7 +135,7 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
               <input
                 type="text"
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={(e) => set("address", e.target.value)}
                 className={inputClassName}
                 placeholder="123 Rue Saint-Catherine, Montréal"
                 required
@@ -118,20 +147,18 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
               <input
                 type="text"
                 value={formData.client}
-                onChange={(e) => setFormData({ ...formData, client: e.target.value })}
+                onChange={(e) => set("client", e.target.value)}
                 className={inputClassName}
                 placeholder="Nom du client"
               />
             </div>
 
             <div>
-              <label className={labelClassName}>
-                Numéro de dossier
-              </label>
+              <label className={labelClassName}>Numéro de dossier</label>
               <input
                 type="text"
                 value={formData.fileNumber}
-                onChange={(e) => setFormData({ ...formData, fileNumber: e.target.value })}
+                onChange={(e) => set("fileNumber", e.target.value)}
                 className={inputClassName}
                 placeholder="Ex: JLPa-4521"
               />
@@ -143,28 +170,22 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
               </p>
               <div className="space-y-4">
                 <div>
-                  <label className={labelClassName}>
-                    Nom de l'entreprise
-                  </label>
+                  <label className={labelClassName}>Nom de l'entreprise</label>
                   <input
                     type="text"
                     value={formData.contractorName}
-                    onChange={(e) => setFormData({ ...formData, contractorName: e.target.value })}
+                    onChange={(e) => set("contractorName", e.target.value)}
                     className={inputClassName}
                     placeholder="Ex: Construction ABC inc."
                   />
                 </div>
 
                 <div>
-                  <label className={labelClassName}>
-                    Contact (nom, titre)
-                  </label>
+                  <label className={labelClassName}>Contact (nom, titre)</label>
                   <input
                     type="text"
                     value={formData.contractorContact}
-                    onChange={(e) =>
-                      setFormData({ ...formData, contractorContact: e.target.value })
-                    }
+                    onChange={(e) => set("contractorContact", e.target.value)}
                     className={inputClassName}
                     placeholder="Ex: Jean Tremblay, Surintendant"
                   />
@@ -175,9 +196,7 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
                   <input
                     type="text"
                     value={formData.contractorAddress}
-                    onChange={(e) =>
-                      setFormData({ ...formData, contractorAddress: e.target.value })
-                    }
+                    onChange={(e) => set("contractorAddress", e.target.value)}
                     className={inputClassName}
                     placeholder="Ex: 456 Boul. Industriel, Laval"
                   />
@@ -188,7 +207,7 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
                   <input
                     type="tel"
                     value={formData.contractorPhone}
-                    onChange={(e) => setFormData({ ...formData, contractorPhone: e.target.value })}
+                    onChange={(e) => set("contractorPhone", e.target.value)}
                     className={inputClassName}
                     placeholder="Ex: 450-555-1234"
                   />
@@ -199,7 +218,7 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
                   <input
                     type="email"
                     value={formData.contractorEmail}
-                    onChange={(e) => setFormData({ ...formData, contractorEmail: e.target.value })}
+                    onChange={(e) => set("contractorEmail", e.target.value)}
                     className={inputClassName}
                     placeholder="Ex: jtremblay@abc.ca"
                   />
@@ -212,24 +231,27 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
               <input
                 type="date"
                 value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                onChange={(e) => set("startDate", e.target.value)}
                 className={inputClassName}
               />
             </div>
 
             <div>
               <label className={labelClassName}>Statut</label>
+              {/* Options come from the ui-kit map rather than a hand-written
+                  list. Both previous forms offered only 4 of the 6 statuses,
+                  so opening an `archived` project and saving silently reset
+                  it to whichever option happened to be selected. */}
               <select
                 value={formData.status}
-                onChange={(e) =>
-                  setFormData({ ...formData, status: e.target.value as Project["status"] })
-                }
+                onChange={(e) => set("status", e.target.value as Project["status"])}
                 className={inputClassName}
               >
-                <option value="planning">Planification</option>
-                <option value="in-progress">En cours</option>
-                <option value="on-hold">En pause</option>
-                <option value="completed">Complété</option>
+                {PROJECT_STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
               <div className="mt-2">
                 <ProjectStatusBadge status={formData.status} />
@@ -239,7 +261,7 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={onCancel}
                 disabled={isSaving}
                 className="flex-1 px-4 py-3 border border-line-strong text-body rounded-lg hover:bg-subtle active:bg-subtle transition-colors min-h-[48px] disabled:opacity-50"
               >
@@ -258,7 +280,7 @@ export default function ProjectEditModal({ project, onClose, onSave }: ProjectEd
                 ) : (
                   <>
                     <Check size={18} />
-                    Enregistrer
+                    {isEdit ? "Enregistrer" : "Créer"}
                   </>
                 )}
               </button>

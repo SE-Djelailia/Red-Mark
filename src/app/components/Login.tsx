@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Eye, EyeOff } from "lucide-react";
-import RedMarkLogo from "./RedMarkLogo";
+import { LogoLockup } from "./ui-kit/Logo";
 import { useSupabaseAuth } from "../../contexts/SupabaseAuthContext"; // ✅ Using Supabase Auth
 import { toast } from "sonner";
 
@@ -47,10 +47,10 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-surface px-6">
       <div className="w-full max-w-sm">
-        {/* Logo/Branding */}
-        <div className="text-center mb-12 flex flex-col items-center">
-          <RedMarkLogo size="lg" variant="full" className="mb-4" />
-          <p className="text-body">Intelligence Photo de Chantier</p>
+        {/* Logo/Branding — the lockup carries the screen on its own now
+            that the tagline is gone. */}
+        <div className="mb-12 flex justify-center">
+          <LogoLockup size={40} />
         </div>
 
         {/* Login/Signup Form */}

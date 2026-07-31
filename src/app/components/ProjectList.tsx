@@ -4,16 +4,15 @@ import { Plus, Building2, MapPin, Calendar, Users, Search, X } from "lucide-reac
 import { useAuth } from "../../contexts/useAuth";
 import {
   getProjects as getProjectsFromSupabase,
-  createProject,
   deleteProject as deleteProjectFromSupabase,
   type Project,
 } from "../../lib/supabaseApi";
 import { supabase } from "../../lib/supabase";
 import { getRlsErrorMessage } from "../../lib/rlsErrors";
-import { getTodayForInput, formatDateShort } from "../../lib/dateUtils";
+import { formatDateShort } from "../../lib/dateUtils";
 import { toast } from "sonner";
-import { useModalOpen } from "../../hooks/useModalOpen";
 import ConfirmDialog from "./ConfirmDialog";
+import ProjectForm from "./ProjectForm";
 import FloatingActions from "./FloatingActions";
 import { inputClassName } from "./ui-kit/Input";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
@@ -34,18 +33,9 @@ export default function ProjectList() {
   // ?new=1 (e.g. from the Dashboard's "Nouveau projet" quick action) opens
   // the create modal immediately instead of requiring an extra tap here.
   const [showCreateModal, setShowCreateModal] = useState(searchParams.get("new") === "1");
-  useModalOpen(showCreateModal);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<Project["status"] | "all">("all");
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    address: "",
-    client: "",
-    contractor: "",
-    startDate: getTodayForInput(),
-    status: "planning" as Project["status"],
-  });
 
   console.log("🏗️ ProjectList render - user:", user, "loading:", loading);
 
@@ -95,46 +85,6 @@ export default function ProjectList() {
       supabase.removeChannel(channel);
     };
   }, [user?.id, loadProjects]);
-
-  async function handleCreateProject(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (!formData.name || !formData.address || !user) {
-      toast.error("Veuillez remplir les champs requis");
-      return;
-    }
-
-    try {
-      const newProject = await createProject({
-        user_id: user.id,
-        name: formData.name,
-        address: formData.address,
-        client_name: formData.client,
-        status: formData.status,
-        start_date: formData.startDate,
-      });
-
-      // The handle_new_project DB trigger auto-enrolls the creator as
-      // project_members owner — no client-side seeding needed.
-      await loadProjects();
-
-      // Reset form
-      setFormData({
-        name: "",
-        address: "",
-        client: "",
-        contractor: "",
-        startDate: getTodayForInput(),
-        status: "planning",
-      });
-      setShowCreateModal(false);
-
-      toast.success(`Projet "${newProject.name}" créé avec succès!`);
-    } catch (error) {
-      console.error("❌ Error creating project:", error);
-      toast.error("Erreur lors de la création du projet");
-    }
-  }
 
   async function handleDeleteProject(projectId: string) {
     if (!user) return;
@@ -360,109 +310,17 @@ export default function ProjectList() {
         }
       />
 
-      {/* Create Project Modal */}
+      {/* Project creation — the same ProjectForm the edit flow renders,
+          so the full field set (file number + contractor details) is
+          available here too. */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
-          <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
-          <div className="bg-surface rounded-2xl max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold text-ink mb-6">Nouveau Projet</h2>
-
-            <form onSubmit={handleCreateProject} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-body mb-2">
-                  Nom du projet *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
-                  placeholder="Ex: Tour du Centre-Ville"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-body mb-2">Adresse *</label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
-                  placeholder="123 Rue Saint-Catherine, Montréal"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-body mb-2">Client</label>
-                <input
-                  type="text"
-                  value={formData.client}
-                  onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-                  className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
-                  placeholder="Nom du client"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-body mb-2">Entrepreneur</label>
-                <input
-                  type="text"
-                  value={formData.contractor}
-                  onChange={(e) => setFormData({ ...formData, contractor: e.target.value })}
-                  className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
-                  placeholder="Nom de l'entrepreneur"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-body mb-2">
-                  Date de début
-                </label>
-                <input
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-body mb-2">Statut</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value as Project["status"] })
-                  }
-                  className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
-                >
-                  <option value="planning">Planification</option>
-                  <option value="in-progress">En cours</option>
-                  <option value="on-hold">En pause</option>
-                  <option value="completed">Complété</option>
-                </select>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-4 py-3 border border-line-strong text-body rounded-lg hover:bg-subtle transition-colors"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
-                >
-                  Créer
-                </button>
-              </div>
-            </form>
-          </div>
-          </div>
-        </div>
+        <ProjectForm
+          onCancel={() => setShowCreateModal(false)}
+          onSaved={() => {
+            setShowCreateModal(false);
+            loadProjects();
+          }}
+        />
       )}
 
       <ConfirmDialog

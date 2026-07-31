@@ -1,11 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <defs>
-    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#FF0000;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#E10600;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#C10500;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-  <rect width="32" height="32" rx="4" fill="url(#grad2)"/>
-  <path d="M 8 16 L 13.5 22 L 24 10" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="32" height="32">
+  <!-- Same mark as icon.svg / <Logo variant="app" />. At 16px the red tile
+       is what reads first; the X resolves at 24px and up. -->
+  <rect width="100" height="100" rx="22" fill="#E10600"/>
+  <g transform="translate(50,50) scale(0.72) translate(-50,-50)">
+    <polygon points="79.03,96 96,79.03 20.97,4 4,20.97" fill="#FFFFFF"/>
+    <polygon points="96,20.97 79.03,4 4,79.03 20.97,96" fill="#FFFFFF"/>
+  </g>
 </svg>

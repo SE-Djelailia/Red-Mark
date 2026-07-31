@@ -29,6 +29,30 @@ const STATUS_LABEL: Record<Status, string> = {
   archived: "Archivé",
 };
 
+// Dropdown options, derived from the label map above so a status can never
+// exist in the type but be missing from the picker — the bug this replaces
+// was a hand-written 4-item list in two places, which silently reset an
+// `archived` project to another status on save.
+//
+// Ordered by project lifecycle rather than object key order (which is
+// incidental). The Record<Status, number> forces exhaustiveness: adding a
+// value to Project["status"] without giving it a rank here is a compile
+// error, not a quietly missing option.
+const STATUS_RANK: Record<Status, number> = {
+  planning: 0,
+  "in-progress": 1,
+  active: 2,
+  "on-hold": 3,
+  completed: 4,
+  archived: 5,
+};
+
+export const PROJECT_STATUS_OPTIONS: { value: Status; label: string }[] = (
+  Object.keys(STATUS_RANK) as Status[]
+)
+  .sort((a, b) => STATUS_RANK[a] - STATUS_RANK[b])
+  .map((value) => ({ value, label: STATUS_LABEL[value] }));
+
 export function ProjectStatusBadge({ status }: { status: Status }) {
   return (
     <span

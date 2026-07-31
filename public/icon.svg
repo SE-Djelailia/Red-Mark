@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#FF0000;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#E10600;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#C10500;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" fill="url(#grad)"/>
-  <path d="M 128 256 L 215 348 L 384 164" stroke="#FFFFFF" stroke-width="60" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512">
+  <!-- RedMark app icon: white X on brand red.
+       Geometry is identical to <Logo variant="app" /> in
+       src/app/components/ui-kit/Logo.tsx — same polygons, same 0.72 inset,
+       same 22% corner radius. Keep the three in sync if the mark changes. -->
+  <rect width="100" height="100" rx="22" fill="#E10600"/>
+  <g transform="translate(50,50) scale(0.72) translate(-50,-50)">
+    <polygon points="79.03,96 96,79.03 20.97,4 4,20.97" fill="#FFFFFF"/>
+    <polygon points="96,20.97 79.03,4 4,79.03 20.97,96" fill="#FFFFFF"/>
+  </g>
 </svg>

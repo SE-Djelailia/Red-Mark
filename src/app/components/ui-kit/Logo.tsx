@@ -19,8 +19,29 @@
 // Verified symmetric: the union of both bars has bbox 4..96 on both axes,
 // centred on 50,50.
 
-const BAR_A = "79.03,96 96,79.03 20.97,4 4,20.97"; // "\" diagonal
-const BAR_B = "96,20.97 79.03,4 4,79.03 20.97,96"; // "/" diagonal
+/** Bar corner points on the 0–100 viewBox, as [x, y] pairs. */
+export const BAR_A_POINTS: [number, number][] = [
+  [79.03, 96],
+  [96, 79.03],
+  [20.97, 4],
+  [4, 20.97],
+]; // "\" diagonal
+export const BAR_B_POINTS: [number, number][] = [
+  [96, 20.97],
+  [79.03, 4],
+  [4, 79.03],
+  [20.97, 96],
+]; // "/" diagonal
+
+/** Scale applied to the bars when they sit on a filled tile, so the X
+ *  clears the rounded corners. */
+export const TILE_INSET_SCALE = 0.72;
+/** Corner radius as a fraction of tile size (22 on the 0–100 viewBox). */
+export const TILE_RADIUS_RATIO = 0.22;
+
+const toPoints = (pts: [number, number][]) => pts.map(([x, y]) => `${x},${y}`).join(" ");
+const BAR_A = toPoints(BAR_A_POINTS);
+const BAR_B = toPoints(BAR_B_POINTS);
 
 /** Brand red. Literal hex — this value is also consumed by Canvas 2D in the
  *  icon generator, which cannot resolve CSS custom properties. */
@@ -104,6 +125,49 @@ export function LogoLockup({ size = 24, className = "", inverse = false }: Locku
       </span>
     </span>
   );
+}
+
+/**
+ * Draw the "app" variant (white X on a red rounded tile) onto a Canvas 2D
+ * context, at `size` px square.
+ *
+ * Shares BAR_A_POINTS/BAR_B_POINTS with the SVG above so the generated PWA
+ * icons cannot drift from the in-app mark.
+ *
+ * Canvas 2D cannot resolve CSS custom properties — `ctx.fillStyle =
+ * "var(--color-brand-600)"` fails silently and paints black. Hence the
+ * literal BRAND_RED constant rather than a token.
+ */
+export function drawAppIcon(ctx: CanvasRenderingContext2D, size: number) {
+  const u = size / 100; // viewBox unit -> px
+
+  ctx.clearRect(0, 0, size, size);
+
+  // Red tile with the same corner radius ratio the SVG uses.
+  ctx.beginPath();
+  ctx.roundRect(0, 0, size, size, TILE_RADIUS_RATIO * size);
+  ctx.fillStyle = BRAND_RED;
+  ctx.fill();
+
+  // Bars, inset about the centre exactly as the SVG transform does.
+  ctx.save();
+  ctx.translate(size / 2, size / 2);
+  ctx.scale(TILE_INSET_SCALE, TILE_INSET_SCALE);
+  ctx.translate(-size / 2, -size / 2);
+
+  ctx.fillStyle = "#FFFFFF";
+  for (const bar of [BAR_A_POINTS, BAR_B_POINTS]) {
+    ctx.beginPath();
+    bar.forEach(([x, y], i) => {
+      const px = x * u;
+      const py = y * u;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 export default Logo;

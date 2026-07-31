@@ -48,7 +48,7 @@ import { parseLocalDate } from "../../lib/dateUtils";
 import { PhotoAnnotator } from "./PhotoAnnotator";
 import ReportTemplateSelector from "./ReportTemplateSelector";
 import ProjectMembersModal from "./ProjectMembersModal";
-import ProjectEditModal from "./ProjectEditModal";
+import ProjectForm from "./ProjectForm";
 import PlanFilesManager from "./PlanFilesManager";
 import LocationsImportModal from "./LocationsImportModal";
 import LocationsTab from "./LocationsTab";
@@ -1738,12 +1738,12 @@ export default function ProjectDetail() {
         />
       )}
 
-      {/* Project Edit Modal */}
+      {/* Project edit — the same ProjectForm the create flow renders. */}
       {showEditModal && project && (
-        <ProjectEditModal
+        <ProjectForm
           project={project}
-          onClose={() => setShowEditModal(false)}
-          onSave={(updatedProject) => {
+          onCancel={() => setShowEditModal(false)}
+          onSaved={(updatedProject) => {
             setProject(updatedProject);
             // Force a refresh of the project data
             window.location.reload();

@@ -2,6 +2,7 @@ import { useNavigate } from "react-router";
 import { useAuth } from "../../contexts/useAuth";
 import { usePageHeaderValue } from "../../contexts/PageHeaderContext";
 import NotificationBell from "./NotificationBell";
+import { LogoLockup } from "./ui-kit/Logo";
 
 // Initials for the avatar chip: first letters of the display name, or the
 // email's local part as a fallback. Capped at two so the chip stays round.
@@ -33,11 +34,7 @@ export default function AppHeader() {
     <header className="bg-surface border-b border-line sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3 h-14">
-          <span
-            className="w-[22px] h-[22px] rounded-[5px] bg-brand-600 flex-shrink-0"
-            aria-hidden="true"
-          />
-          <span className="text-[15px] font-semibold tracking-tight text-ink">RedMark</span>
+          <LogoLockup size={21} className="flex-shrink-0" />
 
           <div className="ml-auto flex items-center gap-1">
             <NotificationBell userId={user.id} />
