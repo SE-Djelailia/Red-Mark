@@ -15,7 +15,6 @@ import {
   AlertCircle,
   Pencil,
   LayoutGrid,
-  Mic,
 } from "lucide-react";
 import {
   getSiteVisit,
@@ -48,6 +47,7 @@ import { PhotoAnnotator } from "./PhotoAnnotator";
 import ObservationsSection from "./ObservationsSection";
 import FloatingActions from "./FloatingActions";
 import { PriorityBadge, StatusBadge } from "./ui-kit/Badge";
+import { Card, Section } from "./ui-kit/Card";
 
 interface Photo {
   id: string;
@@ -640,6 +640,19 @@ export default function VisitDetail() {
             </CollapsibleSection>
           )}
 
+          {/* Notes vocales — promoted out of a collapsed panel in the right
+              column to a first-class, always-expanded section right under
+              the written notes. Voice is the fastest input on a site; it
+              was previously two taps and a scroll away, which is the wrong
+              cost for the thing you reach for with gloves on. */}
+          {visitId && (
+            <Section title="Notes vocales">
+              <Card className="p-4">
+                <VoiceNotesSection visitId={visitId} bare />
+              </Card>
+            </Section>
+          )}
+
           {/* Photos Grid — stays always visible, this is core content */}
           <div className="bg-surface rounded-xl border border-line p-4">
             <div className="flex items-center justify-between mb-3">
@@ -1039,14 +1052,6 @@ export default function VisitDetail() {
             </CollapsibleSection>
           )}
 
-          {/* Voice Notes (placeholder for future transcription) — collapsed
-              by default; this used to show a full card just to say "Aucune
-              note vocale", now that's hidden until expanded. */}
-          {visitId && (
-            <CollapsibleSection title="Notes vocales" icon={<Mic size={16} className="text-muted" />}>
-              <VoiceNotesSection visitId={visitId} bare />
-            </CollapsibleSection>
-          )}
           </div>
         </div>
       </div>
