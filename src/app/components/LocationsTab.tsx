@@ -68,31 +68,35 @@ export default function LocationsTab({
 
   return (
     <div className="space-y-3">
-      <div className="relative">
-        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher un local…"
-          className={`${inputClassName} pl-10`}
-        />
-      </div>
+      {/* Search and level filter share a row from sm — stacked full-width
+          they read as two unrelated bars once the column is wide. */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher un local…"
+            className={`${inputClassName} pl-10`}
+          />
+        </div>
 
-      {levels.length > 0 && (
-        <select
-          value={levelFilter}
-          onChange={(e) => setLevelFilter(e.target.value)}
-          className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-sm min-h-[48px]"
-        >
-          <option value="">Tous les niveaux</option>
-          {levels.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </select>
-      )}
+        {levels.length > 0 && (
+          <select
+            value={levelFilter}
+            onChange={(e) => setLevelFilter(e.target.value)}
+            className="w-full sm:w-56 px-4 py-3 bg-surface border border-line rounded-lg text-sm min-h-[48px]"
+          >
+            <option value="">Tous les niveaux</option>
+            {levels.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
       {filtered.length === 0 ? (
         <div className="text-center py-12">
@@ -104,7 +108,10 @@ export default function LocationsTab({
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        /* Locals are compact fixed-height tiles, so they tile cleanly —
+           unlike the visit and déficience lists, which stay one-per-row
+           because they read chronologically. */
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((loc) => {
             const TypeIcon = LOCATION_TYPE_ICONS[loc.type];
             return (

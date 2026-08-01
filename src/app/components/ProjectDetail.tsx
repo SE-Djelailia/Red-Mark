@@ -742,7 +742,7 @@ export default function ProjectDetail() {
     <div className="min-h-screen pb-20 bg-canvas">
       {/* Toolbar — the dark band is gone; the project name now renders in
           the global light header via usePageHeader(). */}
-      <div className="px-4 sm:px-6 pt-4">
+      <div className="px-4 sm:px-6 lg:px-8 pt-4 max-w-6xl mx-auto">
         <div className="flex items-start justify-between mb-3">
           <button
             onClick={goBack}
@@ -822,16 +822,20 @@ export default function ProjectDetail() {
           the tabs; only fields that actually have a value render when
           expanded. */}
       <div className="bg-surface border-b border-line">
-        <div className="max-w-2xl mx-auto">
+        {/* Gutters match the toolbar above and the tabs below so "Détails du
+            projet" stays flush with "Retour" and the tab row at every width. */}
+        <div className="max-w-6xl mx-auto">
           <button
             onClick={() => setShowProjectInfo((v) => !v)}
-            className="w-full flex items-center justify-between px-6 py-3 text-sm text-body hover:text-ink min-h-[44px]"
+            className="w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 text-sm text-body hover:text-ink min-h-[44px]"
           >
             <span>Détails du projet</span>
             {showProjectInfo ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </button>
           {showProjectInfo && (
-            <div className="px-6 pb-4 space-y-2 text-sm">
+            /* Two columns from sm: these are short label/value pairs that
+               leave most of a 1152px row empty stacked one per line. */
+            <div className="px-4 sm:px-6 lg:px-8 pb-4 grid gap-2 sm:grid-cols-2 text-sm">
               {project?.address && (
                 <div className="flex items-start gap-3">
                   <MapPin size={16} className="text-muted mt-0.5 flex-shrink-0" />
@@ -874,10 +878,14 @@ export default function ProjectDetail() {
 
       {/* Tabs */}
       <div className="bg-surface border-b border-line sticky top-0 z-10">
-        <div className="flex max-w-2xl mx-auto">
+        {/* No horizontal padding below sm: the four tabs already fit a 375px
+            phone exactly at flex-1 (~94px each) and padding would squeeze
+            "Photos (128)". From lg they stop stretching and size to their
+            labels instead, left-aligned like a normal desktop tab row. */}
+        <div className="flex max-w-6xl mx-auto sm:px-6 lg:px-8">
           <button
             onClick={() => setActiveTab("visits")}
-            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+            className={`flex-1 lg:flex-none lg:px-6 py-3 text-sm font-medium transition-colors relative ${
               activeTab === "visits" ? "text-brand-600" : "text-body hover:text-ink"
             }`}
           >
@@ -888,7 +896,7 @@ export default function ProjectDetail() {
           </button>
           <button
             onClick={() => setActiveTab("issues")}
-            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+            className={`flex-1 lg:flex-none lg:px-6 py-3 text-sm font-medium transition-colors relative ${
               activeTab === "issues" ? "text-brand-600" : "text-body hover:text-ink"
             }`}
           >
@@ -903,7 +911,7 @@ export default function ProjectDetail() {
           </button>
           <button
             onClick={() => setActiveTab("photos")}
-            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+            className={`flex-1 lg:flex-none lg:px-6 py-3 text-sm font-medium transition-colors relative ${
               activeTab === "photos" ? "text-brand-600" : "text-body hover:text-ink"
             }`}
           >
@@ -915,7 +923,7 @@ export default function ProjectDetail() {
           {PLANS_ENABLED && (
             <button
               onClick={() => setActiveTab("plans")}
-              className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+              className={`flex-1 lg:flex-none lg:px-6 py-3 text-sm font-medium transition-colors relative ${
                 activeTab === "plans" ? "text-brand-600" : "text-body hover:text-ink"
               }`}
             >
@@ -927,7 +935,7 @@ export default function ProjectDetail() {
           )}
           <button
             onClick={() => setActiveTab("locations")}
-            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+            className={`flex-1 lg:flex-none lg:px-6 py-3 text-sm font-medium transition-colors relative ${
               activeTab === "locations" ? "text-brand-600" : "text-body hover:text-ink"
             }`}
           >
@@ -940,7 +948,7 @@ export default function ProjectDetail() {
       </div>
 
       {/* Tab Content */}
-      <div className="px-4 py-6 max-w-2xl mx-auto">
+      <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-6xl mx-auto">
         {/* Visits Tab */}
         {activeTab === "visits" && (
           <div className="space-y-3">
@@ -1106,7 +1114,7 @@ export default function ProjectDetail() {
                       <h3 className="text-xs font-semibold text-muted mb-2 uppercase tracking-wide">
                         Phase
                       </h3>
-                      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+                      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 scrollbar-hide">
                         {allPhotoPhases.map((phase) => (
                           <button
                             key={phase}
@@ -1132,7 +1140,7 @@ export default function ProjectDetail() {
                       <h3 className="text-xs font-semibold text-muted mb-2 uppercase tracking-wide">
                         Catégories
                       </h3>
-                      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+                      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 scrollbar-hide">
                         {Object.entries(allPhotoTags)
                           .sort((a, b) => b[1] - a[1])
                           .map(([tag, count]) => (
@@ -1190,7 +1198,10 @@ export default function ProjectDetail() {
                     )}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  /* The gallery is where the extra width pays off most:
+                     2-up on a phone, 5-up at xl, so a project's photos are
+                     scanned rather than scrolled. */
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                     {filteredPhotos.map((photo) => (
                       <div
                         key={photo.id}
@@ -1249,7 +1260,7 @@ export default function ProjectDetail() {
               <select
                 value={issueLocationFilter}
                 onChange={(e) => setIssueLocationFilter(e.target.value)}
-                className="w-full px-4 py-3 bg-surface border border-line-strong rounded-lg text-sm min-h-[48px]"
+                className="w-full sm:max-w-xs px-4 py-3 bg-surface border border-line-strong rounded-lg text-sm min-h-[48px]"
               >
                 <option value="">Tous les locaux</option>
                 {locations.map((loc) => (

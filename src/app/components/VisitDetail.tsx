@@ -490,8 +490,8 @@ export default function VisitDetail() {
     <div className="min-h-screen pb-20 bg-canvas">
       {/* Toolbar — title/subtitle moved into the global light header via
           usePageHeader(); only the navigation and actions remain here. */}
-      <div className="px-4 sm:px-6 pt-4">
-        <div className="flex items-center justify-between max-w-2xl mx-auto">
+      <div className="px-4 sm:px-6 lg:px-8 pt-4">
+        <div className="flex items-center justify-between max-w-6xl mx-auto">
           <button
             onClick={goBack}
             className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
@@ -519,8 +519,11 @@ export default function VisitDetail() {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="px-4 py-4 max-w-2xl mx-auto space-y-3">
+      {/* Content — the Dashboard's max-w-6xl shell. Unlike Profile,
+          this screen earns the width: photos, observations, déficiences
+          and comments are all real content that a 672px column would
+          stack into a very long scroll. */}
+      <div className="px-4 sm:px-6 lg:px-8 py-4 max-w-6xl mx-auto space-y-3">
         {/* Meta Information — compact inline row. Emplacement dropped (same
             phantom "Zone non spécifiée" field removed from the visits list
             — attendees was never a real column) and Photos dropped (the
@@ -568,466 +571,482 @@ export default function VisitDetail() {
           </div>
         </div>
 
-        {/* Notes de visite — collapsed by default when empty (nothing to
-            reclaim space for otherwise); stays open if there's real content
-            to read at a glance. */}
-        {visit && (
-          <CollapsibleSection
-            title="Notes de visite"
-            icon={<FileText size={16} className="text-muted" />}
-            defaultOpen={!!visit.notes?.trim()}
-          >
-          {isEditingNotes ? (
-            <div className="space-y-3">
-              <textarea
-                value={editedNotes}
-                onChange={(e) => setEditedNotes(e.target.value)}
-                placeholder="Ajouter des notes..."
-                rows={6}
-                className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent resize-none"
-                autoFocus
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setIsEditingNotes(false);
-                    setEditedNotes(visit?.notes || "");
-                  }}
-                  className="flex-1 py-2.5 bg-subtle text-ink rounded-lg hover:bg-line-strong transition-colors font-medium min-h-[44px]"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={handleSaveNotes}
-                  disabled={!editedNotes.trim()}
-                  className="flex-1 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
-                >
-                  Sauvegarder
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <p className="text-sm text-body leading-relaxed mb-4">{visit?.notes}</p>
-              <div className="flex justify-end">
-                <button
-                  onClick={() => {
-                    setIsEditingNotes(true);
-                    setEditedNotes(visit?.notes || "");
-                  }}
-                  className="py-2.5 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
-                >
-                  <Edit size={16} />
-                  <span>Modifier les notes</span>
-                </button>
-              </div>
-            </div>
-          )}
-          </CollapsibleSection>
-        )}
+        {/* Two columns from lg. The split is by weight, not by size:
+            the left column holds what the visit is a record OF (notes,
+            photos, observations, déficiences, comments) and the right
+            holds what you DO with it plus the rarely-opened panels.
+            items-start stops the short right column from stretching.
 
-        {/* Plans — collapsed by default; not needed on every visit and the
-            file manager itself is a fair amount of content. Hidden
-            entirely while PLANS_ENABLED is off (see featureFlags.ts). */}
-        {PLANS_ENABLED && projectId && (
-          <CollapsibleSection title="Plans" icon={<LayoutGrid size={16} className="text-muted" />}>
-            <PlanFilesManager projectId={projectId} visitId={visitId} />
-          </CollapsibleSection>
-        )}
-
-        {/* Photos Grid — stays always visible, this is core content */}
-        <div className="bg-surface rounded-xl border border-line p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
-              <Camera size={18} className="text-muted" />
-              Photos ({visit?.photos.length})
-            </h2>
-            {visit && visit.photos.length > 0 && projectRole.canCreateIssues && (
-              <button
-                onClick={() => {
-                  setIsSelectionMode(!isSelectionMode);
-                  setSelectedPhotoIds([]);
-                }}
-                className="py-2 px-3 bg-subtle text-ink rounded-lg hover:bg-line transition-colors text-sm font-medium min-h-[44px]"
-              >
-                {isSelectionMode ? "Annuler" : "Sélectionner"}
-              </button>
+            The phone order is deliberately almost unchanged from before:
+            only Notes vocales moves (it now follows the comments), and
+            Plans is behind PLANS_ENABLED=false so it renders nowhere. */}
+        <div className="grid gap-3 lg:grid-cols-3 items-start">
+          <div className="lg:col-span-2 space-y-3">
+          {/* Notes de visite — collapsed by default when empty (nothing to
+              reclaim space for otherwise); stays open if there's real content
+              to read at a glance. */}
+          {visit && (
+            <CollapsibleSection
+              title="Notes de visite"
+              icon={<FileText size={16} className="text-muted" />}
+              defaultOpen={!!visit.notes?.trim()}
+            >
+            {isEditingNotes ? (
+              <div className="space-y-3">
+                <textarea
+                  value={editedNotes}
+                  onChange={(e) => setEditedNotes(e.target.value)}
+                  placeholder="Ajouter des notes..."
+                  rows={6}
+                  className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent resize-none"
+                  autoFocus
+                />
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setIsEditingNotes(false);
+                      setEditedNotes(visit?.notes || "");
+                    }}
+                    className="flex-1 py-2.5 bg-subtle text-ink rounded-lg hover:bg-line-strong transition-colors font-medium min-h-[44px]"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleSaveNotes}
+                    disabled={!editedNotes.trim()}
+                    className="flex-1 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                  >
+                    Sauvegarder
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm text-body leading-relaxed mb-4">{visit?.notes}</p>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      setIsEditingNotes(true);
+                      setEditedNotes(visit?.notes || "");
+                    }}
+                    className="py-2.5 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
+                  >
+                    <Edit size={16} />
+                    <span>Modifier les notes</span>
+                  </button>
+                </div>
+              </div>
             )}
-          </div>
+            </CollapsibleSection>
+          )}
 
-          {/* Filters Section */}
-          {visit &&
-            visit.photos.length > 0 &&
-            (() => {
-              const allTags = Array.from(new Set(visit.photos.flatMap((p) => p.tags || [])));
-              const allLocations = Array.from(
-                new Set(
-                  visit.photos
-                    .filter((p) => p.location?.floor || p.location?.room)
-                    .map((p) => {
-                      const loc = p.location!;
-                      return loc.floor && loc.room
-                        ? `${loc.floor} - ${loc.room}`
-                        : loc.floor || loc.room || "";
-                    }),
-                ),
-              );
+          {/* Photos Grid — stays always visible, this is core content */}
+          <div className="bg-surface rounded-xl border border-line p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
+                <Camera size={18} className="text-muted" />
+                Photos ({visit?.photos.length})
+              </h2>
+              {visit && visit.photos.length > 0 && projectRole.canCreateIssues && (
+                <button
+                  onClick={() => {
+                    setIsSelectionMode(!isSelectionMode);
+                    setSelectedPhotoIds([]);
+                  }}
+                  className="py-2 px-3 bg-subtle text-ink rounded-lg hover:bg-line transition-colors text-sm font-medium min-h-[44px]"
+                >
+                  {isSelectionMode ? "Annuler" : "Sélectionner"}
+                </button>
+              )}
+            </div>
 
-              if (allTags.length > 0 || allLocations.length > 0) {
-                return (
-                  <div className="mb-4 space-y-3">
-                    {/* Tag Filters */}
-                    {allTags.length > 0 && (
-                      <div>
-                        <label className="text-xs font-medium text-body mb-2 flex items-center gap-1">
-                          <Tag size={14} />
-                          Filtrer par tag
-                        </label>
-                        <div className="flex gap-2 flex-wrap">
-                          <button
-                            onClick={() => setSelectedTagFilter(null)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                              selectedTagFilter === null
-                                ? "bg-brand-600 text-white"
-                                : "bg-subtle text-body hover:bg-line"
-                            }`}
-                          >
-                            Tous
-                          </button>
-                          {allTags.map((tag) => (
+            {/* Filters Section */}
+            {visit &&
+              visit.photos.length > 0 &&
+              (() => {
+                const allTags = Array.from(new Set(visit.photos.flatMap((p) => p.tags || [])));
+                const allLocations = Array.from(
+                  new Set(
+                    visit.photos
+                      .filter((p) => p.location?.floor || p.location?.room)
+                      .map((p) => {
+                        const loc = p.location!;
+                        return loc.floor && loc.room
+                          ? `${loc.floor} - ${loc.room}`
+                          : loc.floor || loc.room || "";
+                      }),
+                  ),
+                );
+
+                if (allTags.length > 0 || allLocations.length > 0) {
+                  return (
+                    <div className="mb-4 space-y-3">
+                      {/* Tag Filters */}
+                      {allTags.length > 0 && (
+                        <div>
+                          <label className="text-xs font-medium text-body mb-2 flex items-center gap-1">
+                            <Tag size={14} />
+                            Filtrer par tag
+                          </label>
+                          <div className="flex gap-2 flex-wrap">
                             <button
-                              key={tag}
-                              onClick={() =>
-                                setSelectedTagFilter(tag === selectedTagFilter ? null : tag)
-                              }
+                              onClick={() => setSelectedTagFilter(null)}
                               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                                selectedTagFilter === tag
+                                selectedTagFilter === null
                                   ? "bg-brand-600 text-white"
                                   : "bg-subtle text-body hover:bg-line"
                               }`}
                             >
-                              {tag}
+                              Tous
                             </button>
-                          ))}
+                            {allTags.map((tag) => (
+                              <button
+                                key={tag}
+                                onClick={() =>
+                                  setSelectedTagFilter(tag === selectedTagFilter ? null : tag)
+                                }
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                  selectedTagFilter === tag
+                                    ? "bg-brand-600 text-white"
+                                    : "bg-subtle text-body hover:bg-line"
+                                }`}
+                              >
+                                {tag}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Location Filters */}
-                    {allLocations.length > 0 && (
-                      <div>
-                        <label className="text-xs font-medium text-body mb-2 flex items-center gap-1">
-                          <MapPin size={14} />
-                          Filtrer par localisation
-                        </label>
-                        <div className="flex gap-2 flex-wrap">
-                          <button
-                            onClick={() => setSelectedLocationFilter(null)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                              selectedLocationFilter === null
-                                ? "bg-blue-600 text-white"
-                                : "bg-blue-50 text-blue-700 hover:bg-blue-100"
-                            }`}
-                          >
-                            Toutes
-                          </button>
-                          {allLocations.map((location) => (
+                      {/* Location Filters */}
+                      {allLocations.length > 0 && (
+                        <div>
+                          <label className="text-xs font-medium text-body mb-2 flex items-center gap-1">
+                            <MapPin size={14} />
+                            Filtrer par localisation
+                          </label>
+                          <div className="flex gap-2 flex-wrap">
                             <button
-                              key={location}
-                              onClick={() =>
-                                setSelectedLocationFilter(
-                                  location === selectedLocationFilter ? null : location,
-                                )
-                              }
+                              onClick={() => setSelectedLocationFilter(null)}
                               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                                selectedLocationFilter === location
+                                selectedLocationFilter === null
                                   ? "bg-blue-600 text-white"
                                   : "bg-blue-50 text-blue-700 hover:bg-blue-100"
                               }`}
                             >
-                              {location}
+                              Toutes
                             </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              return null;
-            })()}
-
-          {isSelectionMode && selectedPhotoIds.length > 0 && (
-            <div className="mb-3 flex items-center justify-between bg-blue-50 border border-blue-200 p-3 rounded-lg">
-              <span className="text-sm text-ink font-medium">
-                {selectedPhotoIds.length} photo{selectedPhotoIds.length !== 1 ? "s" : ""}{" "}
-                sélectionnée{selectedPhotoIds.length !== 1 ? "s" : ""}
-              </span>
-              <div className="flex gap-2">
-                {projectRole.canCreateIssues && (
-                  <button
-                    onClick={handleCreateIssueFromPhotos}
-                    className="py-2 px-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
-                  >
-                    <AlertCircle size={16} />
-                    Créer déficience
-                  </button>
-                )}
-                <button
-                  onClick={() => setShowDeletePhotosConfirm(true)}
-                  className="py-2 px-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
-                >
-                  <Trash2 size={16} />
-                  Supprimer
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {visit?.photos
-              .filter((photo) => {
-                // Filter by tag
-                if (selectedTagFilter && (!photo.tags || !photo.tags.includes(selectedTagFilter))) {
-                  return false;
-                }
-                // Filter by location
-                if (selectedLocationFilter) {
-                  const photoLocation =
-                    photo.location?.floor && photo.location?.room
-                      ? `${photo.location.floor} - ${photo.location.room}`
-                      : photo.location?.floor || photo.location?.room || "";
-                  if (photoLocation !== selectedLocationFilter) {
-                    return false;
-                  }
-                }
-                return true;
-              })
-              .map((photo) => {
-                const isSelected = selectedPhotoIds.includes(photo.id);
-                return (
-                  <div
-                    key={photo.id}
-                    className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-subtle ${isSelected ? "ring-2 ring-brand-600" : ""}`}
-                    onClick={(e) => handlePhotoClick(photo.id, e)}
-                  >
-                    <SecureImage
-                      storagePath={photo.storage_path}
-                      alt="Site photo"
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                    />
-                    {!isSelectionMode && (
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">Voir</span>
-                      </div>
-                    )}
-
-                    {/* Location badge - top priority */}
-                    {photo.location && (photo.location.floor || photo.location.room) && (
-                      <div className="absolute top-2 left-2">
-                        <div className="px-2 py-1 bg-blue-600 text-white rounded text-xs font-bold flex items-center gap-1 shadow-lg">
-                          <MapPin size={12} />
-                          <span>
-                            {photo.location.floor && photo.location.room
-                              ? `${photo.location.floor} - ${photo.location.room}`
-                              : photo.location.floor || photo.location.room}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Tags at bottom */}
-                    {photo.tags && photo.tags.length > 0 && (
-                      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
-                        <div className="flex gap-1 flex-wrap">
-                          {photo.tags.slice(0, 2).map((tag) => (
-                            <span
-                              key={tag}
-                              className="px-2 py-0.5 bg-surface/90 text-ink rounded text-xs"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                          {photo.tags.length > 2 && (
-                            <span className="px-2 py-0.5 bg-surface/90 text-ink rounded text-xs">
-                              +{photo.tags.length - 2}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    {isSelectionMode && canManagePhoto(projectRole, photo.user_id) && (
-                      <div
-                        className={`absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all ${isSelected ? "bg-brand-600 border-brand-600" : "bg-surface/90 border-line-strong"}`}
-                      >
-                        {isSelected && (
-                          <svg
-                            className="w-4 h-4 text-white"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-
-        {/* Observations — the factual record of the visit. Sits above
-            déficiences because that mirrors the report, where OBSERVATIONS
-            ET ACTIONS carries the observations first and the déficiences
-            follow under a sub-heading. */}
-        {projectId && visitId && (
-          <ObservationsSection
-            projectId={projectId}
-            visitId={visitId}
-            canEdit={projectRole.canCreateIssues}
-          />
-        )}
-
-        {/* Deficiences — stays always visible (core content), but each row
-            is now a single compact line instead of a large card. Same
-            fields as before (title, description, priority, status, linked
-            photos, assignee), just condensed. */}
-        <div className="bg-surface rounded-xl border border-line p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
-              <AlertCircle size={18} className="text-muted" />
-              Déficiences ({issues.length})
-            </h2>
-            {projectRole.canCreateIssues && (
-              <button
-                onClick={handleCreateIssue}
-                className="py-2.5 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
-              >
-                <Edit size={16} />
-                <span>Ajouter une déficience</span>
-              </button>
-            )}
-          </div>
-
-          {issues.length === 0 ? (
-            <p className="text-sm text-muted text-center py-6">
-              Aucune déficience pour cette visite.
-            </p>
-          ) : (
-            <div className="space-y-1.5">
-              {issues.map((issue) => (
-                <div
-                  key={issue.id}
-                  onClick={() =>
-                    navigate(`/app/projects/${projectId}/visits/${visitId}/issues/${issue.id}`)
-                  }
-                  className="flex items-center gap-2 px-3 py-2 bg-canvas rounded-lg cursor-pointer hover:bg-subtle transition-colors min-h-[44px]"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-sm font-medium text-ink truncate">
-                        {issue.title}
-                      </span>
-                      <PriorityBadge priority={issue.priority} />
-                      <StatusBadge status={issue.status} />
-                    </div>
-                    {(issue.description || issue.assignedTo) && (
-                      <div className="text-xs text-muted truncate mt-0.5">
-                        {issue.description}
-                        {issue.description && issue.assignedTo ? " · " : ""}
-                        {issue.assignedTo}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Linked Photos — small thumbnails instead of a full row */}
-                  {issue.photos && issue.photos.length > 0 && (
-                    <div className="flex gap-1 flex-shrink-0">
-                      {issue.photos.slice(0, 2).map((photo) => {
-                        const fullPhoto = visit?.photos.find((p) => p.id === photo.id);
-                        return (
-                          <div
-                            key={photo.id}
-                            className="w-8 h-8 rounded overflow-hidden flex-shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (fullPhoto) setSelectedPhoto(fullPhoto);
-                            }}
-                          >
-                            <SecureImage
-                              storagePath={photo.storagePath}
-                              alt="Photo de la déficience"
-                              className="w-full h-full object-cover cursor-pointer"
-                            />
+                            {allLocations.map((location) => (
+                              <button
+                                key={location}
+                                onClick={() =>
+                                  setSelectedLocationFilter(
+                                    location === selectedLocationFilter ? null : location,
+                                  )
+                                }
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                  selectedLocationFilter === location
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                                }`}
+                              >
+                                {location}
+                              </button>
+                            ))}
                           </div>
-                        );
-                      })}
-                      {issue.photos.length > 2 && (
-                        <div className="w-8 h-8 rounded bg-subtle flex items-center justify-center flex-shrink-0">
-                          <span className="text-[10px] font-medium text-body">
-                            +{issue.photos.length - 2}
-                          </span>
                         </div>
                       )}
                     </div>
-                  )}
+                  );
+                }
+                return null;
+              })()}
 
-                  {canEditIssue(projectRole, issue.createdBy) && (
+            {isSelectionMode && selectedPhotoIds.length > 0 && (
+              <div className="mb-3 flex items-center justify-between bg-blue-50 border border-blue-200 p-3 rounded-lg">
+                <span className="text-sm text-ink font-medium">
+                  {selectedPhotoIds.length} photo{selectedPhotoIds.length !== 1 ? "s" : ""}{" "}
+                  sélectionnée{selectedPhotoIds.length !== 1 ? "s" : ""}
+                </span>
+                <div className="flex gap-2">
+                  {projectRole.canCreateIssues && (
                     <button
-                      onClick={(e) => handleEditIssue(issue, e)}
-                      className="w-11 h-11 flex items-center justify-center text-faint hover:text-ink flex-shrink-0"
-                      title="Modifier"
+                      onClick={handleCreateIssueFromPhotos}
+                      className="py-2 px-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
                     >
-                      <Edit size={14} />
+                      <AlertCircle size={16} />
+                      Créer déficience
                     </button>
                   )}
+                  <button
+                    onClick={() => setShowDeletePhotosConfirm(true)}
+                    className="py-2 px-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
+                  >
+                    <Trash2 size={16} />
+                    Supprimer
+                  </button>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Voice Notes (placeholder for future transcription) — collapsed
-            by default; this used to show a full card just to say "Aucune
-            note vocale", now that's hidden until expanded. */}
-        {visitId && (
-          <CollapsibleSection title="Notes vocales" icon={<Mic size={16} className="text-muted" />}>
-            <VoiceNotesSection visitId={visitId} bare />
-          </CollapsibleSection>
-        )}
-
-        {/* Comments */}
-        <VisitComments
-          visitId={visitId || ""}
-          projectId={projectId || ""}
-          visitCreatedBy={visit?.createdBy}
-        />
-
-        {/* Quick Actions */}
-        <div className="bg-surface rounded-xl border border-line p-4">
-          <h2 className="text-sm font-semibold text-ink mb-3">Actions rapides</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => navigate(`/app/projects/${projectId}/report`)}
-              className="py-3 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 min-h-[48px]"
-            >
-              <FileText size={18} />
-              <span className="text-sm font-medium">Générer rapport</span>
-            </button>
-            {projectRole.canUploadPhotos && (
-              <button
-                onClick={() => navigate(`/app/projects/${projectId}/visits/${visitId}/add-photos`)}
-                className="py-3 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors flex items-center justify-center gap-2 min-h-[48px]"
-              >
-                <Camera size={18} />
-                <span className="text-sm font-medium">Ajouter photos</span>
-              </button>
+              </div>
             )}
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {visit?.photos
+                .filter((photo) => {
+                  // Filter by tag
+                  if (selectedTagFilter && (!photo.tags || !photo.tags.includes(selectedTagFilter))) {
+                    return false;
+                  }
+                  // Filter by location
+                  if (selectedLocationFilter) {
+                    const photoLocation =
+                      photo.location?.floor && photo.location?.room
+                        ? `${photo.location.floor} - ${photo.location.room}`
+                        : photo.location?.floor || photo.location?.room || "";
+                    if (photoLocation !== selectedLocationFilter) {
+                      return false;
+                    }
+                  }
+                  return true;
+                })
+                .map((photo) => {
+                  const isSelected = selectedPhotoIds.includes(photo.id);
+                  return (
+                    <div
+                      key={photo.id}
+                      className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-subtle ${isSelected ? "ring-2 ring-brand-600" : ""}`}
+                      onClick={(e) => handlePhotoClick(photo.id, e)}
+                    >
+                      <SecureImage
+                        storagePath={photo.storage_path}
+                        alt="Site photo"
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      />
+                      {!isSelectionMode && (
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-white text-sm font-medium">Voir</span>
+                        </div>
+                      )}
+
+                      {/* Location badge - top priority */}
+                      {photo.location && (photo.location.floor || photo.location.room) && (
+                        <div className="absolute top-2 left-2">
+                          <div className="px-2 py-1 bg-blue-600 text-white rounded text-xs font-bold flex items-center gap-1 shadow-lg">
+                            <MapPin size={12} />
+                            <span>
+                              {photo.location.floor && photo.location.room
+                                ? `${photo.location.floor} - ${photo.location.room}`
+                                : photo.location.floor || photo.location.room}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tags at bottom */}
+                      {photo.tags && photo.tags.length > 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
+                          <div className="flex gap-1 flex-wrap">
+                            {photo.tags.slice(0, 2).map((tag) => (
+                              <span
+                                key={tag}
+                                className="px-2 py-0.5 bg-surface/90 text-ink rounded text-xs"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                            {photo.tags.length > 2 && (
+                              <span className="px-2 py-0.5 bg-surface/90 text-ink rounded text-xs">
+                                +{photo.tags.length - 2}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {isSelectionMode && canManagePhoto(projectRole, photo.user_id) && (
+                        <div
+                          className={`absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all ${isSelected ? "bg-brand-600 border-brand-600" : "bg-surface/90 border-line-strong"}`}
+                        >
+                          {isSelected && (
+                            <svg
+                              className="w-4 h-4 text-white"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* Observations — the factual record of the visit. Sits above
+              déficiences because that mirrors the report, where OBSERVATIONS
+              ET ACTIONS carries the observations first and the déficiences
+              follow under a sub-heading. */}
+          {projectId && visitId && (
+            <ObservationsSection
+              projectId={projectId}
+              visitId={visitId}
+              canEdit={projectRole.canCreateIssues}
+            />
+          )}
+
+          {/* Deficiences — stays always visible (core content), but each row
+              is now a single compact line instead of a large card. Same
+              fields as before (title, description, priority, status, linked
+              photos, assignee), just condensed. */}
+          <div className="bg-surface rounded-xl border border-line p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
+                <AlertCircle size={18} className="text-muted" />
+                Déficiences ({issues.length})
+              </h2>
+              {projectRole.canCreateIssues && (
+                <button
+                  onClick={handleCreateIssue}
+                  className="py-2.5 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
+                >
+                  <Edit size={16} />
+                  <span>Ajouter une déficience</span>
+                </button>
+              )}
+            </div>
+
+            {issues.length === 0 ? (
+              <p className="text-sm text-muted text-center py-6">
+                Aucune déficience pour cette visite.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {issues.map((issue) => (
+                  <div
+                    key={issue.id}
+                    onClick={() =>
+                      navigate(`/app/projects/${projectId}/visits/${visitId}/issues/${issue.id}`)
+                    }
+                    className="flex items-center gap-2 px-3 py-2 bg-canvas rounded-lg cursor-pointer hover:bg-subtle transition-colors min-h-[44px]"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-sm font-medium text-ink truncate">
+                          {issue.title}
+                        </span>
+                        <PriorityBadge priority={issue.priority} />
+                        <StatusBadge status={issue.status} />
+                      </div>
+                      {(issue.description || issue.assignedTo) && (
+                        <div className="text-xs text-muted truncate mt-0.5">
+                          {issue.description}
+                          {issue.description && issue.assignedTo ? " · " : ""}
+                          {issue.assignedTo}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Linked Photos — small thumbnails instead of a full row */}
+                    {issue.photos && issue.photos.length > 0 && (
+                      <div className="flex gap-1 flex-shrink-0">
+                        {issue.photos.slice(0, 2).map((photo) => {
+                          const fullPhoto = visit?.photos.find((p) => p.id === photo.id);
+                          return (
+                            <div
+                              key={photo.id}
+                              className="w-8 h-8 rounded overflow-hidden flex-shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (fullPhoto) setSelectedPhoto(fullPhoto);
+                              }}
+                            >
+                              <SecureImage
+                                storagePath={photo.storagePath}
+                                alt="Photo de la déficience"
+                                className="w-full h-full object-cover cursor-pointer"
+                              />
+                            </div>
+                          );
+                        })}
+                        {issue.photos.length > 2 && (
+                          <div className="w-8 h-8 rounded bg-subtle flex items-center justify-center flex-shrink-0">
+                            <span className="text-[10px] font-medium text-body">
+                              +{issue.photos.length - 2}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {canEditIssue(projectRole, issue.createdBy) && (
+                      <button
+                        onClick={(e) => handleEditIssue(issue, e)}
+                        className="w-11 h-11 flex items-center justify-center text-faint hover:text-ink flex-shrink-0"
+                        title="Modifier"
+                      >
+                        <Edit size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Comments */}
+          <VisitComments
+            visitId={visitId || ""}
+            projectId={projectId || ""}
+            visitCreatedBy={visit?.createdBy}
+          />
+
+          </div>
+
+          <div className="space-y-3">
+          {/* Quick Actions */}
+          <div className="bg-surface rounded-xl border border-line p-4">
+            <h2 className="text-sm font-semibold text-ink mb-3">Actions rapides</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => navigate(`/app/projects/${projectId}/report`)}
+                className="py-3 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+              >
+                <FileText size={18} />
+                <span className="text-sm font-medium">Générer rapport</span>
+              </button>
+              {projectRole.canUploadPhotos && (
+                <button
+                  onClick={() => navigate(`/app/projects/${projectId}/visits/${visitId}/add-photos`)}
+                  className="py-3 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+                >
+                  <Camera size={18} />
+                  <span className="text-sm font-medium">Ajouter photos</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Plans — collapsed by default; not needed on every visit and the
+              file manager itself is a fair amount of content. Hidden
+              entirely while PLANS_ENABLED is off (see featureFlags.ts). */}
+          {PLANS_ENABLED && projectId && (
+            <CollapsibleSection title="Plans" icon={<LayoutGrid size={16} className="text-muted" />}>
+              <PlanFilesManager projectId={projectId} visitId={visitId} />
+            </CollapsibleSection>
+          )}
+
+          {/* Voice Notes (placeholder for future transcription) — collapsed
+              by default; this used to show a full card just to say "Aucune
+              note vocale", now that's hidden until expanded. */}
+          {visitId && (
+            <CollapsibleSection title="Notes vocales" icon={<Mic size={16} className="text-muted" />}>
+              <VoiceNotesSection visitId={visitId} bare />
+            </CollapsibleSection>
+          )}
           </div>
         </div>
       </div>
