@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Mic, Square, Trash2, Play, Pause, AlertCircle } from "lucide-react";
+import { Mic, Square, Trash2, Play, Pause, AlertCircle, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   deleteVoiceNote,
   getSignedUrl,
   listVoiceNotes,
   uploadVoiceNote,
+  transcribeVoiceNote,
+  isTranscribable,
 } from "../../lib/voiceNotesApi";
 import type { VoiceNote } from "../../lib/voiceNotesApi";
 import ConfirmDialog from "./ConfirmDialog";
+import TranscriptionDisclosure, { transcriptionDisclosureAccepted } from "./TranscriptionDisclosure";
 import { Card, ListRow, ListRows } from "./ui-kit/Card";
 import { formatRelativeDate } from "../../lib/dateUtils";
 import {
@@ -31,6 +34,11 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
+
+  // Transcription is per-note and opt-in; none of this runs on its own.
+  const [pendingDisclosureId, setPendingDisclosureId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<string[]>([]);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -68,6 +76,78 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
   const { recording, elapsed, capabilityError, start, stop } = useAudioRecorder({
     onComplete: handleComplete,
   });
+
+  // The edge function runs Whisper synchronously, so this normally resolves
+  // straight to done/error. Polling below is the safety net for a request
+  // that was interrupted, or a note another device is transcribing.
+  const runTranscription = useCallback(async (noteId: string) => {
+    setNotes((n) =>
+      n.map((x) => (x.id === noteId ? { ...x, transcription_status: "processing" } : x)),
+    );
+    try {
+      const updated = await transcribeVoiceNote(noteId);
+      setNotes((n) => n.map((x) => (x.id === noteId ? updated : x)));
+      if (updated.transcription_status === "error") {
+        toast.error(updated.transcription_error || "Transcription échouée.");
+      }
+    } catch (e: any) {
+      // 503 = the key isn't configured on the server. That's a setup state,
+      // not a broken note, so the row goes back to offering "Transcrire"
+      // rather than sitting on a spinner or a red error forever.
+      const unavailable = /503|non configur/i.test(e?.message || "");
+      setNotes((n) =>
+        n.map((x) =>
+          x.id === noteId
+            ? {
+                ...x,
+                transcription_status: unavailable ? "none" : "error",
+                transcription_error: unavailable ? null : "Transcription échouée.",
+              }
+            : x,
+        ),
+      );
+      toast.error(
+        unavailable ? "Transcription indisponible pour le moment." : "Transcription échouée.",
+      );
+    }
+  }, []);
+
+  const handleTranscribeClick = (note: VoiceNote) => {
+    if (!transcriptionDisclosureAccepted()) {
+      setPendingDisclosureId(note.id);
+      return;
+    }
+    void runTranscription(note.id);
+  };
+
+  // Poll only while something is actually processing, and give up after ~2
+  // minutes so a stuck job can't spin forever — the row falls back to
+  // Réessayer instead.
+  const hasProcessing = notes.some((n) => n.transcription_status === "processing");
+  useEffect(() => {
+    if (!hasProcessing) return;
+    let elapsedMs = 0;
+    pollRef.current = setInterval(() => {
+      elapsedMs += 5000;
+      if (elapsedMs > 120000) {
+        if (pollRef.current) clearInterval(pollRef.current);
+        pollRef.current = null;
+        setNotes((n) =>
+          n.map((x) =>
+            x.transcription_status === "processing"
+              ? { ...x, transcription_status: "error", transcription_error: "Délai dépassé." }
+              : x,
+          ),
+        );
+        return;
+      }
+      void refresh();
+    }, 5000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = null;
+    };
+  }, [hasProcessing, refresh]);
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
@@ -176,13 +256,49 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
                     </span>
                     <span className="text-muted"> · {formatRelativeDate(new Date(note.created_at))}</span>
                   </div>
-                  {/* Transcription line. Filled in the next step; until then
-                      the row simply doesn't reserve empty space for it. */}
-                  {note.transcription && (
-                    <div className="text-xs text-muted line-clamp-2 mt-0.5">
+                  {/* Transcription slot — one of four mutually exclusive
+                      states. Nothing here happens without a tap. */}
+                  {note.transcription_status === "processing" ? (
+                    <div className="flex items-center gap-1.5 text-xs text-muted mt-1">
+                      <Loader2 size={12} className="animate-spin flex-shrink-0" />
+                      Transcription en cours…
+                    </div>
+                  ) : note.transcription_status === "done" && note.transcription ? (
+                    <div
+                      onClick={() =>
+                        setExpandedIds((ids) =>
+                          ids.includes(note.id)
+                            ? ids.filter((x) => x !== note.id)
+                            : [...ids, note.id],
+                        )
+                      }
+                      className={`text-xs text-body mt-1 cursor-pointer ${
+                        expandedIds.includes(note.id) ? "" : "line-clamp-2"
+                      }`}
+                    >
                       {note.transcription}
                     </div>
-                  )}
+                  ) : note.transcription_status === "error" ? (
+                    <div className="flex items-center gap-2 text-xs mt-1 flex-wrap">
+                      <span className="text-muted">
+                        {note.transcription_error || "Transcription échouée."}
+                      </span>
+                      <button
+                        onClick={() => void runTranscription(note.id)}
+                        className="font-medium text-brand-strong hover:underline"
+                      >
+                        Réessayer
+                      </button>
+                    </div>
+                  ) : isTranscribable(note) ? (
+                    <button
+                      onClick={() => handleTranscribeClick(note)}
+                      className="flex items-center gap-1 text-xs font-medium text-brand-strong hover:underline mt-1"
+                    >
+                      <FileText size={12} />
+                      Transcrire
+                    </button>
+                  ) : null}
                 </div>
 
                 <audio
@@ -205,6 +321,16 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
           </ListRows>
         </Card>
       )}
+
+      <TranscriptionDisclosure
+        open={!!pendingDisclosureId}
+        onCancel={() => setPendingDisclosureId(null)}
+        onConfirm={() => {
+          const id = pendingDisclosureId;
+          setPendingDisclosureId(null);
+          if (id) void runTranscription(id);
+        }}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}

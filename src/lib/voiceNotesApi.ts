@@ -45,8 +45,26 @@ export interface VoiceNote {
   content_type: string;
   duration_seconds: number;
   transcription: string | null;
-  transcription_status: "pending" | "processing" | "done" | "error";
+  // "none" is the resting state: notes are created untranscribed and only
+  // move off it when the user explicitly asks. Legacy notes created before
+  // the opt-in change carry "pending" and are treated the same as "none".
+  transcription_status: "none" | "pending" | "processing" | "done" | "error";
+  transcription_error?: string | null;
+  transcription_started_at?: string | null;
+  transcribed_at?: string | null;
   created_at: string;
+}
+
+/** True when the note has no transcript and none is being produced. */
+export function isTranscribable(note: VoiceNote): boolean {
+  return note.transcription_status === "none" || note.transcription_status === "pending";
+}
+
+// Sends this one note's audio to the transcription service. Returns the
+// updated note — the edge function runs the request synchronously, so the
+// terminal status is usually already set by the time this resolves.
+export async function transcribeVoiceNote(id: string): Promise<VoiceNote> {
+  return jsonReq(`/voice-notes/${id}/transcribe`, { method: "POST" });
 }
 
 export async function listVoiceNotes(visitId: string): Promise<VoiceNote[]> {

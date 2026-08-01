@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Pencil,
   LayoutGrid,
+  Mic,
 } from "lucide-react";
 import {
   getSiteVisit,
@@ -48,6 +49,7 @@ import ObservationsSection from "./ObservationsSection";
 import FloatingActions from "./FloatingActions";
 import { PriorityBadge, StatusBadge } from "./ui-kit/Badge";
 import { Card, Section } from "./ui-kit/Card";
+import VoiceRecorderModal from "./VoiceRecorderModal";
 
 interface Photo {
   id: string;
@@ -112,6 +114,12 @@ export default function VisitDetail() {
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null);
   const [initialIssuePhotos, setInitialIssuePhotos] = useState<Issue["photos"]>([]);
   const [showDeletePhotosConfirm, setShowDeletePhotosConfirm] = useState(false);
+
+  // Voice recorder opened from the "+" menu. The visit is already known
+  // here, so it records straight against it — no picker step.
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  // Bumped after a recording is saved so the voice-notes section refetches.
+  const [voiceNotesKey, setVoiceNotesKey] = useState(0);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -648,7 +656,7 @@ export default function VisitDetail() {
           {visitId && (
             <Section title="Notes vocales">
               <Card className="p-4">
-                <VoiceNotesSection visitId={visitId} bare />
+                <VoiceNotesSection key={voiceNotesKey} visitId={visitId} bare />
               </Card>
             </Section>
           )}
@@ -1056,6 +1064,15 @@ export default function VisitDetail() {
         </div>
       </div>
 
+      {visitId && (
+        <VoiceRecorderModal
+          open={showVoiceRecorder}
+          visitId={visitId}
+          onClose={() => setShowVoiceRecorder(false)}
+          onSaved={() => setVoiceNotesKey((k) => k + 1)}
+        />
+      )}
+
       {/* Photo Lightbox */}
       {selectedPhoto && (
         <div
@@ -1191,6 +1208,11 @@ export default function VisitDetail() {
                   icon: Camera,
                   onClick: () =>
                     navigate(`/app/projects/${projectId}/visits/${visitId}/add-photos`),
+                },
+                {
+                  label: "Enregistrer une note vocale",
+                  icon: Mic,
+                  onClick: () => setShowVoiceRecorder(true),
                 },
               ]
             : []),

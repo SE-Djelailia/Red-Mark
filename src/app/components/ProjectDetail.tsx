@@ -22,6 +22,7 @@ import {
   Upload,
   ChevronDown,
   ChevronUp,
+  Mic,
 } from "lucide-react";
 import { VisitCardSkeleton, PhotoGridSkeleton, CommentSkeleton } from "./LoadingStates";
 import {
@@ -53,6 +54,7 @@ import LocationsImportModal from "./LocationsImportModal";
 import LocationsTab from "./LocationsTab";
 import FloatingActions from "./FloatingActions";
 import VisitPicker from "./VisitPicker";
+import VoiceRecorderModal from "./VoiceRecorderModal";
 import { PriorityBadge, StatusBadge } from "./ui-kit/Badge";
 import { getLocations, getLevels, type Location, type Level } from "../../lib/locationsApi";
 import { PLANS_ENABLED } from "../../lib/featureFlags";
@@ -231,6 +233,11 @@ export default function ProjectDetail() {
   // needs a visit_id, so the picker resolves one and we hand off to the
   // existing per-visit upload page.
   const [showVisitPickerForPhotos, setShowVisitPickerForPhotos] = useState(false);
+  // Voice notes belong to a visit too, so the "+" entry resolves one through
+  // VisitPicker first — same two-step as photos and déficiences. The picked
+  // visit id is then handed straight to the recorder modal.
+  const [showVisitPickerForVoice, setShowVisitPickerForVoice] = useState(false);
+  const [voiceRecorderVisitId, setVoiceRecorderVisitId] = useState<string | null>(null);
   const [showVisitModal, setShowVisitModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<SiteVisit | null>(null);
@@ -289,6 +296,7 @@ export default function ProjectDetail() {
   useModalOpen(showLocationsImportModal);
   useModalOpen(showVisitPickerForIssue);
   useModalOpen(showVisitPickerForPhotos);
+  useModalOpen(showVisitPickerForVoice);
 
   // Photo filter states
   const [photoSearchQuery, setPhotoSearchQuery] = useState("");
@@ -736,6 +744,17 @@ export default function ProjectDetail() {
         onClick: () => setShowLocationsImportModal(true),
       });
     }
+  }
+
+  // Deliberately outside the per-tab chain above: a voice note is the
+  // fastest thing to capture on site, and which tab happens to be open is
+  // not a reason to hide it.
+  if (projectRole.canUploadPhotos) {
+    floatingMenu.push({
+      label: "Enregistrer une note vocale",
+      icon: Mic,
+      onClick: () => setShowVisitPickerForVoice(true),
+    });
   }
 
   return (
@@ -1370,6 +1389,29 @@ export default function ProjectDetail() {
             navigate(`/app/projects/${id}/visits/${visit.id}/add-photos`);
           }}
           onClose={() => setShowVisitPickerForPhotos(false)}
+        />
+      )}
+
+      {id && (
+        <VisitPicker
+          open={showVisitPickerForVoice}
+          projectId={id}
+          onSelect={(visit) => {
+            setShowVisitPickerForVoice(false);
+            setVoiceRecorderVisitId(visit.id);
+          }}
+          onClose={() => setShowVisitPickerForVoice(false)}
+        />
+      )}
+
+      {voiceRecorderVisitId && (
+        <VoiceRecorderModal
+          open
+          visitId={voiceRecorderVisitId}
+          onClose={() => setVoiceRecorderVisitId(null)}
+          // Lands in that visit's voice-notes section, which is where the
+          // note now lives — the project screen has nowhere to show it.
+          onSaved={() => navigate(`/app/projects/${id}/visits/${voiceRecorderVisitId}`)}
         />
       )}
 

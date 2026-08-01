@@ -961,8 +961,12 @@ app.post("/make-server-9fe75696/site-visits/:visitId/voice-notes", requireAuth, 
       bucket: VOICENOTE_BUCKET,
       content_type: contentType,
       duration_seconds: duration,
-      transcription: null, // reserved for future voice-to-text
-      transcription_status: "pending",
+      transcription: null,
+      // "none", not "pending": transcription is per-note opt-in. Site audio
+      // can carry client and contractor conversation, so the person who
+      // knows what is on a given recording decides whether it leaves for a
+      // third party. Nothing moves off "none" without an explicit request.
+      transcription_status: "none",
       created_by: userId,
       created_at: new Date().toISOString(),
     };
@@ -991,6 +995,125 @@ app.get("/make-server-9fe75696/site-visits/:visitId/voice-notes", requireAuth, a
     return c.json(notes.filter(Boolean));
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Transcription (OpenAI Whisper) — explicitly requested, one note at a time.
+// ---------------------------------------------------------------------------
+
+const OPENAI_TRANSCRIBE_URL = "https://api.openai.com/v1/audio/transcriptions";
+
+// Biases Whisper toward the vocabulary of a Québec construction site. Without
+// it "gypse" and "solin" come back as approximate French words.
+const TRANSCRIPTION_PROMPT =
+  "gypse, solin, colombage, déficience, entrepreneur, coupe-feu, allège, " +
+  "coffrage, parement, membrane, scellant, dalle, fenestration, garde-corps";
+
+// A "processing" note older than this is assumed to belong to a request that
+// died (cold start, deploy, client hang-up) and may be retried.
+const TRANSCRIPTION_STALE_MS = 5 * 60 * 1000;
+
+// Everything the user might see. Kept short and in French: these land in a
+// note row on a phone, not in a log.
+function describeTranscriptionFailure(status: number, body: string): string {
+  if (status === 401 || status === 403) return "Transcription indisponible (clé API).";
+  if (status === 429 || /insufficient_quota|billing/i.test(body))
+    return "Quota de transcription épuisé.";
+  if (status === 413) return "Note trop longue pour la transcription.";
+  if (status === 400) return "Format audio non pris en charge.";
+  if (status >= 500) return "Service de transcription indisponible.";
+  return "Transcription échouée.";
+}
+
+app.post("/make-server-9fe75696/voice-notes/:id/transcribe", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  const note: any = await kv.get(`voice_note:${id}`);
+  if (!note) return c.json({ error: "Note introuvable" }, 404);
+  if (!note.site_visit_id) return c.json({ error: "Forbidden" }, 403);
+
+  const denied = await denyIfNotVisitMember(c, note.site_visit_id);
+  if (denied) return denied;
+
+  // Idempotent: an already-transcribed note is returned untouched, and a
+  // request that is genuinely still running is not started a second time.
+  if (note.transcription_status === "done") return c.json(note);
+  if (note.transcription_status === "processing") {
+    const startedAt = Date.parse(note.transcription_started_at || "");
+    const fresh = Number.isFinite(startedAt) && Date.now() - startedAt < TRANSCRIPTION_STALE_MS;
+    if (fresh) return c.json(note);
+  }
+
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) {
+    // Config fault, not a note fault — don't burn the note's status on it.
+    console.error("transcribe: OPENAI_API_KEY is not set");
+    return c.json({ error: "Transcription non configurée." }, 503);
+  }
+
+  const processing = {
+    ...note,
+    transcription_status: "processing",
+    transcription_started_at: new Date().toISOString(),
+    transcription_error: null,
+  };
+  await kv.set(`voice_note:${id}`, processing);
+
+  try {
+    const { data: audio, error: downloadError } = await supabase.storage
+      .from(note.bucket || VOICENOTE_BUCKET)
+      .download(note.storage_path);
+    if (downloadError || !audio) throw new Error(downloadError?.message || "download failed");
+
+    // Whisper sniffs the container from the filename extension, so the
+    // stored path's extension is carried through rather than invented.
+    const ext = (note.storage_path.split(".").pop() || "webm").toLowerCase();
+    const form = new FormData();
+    form.append("file", audio, `note.${ext}`);
+    form.append("model", "whisper-1");
+    form.append("language", "fr");
+    form.append("prompt", TRANSCRIPTION_PROMPT);
+    form.append("response_format", "json");
+
+    const res = await fetch(OPENAI_TRANSCRIBE_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: form,
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      console.error("transcribe: OpenAI returned", res.status, body.slice(0, 500));
+      const failed = {
+        ...processing,
+        transcription_status: "error",
+        transcription_error: describeTranscriptionFailure(res.status, body),
+      };
+      // The audio is the evidence; the transcript is a convenience. A failed
+      // transcription never touches the recording.
+      await kv.set(`voice_note:${id}`, failed);
+      return c.json(failed);
+    }
+
+    const payload = await res.json();
+    const done = {
+      ...processing,
+      transcription: (payload.text || "").trim(),
+      transcription_status: "done",
+      transcribed_at: new Date().toISOString(),
+      transcription_error: null,
+    };
+    await kv.set(`voice_note:${id}`, done);
+    return c.json(done);
+  } catch (error: any) {
+    console.error("transcribe: failed", error?.message);
+    const failed = {
+      ...processing,
+      transcription_status: "error",
+      transcription_error: "Service de transcription indisponible.",
+    };
+    await kv.set(`voice_note:${id}`, failed);
+    return c.json(failed);
   }
 });
 
