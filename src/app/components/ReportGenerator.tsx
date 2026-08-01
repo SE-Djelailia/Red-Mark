@@ -27,6 +27,7 @@ import {
 } from "../../lib/reportGenerator";
 import { useSmartBack } from "../../hooks/useSmartBack";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
+import { useAuth } from "../../contexts/useAuth";
 
 const EMPTY_MANUAL_FIELDS: ReportManualFields = {
   noteNumber: "",
@@ -47,6 +48,10 @@ const EMPTY_MANUAL_FIELDS: ReportManualFields = {
 
 export default function ReportGenerator() {
   const { id } = useParams();
+  const { user } = useAuth();
+  // Fills the footer's "PRÉPARÉ PAR" firm line. Same profile field the
+  // Profile screen edits; blank when the user hasn't set one.
+  const firmName = (user?.user_metadata?.firm || "").trim();
   const goBack = useSmartBack(`/app/projects/${id}`);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -142,7 +147,7 @@ export default function ReportGenerator() {
     setGenerated(false);
 
     try {
-      await generateSiteVisitReport(project, visit, manual);
+      await generateSiteVisitReport(project, visit, manual, firmName);
       setGenerated(true);
       toast.success("Rapport généré avec succès !");
     } catch (error) {

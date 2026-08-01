@@ -269,6 +269,11 @@ export async function generateSiteVisitReport(
   project: Project,
   visit: SiteVisit,
   manual: ReportManualFields,
+  // The generating user's firm, for the footer's "PRÉPARÉ PAR" block. The
+  // template used to hard-code one firm's name and letterhead; both are gone,
+  // and an empty value simply leaves the line blank rather than substituting
+  // somebody else's letterhead.
+  firmName = "",
 ): Promise<void> {
   const [templateBuffer, issues, photos, observations, locations] = await Promise.all([
     fetchTemplate(),
@@ -291,7 +296,12 @@ export async function generateSiteVisitReport(
     projectTitle: project.name,
     dossierNumbers: manual.dossierNumbers,
     owner: project.client_name || "",
-    primaryDossierNumber: manual.dossierNumbers[0]?.number || "",
+    firmName,
+    // The project's own file number, unprefixed. The template previously
+    // printed a fixed "JLPa" prefix in front of this; the number now stands
+    // on its own. Falls back to the first manually-entered dossier number
+    // for projects saved before file_number was captured.
+    primaryDossierNumber: project.file_number || manual.dossierNumbers[0]?.number || "",
     contractorContactNameTitle: manual.contractorContactNameTitle,
     contractorCompany: manual.contractorCompany,
     contractorAddress: manual.contractorAddress,
