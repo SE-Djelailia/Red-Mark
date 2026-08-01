@@ -38,130 +38,52 @@ app.use(
   }),
 );
 
-// Middleware to verify authentication
+// Middleware to verify authentication.
+//
+// Authentication is supabase.auth.getUser(token) and nothing else.
+//
+// This previously carried two "BYPASS MODE" fallbacks — one in the error
+// branch, one in the catch — which, whenever verification failed, decoded
+// the JWT payload by hand and trusted `sub` with NO signature check. Any
+// self-signed token therefore authenticated as any user, and since the
+// service-role client below ignores RLS, that was full read/write on every
+// project's data. An unverifiable token is now a 401, always.
+//
+// The token is also no longer logged: the old handler printed the first 50
+// characters of every bearer token into the function logs.
 async function requireAuth(c: any, next: any) {
-  const authHeader = c.req.header("Authorization");
-  const token = authHeader?.split(" ")[1];
-
-  console.log("requireAuth: Checking authorization, header:", authHeader ? "present" : "missing");
-  console.log("requireAuth: Token present:", !!token);
-  console.log("requireAuth: Token length:", token?.length);
-  console.log("requireAuth: Token preview:", token?.substring(0, 50) + "...");
+  const token = c.req.header("Authorization")?.split(" ")[1];
 
   if (!token) {
-    console.error("requireAuth: No token found in Authorization header");
+    console.error("requireAuth: no bearer token");
     return c.json({ error: "Unauthorized: No token provided" }, 401);
   }
 
+  let user: { id: string; email?: string } | null = null;
+
+  // Scoped to the verification call alone. next() used to run INSIDE this
+  // try, so a throw from any downstream route handler landed in the catch
+  // and — via the bypass — could re-enter that same handler a second time.
   try {
-    // Validate the JWT token using the admin client
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser(token);
-
+    const { data, error } = await supabase.auth.getUser(token);
     if (error) {
-      console.error("requireAuth: Token validation failed:", error.message);
-      console.error("requireAuth: Error details:", JSON.stringify(error));
-
-      // BYPASS MODE: Try to decode the JWT without validation
-      console.log("requireAuth: ⚠️ ENTERING BYPASS MODE - decoding JWT manually");
-      try {
-        const parts = token.split(".");
-        console.log("requireAuth: JWT parts count:", parts.length);
-
-        if (parts.length === 3) {
-          // Decode base64url (JWT uses base64url, not standard base64)
-          const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-          const paddedBase64 = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
-
-          console.log("requireAuth: Attempting to decode JWT payload...");
-
-          // Use TextDecoder for proper decoding in Deno
-          const jsonPayload = new TextDecoder().decode(
-            Uint8Array.from(atob(paddedBase64), (c) => c.charCodeAt(0)),
-          );
-
-          const payload = JSON.parse(jsonPayload);
-          console.log("requireAuth: ✅ Decoded JWT payload successfully");
-          console.log("requireAuth: Payload keys:", Object.keys(payload));
-          console.log("requireAuth: Payload sub:", payload.sub);
-          console.log("requireAuth: Payload email:", payload.email);
-
-          // Use the user ID from the JWT payload if validation fails
-          if (payload.sub) {
-            console.log(
-              "requireAuth: ✅✅✅ BYPASS MODE ACTIVATED - Using userId from JWT payload:",
-              payload.sub,
-            );
-            c.set("userId", payload.sub);
-            c.set("userEmail", payload.email || "unknown");
-            await next();
-            return; // CRITICAL: Return here to prevent the 401 error below
-          } else {
-            console.error("requireAuth: ❌ No sub field in JWT payload");
-          }
-        } else {
-          console.error("requireAuth: ❌ JWT does not have 3 parts, has:", parts.length);
-        }
-      } catch (decodeError: any) {
-        console.error("requireAuth: ❌ Failed to decode JWT in bypass mode:", decodeError.message);
-        console.error("requireAuth: ❌ Decode error stack:", decodeError.stack);
-      }
-
-      // Only reach here if bypass mode failed
-      console.error("requireAuth: ❌❌❌ Bypass mode failed, returning 401");
-      return c.json(
-        { error: `Unauthorized: ${error.message}`, code: 401, message: "Invalid JWT" },
-        401,
-      );
-    }
-
-    if (!user) {
-      console.error("requireAuth: No user found for token");
+      console.error("requireAuth: token rejected:", error.message);
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
-
-    console.log("requireAuth: ✅ User authenticated via Supabase:", user.id, user.email);
-    c.set("userId", user.id);
-    c.set("userEmail", user.email);
-    await next();
+    user = data.user;
   } catch (error: any) {
-    console.error("requireAuth: ⚠️ Unexpected error during validation:", error.message);
-    console.error("requireAuth: Error stack:", error.stack);
-
-    // LAST RESORT BYPASS: Try to decode even on exception
-    console.log("requireAuth: ⚠️ EXCEPTION BYPASS MODE - Attempting manual decode");
-    try {
-      const parts = token.split(".");
-      if (parts.length === 3) {
-        const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-        const paddedBase64 = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
-
-        const jsonPayload = new TextDecoder().decode(
-          Uint8Array.from(atob(paddedBase64), (c) => c.charCodeAt(0)),
-        );
-
-        const payload = JSON.parse(jsonPayload);
-
-        if (payload.sub) {
-          console.log(
-            "requireAuth: ✅✅✅ EXCEPTION BYPASS MODE ACTIVATED - Using userId:",
-            payload.sub,
-          );
-          c.set("userId", payload.sub);
-          c.set("userEmail", payload.email || "unknown");
-          await next();
-          return;
-        }
-      }
-    } catch (decodeError: any) {
-      console.error("requireAuth: ❌ Exception bypass failed:", decodeError.message);
-    }
-
-    console.error("requireAuth: ❌❌❌ All bypass attempts failed, returning 401");
-    return c.json({ error: "Unauthorized: Token validation error", details: error.message }, 401);
+    console.error("requireAuth: verification threw:", error?.message);
+    return c.json({ error: "Unauthorized: Token validation error" }, 401);
   }
+
+  if (!user) {
+    console.error("requireAuth: no user for token");
+    return c.json({ error: "Unauthorized: Invalid token" }, 401);
+  }
+
+  c.set("userId", user.id);
+  c.set("userEmail", user.email);
+  await next();
 }
 
 // Health check endpoint
@@ -682,11 +604,96 @@ function normalizeAudioMimeType(mime: string): string {
   return mime.split(";")[0].trim() || "audio/webm";
 }
 
-// Get a signed URL for a stored floor plan (or voice note) file
+// ---------------------------------------------------------------------------
+// Project-membership authorization
+//
+// Every route in this file runs on the SERVICE-ROLE client, which bypasses
+// RLS entirely — so the row-level policies that protect the rest of the app
+// do nothing here and each route has to authorize for itself. The voice-note
+// routes never did, which meant any authenticated user could list, play,
+// upload to or delete the voice notes of any visit whose UUID they had.
+//
+// NOTE: these deliberately re-implement is_project_member() / is_admin()
+// rather than calling them over RPC. Those SQL functions resolve the caller
+// via auth.uid(), which is NULL on a service-role connection — an RPC call
+// would return false for everyone and lock the whole feature out. The logic
+// below is the same, with the user id passed explicitly.
+// ---------------------------------------------------------------------------
+
+async function isProjectMember(projectId: string, userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("project_members")
+    .select("user_id")
+    .eq("project_id", projectId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  if (data) return true;
+
+  // Mirrors the "Admins have full access" policies elsewhere in the schema.
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("org_role")
+    .eq("id", userId)
+    .maybeSingle();
+  if (profileError) throw profileError;
+  return profile?.org_role === "admin";
+}
+
+// Resolves the visit's project and checks membership. Returns a Response to
+// send when access is refused, or null to continue. Fails CLOSED: an
+// unknown visit, a lookup error, or a non-member all stop the request.
+async function denyIfNotVisitMember(c: any, visitId: string): Promise<Response | null> {
+  const userId = c.get("userId");
+  if (!visitId || !userId) return c.json({ error: "Forbidden" }, 403);
+
+  try {
+    const { data: visit, error } = await supabase
+      .from("site_visits")
+      .select("project_id")
+      .eq("id", visitId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!visit) return c.json({ error: "Visite introuvable" }, 404);
+
+    if (!(await isProjectMember(visit.project_id, userId))) {
+      console.warn("Forbidden: user", userId, "is not a member of project", visit.project_id);
+      return c.json({ error: "Forbidden: not a member of this project" }, 403);
+    }
+    return null;
+  } catch (error: any) {
+    console.error("Membership check failed:", error?.message);
+    return c.json({ error: "Forbidden" }, 403);
+  }
+}
+
+// Voice-note storage paths are written by this server as
+// `{visitId}/{noteId}.{ext}`. Validating the shape before using the prefix
+// as a visit id keeps a caller from smuggling a traversal or another
+// bucket's key through the signed-url route.
+const VOICENOTE_PATH = /^([0-9a-f-]{36})\/[0-9a-f-]{36}\.[a-z0-9]{1,8}$/i;
+
+// Signed URL for a stored voice note.
+//
+// This used to sign ANY {bucket, path} the caller asked for, with no check
+// at all — a member of one project could mint a URL for another project's
+// photos or floor plans just by naming the key. VoiceNotesSection is the
+// only caller (grep: getSignedUrl), so it is now scoped to the voice-note
+// bucket and gated on membership of the visit that owns the file.
 app.post("/make-server-9fe75696/storage/signed-url", requireAuth, async (c) => {
   try {
     const { bucket, path, expiresIn } = await c.req.json();
     if (!bucket || !path) return c.json({ error: "bucket and path required" }, 400);
+
+    if (bucket !== VOICENOTE_BUCKET) {
+      return c.json({ error: "Forbidden: unsupported bucket" }, 403);
+    }
+    const match = VOICENOTE_PATH.exec(path);
+    if (!match) return c.json({ error: "Forbidden: invalid path" }, 403);
+
+    const denied = await denyIfNotVisitMember(c, match[1]);
+    if (denied) return denied;
+
     const { data, error } = await supabase.storage
       .from(bucket)
       .createSignedUrl(path, expiresIn || 86400);
@@ -925,6 +932,10 @@ app.post("/make-server-9fe75696/site-visits/:visitId/voice-notes", requireAuth, 
   try {
     const userId = c.get("userId");
     const visitId = c.req.param("visitId");
+
+    const denied = await denyIfNotVisitMember(c, visitId);
+    if (denied) return denied;
+
     const form = await c.req.formData();
     const file = form.get("file") as File | null;
     const duration = parseFloat((form.get("duration") as string) || "0");
@@ -969,6 +980,10 @@ app.post("/make-server-9fe75696/site-visits/:visitId/voice-notes", requireAuth, 
 app.get("/make-server-9fe75696/site-visits/:visitId/voice-notes", requireAuth, async (c) => {
   try {
     const visitId = c.req.param("visitId");
+
+    const denied = await denyIfNotVisitMember(c, visitId);
+    if (denied) return denied;
+
     const keys = await kv.getByPrefix(`visit_voice_notes:${visitId}:`);
     const ids = keys.map(({ key }) => key.split(":")[2]);
     if (ids.length === 0) return c.json([]);
@@ -984,6 +999,16 @@ app.delete("/make-server-9fe75696/voice-notes/:id", requireAuth, async (c) => {
   try {
     const id = c.req.param("id");
     const note: any = await kv.get(`voice_note:${id}`);
+
+    // Resolve the note first so the visit — and therefore the project — is
+    // known before anything is removed. A note with no visit is not
+    // authorizable, so it is refused rather than deleted blind.
+    if (!note) return c.json({ error: "Note introuvable" }, 404);
+    if (!note.site_visit_id) return c.json({ error: "Forbidden" }, 403);
+
+    const denied = await denyIfNotVisitMember(c, note.site_visit_id);
+    if (denied) return denied;
+
     if (note?.storage_path) {
       await supabase.storage
         .from(VOICENOTE_BUCKET)
