@@ -11,3 +11,4 @@ __figma__entrypoint__.ts
 Ressources/
 dev-dist/
 prod-backup-*.sql
+TEST-report-*.docx

@@ -456,8 +456,12 @@ CREATE TABLE IF NOT EXISTS "public"."site_visits" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "start_time" "time",
-    "end_time" "time"
+    "end_time" "time",
+    "attendees" "jsonb"
 );
+
+
+COMMENT ON COLUMN "public"."site_visits"."attendees" IS 'Array of { name, organization, role, initials } — fills the report''s ASSISTAIENT table.';
 
 
 ALTER TABLE "public"."site_visits" OWNER TO "postgres";
@@ -594,6 +598,10 @@ ALTER TABLE ONLY "public"."project_members"
 ALTER TABLE ONLY "public"."projects"
     ADD CONSTRAINT "projects_pkey" PRIMARY KEY ("id");
 
+
+
+ALTER TABLE ONLY "public"."site_visits"
+    ADD CONSTRAINT "site_visits_attendees_is_array" CHECK ((("attendees" IS NULL) OR ("jsonb_typeof"("attendees") = 'array'::"text")));
 
 
 ALTER TABLE ONLY "public"."site_visits"
