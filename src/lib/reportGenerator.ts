@@ -5,9 +5,7 @@ import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import ImageModule from "docxtemplater-image-module-free";
 import type { Project, SiteVisit, Photo } from "./supabase";
-import type { Issue } from "./issuesApi";
 import { getPhotos, getPhotosSignedUrls } from "./supabaseApi";
-import { getIssuesByVisit } from "./issuesApi";
 import { getObservationsByVisit, type Observation } from "./observationsApi";
 import { getLocations, type Location } from "./locationsApi";
 import { formatDateLong, extractDateOnly } from "./dateUtils";
@@ -22,11 +20,6 @@ export interface DossierNumberEntry {
   number: string;
 }
 
-export interface DistributionEntry {
-  name: string;
-  company: string;
-}
-
 export interface AttendeeEntry {
   name: string;
   company: string;
@@ -35,20 +28,19 @@ export interface AttendeeEntry {
 }
 
 // Fields the app doesn't capture yet — filled in manually on the report screen.
+//
+// Deliberately smaller than it was. The contractor block now comes from
+// project.contractor_*, "préparé par" from the generating user's profile,
+// and the distribution list is gone from both the form and the document —
+// none of those were per-report facts, so asking for them each time invited
+// two reports on one project to disagree with each other.
 export interface ReportManualFields {
   noteNumber: string;
   pageCount: string;
   transmittedBy: string;
   dossierNumbers: DossierNumberEntry[];
-  distribution: DistributionEntry[];
   attendees: AttendeeEntry[];
-  contractorContactNameTitle: string;
-  contractorCompany: string;
-  contractorAddress: string;
-  contractorPhone: string;
-  contractorEmail: string;
   subject: string;
-  preparedByNameTitle: string;
   // Fallback only. The report prefers the visit's real start_time/end_time
   // (added later as time columns); this free-text value is used only for
   // older visits that predate those columns and have neither set.
@@ -81,18 +73,20 @@ interface PhotoRow {
 /**
  * Build the OBSERVATIONS ET ACTIONS section.
  *
- * Observations come first, grouped by location and labelled
- * "AS1-51 — Toilette – Phase 1" (the phase comes from the visit, since
- * locations carry no phase of their own). Déficiences follow under a
- * sub-heading — a temporary arrangement until they get their own template
- * section; the report reads as one numbered list either way.
+ * Observations only, grouped by location and labelled "AS1-51 — Toilette –
+ * Phase 1" (the phase comes from the visit, since locations carry no phase
+ * of their own).
+ *
+ * Déficiences used to be appended here under a "Déficiences" sub-heading.
+ * They are deliberately no longer part of the document: déficiences are
+ * tracked work with their own lifecycle in the app, and folding them into a
+ * visit note conflated "what I saw" with "what must be fixed".
  *
  * Numbering is a single running counter across every group, matching the
- * firm's note format (1.1, 1.2, 1.3 … continuing past each heading).
+ * note format (1.1, 1.2, 1.3 … continuing past each heading).
  */
 function buildObservationZones(
   observations: Observation[],
-  issues: Issue[],
   locations: Location[],
   visitPhase?: string | null,
 ): Zone[] {
@@ -126,22 +120,6 @@ function buildObservationZones(
     counter++;
   }
 
-  // Déficiences keep their own grouping (by the free-text label on the
-  // issue, which is all they carry) under a single sub-heading, so the
-  // reader can tell records from things needing action.
-  if (issues.length > 0) {
-    const heading = zoneFor("__deficiences__", "Déficiences");
-    for (const issue of issues) {
-      const label = issue.location ? `${issue.location} — ` : "";
-      heading.items.push({
-        number: `1.${counter}`,
-        text: `${label}${issue.description || issue.title}`,
-        actionBy: issue.assignedTo || "",
-      });
-      counter++;
-    }
-  }
-
   return zones;
 }
 
@@ -149,17 +127,17 @@ function buildObservationZones(
  * The locations a report covers, for the reports↔locations linkage that
  * powers "Rapports" on LocationDetail.
  *
- * Only observations and issues contribute: both carry a real `location_id`
- * FK. Photos store their location as free text in a JSONB column with no id,
- * so they cannot be linked without guessing.
+ * Observations only. Déficiences used to contribute too, but they no longer
+ * appear anywhere in the document — counting them would make LocationDetail
+ * claim a report covers a local that the report says nothing about.
+ *
+ * Photos are not a source either, even though they can now be borrowed from
+ * other visits: they store their location as free text in a JSONB column
+ * with no location_id, so linking them would be guesswork.
  */
-export function deriveLocationIds(observations: Observation[], issues: Issue[]): string[] {
+export function deriveLocationIds(observations: Observation[]): string[] {
   return [
-    ...new Set(
-      [...observations.map((o) => o.locationId), ...issues.map((i) => i.locationId)].filter(
-        (id): id is string => !!id,
-      ),
-    ),
+    ...new Set(observations.map((o) => o.locationId).filter((id): id is string => !!id)),
   ];
 }
 
@@ -327,6 +305,9 @@ export async function generateSiteVisitReport(
   // and an empty value simply leaves the line blank rather than substituting
   // somebody else's letterhead.
   firmName = "",
+  // "PRÉPARÉ PAR" in the footer: the generating user's name and title, from
+  // their profile. Blank leaves the line empty rather than guessing.
+  preparedByNameTitle = "",
   // The allocated report number (A001…). Assigned server-side by
   // create_report() before this runs, because it has to appear inside the
   // document. Falls back to the manual field only for a caller that hasn't
@@ -338,9 +319,8 @@ export async function generateSiteVisitReport(
   // don't silently lose their photo section.
   photoSelection?: ReportPhotoSelection,
 ): Promise<void> {
-  const [templateBuffer, issues, ownPhotos, observations, locations] = await Promise.all([
+  const [templateBuffer, ownPhotos, observations, locations] = await Promise.all([
     fetchTemplate(),
-    getIssuesByVisit(visit.id),
     // Only needed for the no-selection fallback; skipped when the caller
     // supplies its own set.
     photoSelection ? Promise.resolve([] as Photo[]) : getPhotos(visit.id),
@@ -350,10 +330,10 @@ export async function generateSiteVisitReport(
     getLocations(visit.project_id).catch(() => [] as Location[]),
   ]);
 
-  // Observations and déficiences are strictly this visit's. Only photos may
-  // come from elsewhere — a report that silently merged findings from other
-  // visits would misstate what was seen on the day it is dated.
-  const zones = buildObservationZones(observations, issues, locations, visit.phase);
+  // Observations are strictly this visit's. Only photos may come from
+  // elsewhere — a report that silently merged findings from other visits
+  // would misstate what was seen on the day it is dated.
+  const zones = buildObservationZones(observations, locations, visit.phase);
 
   // selectableReportPhotos runs on the SELECTION too, not just the picker:
   // a weather shot must not be able to reach a client report through a stale
@@ -380,12 +360,14 @@ export async function generateSiteVisitReport(
     // on its own. Falls back to the first manually-entered dossier number
     // for projects saved before file_number was captured.
     primaryDossierNumber: project.file_number || manual.dossierNumbers[0]?.number || "",
-    contractorContactNameTitle: manual.contractorContactNameTitle,
-    contractorCompany: manual.contractorCompany,
-    contractorAddress: manual.contractorAddress,
-    contractorPhone: manual.contractorPhone,
-    contractorEmail: manual.contractorEmail,
-    distribution: manual.distribution,
+    // ENTREPRENEUR comes straight off the project. These are properties of
+    // the project, not of one report, so re-typing them per report was both
+    // busywork and a way for two reports on the same project to disagree.
+    contractorContactNameTitle: project.contractor_contact || "",
+    contractorCompany: project.contractor_name || "",
+    contractorAddress: project.contractor_address || "",
+    contractorPhone: project.contractor_phone || "",
+    contractorEmail: project.contractor_email || "",
     weather: [visit.weather, visit.temperature].filter(Boolean).join(", "),
     // Prefer the visit's real recorded times; manual.time only covers older
     // visits saved before start_time/end_time existed.
@@ -395,7 +377,9 @@ export async function generateSiteVisitReport(
     generalNotes: visit.notes || "",
     zones,
     photoRows,
-    preparedByNameTitle: manual.preparedByNameTitle,
+    // PRÉPARÉ PAR is whoever generated it — taken from the account rather
+    // than typed, so a report can't be signed with someone else's name.
+    preparedByNameTitle,
   };
 
   const zip = new PizZip(templateBuffer);

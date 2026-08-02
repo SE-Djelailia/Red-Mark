@@ -6,8 +6,6 @@ import {
   CheckCircle,
   ArrowLeft,
   Users,
-  Building2,
-  User,
   Plus,
   X,
   Hash,
@@ -19,7 +17,6 @@ import type { Project, SiteVisit, Photo } from "../../lib/supabase";
 import { formatDateLong } from "../../lib/dateUtils";
 import { toast } from "sonner";
 import { getObservationsByVisit } from "../../lib/observationsApi";
-import { getIssuesByVisit } from "../../lib/issuesApi";
 import { createReport, deleteReport, touchRegenerated, type Report } from "../../lib/reportsApi";
 import {
   generateSiteVisitReport,
@@ -28,7 +25,6 @@ import {
   formatVisitTimeRange,
   type ReportManualFields,
   type DossierNumberEntry,
-  type DistributionEntry,
   type AttendeeEntry,
 } from "../../lib/reportGenerator";
 import { useSmartBack } from "../../hooks/useSmartBack";
@@ -41,15 +37,8 @@ const EMPTY_MANUAL_FIELDS: ReportManualFields = {
   pageCount: "À déterminer",
   transmittedBy: "Courriel",
   dossierNumbers: [{ label: "Dossier", number: "" }],
-  distribution: [{ name: "", company: "" }],
   attendees: [{ name: "", company: "", title: "", initials: "" }],
-  contractorContactNameTitle: "",
-  contractorCompany: "",
-  contractorAddress: "",
-  contractorPhone: "",
-  contractorEmail: "",
   subject: "Visite de chantier / constatations.",
-  preparedByNameTitle: "",
   time: "",
 };
 
@@ -59,6 +48,15 @@ export default function ReportGenerator() {
   // Fills the footer's "PRÉPARÉ PAR" firm line. Same profile field the
   // Profile screen edits; blank when the user hasn't set one.
   const firmName = (user?.user_metadata?.firm || "").trim();
+  // "PRÉPARÉ PAR" in the document. Taken from the account that generates the
+  // report rather than typed, so a note can't go out signed with someone
+  // else's name. Title is appended when the profile has one.
+  const preparedByNameTitle = (() => {
+    const name = (user?.user_metadata?.name || "").trim();
+    const title = (user?.user_metadata?.role || "").trim();
+    if (!name) return "";
+    return title ? `${name}, ${title}` : name;
+  })();
   const goBack = useSmartBack(`/app/projects/${id}`);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -95,9 +93,10 @@ export default function ReportGenerator() {
         setProject(projectData);
 
         if (projectData) {
-          // Pre-fill fixed identifying details from the project so they don't
-          // have to be retyped on every report; still plain editable inputs
-          // below, so a specific report can override any of them.
+          // The contractor block is no longer pre-filled into editable
+          // inputs — the document reads project.contractor_* directly, so
+          // there is nothing here to seed. Only the dossier number remains
+          // an editable field seeded from the project.
           setManual((prev) => ({
             ...prev,
             dossierNumbers: projectData.file_number
@@ -106,11 +105,6 @@ export default function ReportGenerator() {
                   ...prev.dossierNumbers.slice(1),
                 ]
               : prev.dossierNumbers,
-            contractorCompany: projectData.contractor_name || prev.contractorCompany,
-            contractorContactNameTitle: projectData.contractor_contact || prev.contractorContactNameTitle,
-            contractorAddress: projectData.contractor_address || prev.contractorAddress,
-            contractorPhone: projectData.contractor_phone || prev.contractorPhone,
-            contractorEmail: projectData.contractor_email || prev.contractorEmail,
           }));
 
           const visitsData = await getSiteVisits(id);
@@ -241,11 +235,10 @@ export default function ReportGenerator() {
       // not block the report — an unlinked report is still a valid report.
       let locationIds: string[] = [];
       try {
-        const [observations, issues] = await Promise.all([
-          getObservationsByVisit(visit.id),
-          getIssuesByVisit(visit.id),
-        ]);
-        locationIds = deriveLocationIds(observations, issues);
+        // Observations only: déficiences no longer appear in the document,
+        // so linking their locals would make LocationDetail claim coverage
+        // the report doesn't provide.
+        locationIds = deriveLocationIds(await getObservationsByVisit(visit.id));
       } catch (e) {
         console.error("Could not derive report locations:", e);
       }
@@ -263,6 +256,7 @@ export default function ReportGenerator() {
         visit,
         manual,
         firmName,
+        preparedByNameTitle,
         created.reportNumber,
         { photos: orderedSelection, visitDates: visitDateById },
       );
@@ -299,6 +293,7 @@ export default function ReportGenerator() {
         visit,
         manual,
         firmName,
+        preparedByNameTitle,
         report.reportNumber,
         { photos: orderedSelection, visitDates: visitDateById },
       );
@@ -501,108 +496,6 @@ export default function ReportGenerator() {
               </div>
             </div>
 
-            {/* Distribution list */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs text-body">Distribution du rapport</label>
-                <button
-                  type="button"
-                  onClick={() => addListEntry("distribution", { name: "", company: "" })}
-                  className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-800"
-                >
-                  <Plus size={14} />
-                  Ajouter
-                </button>
-              </div>
-              <div className="space-y-2">
-                {manual.distribution.map((entry, index) => (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={entry.name}
-                      onChange={(e) =>
-                        updateListEntry<DistributionEntry>("distribution", index, {
-                          name: e.target.value,
-                        })
-                      }
-                      className="flex-1 px-2 py-1.5 bg-canvas border border-line rounded text-sm focus:outline-none focus:border-brand-600"
-                      placeholder="Nom"
-                    />
-                    <input
-                      type="text"
-                      value={entry.company}
-                      onChange={(e) =>
-                        updateListEntry<DistributionEntry>("distribution", index, {
-                          company: e.target.value,
-                        })
-                      }
-                      className="flex-1 px-2 py-1.5 bg-canvas border border-line rounded text-sm focus:outline-none focus:border-brand-600"
-                      placeholder="Compagnie"
-                    />
-                    {manual.distribution.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeListEntry("distribution", index)}
-                        className="p-1.5 text-faint hover:text-red-600"
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Contractor */}
-        <div className="bg-white rounded-xl border border-line p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Building2 size={18} className="text-brand-600" />
-            <label className="text-sm font-semibold text-ink">Entrepreneur</label>
-            {project?.contractor_name && (
-              <span className="text-xs text-faint">(pré-rempli du projet, modifiable)</span>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={manual.contractorContactNameTitle}
-              onChange={(e) => updateManual("contractorContactNameTitle", e.target.value)}
-              className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
-              placeholder="Nom du contact, titre"
-            />
-            <input
-              type="text"
-              value={manual.contractorCompany}
-              onChange={(e) => updateManual("contractorCompany", e.target.value)}
-              className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
-              placeholder="Nom de la compagnie"
-            />
-            <input
-              type="text"
-              value={manual.contractorAddress}
-              onChange={(e) => updateManual("contractorAddress", e.target.value)}
-              className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
-              placeholder="Adresse"
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <input
-                type="text"
-                value={manual.contractorPhone}
-                onChange={(e) => updateManual("contractorPhone", e.target.value)}
-                className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
-                placeholder="Téléphone"
-              />
-              <input
-                type="email"
-                value={manual.contractorEmail}
-                onChange={(e) => updateManual("contractorEmail", e.target.value)}
-                className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
-                placeholder="Courriel"
-              />
-            </div>
           </div>
         </div>
 
@@ -693,21 +586,6 @@ export default function ReportGenerator() {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Prepared by */}
-        <div className="bg-white rounded-xl border border-line p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <User size={18} className="text-brand-600" />
-            <label className="text-sm font-semibold text-ink">Préparé par</label>
-          </div>
-          <input
-            type="text"
-            value={manual.preparedByNameTitle}
-            onChange={(e) => updateManual("preparedByNameTitle", e.target.value)}
-            className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
-            placeholder="Nom, titre"
-          />
         </div>
 
         {/* Photo selection — browses INDEPENDENTLY of the top visit selector.
