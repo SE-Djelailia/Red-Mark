@@ -11,6 +11,7 @@ import { getIssuesByVisit } from "./issuesApi";
 import { getObservationsByVisit, type Observation } from "./observationsApi";
 import { getLocations, type Location } from "./locationsApi";
 import { formatDateLong, extractDateOnly } from "./dateUtils";
+import { WEATHER_EVIDENCE_TAG } from "./issuePhotoUpload";
 
 const TEMPLATE_URL = "/templates/note-visite-chantier.docx";
 const PHOTO_MAX_WIDTH_PX = 195;
@@ -162,6 +163,18 @@ export function deriveLocationIds(observations: Observation[], issues: Issue[]):
   ];
 }
 
+/**
+ * The visit's photos that are eligible for the report's PHOTOS section.
+ *
+ * Weather-evidence photos are excluded unconditionally. They exist to record
+ * the site conditions on the visit form, not as findings — a shot of the sky
+ * in the middle of a defect report reads as a mistake. Filtering here rather
+ * than only in the picker means a stale selection can't reintroduce one.
+ */
+export function selectableReportPhotos(photos: Photo[]): Photo[] {
+  return photos.filter((p) => !(p.tags || []).includes(WEATHER_EVIDENCE_TAG));
+}
+
 async function buildPhotoRows(photos: Photo[]): Promise<PhotoRow[]> {
   if (photos.length === 0) return [];
 
@@ -297,6 +310,10 @@ export async function generateSiteVisitReport(
   // document. Falls back to the manual field only for a caller that hasn't
   // been migrated to the numbering flow.
   reportNumber?: string,
+  // Ids of the photos to include, chosen on the report screen. Undefined
+  // means "every eligible photo" — the behaviour before selection existed,
+  // kept so other callers don't silently lose their photo section.
+  photoIds?: string[],
 ): Promise<void> {
   const [templateBuffer, issues, photos, observations, locations] = await Promise.all([
     fetchTemplate(),
@@ -309,7 +326,14 @@ export async function generateSiteVisitReport(
   ]);
 
   const zones = buildObservationZones(observations, issues, locations, visit.phase);
-  const photoRows = await buildPhotoRows(photos);
+
+  // Order comes from the visit's own photo order, not the order they were
+  // ticked, so the report's (1)(2)(3) numbering matches what the grid showed.
+  const eligiblePhotos = selectableReportPhotos(photos);
+  const includedPhotos = photoIds
+    ? eligiblePhotos.filter((p) => photoIds.includes(p.id))
+    : eligiblePhotos;
+  const photoRows = await buildPhotoRows(includedPhotos);
 
   const data = {
     noteNumber: reportNumber || manual.noteNumber,

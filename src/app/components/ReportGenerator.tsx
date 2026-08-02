@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router";
 import {
   FileText,
@@ -12,9 +12,10 @@ import {
   X,
   Hash,
   Send,
+  Check,
 } from "lucide-react";
-import { getProject, getSiteVisits } from "../../lib/supabaseApi";
-import type { Project, SiteVisit } from "../../lib/supabase";
+import { getProject, getSiteVisits, getPhotos } from "../../lib/supabaseApi";
+import type { Project, SiteVisit, Photo } from "../../lib/supabase";
 import { formatDateLong } from "../../lib/dateUtils";
 import { toast } from "sonner";
 import { getObservationsByVisit } from "../../lib/observationsApi";
@@ -23,6 +24,7 @@ import { createReport, deleteReport, touchRegenerated, type Report } from "../..
 import {
   generateSiteVisitReport,
   deriveLocationIds,
+  selectableReportPhotos,
   formatVisitTimeRange,
   type ReportManualFields,
   type DossierNumberEntry,
@@ -32,6 +34,7 @@ import {
 import { useSmartBack } from "../../hooks/useSmartBack";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
 import { useAuth } from "../../contexts/useAuth";
+import SecureImage from "./SecureImage";
 
 const EMPTY_MANUAL_FIELDS: ReportManualFields = {
   noteNumber: "",
@@ -63,6 +66,15 @@ export default function ReportGenerator() {
   // been issued for this visit; the primary button then becomes a re-download
   // of that same document rather than a fresh allocation.
   const [report, setReport] = useState<Report | null>(null);
+
+  // Photos offered for the report's PHOTOS section. Weather-evidence shots
+  // are filtered out by selectableReportPhotos() and never reach this list.
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [loadingPhotos, setLoadingPhotos] = useState(false);
+  const [photosLoadError, setPhotosLoadError] = useState(false);
+  // Nothing pre-selected: including a photo in a report sent to a client is
+  // a deliberate act, so it starts empty every time.
+  const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
 
   const [project, setProject] = useState<Project | null>(null);
   const [visits, setVisits] = useState<SiteVisit[]>([]);
@@ -119,6 +131,34 @@ export default function ReportGenerator() {
   useEffect(() => {
     setReport(null);
   }, [selectedVisitId]);
+
+  // A callback, not effect-inline, so the error state's "Réessayer" has
+  // something real to call.
+  const loadPhotos = useCallback(() => {
+    if (!selectedVisitId) return;
+    setLoadingPhotos(true);
+    setPhotosLoadError(false);
+    getPhotos(selectedVisitId)
+      .then((rows) => setPhotos(selectableReportPhotos(rows)))
+      .catch((e) => {
+        console.error("Error loading photos for report:", e);
+        setPhotosLoadError(true);
+      })
+      .finally(() => setLoadingPhotos(false));
+  }, [selectedVisitId]);
+
+  // The selectable grid, reloaded per visit. Selection resets with it — ids
+  // from another visit's photos would be meaningless here.
+  useEffect(() => {
+    setSelectedPhotoIds([]);
+    setPhotos([]);
+    loadPhotos();
+  }, [loadPhotos]);
+
+  const togglePhoto = (photoId: string) =>
+    setSelectedPhotoIds((ids) =>
+      ids.includes(photoId) ? ids.filter((x) => x !== photoId) : [...ids, photoId],
+    );
 
   const updateManual = <K extends keyof ReportManualFields>(key: K, value: ReportManualFields[K]) => {
     setManual((prev) => ({ ...prev, [key]: value }));
@@ -182,7 +222,14 @@ export default function ReportGenerator() {
       // rolled back below if the render throws.
       created = await createReport(id, [visit.id], locationIds);
 
-      await generateSiteVisitReport(project, visit, manual, firmName, created.reportNumber);
+      await generateSiteVisitReport(
+        project,
+        visit,
+        manual,
+        firmName,
+        created.reportNumber,
+        selectedPhotoIds,
+      );
 
       setReport(created);
       toast.success(`Rapport ${created.reportNumber} généré`);
@@ -211,7 +258,14 @@ export default function ReportGenerator() {
 
     setGenerating(true);
     try {
-      await generateSiteVisitReport(project, visit, manual, firmName, report.reportNumber);
+      await generateSiteVisitReport(
+        project,
+        visit,
+        manual,
+        firmName,
+        report.reportNumber,
+        selectedPhotoIds,
+      );
       // Bookkeeping only — a failure here must not read as a failed download.
       try {
         setReport(await touchRegenerated(report.id));
@@ -619,6 +673,81 @@ export default function ReportGenerator() {
             placeholder="Nom, titre"
           />
         </div>
+
+        {/* Photo selection — nothing is included unless it is ticked here.
+            Weather-evidence photos are absent from this list by design (see
+            selectableReportPhotos), so they cannot reach a client report. */}
+        {!loading && selectedVisitId && (
+          <div className="bg-white rounded-xl border border-line p-5">
+            <div className="flex items-center justify-between gap-3 mb-1">
+              <h3 className="text-sm text-ink font-semibold">Photos du rapport</h3>
+              {photos.length > 0 && (
+                <button
+                  onClick={() =>
+                    setSelectedPhotoIds((ids) =>
+                      ids.length === photos.length ? [] : photos.map((p) => p.id),
+                    )
+                  }
+                  className="text-xs font-medium text-brand-strong hover:underline flex-shrink-0"
+                >
+                  {selectedPhotoIds.length === photos.length ? "Tout effacer" : "Tout sélectionner"}
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-muted mb-3">
+              {selectedPhotoIds.length} photo{selectedPhotoIds.length === 1 ? "" : "s"} sélectionnée
+              {selectedPhotoIds.length === 1 ? "" : "s"}
+              {photos.length > 0 ? ` sur ${photos.length}` : ""}
+            </p>
+
+            {loadingPhotos ? (
+              <div className="text-sm text-muted">Chargement des photos…</div>
+            ) : photosLoadError ? (
+              <div className="text-sm text-red-600 flex items-center gap-2">
+                Impossible de charger les photos.
+                <button onClick={loadPhotos} className="underline font-medium">
+                  Réessayer
+                </button>
+              </div>
+            ) : photos.length === 0 ? (
+              <div className="text-sm text-muted">Aucune photo disponible pour cette visite.</div>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
+                {photos.map((photo) => {
+                  const checked = selectedPhotoIds.includes(photo.id);
+                  return (
+                    <button
+                      key={photo.id}
+                      type="button"
+                      onClick={() => togglePhoto(photo.id)}
+                      aria-pressed={checked}
+                      className={`relative aspect-square rounded-lg overflow-hidden bg-subtle transition-all ${
+                        checked ? "ring-2 ring-brand-600" : "hover:opacity-90"
+                      }`}
+                    >
+                      <SecureImage
+                        storagePath={photo.storage_path}
+                        alt="Photo de la visite"
+                        className="w-full h-full object-cover"
+                      />
+                      {!checked && <span className="absolute inset-0 bg-black/25" aria-hidden="true" />}
+                      <span
+                        className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                          checked
+                            ? "bg-brand-600 border-brand-600 text-white"
+                            : "bg-surface/90 border-line-strong"
+                        }`}
+                        aria-hidden="true"
+                      >
+                        {checked && <Check size={14} strokeWidth={3} />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Visit summary preview */}
         {!loading && selectedVisit && (
