@@ -54,6 +54,14 @@ export interface Project {
   contractor_email?: string;
 }
 
+/** One row of the report's ASSISTAIENT table. Stored on the visit. */
+export interface VisitAttendee {
+  name: string;
+  organization: string;
+  role: string;
+  initials: string;
+}
+
 export interface SiteVisit {
   id: string;
   user_id: string;
@@ -67,6 +75,8 @@ export interface SiteVisit {
   notes?: string;
   created_at: string;
   updated_at: string;
+  /** Who was on site. Null on visits saved before attendees existed. */
+  attendees?: VisitAttendee[] | null;
 }
 
 export interface Photo {

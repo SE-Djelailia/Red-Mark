@@ -5,7 +5,6 @@ import {
   Calendar,
   CheckCircle,
   ArrowLeft,
-  Users,
   Plus,
   X,
   Hash,
@@ -25,7 +24,6 @@ import {
   formatVisitTimeRange,
   type ReportManualFields,
   type DossierNumberEntry,
-  type AttendeeEntry,
 } from "../../lib/reportGenerator";
 import { useSmartBack } from "../../hooks/useSmartBack";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
@@ -37,7 +35,6 @@ const EMPTY_MANUAL_FIELDS: ReportManualFields = {
   pageCount: "À déterminer",
   transmittedBy: "Courriel",
   dossierNumbers: [{ label: "Dossier", number: "" }],
-  attendees: [{ name: "", company: "", title: "", initials: "" }],
   subject: "Visite de chantier / constatations.",
   time: "",
 };
@@ -496,95 +493,6 @@ export default function ReportGenerator() {
               </div>
             </div>
 
-          </div>
-        </div>
-
-        {/* Attendees */}
-        <div className="bg-white rounded-xl border border-line p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Users size={18} className="text-brand-600" />
-              <label className="text-sm font-semibold text-ink">Assistaient</label>
-            </div>
-            <button
-              onClick={() =>
-                addListEntry("attendees", { name: "", company: "", title: "", initials: "" })
-              }
-              className="flex items-center gap-1 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-xs hover:bg-brand-700 transition-colors"
-            >
-              <Plus size={14} />
-              Ajouter
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {manual.attendees.map((attendee, index) => (
-              <div key={index} className="relative bg-canvas rounded-lg p-3 border border-line">
-                {manual.attendees.length > 1 && (
-                  <button
-                    onClick={() => removeListEntry("attendees", index)}
-                    className="absolute top-2 right-2 p-1 text-faint hover:text-red-600 transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  <div>
-                    <label className="block text-xs text-body mb-1">Nom</label>
-                    <input
-                      type="text"
-                      value={attendee.name}
-                      onChange={(e) =>
-                        updateListEntry<AttendeeEntry>("attendees", index, { name: e.target.value })
-                      }
-                      className="w-full px-2 py-1.5 bg-white border border-line rounded text-sm focus:outline-none focus:border-brand-600"
-                      placeholder="Nom complet"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-body mb-1">Compagnie</label>
-                    <input
-                      type="text"
-                      value={attendee.company}
-                      onChange={(e) =>
-                        updateListEntry<AttendeeEntry>("attendees", index, { company: e.target.value })
-                      }
-                      className="w-full px-2 py-1.5 bg-white border border-line rounded text-sm focus:outline-none focus:border-brand-600"
-                      placeholder="Entreprise"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs text-body mb-1">Titre</label>
-                    <input
-                      type="text"
-                      value={attendee.title}
-                      onChange={(e) =>
-                        updateListEntry<AttendeeEntry>("attendees", index, { title: e.target.value })
-                      }
-                      className="w-full px-2 py-1.5 bg-white border border-line rounded text-sm focus:outline-none focus:border-brand-600"
-                      placeholder="Fonction"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-body mb-1">Initiales</label>
-                    <input
-                      type="text"
-                      value={attendee.initials}
-                      onChange={(e) =>
-                        updateListEntry<AttendeeEntry>("attendees", index, {
-                          initials: e.target.value,
-                        })
-                      }
-                      className="w-full px-2 py-1.5 bg-white border border-line rounded text-sm focus:outline-none focus:border-brand-600"
-                      placeholder="AB"
-                      maxLength={4}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
 

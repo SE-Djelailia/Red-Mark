@@ -26,6 +26,7 @@ import {
   saveAnnotatedPhoto,
 } from "../../lib/supabaseApi";
 import { getIssuesByVisit, type Issue } from "../../lib/issuesApi";
+import type { VisitAttendee } from "../../lib/supabase";
 import PlanFilesManager from "./PlanFilesManager";
 import CollapsibleSection from "./CollapsibleSection";
 import { getRlsErrorMessage } from "../../lib/rlsErrors";
@@ -50,6 +51,7 @@ import FloatingActions from "./FloatingActions";
 import { PriorityBadge, StatusBadge } from "./ui-kit/Badge";
 import { Card, Section } from "./ui-kit/Card";
 import VoiceRecorderModal from "./VoiceRecorderModal";
+import VisitAttendeesSection from "./VisitAttendeesSection";
 
 interface Photo {
   id: string;
@@ -71,6 +73,7 @@ interface VisitDisplay {
   weather?: string;
   temperature?: string;
   createdBy: string;
+  attendees: VisitAttendee[];
 }
 
 export default function VisitDetail() {
@@ -165,6 +168,8 @@ export default function VisitDetail() {
         weather: apiVisit.weather,
         temperature: apiVisit.temperature,
         createdBy: apiVisit.user_id,
+        // Null on visits saved before the column existed.
+        attendees: apiVisit.attendees ?? [],
       };
 
       setVisit(transformedVisit);
@@ -657,6 +662,27 @@ export default function VisitDetail() {
             <Section title="Notes vocales">
               <Card className="p-4">
                 <VoiceNotesSection key={voiceNotesKey} visitId={visitId} bare />
+              </Card>
+            </Section>
+          )}
+
+          {/* Assistaient — who was on site. Lives on the visit, not on the
+              report form: the same list should appear on every report
+              generated from this visit. Gated on the visit's creator because
+              that is exactly what the "Creator can update their visits" RLS
+              policy allows — offering it more widely would surface a save
+              the database refuses. */}
+          {visitId && visit && (
+            <Section title="Assistaient">
+              <Card className="p-4">
+                <VisitAttendeesSection
+                  visitId={visitId}
+                  attendees={visit.attendees}
+                  canEdit={user?.id === visit.createdBy}
+                  onChanged={(attendees) =>
+                    setVisit((prev) => (prev ? { ...prev, attendees } : prev))
+                  }
+                />
               </Card>
             </Section>
           )}

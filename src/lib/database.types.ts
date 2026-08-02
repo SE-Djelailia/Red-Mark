@@ -861,6 +861,7 @@ export type Database = {
       }
       site_visits: {
         Row: {
+          attendees: { name: string; organization: string; role: string; initials: string }[] | null
           created_at: string | null
           end_time: string | null
           id: string
@@ -875,6 +876,7 @@ export type Database = {
           weather: string | null
         }
         Insert: {
+          attendees?: { name: string; organization: string; role: string; initials: string }[] | null
           created_at?: string | null
           end_time?: string | null
           id?: string
@@ -889,6 +891,7 @@ export type Database = {
           weather?: string | null
         }
         Update: {
+          attendees?: { name: string; organization: string; role: string; initials: string }[] | null
           created_at?: string | null
           end_time?: string | null
           id?: string

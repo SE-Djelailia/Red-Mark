@@ -20,13 +20,6 @@ export interface DossierNumberEntry {
   number: string;
 }
 
-export interface AttendeeEntry {
-  name: string;
-  company: string;
-  title: string;
-  initials: string;
-}
-
 // Fields the app doesn't capture yet — filled in manually on the report screen.
 //
 // Deliberately smaller than it was. The contractor block now comes from
@@ -39,7 +32,6 @@ export interface ReportManualFields {
   pageCount: string;
   transmittedBy: string;
   dossierNumbers: DossierNumberEntry[];
-  attendees: AttendeeEntry[];
   subject: string;
   // Fallback only. The report prefers the visit's real start_time/end_time
   // (added later as time columns); this free-text value is used only for
@@ -373,7 +365,17 @@ export async function generateSiteVisitReport(
     // visits saved before start_time/end_time existed.
     time: formatVisitTimeRange(visit.start_time, visit.end_time) || manual.time,
     subject: manual.subject,
-    attendees: manual.attendees,
+    // ASSISTAIENT comes off the visit now. The template's columns are named
+    // company/title, the stored shape uses organization/role — mapped here
+    // so the document keeps its existing placeholders untouched. A visit
+    // with no attendees yields [], and docxtemplater's table-row loop drops
+    // the repeating row, leaving just the ASSISTAIENT header.
+    attendees: (visit.attendees ?? []).map((a) => ({
+      name: a.name,
+      company: a.organization,
+      title: a.role,
+      initials: a.initials,
+    })),
     generalNotes: visit.notes || "",
     zones,
     photoRows,
