@@ -345,6 +345,76 @@ CREATE TABLE IF NOT EXISTS "public"."projects" (
 );
 
 
+CREATE TABLE IF NOT EXISTS "public"."report_locations" (
+    "report_id" "uuid" NOT NULL,
+    "location_id" "uuid" NOT NULL
+);
+
+
+CREATE TABLE IF NOT EXISTS "public"."report_visits" (
+    "report_id" "uuid" NOT NULL,
+    "visit_id" "uuid" NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL
+);
+
+
+CREATE TABLE IF NOT EXISTS "public"."reports" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "project_id" "uuid" NOT NULL,
+    "report_seq" integer NOT NULL,
+    "report_prefix" "text" DEFAULT 'A'::"text" NOT NULL,
+    "report_number" "text" NOT NULL,
+    "generated_by" "uuid",
+    "generated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "regenerated_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+CREATE OR REPLACE FUNCTION "public"."create_report"("p_project_id" "uuid", "p_visit_ids" "uuid"[], "p_location_ids" "uuid"[] DEFAULT '{}'::"uuid"[]) RETURNS "public"."reports"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_seq    integer;
+    v_report public.reports;
+BEGIN
+    IF NOT public.has_project_role(p_project_id, ARRAY['owner'::text, 'editor'::text]) THEN
+        RAISE EXCEPTION 'Not permitted to generate reports for this project'
+            USING ERRCODE = '42501';
+    END IF;
+
+    PERFORM pg_advisory_xact_lock(hashtext('report_seq:' || p_project_id::text));
+
+    SELECT COALESCE(MAX(report_seq), 0) + 1
+      INTO v_seq
+      FROM public.reports
+     WHERE project_id = p_project_id;
+
+    INSERT INTO public.reports (project_id, report_seq, report_number, generated_by)
+    VALUES (p_project_id, v_seq, 'A' || lpad(v_seq::text, 3, '0'), auth.uid())
+    RETURNING * INTO v_report;
+
+    INSERT INTO public.report_visits (report_id, visit_id, sort_order)
+    SELECT v_report.id, t.vid, t.ord - 1
+      FROM unnest(p_visit_ids) WITH ORDINALITY AS t(vid, ord)
+     WHERE EXISTS (SELECT 1 FROM public.site_visits sv
+                    WHERE sv.id = t.vid AND sv.project_id = p_project_id)
+    ON CONFLICT DO NOTHING;
+
+    INSERT INTO public.report_locations (report_id, location_id)
+    SELECT v_report.id, l.lid
+      FROM unnest(p_location_ids) AS l(lid)
+     WHERE EXISTS (SELECT 1 FROM public.locations loc
+                    WHERE loc.id = l.lid AND loc.project_id = p_project_id)
+    ON CONFLICT DO NOTHING;
+
+    RETURN v_report;
+END $$;
+
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."site_visits" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -502,9 +572,38 @@ ALTER TABLE ONLY "public"."site_visits"
     ADD CONSTRAINT "site_visits_attendees_is_array" CHECK ((("attendees" IS NULL) OR ("jsonb_typeof"("attendees") = 'array'::"text")));
 
 
+ALTER TABLE ONLY "public"."report_locations"
+    ADD CONSTRAINT "report_locations_pkey" PRIMARY KEY ("report_id", "location_id");
+
+
+ALTER TABLE ONLY "public"."report_visits"
+    ADD CONSTRAINT "report_visits_pkey" PRIMARY KEY ("report_id", "visit_id");
+
+
+ALTER TABLE ONLY "public"."reports"
+    ADD CONSTRAINT "reports_pkey" PRIMARY KEY ("id");
+
+
+ALTER TABLE ONLY "public"."reports"
+    ADD CONSTRAINT "reports_project_number_key" UNIQUE ("project_id", "report_number");
+
+
+ALTER TABLE ONLY "public"."reports"
+    ADD CONSTRAINT "reports_project_seq_key" UNIQUE ("project_id", "report_seq");
+
+
 ALTER TABLE ONLY "public"."site_visits"
     ADD CONSTRAINT "site_visits_pkey" PRIMARY KEY ("id");
 
+
+
+CREATE INDEX IF NOT EXISTS "report_locations_location_idx" ON "public"."report_locations" USING "btree" ("location_id");
+
+
+CREATE INDEX IF NOT EXISTS "report_visits_visit_idx" ON "public"."report_visits" USING "btree" ("visit_id");
+
+
+CREATE INDEX IF NOT EXISTS "reports_project_seq_idx" ON "public"."reports" USING "btree" ("project_id", "report_seq" DESC);
 
 
 CREATE INDEX "idx_comment_mentions_comment_id" ON "public"."comment_mentions" USING "btree" ("comment_id");
@@ -719,6 +818,30 @@ CREATE TRIGGER "check_plan_project_consistency_trigger" BEFORE INSERT OR UPDATE 
 
 
 
+ALTER TABLE ONLY "public"."report_locations"
+    ADD CONSTRAINT "report_locations_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."locations"("id") ON DELETE CASCADE;
+
+
+ALTER TABLE ONLY "public"."report_locations"
+    ADD CONSTRAINT "report_locations_report_id_fkey" FOREIGN KEY ("report_id") REFERENCES "public"."reports"("id") ON DELETE CASCADE;
+
+
+ALTER TABLE ONLY "public"."report_visits"
+    ADD CONSTRAINT "report_visits_report_id_fkey" FOREIGN KEY ("report_id") REFERENCES "public"."reports"("id") ON DELETE CASCADE;
+
+
+ALTER TABLE ONLY "public"."report_visits"
+    ADD CONSTRAINT "report_visits_visit_id_fkey" FOREIGN KEY ("visit_id") REFERENCES "public"."site_visits"("id") ON DELETE CASCADE;
+
+
+ALTER TABLE ONLY "public"."reports"
+    ADD CONSTRAINT "reports_generated_by_fkey" FOREIGN KEY ("generated_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+ALTER TABLE ONLY "public"."reports"
+    ADD CONSTRAINT "reports_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
+
+
 ALTER TABLE ONLY "public"."comment_mentions"
     ADD CONSTRAINT "comment_mentions_comment_id_fkey" FOREIGN KEY ("comment_id") REFERENCES "public"."comments"("id") ON DELETE CASCADE;
 
@@ -919,6 +1042,30 @@ ALTER TABLE ONLY "public"."site_visits"
 ALTER TABLE ONLY "public"."site_visits"
     ADD CONSTRAINT "site_visits_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+
+
+CREATE POLICY "Admins have full access to report_locations" ON "public"."report_locations" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
+
+
+CREATE POLICY "Admins have full access to report_visits" ON "public"."report_visits" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
+
+
+CREATE POLICY "Admins have full access to reports" ON "public"."reports" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
+
+
+CREATE POLICY "Editors can delete reports" ON "public"."reports" FOR DELETE USING ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
+
+
+CREATE POLICY "Editors can update reports" ON "public"."reports" FOR UPDATE USING ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"])) WITH CHECK ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
+
+
+CREATE POLICY "Members can view report_locations" ON "public"."report_locations" FOR SELECT USING ((EXISTS ( SELECT 1 FROM "public"."reports" "r" WHERE (("r"."id" = "report_locations"."report_id") AND "public"."is_project_member"("r"."project_id")))));
+
+
+CREATE POLICY "Members can view report_visits" ON "public"."report_visits" FOR SELECT USING ((EXISTS ( SELECT 1 FROM "public"."reports" "r" WHERE (("r"."id" = "report_visits"."report_id") AND "public"."is_project_member"("r"."project_id")))));
+
+
+CREATE POLICY "Members can view reports" ON "public"."reports" FOR SELECT USING ("public"."is_project_member"("project_id"));
 
 
 CREATE POLICY "Admins have full access to comment_mentions" ON "public"."comment_mentions" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
@@ -1195,6 +1342,15 @@ CREATE POLICY "Users can view their own notifications" ON "public"."notification
 
 CREATE POLICY "Users can view their own profile" ON "public"."profiles" FOR SELECT USING (("auth"."uid"() = "id"));
 
+
+
+ALTER TABLE "public"."report_locations" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."report_visits" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."reports" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."comment_mentions" ENABLE ROW LEVEL SECURITY;
