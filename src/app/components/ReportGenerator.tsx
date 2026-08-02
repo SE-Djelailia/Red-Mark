@@ -67,14 +67,18 @@ export default function ReportGenerator() {
   // of that same document rather than a fresh allocation.
   const [report, setReport] = useState<Report | null>(null);
 
-  // Photos offered for the report's PHOTOS section. Weather-evidence shots
-  // are filtered out by selectableReportPhotos() and never reach this list.
+  // The PHOTOS section browses independently of the top selector: the report
+  // stays anchored to one visit, but its photos may be borrowed from any
+  // visit in the project. photoVisitId is which visit the grid is SHOWING;
+  // it is seeded from the report's visit once and then moves on its own.
+  const [photoVisitId, setPhotoVisitId] = useState<string>("");
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
   const [photosLoadError, setPhotosLoadError] = useState(false);
-  // Nothing pre-selected: including a photo in a report sent to a client is
-  // a deliberate act, so it starts empty every time.
-  const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
+  // Accumulates ACROSS visits — browsing to another visit never clears it.
+  // Full rows, not ids: the generator needs visit_id and storage_path, and
+  // the summary needs to group by source visit.
+  const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
 
   const [project, setProject] = useState<Project | null>(null);
   const [visits, setVisits] = useState<SiteVisit[]>([]);
@@ -126,39 +130,67 @@ export default function ReportGenerator() {
     void loadData();
   }, [id]);
 
-  // Switching visits abandons the current allocation: the issued number
-  // belongs to the visit it was generated for.
+  // Switching the report's visit abandons the current allocation: the issued
+  // number belongs to the visit it was generated for. It deliberately does
+  // NOT touch the photo selection.
   useEffect(() => {
     setReport(null);
+  }, [selectedVisitId]);
+
+  // Seed the photo browser from the report's visit, once. After that the two
+  // move independently — re-seeding on every change is exactly the coupling
+  // this rework removes.
+  useEffect(() => {
+    setPhotoVisitId((current) => current || selectedVisitId);
   }, [selectedVisitId]);
 
   // A callback, not effect-inline, so the error state's "Réessayer" has
   // something real to call.
   const loadPhotos = useCallback(() => {
-    if (!selectedVisitId) return;
+    if (!photoVisitId) return;
     setLoadingPhotos(true);
     setPhotosLoadError(false);
-    getPhotos(selectedVisitId)
+    getPhotos(photoVisitId)
       .then((rows) => setPhotos(selectableReportPhotos(rows)))
       .catch((e) => {
         console.error("Error loading photos for report:", e);
         setPhotosLoadError(true);
       })
       .finally(() => setLoadingPhotos(false));
-  }, [selectedVisitId]);
+  }, [photoVisitId]);
 
-  // The selectable grid, reloaded per visit. Selection resets with it — ids
-  // from another visit's photos would be meaningless here.
+  // Reloads the grid when the PHOTO picker moves. Note what is absent:
+  // nothing clears selectedPhotos, which is what lets a set build up across
+  // visits.
   useEffect(() => {
-    setSelectedPhotoIds([]);
     setPhotos([]);
     loadPhotos();
   }, [loadPhotos]);
 
-  const togglePhoto = (photoId: string) =>
-    setSelectedPhotoIds((ids) =>
-      ids.includes(photoId) ? ids.filter((x) => x !== photoId) : [...ids, photoId],
+  const togglePhoto = (photo: Photo) =>
+    setSelectedPhotos((current) =>
+      current.some((p) => p.id === photo.id)
+        ? current.filter((p) => p.id !== photo.id)
+        : [...current, photo],
     );
+
+  const selectedIds = new Set(selectedPhotos.map((p) => p.id));
+  const visitDateById: Record<string, string> = Object.fromEntries(
+    visits.map((v) => [v.id, v.visit_date]),
+  );
+
+  // Chronological by source visit, then by capture order within it, so the
+  // report's (1)(2)(3) reads as a timeline rather than as click order.
+  const orderedSelection = [...selectedPhotos].sort((a, b) => {
+    const da = visitDateById[a.visit_id] || "";
+    const db = visitDateById[b.visit_id] || "";
+    if (da !== db) return da.localeCompare(db);
+    return (a.created_at || "").localeCompare(b.created_at || "");
+  });
+
+  // Which visits the selection draws from, for the running summary and for
+  // the report_visits linkage.
+  const sourceVisitIds = [...new Set(orderedSelection.map((p) => p.visit_id))];
 
   const updateManual = <K extends keyof ReportManualFields>(key: K, value: ReportManualFields[K]) => {
     setManual((prev) => ({ ...prev, [key]: value }));
@@ -220,7 +252,11 @@ export default function ReportGenerator() {
 
       // The number must be inside the .docx, so it is allocated first and
       // rolled back below if the render throws.
-      created = await createReport(id, [visit.id], locationIds);
+      // Every visit that contributed a photo travels with the report, so
+      // report_visits (and therefore location history) reflects what the
+      // document actually contains. Primary first, deduped.
+      const reportVisitIds = [...new Set([visit.id, ...sourceVisitIds])];
+      created = await createReport(id, reportVisitIds, locationIds);
 
       await generateSiteVisitReport(
         project,
@@ -228,7 +264,7 @@ export default function ReportGenerator() {
         manual,
         firmName,
         created.reportNumber,
-        selectedPhotoIds,
+        { photos: orderedSelection, visitDates: visitDateById },
       );
 
       setReport(created);
@@ -264,7 +300,7 @@ export default function ReportGenerator() {
         manual,
         firmName,
         report.reportNumber,
-        selectedPhotoIds,
+        { photos: orderedSelection, visitDates: visitDateById },
       );
       // Bookkeeping only — a failure here must not read as a failed download.
       try {
@@ -674,31 +710,71 @@ export default function ReportGenerator() {
           />
         </div>
 
-        {/* Photo selection — nothing is included unless it is ticked here.
-            Weather-evidence photos are absent from this list by design (see
-            selectableReportPhotos), so they cannot reach a client report. */}
-        {!loading && selectedVisitId && (
+        {/* Photo selection — browses INDEPENDENTLY of the top visit selector.
+            The report stays anchored to one visit; photos may be borrowed
+            from any visit, and the selection accumulates as you move between
+            them. Weather-evidence photos never appear here (see
+            selectableReportPhotos), and the generator re-filters anyway. */}
+        {!loading && visits.length > 0 && (
           <div className="bg-white rounded-xl border border-line p-5">
-            <div className="flex items-center justify-between gap-3 mb-1">
-              <h3 className="text-sm text-ink font-semibold">Photos du rapport</h3>
-              {photos.length > 0 && (
+            <h3 className="text-sm text-ink font-semibold mb-1">Photos du rapport</h3>
+            <p className="text-xs text-muted mb-3">
+              Choisissez une visite, cochez ses photos, puis changez de visite — la sélection est
+              conservée.
+            </p>
+
+            {/* The photo section's OWN visit picker. */}
+            <label className="block text-xs text-body mb-1">Photos de la visite</label>
+            <select
+              value={photoVisitId}
+              onChange={(e) => setPhotoVisitId(e.target.value)}
+              className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm mb-3 min-h-[44px] focus:outline-none focus:border-brand-600"
+            >
+              {visits.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {formatDateLong(v.visit_date)}
+                  {v.phase ? ` — ${v.phase}` : ""}
+                  {v.id === selectedVisitId ? " (visite du rapport)" : ""}
+                </option>
+              ))}
+            </select>
+
+            {/* Running summary across every visit contributing photos. */}
+            <div className="bg-canvas border border-line rounded-lg px-3 py-2.5 mb-3">
+              <div className="text-sm text-ink font-medium">
+                {selectedPhotos.length} photo{selectedPhotos.length === 1 ? "" : "s"} sélectionnée
+                {selectedPhotos.length === 1 ? "" : "s"}
+                {sourceVisitIds.length > 1 ? ` · ${sourceVisitIds.length} visites` : ""}
+              </div>
+              {sourceVisitIds.length > 0 ? (
+                <ul className="mt-1 space-y-0.5">
+                  {sourceVisitIds.map((vid) => {
+                    const count = orderedSelection.filter((p) => p.visit_id === vid).length;
+                    return (
+                      <li key={vid} className="text-xs text-muted">
+                        {visitDateById[vid] ? formatDateLong(visitDateById[vid]) : "Visite inconnue"} ·{" "}
+                        {count} photo{count === 1 ? "" : "s"}
+                        {vid !== selectedVisitId && (
+                          <span className="text-faint"> (empruntée)</span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <div className="text-xs text-muted mt-0.5">
+                  Aucune photo — le rapport sera généré sans section photos.
+                </div>
+              )}
+              {selectedPhotos.length > 0 && (
                 <button
-                  onClick={() =>
-                    setSelectedPhotoIds((ids) =>
-                      ids.length === photos.length ? [] : photos.map((p) => p.id),
-                    )
-                  }
-                  className="text-xs font-medium text-brand-strong hover:underline flex-shrink-0"
+                  onClick={() => setSelectedPhotos([])}
+                  className="mt-2 text-xs font-medium text-brand-strong hover:underline"
                 >
-                  {selectedPhotoIds.length === photos.length ? "Tout effacer" : "Tout sélectionner"}
+                  Effacer toute la sélection
                 </button>
               )}
             </div>
-            <p className="text-xs text-muted mb-3">
-              {selectedPhotoIds.length} photo{selectedPhotoIds.length === 1 ? "" : "s"} sélectionnée
-              {selectedPhotoIds.length === 1 ? "" : "s"}
-              {photos.length > 0 ? ` sur ${photos.length}` : ""}
-            </p>
 
             {loadingPhotos ? (
               <div className="text-sm text-muted">Chargement des photos…</div>
@@ -710,41 +786,71 @@ export default function ReportGenerator() {
                 </button>
               </div>
             ) : photos.length === 0 ? (
-              <div className="text-sm text-muted">Aucune photo disponible pour cette visite.</div>
+              <div className="text-sm text-muted">Aucune photo pour cette visite.</div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-                {photos.map((photo) => {
-                  const checked = selectedPhotoIds.includes(photo.id);
-                  return (
-                    <button
-                      key={photo.id}
-                      type="button"
-                      onClick={() => togglePhoto(photo.id)}
-                      aria-pressed={checked}
-                      className={`relative aspect-square rounded-lg overflow-hidden bg-subtle transition-all ${
-                        checked ? "ring-2 ring-brand-600" : "hover:opacity-90"
-                      }`}
-                    >
-                      <SecureImage
-                        storagePath={photo.storage_path}
-                        alt="Photo de la visite"
-                        className="w-full h-full object-cover"
-                      />
-                      {!checked && <span className="absolute inset-0 bg-black/25" aria-hidden="true" />}
-                      <span
-                        className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                          checked
-                            ? "bg-brand-600 border-brand-600 text-white"
-                            : "bg-surface/90 border-line-strong"
+              <>
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <span className="text-xs text-muted">
+                    {photos.filter((p) => selectedIds.has(p.id)).length} / {photos.length} dans cette
+                    visite
+                  </span>
+                  <button
+                    onClick={() => {
+                      const allChosen = photos.every((p) => selectedIds.has(p.id));
+                      setSelectedPhotos((current) =>
+                        allChosen
+                          ? // Only clears THIS visit's photos; other visits' stay.
+                            current.filter((p) => !photos.some((v) => v.id === p.id))
+                          : [
+                              ...current,
+                              ...photos.filter((p) => !current.some((c) => c.id === p.id)),
+                            ],
+                      );
+                    }}
+                    className="text-xs font-medium text-brand-strong hover:underline flex-shrink-0"
+                  >
+                    {photos.every((p) => selectedIds.has(p.id))
+                      ? "Décocher cette visite"
+                      : "Tout cocher"}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
+                  {photos.map((photo) => {
+                    const checked = selectedIds.has(photo.id);
+                    return (
+                      <button
+                        key={photo.id}
+                        type="button"
+                        onClick={() => togglePhoto(photo)}
+                        aria-pressed={checked}
+                        className={`relative aspect-square rounded-lg overflow-hidden bg-subtle transition-all ${
+                          checked ? "ring-2 ring-brand-600" : "hover:opacity-90"
                         }`}
-                        aria-hidden="true"
                       >
-                        {checked && <Check size={14} strokeWidth={3} />}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                        <SecureImage
+                          storagePath={photo.storage_path}
+                          alt="Photo de la visite"
+                          className="w-full h-full object-cover"
+                        />
+                        {!checked && (
+                          <span className="absolute inset-0 bg-black/25" aria-hidden="true" />
+                        )}
+                        <span
+                          className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                            checked
+                              ? "bg-brand-600 border-brand-600 text-white"
+                              : "bg-surface/90 border-line-strong"
+                          }`}
+                          aria-hidden="true"
+                        >
+                          {checked && <Check size={14} strokeWidth={3} />}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         )}

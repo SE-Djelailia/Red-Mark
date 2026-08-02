@@ -164,6 +164,19 @@ export function deriveLocationIds(observations: Observation[], issues: Issue[]):
 }
 
 /**
+ * A photo set assembled on the report screen, possibly drawn from several
+ * visits. The report itself stays anchored to ONE visit (its header, date,
+ * observations and déficiences all come from that visit) — only the photos
+ * may be borrowed.
+ */
+export interface ReportPhotoSelection {
+  /** Already in the order they should appear; numbering follows this. */
+  photos: Photo[];
+  /** visit_id -> visit_date, so each caption can show its OWN visit's date. */
+  visitDates: Record<string, string>;
+}
+
+/**
  * The visit's photos that are eligible for the report's PHOTOS section.
  *
  * Weather-evidence photos are excluded unconditionally. They exist to record
@@ -175,14 +188,23 @@ export function selectableReportPhotos(photos: Photo[]): Photo[] {
   return photos.filter((p) => !(p.tags || []).includes(WEATHER_EVIDENCE_TAG));
 }
 
-async function buildPhotoRows(photos: Photo[]): Promise<PhotoRow[]> {
+async function buildPhotoRows(
+  photos: Photo[],
+  visitDates: Record<string, string>,
+): Promise<PhotoRow[]> {
   if (photos.length === 0) return [];
 
   const signedUrls = await getPhotosSignedUrls(photos.map((p) => p.storage_path));
 
   const slots: PhotoSlot[] = photos.map((photo, index) => {
     const zone = photo.location?.room || photo.location?.floor || "Zone non spécifiée";
-    const date = extractDateOnly(photo.created_at);
+    // The date of the visit the photo was TAKEN on — not the report's visit,
+    // and not created_at. created_at is the upload timestamp, which drifts
+    // from the visit whenever photos are added later; and with photos now
+    // borrowable from other visits, the report's own date would be plainly
+    // wrong on a borrowed shot.
+    const sourceDate = visitDates[photo.visit_id];
+    const date = extractDateOnly(sourceDate || photo.created_at);
     return {
       image: signedUrls[index],
       caption: `${zone} (${date})`,
@@ -310,30 +332,39 @@ export async function generateSiteVisitReport(
   // document. Falls back to the manual field only for a caller that hasn't
   // been migrated to the numbering flow.
   reportNumber?: string,
-  // Ids of the photos to include, chosen on the report screen. Undefined
-  // means "every eligible photo" — the behaviour before selection existed,
-  // kept so other callers don't silently lose their photo section.
-  photoIds?: string[],
+  // The photos to include, chosen on the report screen and possibly drawn
+  // from several visits. Undefined means "every eligible photo of this
+  // visit" — the behaviour before selection existed, kept so other callers
+  // don't silently lose their photo section.
+  photoSelection?: ReportPhotoSelection,
 ): Promise<void> {
-  const [templateBuffer, issues, photos, observations, locations] = await Promise.all([
+  const [templateBuffer, issues, ownPhotos, observations, locations] = await Promise.all([
     fetchTemplate(),
     getIssuesByVisit(visit.id),
-    getPhotos(visit.id),
+    // Only needed for the no-selection fallback; skipped when the caller
+    // supplies its own set.
+    photoSelection ? Promise.resolve([] as Photo[]) : getPhotos(visit.id),
     getObservationsByVisit(visit.id),
     // Only needed to resolve location labels; an empty list degrades to
     // "Zone non spécifiée" rather than failing the whole report.
     getLocations(visit.project_id).catch(() => [] as Location[]),
   ]);
 
+  // Observations and déficiences are strictly this visit's. Only photos may
+  // come from elsewhere — a report that silently merged findings from other
+  // visits would misstate what was seen on the day it is dated.
   const zones = buildObservationZones(observations, issues, locations, visit.phase);
 
-  // Order comes from the visit's own photo order, not the order they were
-  // ticked, so the report's (1)(2)(3) numbering matches what the grid showed.
-  const eligiblePhotos = selectableReportPhotos(photos);
-  const includedPhotos = photoIds
-    ? eligiblePhotos.filter((p) => photoIds.includes(p.id))
-    : eligiblePhotos;
-  const photoRows = await buildPhotoRows(includedPhotos);
+  // selectableReportPhotos runs on the SELECTION too, not just the picker:
+  // a weather shot must not be able to reach a client report through a stale
+  // selection, whatever the UI passed.
+  const includedPhotos = selectableReportPhotos(
+    photoSelection ? photoSelection.photos : ownPhotos,
+  );
+  const visitDates = photoSelection
+    ? photoSelection.visitDates
+    : { [visit.id]: visit.visit_date };
+  const photoRows = await buildPhotoRows(includedPhotos, visitDates);
 
   const data = {
     noteNumber: reportNumber || manual.noteNumber,
