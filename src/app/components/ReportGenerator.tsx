@@ -17,8 +17,12 @@ import { getProject, getSiteVisits } from "../../lib/supabaseApi";
 import type { Project, SiteVisit } from "../../lib/supabase";
 import { formatDateLong } from "../../lib/dateUtils";
 import { toast } from "sonner";
+import { getObservationsByVisit } from "../../lib/observationsApi";
+import { getIssuesByVisit } from "../../lib/issuesApi";
+import { createReport, deleteReport, touchRegenerated, type Report } from "../../lib/reportsApi";
 import {
   generateSiteVisitReport,
+  deriveLocationIds,
   formatVisitTimeRange,
   type ReportManualFields,
   type DossierNumberEntry,
@@ -33,7 +37,7 @@ const EMPTY_MANUAL_FIELDS: ReportManualFields = {
   noteNumber: "",
   pageCount: "À déterminer",
   transmittedBy: "Courriel",
-  dossierNumbers: [{ label: "JLPa", number: "" }],
+  dossierNumbers: [{ label: "Dossier", number: "" }],
   distribution: [{ name: "", company: "" }],
   attendees: [{ name: "", company: "", title: "", initials: "" }],
   contractorContactNameTitle: "",
@@ -55,7 +59,10 @@ export default function ReportGenerator() {
   const goBack = useSmartBack(`/app/projects/${id}`);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [generated, setGenerated] = useState(false);
+  // The report row for the CURRENT allocation. Non-null means a number has
+  // been issued for this visit; the primary button then becomes a re-download
+  // of that same document rather than a fresh allocation.
+  const [report, setReport] = useState<Report | null>(null);
 
   const [project, setProject] = useState<Project | null>(null);
   const [visits, setVisits] = useState<SiteVisit[]>([]);
@@ -107,6 +114,12 @@ export default function ReportGenerator() {
     void loadData();
   }, [id]);
 
+  // Switching visits abandons the current allocation: the issued number
+  // belongs to the visit it was generated for.
+  useEffect(() => {
+    setReport(null);
+  }, [selectedVisitId]);
+
   const updateManual = <K extends keyof ReportManualFields>(key: K, value: ReportManualFields[K]) => {
     setManual((prev) => ({ ...prev, [key]: value }));
   };
@@ -134,8 +147,11 @@ export default function ReportGenerator() {
     });
   }
 
+  // Allocates a NEW number and renders. Guarded by `report` below: once a
+  // report exists the button becomes "Télécharger à nouveau", so re-tapping
+  // cannot quietly burn A004, A005, A006 on the same visit.
   const handleGenerateReport = async () => {
-    if (!project) return;
+    if (!project || !id) return;
 
     const visit = visits.find((v) => v.id === selectedVisitId);
     if (!visit) {
@@ -144,19 +160,75 @@ export default function ReportGenerator() {
     }
 
     setGenerating(true);
-    setGenerated(false);
 
+    let created: Report | null = null;
     try {
-      await generateSiteVisitReport(project, visit, manual, firmName);
-      setGenerated(true);
-      toast.success("Rapport généré avec succès !");
+      // Derived before allocation: report_locations rows can only be written
+      // inside create_report() (the join tables carry no INSERT policy), so
+      // the links have to be known up front. Failing to resolve them must
+      // not block the report — an unlinked report is still a valid report.
+      let locationIds: string[] = [];
+      try {
+        const [observations, issues] = await Promise.all([
+          getObservationsByVisit(visit.id),
+          getIssuesByVisit(visit.id),
+        ]);
+        locationIds = deriveLocationIds(observations, issues);
+      } catch (e) {
+        console.error("Could not derive report locations:", e);
+      }
+
+      // The number must be inside the .docx, so it is allocated first and
+      // rolled back below if the render throws.
+      created = await createReport(id, [visit.id], locationIds);
+
+      await generateSiteVisitReport(project, visit, manual, firmName, created.reportNumber);
+
+      setReport(created);
+      toast.success(`Rapport ${created.reportNumber} généré`);
     } catch (error) {
       console.error("Error generating report:", error);
+      if (created) {
+        // Give the number back. Since this row is the highest seq for the
+        // project, the next attempt gets the same number.
+        try {
+          await deleteReport(created.id);
+        } catch (rollbackError) {
+          console.error("Could not roll back the allocated report:", rollbackError);
+        }
+      }
       toast.error("Erreur lors de la génération du rapport. Veuillez réessayer.");
     } finally {
       setGenerating(false);
     }
   };
+
+  // Re-renders the SAME report row, so the document keeps its number.
+  const handleDownloadAgain = async () => {
+    if (!project || !report) return;
+    const visit = visits.find((v) => v.id === selectedVisitId);
+    if (!visit) return;
+
+    setGenerating(true);
+    try {
+      await generateSiteVisitReport(project, visit, manual, firmName, report.reportNumber);
+      // Bookkeeping only — a failure here must not read as a failed download.
+      try {
+        setReport(await touchRegenerated(report.id));
+      } catch (e) {
+        console.error("Could not record the regeneration:", e);
+      }
+      toast.success(`Rapport ${report.reportNumber} téléchargé`);
+    } catch (error) {
+      console.error("Error regenerating report:", error);
+      toast.error("Erreur lors du téléchargement. Veuillez réessayer.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // Explicit opt-in to burning a new number.
+  const handleNewReport = () => setReport(null);
 
   const selectedVisit = visits.find((v) => v.id === selectedVisitId);
   // Once a visit has real start/end times recorded, those are what the
@@ -217,12 +289,16 @@ export default function ReportGenerator() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-body mb-1">N° de note</label>
+                {/* Read-only: the number is allocated server-side at
+                    generation, sequentially per project, so it can't be
+                    typed into a collision. */}
                 <input
                   type="text"
-                  value={manual.noteNumber}
-                  onChange={(e) => updateManual("noteNumber", e.target.value)}
-                  className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
-                  placeholder="A001"
+                  value={report?.reportNumber || ""}
+                  readOnly
+                  aria-readonly="true"
+                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-sm text-muted cursor-default"
+                  placeholder="Attribué automatiquement"
                 />
               </div>
               <div>
@@ -555,44 +631,69 @@ export default function ReportGenerator() {
           </div>
         )}
 
-        {/* Generate button */}
-        <button
-          onClick={() => void handleGenerateReport()}
-          disabled={generating || loading || !selectedVisitId}
-          className={`w-full py-4 rounded-xl flex items-center justify-center gap-3 transition-all ${
-            generating
-              ? "bg-line-strong cursor-not-allowed"
-              : generated
-                ? "bg-green-600 hover:bg-green-700"
-                : "bg-brand-600 hover:bg-brand-700 active:scale-[0.98]"
-          } text-white disabled:opacity-50 shadow-md`}
-        >
-          {generating ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span>Génération du rapport...</span>
-            </>
-          ) : generated ? (
-            <>
-              <CheckCircle size={22} />
-              <span>Rapport généré avec succès !</span>
-            </>
-          ) : (
-            <>
-              <FileText size={22} />
-              <span>Générer le rapport Word</span>
-            </>
-          )}
-        </button>
-
-        {generated && (
+        {/* Generate / re-download. Once a number is issued the primary
+            action stops allocating: burning A004, A005, A006 on repeated
+            taps for one visit is the failure mode this guards. */}
+        {!report ? (
           <button
             onClick={() => void handleGenerateReport()}
-            className="w-full py-4 bg-ink text-white rounded-xl flex items-center justify-center gap-3 hover:bg-body active:scale-[0.98] transition-all shadow-md"
+            disabled={generating || loading || !selectedVisitId}
+            className={`w-full py-4 rounded-xl flex items-center justify-center gap-3 transition-all ${
+              generating ? "bg-line-strong cursor-not-allowed" : "bg-brand-600 hover:bg-brand-700 active:scale-[0.98]"
+            } text-white disabled:opacity-50 shadow-md`}
           >
-            <Send size={22} />
-            <span>Télécharger à nouveau</span>
+            {generating ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Génération du rapport...</span>
+              </>
+            ) : (
+              <>
+                <FileText size={22} />
+                <span>Générer le rapport Word</span>
+              </>
+            )}
           </button>
+        ) : (
+          <div className="space-y-3">
+            <div className="bg-surface border border-line rounded-xl p-4 flex items-center gap-3">
+              <CheckCircle size={22} className="text-resolved flex-shrink-0" />
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-ink">Rapport {report.reportNumber}</div>
+                <div className="text-xs text-muted">
+                  Généré le {formatDateLong(report.generatedAt)}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => void handleDownloadAgain()}
+              disabled={generating}
+              className="w-full py-4 bg-ink text-white rounded-xl flex items-center justify-center gap-3 hover:bg-body active:scale-[0.98] transition-all shadow-md disabled:opacity-50"
+            >
+              {generating ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Téléchargement...</span>
+                </>
+              ) : (
+                <>
+                  <Send size={22} />
+                  <span>Télécharger à nouveau</span>
+                </>
+              )}
+            </button>
+
+            {/* The only path to a new number. */}
+            <button
+              onClick={handleNewReport}
+              disabled={generating}
+              className="w-full py-3 bg-surface border border-line text-ink rounded-xl flex items-center justify-center gap-2 hover:border-brand-600 hover:text-brand-600 transition-colors disabled:opacity-50 min-h-[48px]"
+            >
+              <Plus size={18} />
+              <span className="text-sm font-medium">Nouveau rapport</span>
+            </button>
+          </div>
         )}
       </div>
     </div>

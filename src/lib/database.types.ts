@@ -402,6 +402,113 @@ export type Database = {
           },
         ]
       }
+      report_locations: {
+        Row: {
+          location_id: string
+          report_id: string
+        }
+        Insert: {
+          location_id: string
+          report_id: string
+        }
+        Update: {
+          location_id?: string
+          report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_locations_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_locations_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_visits: {
+        Row: {
+          report_id: string
+          sort_order: number
+          visit_id: string
+        }
+        Insert: {
+          report_id: string
+          sort_order?: number
+          visit_id: string
+        }
+        Update: {
+          report_id?: string
+          sort_order?: number
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_visits_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_visits_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "site_visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          created_at: string | null
+          generated_at: string
+          generated_by: string | null
+          id: string
+          project_id: string
+          regenerated_at: string | null
+          report_number: string
+          report_prefix: string
+          report_seq: number
+        }
+        Insert: {
+          created_at?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          project_id: string
+          regenerated_at?: string | null
+          report_number: string
+          report_prefix?: string
+          report_seq: number
+        }
+        Update: {
+          created_at?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          project_id?: string
+          regenerated_at?: string | null
+          report_number?: string
+          report_prefix?: string
+          report_seq?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       photos: {
         Row: {
           created_at: string | null
@@ -813,6 +920,20 @@ export type Database = {
       comment_project_id: {
         Args: { p_issue_id: string; p_photo_id: string; p_visit_id: string }
         Returns: string
+      }
+      create_report: {
+        Args: { p_location_ids?: string[]; p_project_id: string; p_visit_ids: string[] }
+        Returns: {
+          created_at: string | null
+          generated_at: string
+          generated_by: string | null
+          id: string
+          project_id: string
+          regenerated_at: string | null
+          report_number: string
+          report_prefix: string
+          report_seq: number
+        }[]
       }
       find_invitable_user: {
         Args: { p_email: string }

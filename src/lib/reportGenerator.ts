@@ -144,6 +144,24 @@ function buildObservationZones(
   return zones;
 }
 
+/**
+ * The locations a report covers, for the reports↔locations linkage that
+ * powers "Rapports" on LocationDetail.
+ *
+ * Only observations and issues contribute: both carry a real `location_id`
+ * FK. Photos store their location as free text in a JSONB column with no id,
+ * so they cannot be linked without guessing.
+ */
+export function deriveLocationIds(observations: Observation[], issues: Issue[]): string[] {
+  return [
+    ...new Set(
+      [...observations.map((o) => o.locationId), ...issues.map((i) => i.locationId)].filter(
+        (id): id is string => !!id,
+      ),
+    ),
+  ];
+}
+
 async function buildPhotoRows(photos: Photo[]): Promise<PhotoRow[]> {
   if (photos.length === 0) return [];
 
@@ -274,6 +292,11 @@ export async function generateSiteVisitReport(
   // and an empty value simply leaves the line blank rather than substituting
   // somebody else's letterhead.
   firmName = "",
+  // The allocated report number (A001…). Assigned server-side by
+  // create_report() before this runs, because it has to appear inside the
+  // document. Falls back to the manual field only for a caller that hasn't
+  // been migrated to the numbering flow.
+  reportNumber?: string,
 ): Promise<void> {
   const [templateBuffer, issues, photos, observations, locations] = await Promise.all([
     fetchTemplate(),
@@ -289,7 +312,7 @@ export async function generateSiteVisitReport(
   const photoRows = await buildPhotoRows(photos);
 
   const data = {
-    noteNumber: manual.noteNumber,
+    noteNumber: reportNumber || manual.noteNumber,
     pageCount: manual.pageCount,
     transmittedBy: manual.transmittedBy,
     date: formatDateLong(visit.visit_date),

@@ -12,11 +12,13 @@ import {
   MessageSquare,
   Calendar,
   CheckCircle2,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getLocation, getLevels, getLocations, type Location, type Level } from "../../lib/locationsApi";
 import { LOCATION_TYPE_LABELS, LOCATION_TYPE_ICONS } from "../../lib/locationTypes";
 import { getIssuesByLocation, type Issue } from "../../lib/issuesApi";
+import { getReportsForLocation, type Report } from "../../lib/reportsApi";
 import {
   getPhotosByLocation,
   getPhotosSignedUrls,
@@ -29,7 +31,7 @@ import { useSmartBack } from "../../hooks/useSmartBack";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
 import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole } from "../../hooks/useProjectRole";
-import { parseLocalDate } from "../../lib/dateUtils";
+import { parseLocalDate, formatDateLong } from "../../lib/dateUtils";
 import type { SiteVisit } from "../../lib/supabase";
 import VisitPicker from "./VisitPicker";
 import IssueForm from "./IssueForm";
@@ -111,6 +113,11 @@ export default function LocationDetail() {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loadingIssues, setLoadingIssues] = useState(false);
   const [issuesLoadError, setIssuesLoadError] = useState(false);
+  // Reports that covered this local, via the report_locations linkage
+  // written at generation time.
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [reportsLoadError, setReportsLoadError] = useState(false);
 
   // Add-deficiency / add-photos flow: both actions open the same visit
   // picker first; pendingAction tracks which one to resume once a visit is
@@ -179,6 +186,19 @@ export default function LocationDetail() {
       .finally(() => setLoadingIssues(false));
   }, [locationId]);
 
+  const loadReports = useCallback(() => {
+    if (!locationId) return;
+    setLoadingReports(true);
+    setReportsLoadError(false);
+    getReportsForLocation(locationId)
+      .then(setReports)
+      .catch((e) => {
+        console.error("Error loading reports for location:", e);
+        setReportsLoadError(true);
+      })
+      .finally(() => setLoadingReports(false));
+  }, [locationId]);
+
   const loadPhotos = useCallback(async () => {
     if (!locationId) return;
     setLoadingPhotos(true);
@@ -215,6 +235,7 @@ export default function LocationDetail() {
     if (!location) return;
     loadIssues();
     loadPhotos();
+    loadReports();
   }, [location, loadIssues, loadPhotos]);
 
   // Activity feed data — waits for both issues and photos to finish
@@ -773,6 +794,46 @@ export default function LocationDetail() {
                 >
                   <img src={photo.url} alt="" className="w-full h-full object-cover" />
                 </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Reports section — the history of which issued reports covered this
+            local. Read-only: reports are produced from a visit, not from here.
+            The .docx itself isn't stored, so there is nothing to download. */}
+        <div className="bg-surface rounded-xl border border-line p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
+              <FileText size={18} className="text-muted" />
+              Rapports ({loadingReports ? "…" : reportsLoadError ? "?" : reports.length})
+            </h2>
+          </div>
+          {loadingReports ? (
+            <div className="text-sm text-muted">Chargement…</div>
+          ) : reportsLoadError ? (
+            <div className="text-sm text-red-600 flex items-center gap-2">
+              Impossible de charger les rapports.
+              <button onClick={loadReports} className="underline font-medium">
+                Réessayer
+              </button>
+            </div>
+          ) : reports.length === 0 ? (
+            <div className="text-sm text-muted">Aucun rapport ne couvre ce local pour le moment.</div>
+          ) : (
+            <div className="space-y-1.5">
+              {reports.map((report) => (
+                <div
+                  key={report.id}
+                  className="px-3 py-2.5 rounded-lg border border-line min-h-[44px] flex items-center gap-2"
+                >
+                  <span className="text-sm text-ink font-medium tabular-nums">
+                    {report.reportNumber}
+                  </span>
+                  <span className="text-xs text-muted">
+                    · {formatDateLong(report.generatedAt)}
+                  </span>
+                </div>
               ))}
             </div>
           )}
