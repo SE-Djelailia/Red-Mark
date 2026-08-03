@@ -8,7 +8,6 @@ import {
   FileText,
   Edit,
   Trash2,
-  Download,
   Cloud,
   Thermometer,
   AlertCircle,
@@ -522,8 +521,9 @@ export default function VisitDetail() {
               onClick={() => navigate(`/app/projects/${projectId}/report?visit=${visitId}`)}
               className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-lg transition-colors"
               title="Générer le rapport"
+              aria-label="Générer le rapport"
             >
-              <Download size={18} />
+              <FileText size={18} />
             </button>
           </div>
         </div>
