@@ -305,14 +305,13 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
 
         {/* Notes */}
         <div>
-          <label className={labelClassName}>Notes</label>
+          <label className={labelClassName}>Notes (optionnel)</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Ajouter des notes et observations de la visite..."
             rows={4}
             className={textareaClassName}
-            required
           />
         </div>
 

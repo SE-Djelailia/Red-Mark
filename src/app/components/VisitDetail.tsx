@@ -205,21 +205,18 @@ export default function VisitDetail() {
   }, [fetchData]);
 
   const handleSaveNotes = async () => {
-    if (editedNotes.trim() && visitId) {
-      try {
-        await updateSiteVisit(visitId, { notes: editedNotes });
-        setVisit((prevVisit) => {
-          if (prevVisit) {
-            return { ...prevVisit, notes: editedNotes };
-          }
-          return prevVisit;
-        });
-        setIsEditingNotes(false);
-        alert("Notes sauvegardées!");
-      } catch (error) {
-        console.error("Error saving notes:", error);
-        alert("Erreur lors de la sauvegarde des notes");
-      }
+    if (!visitId) return;
+    // Notes are optional, so an empty value is a legitimate save — it is how
+    // you clear notes that were entered by mistake.
+    const next = editedNotes.trim();
+    try {
+      await updateSiteVisit(visitId, { notes: next });
+      setVisit((prevVisit) => (prevVisit ? { ...prevVisit, notes: next } : prevVisit));
+      setIsEditingNotes(false);
+      alert("Notes sauvegardées!");
+    } catch (error) {
+      console.error("Error saving notes:", error);
+      alert("Erreur lors de la sauvegarde des notes");
     }
   };
 
@@ -626,7 +623,6 @@ export default function VisitDetail() {
                   </button>
                   <button
                     onClick={handleSaveNotes}
-                    disabled={!editedNotes.trim()}
                     className="flex-1 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                   >
                     Sauvegarder
@@ -635,7 +631,13 @@ export default function VisitDetail() {
               </div>
             ) : (
               <div>
-                <p className="text-sm text-body leading-relaxed mb-4">{visit?.notes}</p>
+                {visit?.notes?.trim() ? (
+                  <p className="text-sm text-body leading-relaxed mb-4">{visit.notes}</p>
+                ) : (
+                  <p className="text-sm text-muted italic mb-4">
+                    Aucune note pour cette visite.
+                  </p>
+                )}
                 <div className="flex justify-end">
                   <button
                     onClick={() => {
@@ -645,7 +647,7 @@ export default function VisitDetail() {
                     className="py-2.5 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
                   >
                     <Edit size={16} />
-                    <span>Modifier les notes</span>
+                    <span>{visit?.notes?.trim() ? "Modifier les notes" : "Ajouter des notes"}</span>
                   </button>
                 </div>
               </div>

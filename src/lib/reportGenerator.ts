@@ -235,9 +235,8 @@ function forceFieldUpdateOnOpen(zip: PizZip): void {
 // The template's placeholders were authored with a yellow highlight so the
 // person tagging the document could find them. docxtemplater preserves run
 // formatting when it substitutes text, so that highlight survived onto the
-// rendered values — most visibly on {generalNotes}, a full free-text
-// paragraph under GÉNÉRALITÉS ET AVANCEMENT that came out as a block of
-// yellow.
+// rendered values — most visibly on free-text placeholders, which came out
+// as whole blocks of yellow.
 //
 // The highlights have been stripped from the template file itself; this is
 // a safety net so re-saving the template from Word with highlights on
@@ -376,7 +375,6 @@ export async function generateSiteVisitReport(
       title: a.role,
       initials: a.initials,
     })),
-    generalNotes: visit.notes || "",
     zones,
     photoRows,
     // PRÉPARÉ PAR is whoever generated it — taken from the account rather
