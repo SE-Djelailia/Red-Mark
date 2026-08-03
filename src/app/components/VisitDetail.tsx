@@ -8,7 +8,6 @@ import {
   FileText,
   Edit,
   Trash2,
-  Share2,
   Download,
   Cloud,
   Thermometer,
@@ -222,6 +221,11 @@ export default function VisitDetail() {
 
   const projectRole = useProjectRole(projectId);
 
+  // Mirrors the site_visits "Creator can update their visits" RLS policy.
+  // Anything that writes to the visit row itself — notes, attendees — has to
+  // be gated on this, or an editor who didn't create the visit is offered a
+  // button the database will refuse.
+  const canEditVisit = !!user?.id && !!visit && user.id === visit.createdBy;
 
   // Weather evidence — a regular visit photo tagged "Météo" (a sky photo,
   // a weather-app screenshot, etc.), via the same shared capture/compress/
@@ -511,17 +515,13 @@ export default function VisitDetail() {
           </button>
 
           <div className="flex items-center gap-1">
+            {/* Same destination as "Générer rapport" in Actions rapides, with
+                this visit pre-selected. There is no share feature, so no
+                share control here. */}
             <button
-              onClick={() => console.log("Share visit")}
+              onClick={() => navigate(`/app/projects/${projectId}/report?visit=${visitId}`)}
               className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-lg transition-colors"
-              title="Partager"
-            >
-              <Share2 size={18} />
-            </button>
-            <button
-              onClick={() => console.log("Download report")}
-              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-lg transition-colors"
-              title="Télécharger le rapport"
+              title="Générer le rapport"
             >
               <Download size={18} />
             </button>
@@ -638,18 +638,20 @@ export default function VisitDetail() {
                     Aucune note pour cette visite.
                   </p>
                 )}
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => {
-                      setIsEditingNotes(true);
-                      setEditedNotes(visit?.notes || "");
-                    }}
-                    className="py-2.5 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
-                  >
-                    <Edit size={16} />
-                    <span>{visit?.notes?.trim() ? "Modifier les notes" : "Ajouter des notes"}</span>
-                  </button>
-                </div>
+                {canEditVisit && (
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => {
+                        setIsEditingNotes(true);
+                        setEditedNotes(visit?.notes || "");
+                      }}
+                      className="py-2.5 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
+                    >
+                      <Edit size={16} />
+                      <span>{visit?.notes?.trim() ? "Modifier les notes" : "Ajouter des notes"}</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
             </CollapsibleSection>
@@ -680,7 +682,7 @@ export default function VisitDetail() {
                 <VisitAttendeesSection
                   visitId={visitId}
                   attendees={visit.attendees}
-                  canEdit={user?.id === visit.createdBy}
+                  canEdit={canEditVisit}
                   onChanged={(attendees) =>
                     setVisit((prev) => (prev ? { ...prev, attendees } : prev))
                   }
@@ -1061,7 +1063,7 @@ export default function VisitDetail() {
             <h2 className="text-sm font-semibold text-ink mb-3">Actions rapides</h2>
             <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => navigate(`/app/projects/${projectId}/report`)}
+                onClick={() => navigate(`/app/projects/${projectId}/report?visit=${visitId}`)}
                 className="py-3 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 min-h-[48px]"
               >
                 <FileText size={18} />

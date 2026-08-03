@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 import {
   FileText,
   Calendar,
@@ -41,6 +41,11 @@ const EMPTY_MANUAL_FIELDS: ReportManualFields = {
 
 export default function ReportGenerator() {
   const { id } = useParams();
+  // ?visit=<id> pre-selects the report's visit, so arriving from a specific
+  // visit generates the report for THAT visit rather than silently defaulting
+  // to the most recent one. Only a seed — the top selector still governs.
+  const [searchParams] = useSearchParams();
+  const requestedVisitId = searchParams.get("visit");
   const { user } = useAuth();
   // Fills the footer's "PRÉPARÉ PAR" firm line. Same profile field the
   // Profile screen edits; blank when the user hasn't set one.
@@ -107,7 +112,11 @@ export default function ReportGenerator() {
           const visitsData = await getSiteVisits(id);
           setVisits(visitsData);
           if (visitsData.length > 0) {
-            setSelectedVisitId(visitsData[0].id);
+            // Honour ?visit= only if it names a visit of THIS project —
+            // a stale or foreign id falls back to the default rather than
+            // leaving the selector pointing at nothing.
+            const requested = visitsData.find((v) => v.id === requestedVisitId);
+            setSelectedVisitId(requested ? requested.id : visitsData[0].id);
           }
         }
       } catch (error) {
@@ -119,7 +128,7 @@ export default function ReportGenerator() {
     }
 
     void loadData();
-  }, [id]);
+  }, [id, requestedVisitId]);
 
   // Switching the report's visit abandons the current allocation: the issued
   // number belongs to the visit it was generated for. It deliberately does
