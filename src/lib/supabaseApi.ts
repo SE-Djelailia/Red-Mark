@@ -502,6 +502,12 @@ export async function uploadPhoto(
     location?: { floor?: string; room?: string };
     description?: string;
     locationId?: string;
+    /**
+     * Aborts the DB-insert leg. NOTE: storage-js 2.108's upload() takes no
+     * signal, so the storage POST itself cannot be cancelled — the queue's
+     * withTimeout() still settles, which is what stops it hanging.
+     */
+    signal?: AbortSignal;
   },
 ): Promise<Photo> {
   try {
@@ -522,8 +528,12 @@ export async function uploadPhoto(
     // 2. Get public URL (required for DB constraint, but won't work if bucket is private)
     const { data: urlData } = supabase.storage.from("project-photos").getPublicUrl(fileName);
 
+    // The storage write may have taken the whole budget; don't start a second
+    // request that is already out of time.
+    metadata.signal?.throwIfAborted();
+
     // 3. Create photo record in database
-    const { data: photoData, error: photoError } = await supabase
+    const insertQuery = supabase
       .from("photos")
       .insert([
         {
@@ -538,8 +548,14 @@ export async function uploadPhoto(
           location_id: metadata.locationId || null,
         },
       ])
-      .select()
-      .single();
+      .select();
+
+    // .abortSignal() lives on the filter builder, so it has to be applied
+    // before .single() narrows the chain.
+    const { data: photoData, error: photoError } = await (metadata.signal
+      ? insertQuery.abortSignal(metadata.signal)
+      : insertQuery
+    ).single();
 
     if (photoError) throw photoError;
 
