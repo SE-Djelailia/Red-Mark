@@ -44,6 +44,66 @@ END $$;
 
 
 -- ---------------------------------------------------------------------------
+-- 0b. HELPERS
+--
+--     current_org_id() and is_org_admin() were created in Stage 1 (they had
+--     to be — Stage 1's own policies on organization_members would otherwise
+--     recurse infinitely). They are restated here with CREATE OR REPLACE so
+--     this file is self-contained and safe to run against a database where
+--     Stage 1 predates a later edit to them.
+--
+--     is_org_member() is new: the "same firm" test used by the widened
+--     profiles policy below.
+--
+--     All three: STABLE, SECURITY DEFINER, search_path pinned — matching
+--     is_project_member() / has_project_role(). SECURITY DEFINER is load
+--     bearing, not stylistic: these read organization_members from inside
+--     policies that are themselves applied to organization_members.
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION "public"."current_org_id"() RETURNS "uuid"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT "organization_id" FROM "public"."organization_members"
+  WHERE "user_id" = "auth"."uid"();
+$$;
+
+CREATE OR REPLACE FUNCTION "public"."is_org_admin"("p_org_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM "public"."organization_members"
+    WHERE "user_id" = "auth"."uid"()
+      AND "organization_id" = "p_org_id"
+      AND "org_role" = 'admin'
+  );
+$$;
+
+-- True when p_user_id is in the CALLER's firm. Takes a user, not an org, so
+-- it reads naturally in row policies: is_org_member(profiles.id).
+CREATE OR REPLACE FUNCTION "public"."is_org_member"("p_user_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM "public"."organization_members" "om"
+    WHERE "om"."user_id" = "p_user_id"
+      AND "om"."organization_id" = "public"."current_org_id"()
+  );
+$$;
+
+ALTER FUNCTION "public"."is_org_member"("p_user_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."is_org_member"("p_user_id" "uuid") IS
+  'True when the given user is in the CALLER''s firm. Returns false when the caller belongs to no firm (current_org_id() is NULL).';
+
+GRANT ALL ON FUNCTION "public"."is_org_member"("p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."is_org_member"("p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_org_member"("p_user_id" "uuid") TO "service_role";
+
+
+-- ---------------------------------------------------------------------------
 -- 1a. DROP EVERY GLOBAL-ADMIN POLICY
 --
 --     SCOPE CORRECTION. The plan said finding ① was 5 policies. It is
@@ -205,11 +265,15 @@ CREATE POLICY "Project teammates can view each other's profiles"
 DROP POLICY IF EXISTS "Firm colleagues can view each other's profiles" ON "public"."profiles";
 CREATE POLICY "Firm colleagues can view each other's profiles"
     ON "public"."profiles" FOR SELECT
-    USING (EXISTS (
-        SELECT 1 FROM "public"."organization_members" "om"
-        WHERE "om"."user_id" = "profiles"."id"
-          AND "om"."organization_id" = "public"."current_org_id"()
-    ));
+    USING ("public"."is_org_member"("id"));
+
+-- NOTE ON THE TWO POLICIES ABOVE: both are PERMISSIVE SELECT policies on
+-- profiles, and Postgres ORs permissive policies together. Combined with the
+-- pre-existing "Users can view their own profile", the effective rule is
+--     own profile  OR  shares_project_with(id)  OR  is_org_member(id)
+-- which is the requested "shares_project_with(id) OR same_org(id)", kept as
+-- separate named policies so the project-teammate rule stays visible rather
+-- than being absorbed into one expression.
 
 
 -- ---------------------------------------------------------------------------
@@ -383,7 +447,45 @@ BEGIN
     SELECT count(*) INTO n FROM "public"."project_members" WHERE "role" = 'viewer';
     IF n > 0 THEN RAISE EXCEPTION '% viewer row(s) survived the role collapse', n; END IF;
 
-    RAISE NOTICE 'Stage 4 OK — is_admin() unreferenced by any policy, role set collapsed to owner/editor/commenter';
+    -- The five storage policies must still EXIST. Dropping without recreating
+    -- would also produce "zero is_admin references" — and would silently
+    -- revoke all photo and plan access.
+    SELECT count(*) INTO n FROM "pg_policies"
+    WHERE "schemaname" = 'storage' AND "tablename" = 'objects'
+      AND "policyname" IN ('project-photos select','project-photos delete',
+                           'project-plans select','project-plans insert','project-plans delete');
+    IF n <> 5 THEN
+        RAISE EXCEPTION 'Expected 5 storage.objects policies after rewrite, found %', n;
+    END IF;
+
+    -- All three helpers must resolve.
+    IF to_regprocedure('public.current_org_id()') IS NULL
+       OR to_regprocedure('public.is_org_admin(uuid)') IS NULL
+       OR to_regprocedure('public.is_org_member(uuid)') IS NULL THEN
+        RAISE EXCEPTION 'One or more organization helpers are missing';
+    END IF;
+
+    -- Structural firm integrity must still hold (Stage 3's guarantees).
+    SELECT count(*) INTO n FROM "public"."project_members" "pm"
+    WHERE NOT EXISTS (
+        SELECT 1 FROM "public"."organization_members" "om"
+        WHERE "om"."user_id" = "pm"."user_id" AND "om"."organization_id" = "pm"."organization_id");
+    IF n > 0 THEN RAISE EXCEPTION 'CROSS-FIRM MEMBERSHIP appeared: % row(s)', n; END IF;
+
+    SELECT count(*) INTO n FROM "public"."project_members" "pm"
+    JOIN "public"."projects" "p" ON "p"."id" = "pm"."project_id"
+    WHERE "pm"."organization_id" IS DISTINCT FROM "p"."organization_id";
+    IF n > 0 THEN RAISE EXCEPTION '% membership(s) disagree with their project''s firm', n; END IF;
+
+    -- Every project must still be reachable: a project with no members is
+    -- invisible to everyone now that the global-admin backdoor is gone.
+    SELECT count(*) INTO n FROM "public"."projects" "p"
+    WHERE NOT EXISTS (SELECT 1 FROM "public"."project_members" "pm" WHERE "pm"."project_id" = "p"."id");
+    IF n > 0 THEN
+        RAISE WARNING '% project(s) have NO members and are now visible to nobody. A firm admin can grant access via project_members.', n;
+    END IF;
+
+    RAISE NOTICE 'Stage 4 OK — is_admin() unreferenced in ANY schema, 5 storage policies rewritten, 3 helpers present, firm integrity intact';
 END $$;
 
 COMMIT;
