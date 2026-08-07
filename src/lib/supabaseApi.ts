@@ -523,7 +523,14 @@ export async function uploadPhoto(
       .from("project-photos")
       .upload(fileName, file);
 
-    if (uploadError) throw uploadError;
+    // Tag which of the two requests failed. A 403 on the storage PUT means the
+    // bucket policy rejected the path; a 42501 on the insert means the photos
+    // RLS rejected the row. They look similar in a message and need opposite
+    // fixes, so the queue's diagnostics record which one it was.
+    if (uploadError) {
+      (uploadError as unknown as Record<string, unknown>).leg = "storage";
+      throw uploadError;
+    }
 
     // 2. Get public URL (required for DB constraint, but won't work if bucket is private)
     const { data: urlData } = supabase.storage.from("project-photos").getPublicUrl(fileName);
@@ -557,7 +564,10 @@ export async function uploadPhoto(
       : insertQuery
     ).single();
 
-    if (photoError) throw photoError;
+    if (photoError) {
+      (photoError as unknown as Record<string, unknown>).leg = "db-insert";
+      throw photoError;
+    }
 
     return photoData;
   } catch (error) {

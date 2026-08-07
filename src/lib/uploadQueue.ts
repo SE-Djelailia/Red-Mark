@@ -265,6 +265,39 @@ function withTimeout<T>(work: (signal: AbortSignal) => Promise<T>, ms: number): 
   });
 }
 
+/**
+ * Flattens an error into one diagnostic line.
+ *
+ * `error.message` alone is not enough to classify a failure: a Supabase
+ * StorageApiError carries the HTTP status on `status`/`statusCode`, a
+ * PostgrestError carries a Postgres SQLSTATE on `code` (42501 =
+ * insufficient_privilege, i.e. an RLS denial) and nothing on `status`, and a
+ * wrapped transport failure hides the real cause on `originalError`. Those
+ * are exactly the fields that decide retriable vs permanent, so they are what
+ * has to be visible when diagnosing from a phone with no dev tools.
+ */
+export function describeError(error: unknown): string {
+  if (!error || typeof error !== "object") return String(error);
+  const e = error as Record<string, unknown>;
+  const parts: string[] = [];
+  const push = (key: string, value: unknown) => {
+    if (value !== undefined && value !== null && value !== "") parts.push(`${key}=${String(value)}`);
+  };
+  push("leg", e.leg); // which request failed: "storage" or "db-insert"
+  push("name", e.name);
+  push("status", e.status);
+  push("statusCode", e.statusCode);
+  push("code", e.code);
+  push("error", e.error);
+  const original = e.originalError as { name?: string; message?: string } | undefined;
+  if (original && typeof original === "object") {
+    push("origName", original.name);
+    push("origMsg", original.message);
+  }
+  push("msg", e.message ?? String(error));
+  return parts.join(" | ");
+}
+
 // Module-level, not per-caller: the mount drain and the "online" drain are
 // different call sites, and both firing together used to run two passes over
 // the same items — uploading each photo twice.
@@ -357,7 +390,7 @@ export async function processQueue(): Promise<ProcessQueueResult> {
         // retrying it every reconnect forever is how a queue silently never
         // drains. isRetriableUploadError already knows the difference.
         const retriable = isRetriableUploadError(error);
-        const message = (error as Error)?.message || String(error);
+        const message = describeError(error);
         console.error(
           `❌ Queued photo failed (attempt ${attempts}, ${retriable ? "transient" : "PERMANENT"}):`,
           item.id,
