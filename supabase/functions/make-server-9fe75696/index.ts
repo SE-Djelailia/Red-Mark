@@ -86,6 +86,38 @@ async function requireAuth(c: any, next: any) {
   await next();
 }
 
+// ---------------------------------------------------------------------------
+// LEGACY kv_store ROUTES — disabled
+//
+// 25 routes in this file read and write `kv_store_9fe75696`, a parallel store
+// left over from an earlier architecture. The app does not use them: the only
+// client caller of this function is src/lib/voiceNotesApi.ts, which touches
+// exactly five routes (voice-note create/list/delete, transcribe, and
+// storage/signed-url). Everything else is dead.
+//
+// They are disabled rather than firm-scoped because they CANNOT be
+// firm-scoped: kv entries carry no organization_id, and their ids do not
+// correspond to rows in `projects`, so there is nothing to check a firm
+// against. Leaving them reachable would mean any authenticated user could
+// read and write that store by guessing ids — with no RLS backstop, since
+// every route here runs on the service role.
+//
+// Two of them were worse: /debug/users/:id and /debug/test-auth carry NO
+// requireAuth at all. /debug/users/:id returned a kv user profile to anyone
+// who asked, unauthenticated.
+//
+// Flip this constant to re-enable if something undocumented turns out to
+// depend on them. Deleting the routes outright is the better end state.
+// ---------------------------------------------------------------------------
+const LEGACY_KV_ROUTES_DISABLED = true;
+
+function legacyGone(c: any) {
+  return c.json(
+    { error: "This endpoint has been retired.", code: "legacy_route_disabled" },
+    410,
+  );
+}
+
 // Health check endpoint
 app.get("/make-server-9fe75696/health", (c) => {
   return c.json({ status: "ok" });
@@ -139,6 +171,7 @@ app.post("/make-server-9fe75696/auth/signup", async (c) => {
 // Get user profile
 app.get("/make-server-9fe75696/users/:id", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const userId = c.req.param("id");
     console.log("Get user profile: userId from URL:", userId);
     console.log("Get user profile: userId from auth:", c.get("userId"));
@@ -161,6 +194,7 @@ app.get("/make-server-9fe75696/users/:id", requireAuth, async (c) => {
 // DEBUG: Get user profile without auth (REMOVE IN PRODUCTION)
 app.get("/make-server-9fe75696/debug/users/:id", async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const userId = c.req.param("id");
     console.log("DEBUG: Fetching user without auth check:", userId);
 
@@ -182,6 +216,7 @@ app.get("/make-server-9fe75696/debug/users/:id", async (c) => {
 // DEBUG: Test auth token
 app.get("/make-server-9fe75696/debug/test-auth", async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const authHeader = c.req.header("Authorization");
     const token = authHeader?.split(" ")[1];
 
@@ -237,6 +272,7 @@ app.get("/make-server-9fe75696/debug/test-auth", async (c) => {
 // Create project
 app.post("/make-server-9fe75696/projects", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const userId = c.get("userId");
     const data = await c.req.json();
 
@@ -269,6 +305,7 @@ app.post("/make-server-9fe75696/projects", requireAuth, async (c) => {
 // Get user's projects
 app.get("/make-server-9fe75696/projects", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const userId = c.get("userId");
     console.log("loadProjects: Getting projects for userId:", userId);
 
@@ -299,6 +336,7 @@ app.get("/make-server-9fe75696/projects", requireAuth, async (c) => {
 // Get single project
 app.get("/make-server-9fe75696/projects/:id", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const projectId = c.req.param("id");
     const project = await kv.get(`project:${projectId}`);
 
@@ -316,6 +354,7 @@ app.get("/make-server-9fe75696/projects/:id", requireAuth, async (c) => {
 // Update project
 app.put("/make-server-9fe75696/projects/:id", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const projectId = c.req.param("id");
     const data = await c.req.json();
 
@@ -341,6 +380,7 @@ app.put("/make-server-9fe75696/projects/:id", requireAuth, async (c) => {
 // Delete project
 app.delete("/make-server-9fe75696/projects/:id", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const projectId = c.req.param("id");
     await kv.del(`project:${projectId}`);
     return c.json({ success: true });
@@ -357,6 +397,7 @@ app.delete("/make-server-9fe75696/projects/:id", requireAuth, async (c) => {
 // Create site visit
 app.post("/make-server-9fe75696/site-visits", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const userId = c.get("userId");
     const data = await c.req.json();
 
@@ -387,6 +428,7 @@ app.post("/make-server-9fe75696/site-visits", requireAuth, async (c) => {
 // Get site visits for a project
 app.get("/make-server-9fe75696/projects/:projectId/site-visits", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const projectId = c.req.param("projectId");
 
     const visitKeys = await kv.getByPrefix(`project_visits:${projectId}:`);
@@ -404,6 +446,7 @@ app.get("/make-server-9fe75696/projects/:projectId/site-visits", requireAuth, as
 // Get single site visit
 app.get("/make-server-9fe75696/site-visits/:id", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const visitId = c.req.param("id");
     const visit = await kv.get(`site_visit:${visitId}`);
 
@@ -425,6 +468,7 @@ app.get("/make-server-9fe75696/site-visits/:id", requireAuth, async (c) => {
 // Create photo record (after upload to Supabase Storage)
 app.post("/make-server-9fe75696/photos", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const userId = c.get("userId");
     const data = await c.req.json();
 
@@ -457,6 +501,7 @@ app.post("/make-server-9fe75696/photos", requireAuth, async (c) => {
 // Get photos for a site visit
 app.get("/make-server-9fe75696/site-visits/:visitId/photos", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const visitId = c.req.param("visitId");
 
     const photoKeys = await kv.getByPrefix(`visit_photos:${visitId}:`);
@@ -474,6 +519,7 @@ app.get("/make-server-9fe75696/site-visits/:visitId/photos", requireAuth, async 
 // Update photo
 app.put("/make-server-9fe75696/photos/:id", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const photoId = c.req.param("id");
     const data = await c.req.json();
 
@@ -498,6 +544,7 @@ app.put("/make-server-9fe75696/photos/:id", requireAuth, async (c) => {
 // Delete photo
 app.delete("/make-server-9fe75696/photos/:id", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const photoId = c.req.param("id");
     await kv.del(`photo:${photoId}`);
     return c.json({ success: true });
@@ -514,6 +561,7 @@ app.delete("/make-server-9fe75696/photos/:id", requireAuth, async (c) => {
 // Create tag
 app.post("/make-server-9fe75696/tags", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const data = await c.req.json();
 
     const tagId = crypto.randomUUID();
@@ -537,6 +585,7 @@ app.post("/make-server-9fe75696/tags", requireAuth, async (c) => {
 // Get all tags
 app.get("/make-server-9fe75696/tags", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const tagKeys = await kv.getByPrefix("tag:");
     const tags = tagKeys.map(({ value }) => value);
 
@@ -555,9 +604,12 @@ app.get("/make-server-9fe75696/tags", requireAuth, async (c) => {
 app.post("/make-server-9fe75696/projects/:projectId/members", requireAuth, async (c) => {
   try {
     const projectId = c.req.param("projectId");
+    const denied = await denyIfCannotManageAccess(c, projectId);
+    if (denied) return denied;
+
     const { user_id, role } = await c.req.json();
 
-    await kv.set(`user_projects:${user_id}:${projectId}`, { role: role || "viewer" });
+    await kv.set(`user_projects:${user_id}:${projectId}`, { role: role || "commenter" });
 
     return c.json({ success: true });
   } catch (error: any) {
@@ -570,6 +622,9 @@ app.post("/make-server-9fe75696/projects/:projectId/members", requireAuth, async
 app.get("/make-server-9fe75696/projects/:projectId/members", requireAuth, async (c) => {
   try {
     const projectId = c.req.param("projectId");
+    const denied = await denyIfNotProjectMember(c, projectId);
+    if (denied) return denied;
+
 
     // This would need a more sophisticated query in production
     // For now, return empty array as this requires scanning all user_projects keys
@@ -613,14 +668,76 @@ function normalizeAudioMimeType(mime: string): string {
 // routes never did, which meant any authenticated user could list, play,
 // upload to or delete the voice notes of any visit whose UUID they had.
 //
-// NOTE: these deliberately re-implement is_project_member() / is_admin()
+// NOTE: these deliberately re-implement is_project_member() / is_org_admin()
 // rather than calling them over RPC. Those SQL functions resolve the caller
 // via auth.uid(), which is NULL on a service-role connection — an RPC call
 // would return false for everyone and lock the whole feature out. The logic
 // below is the same, with the user id passed explicitly.
+//
+// FIRM (ORGANIZATION) AWARENESS — added with the organization migration.
+// Two things changed and both matter:
+//
+//  1. The old admin fallback read `profiles.org_role === "admin"`. That is a
+//     GLOBAL flag: it made an admin a member of every project in EVERY firm.
+//     Behind a service-role client with no RLS backstop, that was a
+//     cross-firm hole. Firm-admin status now comes from
+//     organization_members.org_role and is always scoped to one firm.
+//
+//  2. A firm admin is deliberately NOT treated as a project member. Per the
+//     approved model an admin manages ACCESS without automatically seeing
+//     project CONTENTS, and these helpers must match the RLS policies
+//     exactly or the edge function becomes the weaker of the two doors.
 // ---------------------------------------------------------------------------
 
+/** The caller's firm, or null if they belong to none. */
+async function getUserOrgId(userId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.organization_id ?? null;
+}
+
+/** The firm that owns a project, or null if the project does not exist. */
+async function getProjectOrgId(projectId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("projects")
+    .select("organization_id")
+    .eq("id", projectId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.organization_id ?? null;
+}
+
+/** Firm-admin test, always scoped to a specific firm. */
+async function isOrgAdmin(userId: string, orgId: string): Promise<boolean> {
+  if (!orgId) return false;
+  const { data, error } = await supabase
+    .from("organization_members")
+    .select("org_role")
+    .eq("user_id", userId)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.org_role === "admin";
+}
+
+/**
+ * Project membership, with the firm boundary enforced explicitly.
+ *
+ * The composite FKs make a cross-firm project_members row impossible, so the
+ * firm comparison is belt-and-braces — but this code runs with NO RLS
+ * backstop, so it does not rely on that alone.
+ */
 async function isProjectMember(projectId: string, userId: string): Promise<boolean> {
+  const projectOrgId = await getProjectOrgId(projectId);
+  if (!projectOrgId) return false; // unknown project → fail closed
+
+  const userOrgId = await getUserOrgId(userId);
+  if (!userOrgId || userOrgId !== projectOrgId) return false; // cross-firm → denied
+
   const { data, error } = await supabase
     .from("project_members")
     .select("user_id")
@@ -628,16 +745,66 @@ async function isProjectMember(projectId: string, userId: string): Promise<boole
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
-  if (data) return true;
+  return !!data;
+}
 
-  // Mirrors the "Admins have full access" policies elsewhere in the schema.
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("org_role")
-    .eq("id", userId)
+/**
+ * May this user change WHO has access to this project?
+ * Firm admin of the project's firm, or the project's own owner. Mirrors the
+ * Stage 4 project_members INSERT/UPDATE/DELETE policies.
+ */
+async function canManageProjectAccess(projectId: string, userId: string): Promise<boolean> {
+  const projectOrgId = await getProjectOrgId(projectId);
+  if (!projectOrgId) return false;
+
+  const userOrgId = await getUserOrgId(userId);
+  if (!userOrgId || userOrgId !== projectOrgId) return false;
+
+  if (await isOrgAdmin(userId, projectOrgId)) return true;
+
+  const { data, error } = await supabase
+    .from("project_members")
+    .select("role")
+    .eq("project_id", projectId)
+    .eq("user_id", userId)
     .maybeSingle();
-  if (profileError) throw profileError;
-  return profile?.org_role === "admin";
+  if (error) throw error;
+  return data?.role === "owner";
+}
+
+/**
+ * Gate for any route acting on a project. Returns a Response to send when
+ * access is refused, or null to continue. Fails CLOSED on every error path.
+ */
+async function denyIfNotProjectMember(c: any, projectId: string): Promise<Response | null> {
+  const userId = c.get("userId");
+  if (!projectId || !userId) return c.json({ error: "Forbidden" }, 403);
+  try {
+    if (!(await isProjectMember(projectId, userId))) {
+      console.warn("Forbidden: user", userId, "is not a member of project", projectId);
+      return c.json({ error: "Forbidden: not a member of this project" }, 403);
+    }
+    return null;
+  } catch (error: any) {
+    console.error("Membership check failed:", error?.message);
+    return c.json({ error: "Forbidden" }, 403);
+  }
+}
+
+/** Gate for routes that change project access (invite, add/remove members). */
+async function denyIfCannotManageAccess(c: any, projectId: string): Promise<Response | null> {
+  const userId = c.get("userId");
+  if (!projectId || !userId) return c.json({ error: "Forbidden" }, 403);
+  try {
+    if (!(await canManageProjectAccess(projectId, userId))) {
+      console.warn("Forbidden: user", userId, "cannot manage access for project", projectId);
+      return c.json({ error: "Forbidden: cannot manage members of this project" }, 403);
+    }
+    return null;
+  } catch (error: any) {
+    console.error("Access-management check failed:", error?.message);
+    return c.json({ error: "Forbidden" }, 403);
+  }
 }
 
 // Resolves the visit's project and checks membership. Returns a Response to
@@ -710,6 +877,9 @@ app.post("/make-server-9fe75696/projects/:projectId/floor-plans", requireAuth, a
   try {
     const userId = c.get("userId");
     const projectId = c.req.param("projectId");
+    const denied = await denyIfNotProjectMember(c, projectId);
+    if (denied) return denied;
+
     const form = await c.req.formData();
     const file = form.get("file") as File | null;
     const name = (form.get("name") as string) || (file?.name ?? "Plan");
@@ -754,6 +924,9 @@ app.post("/make-server-9fe75696/projects/:projectId/floor-plans", requireAuth, a
 app.get("/make-server-9fe75696/projects/:projectId/floor-plans", requireAuth, async (c) => {
   try {
     const projectId = c.req.param("projectId");
+    const denied = await denyIfNotProjectMember(c, projectId);
+    if (denied) return denied;
+
     const keys = await kv.getByPrefix(`project_floor_plans:${projectId}:`);
     const ids = keys.map(({ key }) => key.split(":")[2]);
     if (ids.length === 0) return c.json([]);
@@ -768,6 +941,7 @@ app.get("/make-server-9fe75696/projects/:projectId/floor-plans", requireAuth, as
 // Get a single floor plan
 app.get("/make-server-9fe75696/floor-plans/:id", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const id = c.req.param("id");
     const plan = await kv.get(`floor_plan:${id}`);
     if (!plan) return c.json({ error: "Floor plan not found" }, 404);
@@ -780,6 +954,7 @@ app.get("/make-server-9fe75696/floor-plans/:id", requireAuth, async (c) => {
 // Delete floor plan (and its pins)
 app.delete("/make-server-9fe75696/floor-plans/:id", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const id = c.req.param("id");
     const plan: any = await kv.get(`floor_plan:${id}`);
     if (plan?.storage_path) {
@@ -813,6 +988,7 @@ app.delete("/make-server-9fe75696/floor-plans/:id", requireAuth, async (c) => {
 // Create pin on a floor plan (normalized x/y in [0,1])
 app.post("/make-server-9fe75696/floor-plans/:id/pins", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const userId = c.get("userId");
     const floorPlanId = c.req.param("id");
     const data = await c.req.json();
@@ -842,6 +1018,7 @@ app.post("/make-server-9fe75696/floor-plans/:id/pins", requireAuth, async (c) =>
 // List pins for a floor plan
 app.get("/make-server-9fe75696/floor-plans/:id/pins", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const floorPlanId = c.req.param("id");
     const keys = await kv.getByPrefix(`floor_plan_pins:${floorPlanId}:`);
     const ids = keys.map(({ key }) => key.split(":")[2]);
@@ -856,6 +1033,7 @@ app.get("/make-server-9fe75696/floor-plans/:id/pins", requireAuth, async (c) => 
 // Update pin (move it, or relink to another issue)
 app.put("/make-server-9fe75696/pins/:id", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const pinId = c.req.param("id");
     const existing: any = await kv.get(`pin:${pinId}`);
     if (!existing) return c.json({ error: "Pin not found" }, 404);
@@ -874,6 +1052,7 @@ app.put("/make-server-9fe75696/pins/:id", requireAuth, async (c) => {
 // Delete pin
 app.delete("/make-server-9fe75696/pins/:id", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const pinId = c.req.param("id");
     const pin: any = await kv.get(`pin:${pinId}`);
     if (pin) {
@@ -894,6 +1073,7 @@ app.delete("/make-server-9fe75696/pins/:id", requireAuth, async (c) => {
 
 app.get("/make-server-9fe75696/issues/:id/extras", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const id = c.req.param("id");
     const extras = await kv.get(`issue_extras:${id}`);
     return c.json(extras || { issue_id: id, trade: "", severity: "", related_photo_ids: [] });
@@ -904,6 +1084,7 @@ app.get("/make-server-9fe75696/issues/:id/extras", requireAuth, async (c) => {
 
 app.put("/make-server-9fe75696/issues/:id/extras", requireAuth, async (c) => {
   try {
+    if (LEGACY_KV_ROUTES_DISABLED) return legacyGone(c);
     const id = c.req.param("id");
     const data = await c.req.json();
     const existing: any = (await kv.get(`issue_extras:${id}`)) || {};
@@ -1242,7 +1423,11 @@ initializeDefaultTags();
 // ============================================
 app.post("/make-server-9fe75696/projects/:projectId/invite", requireAuth, async (c) => {
   try {
-    const inviterId = (c as any).userId as string;
+    // BUG FIX: this read `(c as any).userId`, but requireAuth stores the id
+    // with c.set("userId", ...). It was therefore always undefined — the
+    // invited_by column was written empty and the inviter-name lookup below
+    // always missed, so every invitation notification said "Un collègue".
+    const inviterId = c.get("userId") as string;
     const projectId = c.req.param("projectId");
     const { email, role, projectName } = await c.req.json();
 
@@ -1250,17 +1435,49 @@ app.post("/make-server-9fe75696/projects/:projectId/invite", requireAuth, async 
       return c.json({ error: "email and projectId required" }, 400);
     }
 
+    // Only a firm admin or the project's owner may grant access.
+    const denied = await denyIfCannotManageAccess(c, projectId);
+    if (denied) return denied;
+
     const adminSupabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Check if user already has a Redmark account
-    const { data: existingProfile } = await adminSupabase
+    // The project's firm — the invitee must already belong to it. Resolved
+    // from the project rather than from the caller so the two cannot drift.
+    const projectOrgId = await getProjectOrgId(projectId);
+    if (!projectOrgId) return c.json({ error: "Projet introuvable" }, 404);
+
+    // Look the invitee up, then confirm they are in the project's firm.
+    //
+    // This was previously a global lookup by email across all profiles, which
+    // made the route an email oracle: anyone could probe whether a given
+    // address had a RedMark account in any firm, and the response even
+    // returned that person's name.
+    //
+    // Two queries rather than an embedded join: profiles and
+    // organization_members both reference auth.users(id) and have no foreign
+    // key BETWEEN them, so PostgREST cannot infer the relationship and
+    // `organization_members!inner(...)` would fail at runtime.
+    const { data: candidate } = await adminSupabase
       .from("profiles")
       .select("id, name, email")
       .eq("email", email)
       .maybeSingle();
+
+    let existingProfile: { id: string; name: string | null; email: string } | null = null;
+    if (candidate?.id) {
+      const { data: sameFirm } = await adminSupabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("user_id", candidate.id)
+        .eq("organization_id", projectOrgId)
+        .maybeSingle();
+      // Outside the firm is reported exactly like "no account at all", so the
+      // response cannot be used to probe for accounts in other firms.
+      if (sameFirm) existingProfile = candidate;
+    }
 
     // Add to project_members with Supabase user_id if known, else store email pending
     if (existingProfile?.id) {
@@ -1269,7 +1486,7 @@ app.post("/make-server-9fe75696/projects/:projectId/invite", requireAuth, async 
         {
           project_id: projectId,
           user_id: existingProfile.id,
-          role: role || "viewer",
+          role: role || "commenter",
           invited_by: inviterId,
         },
         { onConflict: "project_id,user_id" },
@@ -1302,14 +1519,26 @@ app.post("/make-server-9fe75696/projects/:projectId/invite", requireAuth, async 
 
       return c.json({ success: true, existing: true, name: existingProfile.name });
     } else {
-      // New user: send invite email via Supabase Auth
-      const { error: inviteError } = await adminSupabase.auth.admin.inviteUserByEmail(email, {
-        data: { project_id: projectId, role },
-      });
-
-      if (inviteError) throw inviteError;
-
-      return c.json({ success: true, existing: false });
+      // The invitee is not in this project's firm (or has no account at all).
+      //
+      // This branch used to send a Supabase Auth invite carrying project_id
+      // in the metadata. Under the organization model that path cannot
+      // complete: the new account would belong to NO firm, and the
+      // project_members insert would be rejected by
+      // project_members_user_org_fkey. Sending the email anyway would give
+      // the recipient a link that silently leads nowhere.
+      //
+      // Bringing someone new INTO the firm is the organization_invitations
+      // flow, which is scoped as separate work. Until then this fails
+      // explicitly rather than pretending to succeed.
+      return c.json(
+        {
+          error:
+            "Cette personne ne fait pas partie de votre firme. Ajoutez-la d'abord à la firme, puis invitez-la au projet.",
+          code: "not_in_organization",
+        },
+        409,
+      );
     }
   } catch (error: any) {
     console.error("Invite member error:", error);
@@ -1321,6 +1550,9 @@ app.post("/make-server-9fe75696/projects/:projectId/invite", requireAuth, async 
 app.get("/make-server-9fe75696/projects/:projectId/members-list", requireAuth, async (c) => {
   try {
     const projectId = c.req.param("projectId");
+    const denied = await denyIfNotProjectMember(c, projectId);
+    if (denied) return denied;
+
 
     const adminSupabase = createClient(
       Deno.env.get("SUPABASE_URL")!,

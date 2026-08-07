@@ -152,7 +152,7 @@ export interface ProjectMember {
   id: string;
   project_id: string;
   user_id: string;
-  role: "owner" | "editor" | "viewer";
+  role: "owner" | "editor" | "commenter";
   invited_by?: string;
   created_at: string;
 }

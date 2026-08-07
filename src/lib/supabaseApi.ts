@@ -1099,7 +1099,7 @@ export async function getProjectMembers(projectId: string): Promise<ProjectMembe
 export async function addProjectMember(
   projectId: string,
   userId: string,
-  role: "owner" | "editor" | "viewer",
+  role: "owner" | "editor" | "commenter",
   invitedBy: string,
 ): Promise<ProjectMember> {
   try {
