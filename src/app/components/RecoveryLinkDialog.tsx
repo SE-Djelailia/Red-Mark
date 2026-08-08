@@ -74,11 +74,18 @@ export default function RecoveryLinkDialog({
         </div>
 
         {/* The warning sits ABOVE the link, not below it: an admin who copies
-            and closes without scrolling must still have seen it. */}
+            and closes without scrolling must still have seen it.
+
+            The expiry line matters more than it looks: these links carry
+            Supabase's email-OTP lifetime (one hour by default), so a link
+            copied now and emailed this evening will already be dead when it
+            is opened. If that happens, re-issue it from the roster. */}
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 mb-3">
           <AlertTriangle size={16} className="text-warn flex-shrink-0 mt-0.5" aria-hidden="true" />
           <p className="text-xs text-warn">
-            Aucun courriel n'a été envoyé. Ce lien ne sera plus affiché — copiez-le maintenant.
+            Aucun courriel n'a été envoyé. Ce lien ne sera plus affiché — copiez-le maintenant, et
+            transmettez-le sans tarder&nbsp;: il expire après environ une heure. Passé ce délai,
+            regénérez-en un avec « Lien de connexion ».
           </p>
         </div>
 

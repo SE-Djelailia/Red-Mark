@@ -829,6 +829,35 @@ async function denyIfCannotManageAccess(c: any, projectId: string): Promise<Resp
 /** How long a firm invitation stays claimable. */
 const INVITATION_TTL_DAYS = 14;
 
+// ---------------------------------------------------------------------------
+// WHERE SUPABASE SENDS THE USER AFTER VERIFYING A LINK
+//
+// Every invite and recovery link Supabase mints is a URL on ITS OWN domain
+// (/auth/v1/verify?...). Supabase validates the token there and then redirects
+// the browser onward. With no `redirectTo`, "onward" is whatever the project's
+// Site URL happens to be — and if that is not a page that can complete the
+// flow, the link dead-ends on an unreachable Supabase URL. That is precisely
+// what provisioned users hit: a link that verified fine and then went nowhere.
+//
+// So every link-minting call below passes redirectTo explicitly.
+//
+// ⚠ THIS URL MUST BE ON SUPABASE'S ALLOWED REDIRECT URLS LIST
+//   (Authentication → URL Configuration → Redirect URLs). Supabase silently
+//   falls back to the Site URL for any redirect_to it does not recognise, so
+//   an unlisted URL fails in exactly the same way as no redirectTo at all.
+//
+// Override per-environment with:  supabase secrets set APP_BASE_URL=https://…
+// ---------------------------------------------------------------------------
+const APP_BASE_URL = (
+  Deno.env.get("APP_BASE_URL") || "https://red-mark-salah-eddine-djelailias-projects.vercel.app"
+).replace(/\/+$/, "");
+
+/** The client route that receives the redirect and completes activation. */
+const SET_PASSWORD_URL = `${APP_BASE_URL}/auth/set-password`;
+
+console.log("APP_BASE_URL:", APP_BASE_URL);
+console.log("Auth redirect target:", SET_PASSWORD_URL);
+
 /** Conservative address check; the DB CHECK constraint is the real authority. */
 function normalizeEmail(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
@@ -981,6 +1010,7 @@ app.post("/make-server-9fe75696/organizations/invitations", requireAuth, async (
     // user simply logs in, and the claim runs for them on login.
     let emailed = false;
     const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
+      redirectTo: SET_PASSWORD_URL,
       data: { organization_id: orgId, invitation_token: token },
     });
     if (inviteError) {
@@ -1217,6 +1247,7 @@ app.post("/make-server-9fe75696/organizations/members/provision", requireAuth, a
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: "recovery",
       email,
+      options: { redirectTo: SET_PASSWORD_URL },
     });
     if (linkError) {
       console.warn("provision: could not generate recovery link:", linkError.message);
@@ -1288,6 +1319,7 @@ app.post(
       const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
         type: "recovery",
         email: userData.user.email,
+        options: { redirectTo: SET_PASSWORD_URL },
       });
       if (linkError) throw linkError;
 
@@ -2234,6 +2266,7 @@ app.post("/make-server-9fe75696/projects/:projectId/invite", requireAuth, async 
 
       // Also send invite email so they have a link
       await adminSupabase.auth.admin.inviteUserByEmail(email, {
+        redirectTo: SET_PASSWORD_URL,
         data: { project_id: projectId, role },
       });
 

@@ -22,6 +22,7 @@ import PlanFileViewer from "./components/PlanFileViewer";
 import LocationDetail from "./components/LocationDetail";
 import MigrationPrompt from "./components/MigrationPrompt"; // ✅ Migration prompt
 import FirmAdmin from "./components/FirmAdmin";
+import SetPassword from "./components/SetPassword";
 
 // Root component that provides SupabaseAuthContext to all routes
 function RootLayout() {
@@ -53,6 +54,17 @@ export const router = createBrowserRouter([
       {
         path: "/security",
         Component: SecurityPrivacy,
+      },
+      {
+        // Landing page for Supabase invite / recovery links. MUST stay outside
+        // /app: that branch is wrapped in Layout, which requires a session and
+        // then firm membership — neither of which someone setting their first
+        // password can be expected to clear beforehand.
+        //
+        // This path is what the edge function passes as `redirectTo`, and it
+        // must be on Supabase's allowed Redirect URLs list.
+        path: "/auth/set-password",
+        Component: SetPassword,
       },
       {
         path: "/icon-generator",
