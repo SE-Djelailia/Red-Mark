@@ -22,6 +22,31 @@ interface ProjectMembersModalProps {
   onClose: () => void;
 }
 
+/**
+ * Turns the two database refusals this screen can now provoke into something
+ * a person can act on.
+ *
+ * Since Stage 3 a project member must belong to the project's firm, enforced
+ * by the composite key project_members_user_org_fkey. Since Stage 4 the RLS
+ * INSERT policy also requires the caller to be a firm admin or the project's
+ * owner. Both surface as raw Postgres text ("insert or update on table ...
+ * violates foreign key constraint ...") which means nothing to an architect
+ * on a site.
+ */
+function describeMemberWriteError(error: any, fallback: string): string {
+  const message = String(error?.message || "");
+  const code = String(error?.code || "");
+
+  if (message.includes("project_members_user_org_fkey") || code === "23503") {
+    return "Cette personne ne fait pas partie de votre firme. Ajoutez-la d'abord à la firme.";
+  }
+  // 42501 = insufficient_privilege; PostgREST also reports RLS refusals here.
+  if (code === "42501" || message.toLowerCase().includes("row-level security")) {
+    return "Vous n'avez pas les droits pour gérer les membres de ce projet.";
+  }
+  return message || fallback;
+}
+
 export default function ProjectMembersModal({ projectId, onClose }: ProjectMembersModalProps) {
   useModalOpen();
   const projectRole = useProjectRole(projectId);
@@ -33,6 +58,11 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
   const [inviteRole, setInviteRole] = useState<"editor" | "commenter">("editor");
   const [inviting, setInviting] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string } | null>(null);
+  // The firm roster — everyone who could legitimately be added. Since Stage 3
+  // a project member MUST be in the project's firm (enforced by the
+  // project_members_user_org_fkey composite key), so picking from this list is
+  // the only path that can succeed. Free-text email stays as a fallback.
+  const [firmPeople, setFirmPeople] = useState<{ id: string; name: string; email: string }[]>([]);
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
@@ -80,6 +110,56 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
     loadMembers();
   }, [loadMembers]);
 
+  // Load the firm roster once the user is known to be able to manage members.
+  // organization_members is RLS-scoped to the caller's own firm, and the
+  // Stage 4 profiles policy makes firm colleagues readable, so this returns
+  // the caller's firm and nothing else — no explicit org filter needed.
+  useEffect(() => {
+    if (!canManage) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { data: orgRows, error: orgError } = await supabase
+          .from("organization_members")
+          .select("user_id");
+        if (orgError) throw orgError;
+
+        const ids = (orgRows || []).map((r) => r.user_id);
+        if (ids.length === 0) {
+          if (!cancelled) setFirmPeople([]);
+          return;
+        }
+
+        const { data: profileRows, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, name, email")
+          .in("id", ids);
+        if (profilesError) throw profilesError;
+
+        if (cancelled) return;
+        setFirmPeople(
+          (profileRows || [])
+            .map((p) => ({ id: p.id, name: p.name || p.email, email: p.email }))
+            .sort((a, b) => a.name.localeCompare(b.name, "fr")),
+        );
+      } catch (e) {
+        // Non-fatal: the email field still works, so a roster failure must
+        // not block adding someone.
+        console.error("Load firm roster error:", e);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canManage]);
+
+  // Firm colleagues not already on this project.
+  const addableFirmPeople = firmPeople.filter(
+    (p) => !members.some((m) => m.user_id === p.id),
+  );
+
   async function handleInvite() {
     if (!inviteEmail.trim()) {
       toast.error("Veuillez entrer une adresse courriel");
@@ -103,8 +183,14 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
       if (lookupError) throw lookupError;
 
       if (!matches || matches.length === 0) {
+        // find_invitable_user is firm-scoped since Stage 4, so "no match"
+        // now means EITHER no account at all OR an account in another firm.
+        // The function deliberately does not distinguish the two — telling
+        // the caller "that address exists, just not here" would leak the
+        // existence of accounts in other firms. The message says what the
+        // user can act on, without implying the address is unregistered.
         toast.error(
-          "Aucun compte RedMark n'est associé à cette adresse. Les invitations par courriel pour créer un compte arrivent bientôt.",
+          "Aucun membre de votre firme n'utilise cette adresse. Ajoutez d'abord la personne à votre firme.",
         );
         return;
       }
@@ -133,7 +219,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
       setShowInviteForm(false);
     } catch (e: any) {
       console.error("Invite error:", e);
-      toast.error(e.message || "Erreur lors de l'invitation");
+      toast.error(describeMemberWriteError(e, "Erreur lors de l'invitation"));
     } finally {
       setInviting(false);
     }
@@ -147,7 +233,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
       toast.success(`${memberName} retiré du projet`);
     } catch (e: any) {
-      toast.error("Erreur lors de la suppression : " + e.message);
+      toast.error(describeMemberWriteError(e, "Erreur lors de la suppression"));
     }
   }
 
@@ -161,7 +247,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
       setMembers((prev) => prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m)));
       toast.success("Rôle mis à jour");
     } catch (e: any) {
-      toast.error("Erreur : " + e.message);
+      toast.error(describeMemberWriteError(e, "Erreur lors du changement de rôle"));
     }
   }
 
@@ -228,16 +314,43 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
           {canManage && showInviteForm && (
             <div className="bg-canvas rounded-lg p-4 space-y-4">
               <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
-                <Mail size={16} />
-                Inviter par courriel
+                <UserPlus size={16} />
+                Ajouter un membre de votre firme
               </h3>
               <p className="text-xs text-muted">
-                La personne doit déjà avoir un compte RedMark. Les invitations par courriel pour
-                créer un compte arrivent bientôt.
+                Seuls les membres de votre firme peuvent être ajoutés à un projet.
               </p>
+
+              {/* The roster picker. Every name here is guaranteed to be
+                  addable — same firm, not already on the project — so the
+                  common case needs no typing and cannot fail. */}
+              {addableFirmPeople.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-body mb-1">
+                    Membre de la firme
+                  </label>
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const picked = addableFirmPeople.find((p) => p.id === e.target.value);
+                      if (picked) setInviteEmail(picked.email);
+                    }}
+                    className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                  >
+                    <option value="">Choisir une personne…</option>
+                    {addableFirmPeople.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} — {p.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
-                <label className="block text-xs font-medium text-body mb-1">
-                  Adresse courriel *
+                <label className="block text-xs font-medium text-body mb-1 flex items-center gap-1">
+                  <Mail size={12} />
+                  {addableFirmPeople.length > 0 ? "Ou par adresse courriel" : "Adresse courriel *"}
                 </label>
                 <input
                   type="email"

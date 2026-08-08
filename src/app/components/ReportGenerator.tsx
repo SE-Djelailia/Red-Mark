@@ -12,6 +12,7 @@ import {
   Check,
 } from "lucide-react";
 import { getProject, getSiteVisits, getPhotos } from "../../lib/supabaseApi";
+import { supabase } from "../../lib/supabase";
 import type { Project, SiteVisit, Photo } from "../../lib/supabase";
 import { formatDateLong } from "../../lib/dateUtils";
 import { toast } from "sonner";
@@ -47,9 +48,19 @@ export default function ReportGenerator() {
   const [searchParams] = useSearchParams();
   const requestedVisitId = searchParams.get("visit");
   const { user } = useAuth();
-  // Fills the footer's "PRÉPARÉ PAR" firm line. Same profile field the
-  // Profile screen edits; blank when the user hasn't set one.
-  const firmName = (user?.user_metadata?.firm || "").trim();
+  // Fills the footer's firm line.
+  //
+  // AUTHORITATIVE SOURCE IS THE ORGANIZATION. This used to read
+  // user_metadata.firm — free text each user edits on their own profile,
+  // which meant two colleagues could put two different firm names on
+  // documents going to the same client. organizations.report_firm_name is a
+  // property of the firm, so every report from a firm agrees.
+  //
+  // Falls back to the profile value for a user whose organization has no
+  // report_firm_name set yet, so no report is ever generated with a blank
+  // letterhead.
+  const [orgFirmName, setOrgFirmName] = useState<string | null>(null);
+  const firmName = (orgFirmName || user?.user_metadata?.firm || "").trim();
   // "PRÉPARÉ PAR" in the document. Taken from the account that generates the
   // report rather than typed, so a note can't go out signed with someone
   // else's name. Title is appended when the profile has one.
@@ -129,6 +140,28 @@ export default function ReportGenerator() {
 
     void loadData();
   }, [id, requestedVisitId]);
+
+  // The firm's report letterhead name. RLS scopes `organizations` to the
+  // caller's own firm, so this needs no explicit filter — a member sees
+  // exactly one row, and a user in no firm sees none.
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("organizations")
+      .select("report_firm_name")
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          console.error("Error loading firm name for report:", error);
+          return;
+        }
+        setOrgFirmName(data?.report_firm_name ?? null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Switching the report's visit abandons the current allocation: the issued
   // number belongs to the visit it was generated for. It deliberately does

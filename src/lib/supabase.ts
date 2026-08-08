@@ -30,15 +30,28 @@ export interface Profile {
   avatar_url?: string;
   created_at: string;
   updated_at: string;
-  // Org-level role (admin/member) — distinct from `role` above, which is the
-  // free-text job title shown on the profile screen. NOT NULL in the DB with
-  // a 'member' default; drives is_admin() in RLS, never user-editable here.
-  org_role: "admin" | "member";
+  // NOTE: `firm` above is free text the user edits on their own profile. It
+  // is a display/letterhead value only and carries NO authority — firm
+  // membership lives in organization_members. The authoritative firm name for
+  // reports is organizations.report_firm_name.
+  //
+  // `org_role` used to live here. It was the old GLOBAL admin flag; firm-admin
+  // status now comes from organization_members.org_role, which is scoped to
+  // one organization. The column still exists in the database until Stage 5
+  // drops it, but nothing in the client reads it any more.
 }
 
 export interface Project {
   id: string;
   user_id: string;
+  /**
+   * Owning firm. NOT NULL in the database, but optional here because the
+   * client never sends it: a BEFORE INSERT trigger fills it from
+   * current_org_id(), and the RLS INSERT policy then requires it to equal the
+   * caller's firm. Sending one would at best be redundant and at worst be
+   * rejected as a forged value.
+   */
+  organization_id?: string;
   name: string;
   address?: string;
   client_name?: string;
@@ -152,6 +165,8 @@ export interface ProjectMember {
   id: string;
   project_id: string;
   user_id: string;
+  /** Derived from the project by a trigger; never set by the client. */
+  organization_id?: string;
   role: "owner" | "editor" | "commenter";
   invited_by?: string;
   created_at: string;

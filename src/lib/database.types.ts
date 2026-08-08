@@ -341,6 +341,115 @@ export type Database = {
         }
         Relationships: []
       }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          report_firm_name: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          report_firm_name?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          report_firm_name?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by: string | null
+          org_role: string
+          organization_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          org_role?: string
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          org_role?: string
+          organization_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          org_role: string
+          organization_id: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invited_by?: string | null
+          org_role?: string
+          organization_id: string
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          org_role?: string
+          organization_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       observations: {
         Row: {
           action_by: string | null
@@ -775,6 +884,7 @@ export type Database = {
           created_at: string | null
           id: string
           invited_by: string | null
+          organization_id: string
           project_id: string
           role: string | null
           user_id: string
@@ -783,6 +893,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           invited_by?: string | null
+          organization_id?: string
           project_id: string
           role?: string | null
           user_id: string
@@ -791,6 +902,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           invited_by?: string | null
+          organization_id?: string
           project_id?: string
           role?: string | null
           user_id?: string
@@ -818,6 +930,7 @@ export type Database = {
           file_number: string | null
           id: string
           name: string
+          organization_id: string
           start_date: string | null
           status: string | null
           updated_at: string | null
@@ -835,6 +948,7 @@ export type Database = {
           file_number?: string | null
           id?: string
           name: string
+          organization_id?: string
           start_date?: string | null
           status?: string | null
           updated_at?: string | null
@@ -852,6 +966,7 @@ export type Database = {
           file_number?: string | null
           id?: string
           name?: string
+          organization_id?: string
           start_date?: string | null
           status?: string | null
           updated_at?: string | null
@@ -950,8 +1065,19 @@ export type Database = {
         Args: { p_project_id: string; p_roles: string[] }
         Returns: boolean
       }
+      current_org_id: { Args: never; Returns: string | null }
+      /** @deprecated Global, cross-firm admin flag. Dropped in Stage 5. */
       is_admin: { Args: never; Returns: boolean }
+      is_org_admin: { Args: { p_org_id: string }; Returns: boolean }
+      is_org_member: { Args: { p_user_id: string }; Returns: boolean }
       is_project_member: { Args: { p_project_id: string }; Returns: boolean }
+      org_projects_for_admin: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
       shares_project_with: { Args: { p_user_id: string }; Returns: boolean }
     }
     Enums: {
