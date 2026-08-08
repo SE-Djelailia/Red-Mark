@@ -1232,6 +1232,81 @@ app.post("/make-server-9fe75696/organizations/members/provision", requireAuth, a
 });
 
 // ---------------------------------------------------------------------------
+// POST /organizations/members/:userId/recovery-link — re-issue the set-password
+// link for an account that was provisioned but never activated.
+//
+// WHY THIS IS RESTRICTED TO NEVER-SIGNED-IN ACCOUNTS
+//
+// A password-recovery link is a full account takeover primitive: whoever holds
+// it sets the password. Handing firm admins the ability to mint one for ANY
+// colleague would mean an admin could silently take over any account in the
+// firm — including another admin's — which is a much larger power than
+// "manages who has access".
+//
+// The problem this actually solves is narrower: an account created through
+// /members/provision has no password and no email was sent, so if the admin
+// loses the link the account is unreachable. That state is exactly
+// `last_sign_in_at IS NULL`. Once someone has signed in they have working
+// credentials, and the correct route for a forgotten password is the
+// self-service reset on the login screen — which needs no admin at all and
+// puts the link only in the mailbox owner's hands.
+//
+// So: null last_sign_in_at → re-issue. Otherwise → refuse and point at the
+// self-service flow.
+// ---------------------------------------------------------------------------
+app.post(
+  "/make-server-9fe75696/organizations/members/:userId/recovery-link",
+  requireAuth,
+  async (c) => {
+    try {
+      const gate = await requireOrgAdmin(c);
+      if (gate instanceof Response) return gate;
+      const { orgId } = gate;
+      const targetId = c.req.param("userId");
+
+      // Scoped to the caller's firm, so a target elsewhere reads as not found.
+      const target = await getFirmMember(orgId, targetId);
+      if (!target) return c.json({ error: "Membre introuvable dans votre firme." }, 404);
+
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(targetId);
+      if (userError || !userData?.user?.email) {
+        console.error("recovery-link: could not load user", userError?.message);
+        return c.json({ error: "Compte introuvable." }, 404);
+      }
+
+      if (userData.user.last_sign_in_at) {
+        return c.json(
+          {
+            error:
+              "Cette personne s'est déjà connectée. Elle peut utiliser « Mot de passe oublié ? » à l'écran de connexion.",
+            code: "already_activated",
+          },
+          409,
+        );
+      }
+
+      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+        type: "recovery",
+        email: userData.user.email,
+      });
+      if (linkError) throw linkError;
+
+      const actionLink = linkData?.properties?.action_link ?? null;
+      if (!actionLink) return c.json({ error: "Impossible de générer le lien." }, 500);
+
+      console.log(
+        `recovery-link re-issued for ${targetId} in org ${orgId} by ${c.get("userId")}`,
+      );
+
+      return c.json({ success: true, email: userData.user.email, actionLink });
+    } catch (error: any) {
+      console.error("Recovery link error:", error);
+      return c.json({ error: `Erreur: ${error.message}` }, 500);
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
 // PATCH /organizations/members/:userId — promote / demote
 // ---------------------------------------------------------------------------
 app.patch("/make-server-9fe75696/organizations/members/:userId", requireAuth, async (c) => {
@@ -1281,12 +1356,24 @@ app.patch("/make-server-9fe75696/organizations/members/:userId", requireAuth, as
 });
 
 // ---------------------------------------------------------------------------
-// DELETE /organizations/members/:userId — remove from the firm
+// DELETE /organizations/members/:userId[?cascade=1] — remove from the firm
 //
-// project_members_user_org_fkey is ON DELETE RESTRICT, deliberately: removing
-// someone from a firm while they still hold project memberships must fail
-// loudly rather than silently strip their project history. So this route
-// refuses and NAMES the projects instead of cascading.
+// TWO BEHAVIOURS, and the destructive one must be asked for by name.
+//
+//   without ?cascade  — refuses if the person holds project rows, and NAMES
+//                       the projects. The safe default: a caller who has not
+//                       considered their project access gets told about it
+//                       rather than silently destroying it.
+//   with ?cascade=1   — revokes project access and firm membership together,
+//                       in one transaction (stage7-remove-member.sql).
+//
+// project_members_user_org_fkey is ON DELETE RESTRICT, which is what makes
+// both behaviours possible: the membership CANNOT be deleted while project
+// rows exist, so there is no path that half-removes someone by accident.
+//
+// The auth account is deliberately NOT deleted. The person keeps a login that
+// belongs to no firm and can reach nothing — deleting the identity is a
+// separate decision, not a side effect of revoking access.
 // ---------------------------------------------------------------------------
 app.delete("/make-server-9fe75696/organizations/members/:userId", requireAuth, async (c) => {
   try {
@@ -1327,7 +1414,15 @@ app.delete("/make-server-9fe75696/organizations/members/:userId", requireAuth, a
       .eq("user_id", targetId);
     if (assignError) throw assignError;
 
-    if (assignments && assignments.length > 0) {
+    // `?cascade=1` revokes project access as part of the removal. Without it
+    // the route still refuses and lists — the destructive behaviour is opt-in
+    // at the API layer too, not only behind a dialog in one client. A caller
+    // that has not thought about the project rows gets the safe answer.
+    const cascade = ["1", "true", "yes"].includes(
+      (c.req.query("cascade") || "").toLowerCase(),
+    );
+
+    if (assignments && assignments.length > 0 && !cascade) {
       const projectIds = assignments.map((a: any) => a.project_id).slice(0, 10);
       const { data: projectRows } = await supabase
         .from("projects")
@@ -1345,28 +1440,54 @@ app.delete("/make-server-9fe75696/organizations/members/:userId", requireAuth, a
       );
     }
 
-    const { error } = await supabase
-      .from("organization_members")
-      .delete()
-      .eq("organization_id", orgId)
-      .eq("user_id", targetId);
+    // One transaction, in the database — see stage7-remove-member.sql. The
+    // project rows MUST go before the membership (project_members_user_org_fkey
+    // is RESTRICT), and a crash between the two would strip someone's project
+    // access while leaving them in the firm. Doing it as two calls from here
+    // could not rule that out.
+    const { data: result, error } = await supabase.rpc("remove_organization_member", {
+      p_org_id: orgId, // ← caller's firm, always
+      p_user_id: targetId,
+      p_actor_id: callerId,
+    });
+    if (error) throw error;
 
-    if (error) {
-      // Belt and braces: a project membership created between the check above
-      // and this delete still fails closed, on the FK.
-      if ((error as any).code === "23503") {
+    const status = (result as any)?.status as string;
+
+    switch (status) {
+      case "removed":
+        console.log(
+          `member ${targetId} removed from org ${orgId} by ${callerId}; ` +
+            `${(result as any).projects_removed} project row(s) revoked`,
+        );
+        return c.json({
+          success: true,
+          userId: targetId,
+          projectsRemoved: (result as any).projects_removed ?? 0,
+        });
+      case "self_removal":
         return c.json(
-          {
-            error: "Retirez d'abord cette personne de ses projets.",
-            code: "has_project_memberships",
-          },
+          { error: "Vous ne pouvez pas vous retirer vous-même de la firme.", code: "self_removal" },
           409,
         );
-      }
-      throw error;
+      case "last_admin":
+        return c.json(
+          { error: "Votre firme doit conserver au moins un administrateur.", code: "last_admin" },
+          409,
+        );
+      case "not_found":
+        return c.json({ error: "Membre introuvable dans votre firme." }, 404);
+      case "not_admin":
+        // Reachable when the caller's own admin rights were revoked between
+        // the gate above and the transaction.
+        return c.json(
+          { error: "Réservé aux administrateurs de la firme.", code: "not_org_admin" },
+          403,
+        );
+      default:
+        console.error("remove member: unexpected status", status);
+        return c.json({ error: "Impossible de retirer ce membre." }, 500);
     }
-
-    return c.json({ success: true, userId: targetId });
   } catch (error: any) {
     console.error("Remove member error:", error);
     return c.json({ error: `Erreur: ${error.message}` }, 500);

@@ -99,6 +99,35 @@ export async function unassignFromProject(projectId: string, userId: string): Pr
   if (error) throw error;
 }
 
+/**
+ * The projects a given firm member is on, by name — for the confirmation
+ * shown before revoking their access.
+ *
+ * Two queries, and neither needs a new endpoint:
+ *
+ *   1. project_members is readable by a firm admin for any project in the
+ *      firm ("Members can view their project roster" covers is_org_admin).
+ *   2. the NAMES come from org_projects_for_admin(), because `projects`
+ *      itself is NOT selectable by an admin who is not a project member —
+ *      that is the whole "manage access without seeing contents" boundary.
+ *
+ * This is a preview for the dialog only. The authoritative count is the one
+ * the removal transaction reports back.
+ */
+export async function getMemberProjects(userId: string): Promise<FirmProject[]> {
+  const { data, error } = await supabase
+    .from("project_members")
+    .select("project_id")
+    .eq("user_id", userId);
+  if (error) throw error;
+
+  const ids = new Set((data ?? []).map((m: any) => m.project_id as string));
+  if (ids.size === 0) return [];
+
+  const all = await listFirmProjects();
+  return all.filter((p) => ids.has(p.id));
+}
+
 export const PROJECT_ROLE_LABEL: Record<ProjectRole, string> = {
   owner: "Propriétaire",
   editor: "Éditeur",

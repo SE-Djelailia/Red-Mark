@@ -161,6 +161,22 @@ export async function provisionMember(
   });
 }
 
+/**
+ * Re-issues the set-password link for a provisioned account whose link was
+ * lost.
+ *
+ * Only works while the account has never been signed into — the server
+ * refuses with code `already_activated` otherwise, because a recovery link is
+ * an account-takeover primitive and an admin should not be able to mint one
+ * for a colleague with working credentials. Someone who has signed in uses
+ * "Mot de passe oublié ?" on the login screen instead.
+ */
+export async function reissueRecoveryLink(
+  userId: string,
+): Promise<{ success: true; email: string; actionLink: string }> {
+  return request(`/organizations/members/${userId}/recovery-link`, { method: "POST" });
+}
+
 export async function setMemberRole(
   userId: string,
   orgRole: "admin" | "member",
@@ -174,11 +190,23 @@ export async function setMemberRole(
 /**
  * Removes someone from the firm.
  *
- * Throws with code `has_project_memberships` (and `details.projects`) when
- * they still hold project rows — project_members_user_org_fkey is ON DELETE
- * RESTRICT on purpose, so this refuses rather than silently stripping their
- * project history. Unassign them first.
+ * `cascade` decides what happens to their project access:
+ *
+ *   false (default) — throws with code `has_project_memberships` and
+ *                     `details.projects` if they hold any project rows.
+ *                     Nothing is deleted.
+ *   true            — revokes project rows and firm membership together, in
+ *                     one server-side transaction. All-or-nothing.
+ *
+ * The default is the safe one on purpose: cascading is destructive and should
+ * only ever follow a confirmation that showed the admin what would be cut.
+ * The auth account survives either way — the person keeps a login with no
+ * firm, which can reach nothing.
  */
-export async function removeMember(userId: string): Promise<{ success: true }> {
-  return request(`/organizations/members/${userId}`, { method: "DELETE" });
+export async function removeMember(
+  userId: string,
+  cascade = false,
+): Promise<{ success: true; projectsRemoved: number }> {
+  const query = cascade ? "?cascade=1" : "";
+  return request(`/organizations/members/${userId}${query}`, { method: "DELETE" });
 }

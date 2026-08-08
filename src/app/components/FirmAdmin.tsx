@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Building2,
+  KeyRound,
   Mail,
   MailPlus,
   ShieldCheck,
@@ -16,6 +17,7 @@ import { useFirm, type FirmMember, type OrgRole } from "../../hooks/useFirm";
 import {
   createInvitation,
   provisionMember,
+  reissueRecoveryLink,
   removeMember,
   revokeInvitation,
   setMemberRole,
@@ -24,8 +26,10 @@ import {
 import { Card, Section } from "./ui-kit/Card";
 import Button from "./ui-kit/Button";
 import { inputClassName, labelClassName, selectClassName } from "./ui-kit/Input";
-import ConfirmDialog from "./ConfirmDialog";
 import FirmProjectAccess from "./FirmProjectAccess";
+import { getMemberProjects, type FirmProject } from "../../lib/firmProjectsApi";
+import RecoveryLinkDialog from "./RecoveryLinkDialog";
+import RemoveMemberDialog from "./RemoveMemberDialog";
 
 /**
  * Firm administration.
@@ -68,13 +72,48 @@ function OrgRoleBadge({ role }: { role: OrgRole }) {
 
 type Method = "invite" | "provision";
 
-function InviteForm({ onDone }: { onDone: () => void }) {
+// Both descriptions are visible BEFORE the choice is made, and each says who
+// sends the email. The original UI showed one line of helper text only after
+// selecting, so "Créer le compte" was picked on the reasonable assumption that
+// creating an account would email the person — it does not, and the link that
+// appeared afterwards was the only way in.
+const METHODS: {
+  value: Method;
+  label: string;
+  blurb: string;
+  detail: string;
+  Icon: typeof MailPlus;
+}[] = [
+  {
+    value: "invite",
+    label: "Inviter par courriel",
+    blurb: "RedMark lui envoie le lien",
+    detail:
+      "La personne reçoit automatiquement une invitation, crée son mot de passe et rejoint la firme elle-même. Vous n'avez rien à transmettre.",
+    Icon: MailPlus,
+  },
+  {
+    value: "provision",
+    label: "Créer le compte",
+    blurb: "vous lui envoyez le lien vous-même",
+    detail:
+      "Le compte est créé immédiatement, mais AUCUN courriel n'est envoyé. Un lien s'affichera : c'est vous qui devez le lui transmettre pour qu'elle définisse son mot de passe.",
+    Icon: UserPlus,
+  },
+];
+
+function InviteForm({
+  onDone,
+  onProvisioned,
+}: {
+  onDone: () => void;
+  onProvisioned: (link: string, recipient: string) => void;
+}) {
   const [method, setMethod] = useState<Method>("invite");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [orgRole, setOrgRole] = useState<OrgRole>("member");
   const [busy, setBusy] = useState(false);
-  const [actionLink, setActionLink] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -82,7 +121,6 @@ function InviteForm({ onDone }: { onDone: () => void }) {
     if (!trimmed) return;
 
     setBusy(true);
-    setActionLink(null);
     try {
       if (method === "invite") {
         const result = await createInvitation(trimmed, orgRole);
@@ -91,17 +129,27 @@ function InviteForm({ onDone }: { onDone: () => void }) {
             ? `Invitation envoyée à ${trimmed}.`
             : `Invitation créée. ${trimmed} a déjà un compte — elle rejoindra la firme à sa prochaine connexion.`,
         );
+        setEmail("");
+        setName("");
+        onDone();
       } else {
         const result = await provisionMember(trimmed, orgRole, name.trim());
-        toast.success(`${trimmed} a été ajoutée à la firme.`);
-        // Shown rather than emailed silently, so the admin knows a link
-        // exists and can pass it on if the mail does not arrive. The admin
-        // never sees or sets a password.
-        setActionLink(result.actionLink);
+        setEmail("");
+        setName("");
+        if (result.actionLink) {
+          // Straight into a modal. The admin must dismiss it deliberately,
+          // because this link is the only path to the account they just made.
+          onProvisioned(result.actionLink, name.trim() || trimmed);
+        } else {
+          // Link generation failed but the account and membership exist. Say
+          // so plainly and point at the roster action that re-issues it.
+          toast.error(
+            `Compte créé pour ${trimmed}, mais le lien n'a pas pu être généré. Utilisez « Lien de connexion » dans la liste des membres.`,
+            { duration: 10000 },
+          );
+          onDone();
+        }
       }
-      setEmail("");
-      setName("");
-      onDone();
     } catch (error) {
       const err = error as ApiError;
       console.error("Invite/provision failed:", err);
@@ -113,39 +161,44 @@ function InviteForm({ onDone }: { onDone: () => void }) {
 
   return (
     <Card className="p-4">
-      <div className="flex gap-2 mb-4" role="tablist" aria-label="Méthode d'ajout">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={method === "invite"}
-          onClick={() => setMethod("invite")}
-          className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-            method === "invite"
-              ? "bg-brand-50 border-brand-100 text-brand-strong"
-              : "bg-surface border-line text-body hover:bg-subtle"
-          }`}
-        >
-          Inviter par courriel
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={method === "provision"}
-          onClick={() => setMethod("provision")}
-          className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-            method === "provision"
-              ? "bg-brand-50 border-brand-100 text-brand-strong"
-              : "bg-surface border-line text-body hover:bg-subtle"
-          }`}
-        >
-          Créer le compte
-        </button>
-      </div>
+      <fieldset className="mb-4">
+        <legend className="text-sm font-medium text-ink mb-2">Comment l'ajouter ?</legend>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {METHODS.map((m) => {
+            const selected = method === m.value;
+            return (
+              <button
+                key={m.value}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setMethod(m.value)}
+                className={`text-left p-3 rounded-lg border transition-colors ${
+                  selected
+                    ? "bg-brand-50 border-brand-600 ring-2 ring-brand-600/20"
+                    : "bg-surface border-line hover:bg-subtle"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <m.Icon
+                    size={16}
+                    className={selected ? "text-brand-600" : "text-muted"}
+                    aria-hidden="true"
+                  />
+                  <span
+                    className={`text-sm font-medium ${selected ? "text-brand-strong" : "text-ink"}`}
+                  >
+                    {m.label}
+                  </span>
+                </div>
+                <div className="text-xs text-muted">{m.blurb}</div>
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
 
       <p className="text-xs text-muted mb-4">
-        {method === "invite"
-          ? "La personne reçoit un lien et rejoint la firme elle-même, une fois son adresse confirmée."
-          : "Le compte est créé immédiatement. Un lien de réinitialisation lui permet de choisir son mot de passe — vous ne voyez jamais ses identifiants."}
+        {METHODS.find((m) => m.value === method)?.detail}
       </p>
 
       <form onSubmit={submit} className="space-y-3">
@@ -205,18 +258,13 @@ function InviteForm({ onDone }: { onDone: () => void }) {
           ) : (
             <UserPlus size={16} aria-hidden="true" />
           )}
-          {busy ? "En cours…" : method === "invite" ? "Envoyer l'invitation" : "Créer le compte"}
+          {busy
+            ? "En cours…"
+            : method === "invite"
+              ? "Envoyer l'invitation"
+              : "Créer le compte et obtenir le lien"}
         </Button>
       </form>
-
-      {actionLink && (
-        <div className="mt-4 rounded-lg border border-line bg-subtle p-3">
-          <p className="text-xs text-body mb-2">
-            Lien pour définir le mot de passe (à transmettre si le courriel n'arrive pas) :
-          </p>
-          <p className="text-xs text-muted break-all select-all">{actionLink}</p>
-        </div>
-      )}
     </Card>
   );
 }
@@ -231,6 +279,13 @@ export default function FirmAdmin() {
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   const [pendingRemoval, setPendingRemoval] = useState<FirmMember | null>(null);
+  const [removalProjects, setRemovalProjects] = useState<FirmProject[]>([]);
+  const [removalLoading, setRemovalLoading] = useState(false);
+  const [linkDialog, setLinkDialog] = useState<{
+    link: string;
+    recipient: string;
+    isReissue: boolean;
+  } | null>(null);
 
   usePageHeader("Firme", "Membres, invitations et accès aux projets");
 
@@ -253,31 +308,67 @@ export default function FirmAdmin() {
     }
   }
 
+  // Opening the dialog fetches what the removal would cut, so the admin
+  // confirms against a list of real project names rather than a bare count.
+  function startRemoval(member: FirmMember) {
+    setPendingRemoval(member);
+    setRemovalProjects([]);
+    setRemovalLoading(true);
+    getMemberProjects(member.userId)
+      .then(setRemovalProjects)
+      .catch((err) => {
+        // The preview failing must not block the removal — but the admin
+        // should know they are confirming without seeing the list.
+        console.error("Could not load member's projects:", err);
+        toast.error("Impossible de lister ses projets — la liste ci-dessous peut être incomplète.");
+      })
+      .finally(() => setRemovalLoading(false));
+  }
+
   async function handleRemove(member: FirmMember) {
     setBusyUserId(member.userId);
     try {
-      await removeMember(member.userId);
-      toast.success(`${member.name} a été retirée de la firme.`);
+      // cascade: the dialog has just shown exactly what will be revoked and
+      // the admin agreed to it. Without this flag the route refuses whenever
+      // project rows exist, which is the correct default everywhere else.
+      const result = await removeMember(member.userId, true);
+      toast.success(
+        result.projectsRemoved > 0
+          ? `${member.name} a été retirée de la firme et de ${result.projectsRemoved} projet(s).`
+          : `${member.name} a été retirée de la firme.`,
+      );
+      setPendingRemoval(null);
       await refresh();
     } catch (err) {
       const e = err as ApiError;
       console.error("Remove member failed:", e);
+      toast.error(e.message || "Impossible de retirer ce membre.");
+      // Dialog stays open on failure so the admin can retry or cancel
+      // deliberately, rather than the row silently reappearing unchanged.
+    } finally {
+      setBusyUserId(null);
+    }
+  }
 
-      // The RESTRICT path. project_members_user_org_fkey refuses to strip
-      // someone's project history silently, and the route turns that into a
-      // list of the projects to clear first — show that, not a raw error.
-      if (e.code === "has_project_memberships") {
-        const names = (e.details as any)?.projects as string[] | undefined;
-        toast.error(e.message, {
-          description: names?.length ? names.join(", ") : undefined,
-          duration: 10000,
-        });
+  // Re-issues the set-password link for an account provisioned but never
+  // activated — so a link the admin lost doesn't leave a dead account. The
+  // server refuses for anyone who has already signed in; that refusal is a
+  // useful answer, not an error, so it's surfaced as guidance.
+  async function handleRecoveryLink(member: FirmMember) {
+    setBusyUserId(member.userId);
+    try {
+      const result = await reissueRecoveryLink(member.userId);
+      setLinkDialog({ link: result.actionLink, recipient: member.name, isReissue: true });
+    } catch (err) {
+      const e = err as ApiError;
+      console.error("Recovery link failed:", e);
+      if (e.code === "already_activated") {
+        toast.info(e.message, { duration: 8000 });
       } else {
-        toast.error(e.message || "Impossible de retirer ce membre.");
+        toast.error(e.message || "Impossible de générer le lien.");
       }
     } finally {
       setBusyUserId(null);
-      setPendingRemoval(null);
     }
   }
 
@@ -376,7 +467,20 @@ export default function FirmAdmin() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                    {!isSelf && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        disabled={busy}
+                        onClick={() => void handleRecoveryLink(member)}
+                        title="Pour un compte créé par un administrateur et jamais utilisé"
+                      >
+                        <KeyRound size={15} aria-hidden="true" />
+                        Lien de connexion
+                      </Button>
+                    )}
+
                     {member.orgRole === "member" ? (
                       <Button
                         variant="secondary"
@@ -405,7 +509,7 @@ export default function FirmAdmin() {
                       size="sm"
                       disabled={busy || !!removeBlocked}
                       title={removeBlocked ?? undefined}
-                      onClick={() => setPendingRemoval(member)}
+                      onClick={() => startRemoval(member)}
                     >
                       <Trash2 size={15} aria-hidden="true" />
                       Retirer
@@ -445,6 +549,11 @@ export default function FirmAdmin() {
               <InviteForm
                 onDone={() => {
                   setShowInvite(false);
+                  void refresh();
+                }}
+                onProvisioned={(link, recipient) => {
+                  setShowInvite(false);
+                  setLinkDialog({ link, recipient, isReissue: false });
                   void refresh();
                 }}
               />
@@ -495,12 +604,20 @@ export default function FirmAdmin() {
         </Section>
       </div>
 
-      <ConfirmDialog
+      <RecoveryLinkDialog
+        open={!!linkDialog}
+        link={linkDialog?.link ?? null}
+        recipient={linkDialog?.recipient ?? ""}
+        isReissue={linkDialog?.isReissue ?? false}
+        onClose={() => setLinkDialog(null)}
+      />
+
+      <RemoveMemberDialog
         open={!!pendingRemoval}
-        title={`Retirer ${pendingRemoval?.name ?? ""} de la firme ?`}
-        description="Cette personne perdra l'accès à RedMark. Si elle est encore assignée à des projets, retirez-la d'abord de ceux-ci."
-        confirmLabel="Retirer"
-        destructive
+        memberName={pendingRemoval?.name ?? ""}
+        projects={removalProjects}
+        loading={removalLoading}
+        busy={!!pendingRemoval && busyUserId === pendingRemoval.userId}
         onConfirm={() => pendingRemoval && void handleRemove(pendingRemoval)}
         onCancel={() => setPendingRemoval(null)}
       />
