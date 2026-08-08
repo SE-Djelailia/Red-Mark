@@ -77,8 +77,11 @@ ALTER FUNCTION "public"."handle_updated_at"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."handle_new_project"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
+  -- organization_id is filled by set_project_member_organization(), which
+  -- derives it from the project row just inserted.
   INSERT INTO public.project_members (project_id, user_id, role)
   VALUES (NEW.id, NEW.user_id, 'owner')
   ON CONFLICT (project_id, user_id) DO NOTHING;
@@ -90,17 +93,124 @@ $$;
 ALTER FUNCTION "public"."handle_new_project"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."is_admin"() RETURNS boolean
-    LANGUAGE "sql" STABLE
+-- ---------------------------------------------------------------------------
+-- Organization (firm) helpers.
+--
+-- These replaced the old global `is_admin()`, which read profiles.org_role and
+-- had NO firm scope at all — it made an admin powerful in every firm's data.
+-- Both it and the column were dropped in Stage 5.
+--
+-- All three are SECURITY DEFINER because a policy ON organization_members
+-- cannot itself query organization_members without infinite recursion.
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION "public"."current_org_id"() RETURNS "uuid"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT "organization_id" FROM "public"."organization_members"
+  WHERE "user_id" = "auth"."uid"();
+$$;
+
+
+ALTER FUNCTION "public"."current_org_id"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."current_org_id"() IS 'The caller''s firm. Single-valued because organization_members has UNIQUE(user_id). SECURITY DEFINER to avoid RLS recursion.';
+
+
+CREATE OR REPLACE FUNCTION "public"."is_org_admin"("p_org_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
     AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND org_role = 'admin'
+    SELECT 1 FROM "public"."organization_members"
+    WHERE "user_id" = "auth"."uid"()
+      AND "organization_id" = "p_org_id"
+      AND "org_role" = 'admin'
   );
 $$;
 
 
-ALTER FUNCTION "public"."is_admin"() OWNER TO "postgres";
+ALTER FUNCTION "public"."is_org_admin"("p_org_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."is_org_admin"("p_org_id" "uuid") IS 'Firm-scoped admin check. Deliberately takes an org id — there is no global admin in this model.';
+
+
+CREATE OR REPLACE FUNCTION "public"."is_org_member"("p_user_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM "public"."organization_members" "om"
+    WHERE "om"."user_id" = "p_user_id"
+      AND "om"."organization_id" = "public"."current_org_id"()
+  );
+$$;
+
+
+ALTER FUNCTION "public"."is_org_member"("p_user_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."is_org_member"("p_user_id" "uuid") IS 'True when the given user is in the CALLER''s firm. Returns false when the caller belongs to no firm (current_org_id() is NULL).';
+
+
+-- Lets a firm admin enumerate the firm's projects for the access-management
+-- screen WITHOUT granting a SELECT policy on projects — an admin manages
+-- access, and deliberately does not gain read access to project contents.
+CREATE OR REPLACE FUNCTION "public"."org_projects_for_admin"() RETURNS TABLE("id" "uuid", "name" "text")
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT p.id, p.name
+  FROM public.projects p
+  WHERE p.organization_id = public.current_org_id()
+    AND public.is_org_admin(p.organization_id)
+  ORDER BY p.name;
+$$;
+
+
+ALTER FUNCTION "public"."org_projects_for_admin"() OWNER TO "postgres";
+
+
+-- Stamps projects.organization_id from the creator's firm. The client never
+-- sends it; the RLS INSERT policy then requires it to equal current_org_id(),
+-- so a forged value cannot survive either.
+CREATE OR REPLACE FUNCTION "public"."set_project_organization"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  IF NEW.organization_id IS NULL THEN
+    NEW.organization_id := public.current_org_id();
+  END IF;
+  IF NEW.organization_id IS NULL THEN
+    RAISE EXCEPTION 'Cannot create a project: the current user belongs to no organization';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."set_project_organization"() OWNER TO "postgres";
+
+
+-- Derives project_members.organization_id FROM THE PROJECT, never from the
+-- caller — so the composite FKs below can make a cross-firm membership row
+-- structurally unrepresentable rather than merely denied.
+CREATE OR REPLACE FUNCTION "public"."set_project_member_organization"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  SELECT p.organization_id INTO NEW.organization_id
+  FROM public.projects p WHERE p.id = NEW.project_id;
+  IF NEW.organization_id IS NULL THEN
+    RAISE EXCEPTION 'Cannot add a member: project % has no organization', NEW.project_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."set_project_member_organization"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."is_project_member"("p_project_id" "uuid") RETURNS boolean
@@ -167,9 +277,11 @@ CREATE OR REPLACE FUNCTION "public"."find_invitable_user"("p_email" "text") RETU
     AS $$
   SELECT p.id, p.name, p.email
   FROM public.profiles p
-  WHERE p.email = p_email
+  JOIN public.organization_members om ON om.user_id = p.id
+  WHERE lower(p.email) = lower(p_email)
+    AND om.organization_id = public.current_org_id()
     AND (
-      public.is_admin()
+      public.is_org_admin(public.current_org_id())
       OR EXISTS (
         SELECT 1 FROM public.project_members pm
         WHERE pm.user_id = auth.uid() AND pm.role = 'owner'
@@ -316,6 +428,60 @@ CREATE TABLE IF NOT EXISTS "public"."notifications" (
 ALTER TABLE "public"."notifications" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."organizations" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "name" "text" NOT NULL,
+    "slug" "text" NOT NULL,
+    "report_firm_name" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "organizations_name_not_blank" CHECK (("length"("btrim"("name")) > 0)),
+    CONSTRAINT "organizations_slug_format" CHECK (("slug" ~ '^[a-z0-9][a-z0-9-]{1,62}$'::"text"))
+);
+
+
+ALTER TABLE "public"."organizations" OWNER TO "postgres";
+
+COMMENT ON TABLE "public"."organizations" IS 'A firm. Top-level tenancy boundary: no data may cross organizations.';
+
+
+CREATE TABLE IF NOT EXISTS "public"."organization_members" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "org_role" "text" DEFAULT 'member'::"text" NOT NULL,
+    "invited_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "organization_members_org_role_check" CHECK (("org_role" = ANY (ARRAY['admin'::"text", 'member'::"text"])))
+);
+
+
+ALTER TABLE "public"."organization_members" OWNER TO "postgres";
+
+COMMENT ON TABLE "public"."organization_members" IS 'Firm membership. UNIQUE(user_id) enforces one firm per user — the constraint the whole isolation model rests on.';
+
+
+CREATE TABLE IF NOT EXISTS "public"."organization_invitations" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "email" "text" NOT NULL,
+    "org_role" "text" DEFAULT 'member'::"text" NOT NULL,
+    "invited_by" "uuid",
+    "token" "text" NOT NULL,
+    "expires_at" timestamp with time zone NOT NULL,
+    "accepted_at" timestamp with time zone,
+    "accepted_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "organization_invitations_email_lowercase" CHECK ((("email" = "lower"("email")) AND ("strpos"("email", '@'::"text") > 1))),
+    CONSTRAINT "organization_invitations_org_role_check" CHECK (("org_role" = ANY (ARRAY['admin'::"text", 'member'::"text"])))
+);
+
+
+ALTER TABLE "public"."organization_invitations" OWNER TO "postgres";
+
+COMMENT ON TABLE "public"."organization_invitations" IS 'Pending firm invitations. Claimed by matching BOTH the token and the JWT-verified email; never the token alone.';
+
+
 CREATE TABLE IF NOT EXISTS "public"."observations" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "project_id" "uuid" NOT NULL,
@@ -401,8 +567,7 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "role" "text" DEFAULT 'architect'::"text",
     "avatar_url" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"(),
-    "org_role" "text" DEFAULT 'member'::"text" NOT NULL
+    "updated_at" timestamp with time zone DEFAULT "now"()
 );
 
 
@@ -415,11 +580,14 @@ CREATE TABLE IF NOT EXISTS "public"."project_members" (
     "user_id" "uuid" NOT NULL,
     "role" "text" DEFAULT 'viewer'::"text",
     "invited_by" "uuid",
-    "created_at" timestamp with time zone DEFAULT "now"()
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "organization_id" "uuid" NOT NULL
 );
 
 
 ALTER TABLE "public"."project_members" OWNER TO "postgres";
+
+COMMENT ON COLUMN "public"."project_members"."organization_id" IS 'Denormalized from the project. Exists solely to carry the Stage 3 composite FKs that make cross-firm membership structurally impossible.';
 
 
 CREATE TABLE IF NOT EXISTS "public"."projects" (
@@ -437,11 +605,14 @@ CREATE TABLE IF NOT EXISTS "public"."projects" (
     "contractor_contact" "text",
     "contractor_address" "text",
     "contractor_phone" "text",
-    "contractor_email" "text"
+    "contractor_email" "text",
+    "organization_id" "uuid" NOT NULL
 );
 
 
 ALTER TABLE "public"."projects" OWNER TO "postgres";
+
+COMMENT ON COLUMN "public"."projects"."organization_id" IS 'Owning firm. NULLABLE during migration only; NOT NULL from Stage 3.';
 
 
 CREATE TABLE IF NOT EXISTS "public"."report_locations" (
@@ -611,6 +782,46 @@ ALTER TABLE ONLY "public"."notifications"
 ALTER TABLE ONLY "public"."observations"
     ADD CONSTRAINT "observations_pkey" PRIMARY KEY ("id");
 
+
+
+ALTER TABLE ONLY "public"."organizations"
+    ADD CONSTRAINT "organizations_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."organizations"
+    ADD CONSTRAINT "organizations_slug_key" UNIQUE ("slug");
+
+
+
+ALTER TABLE ONLY "public"."organization_members"
+    ADD CONSTRAINT "organization_members_pkey" PRIMARY KEY ("id");
+
+
+
+-- One firm per user. THE constraint the isolation model rests on.
+ALTER TABLE ONLY "public"."organization_members"
+    ADD CONSTRAINT "organization_members_user_id_key" UNIQUE ("user_id");
+
+
+
+-- Redundant given the line above, but required as the target of
+-- project_members_user_org_fkey: a composite FK needs a matching composite
+-- unique key to reference.
+ALTER TABLE ONLY "public"."organization_members"
+    ADD CONSTRAINT "organization_members_user_org_key" UNIQUE ("user_id", "organization_id");
+
+
+
+ALTER TABLE ONLY "public"."organization_invitations"
+    ADD CONSTRAINT "organization_invitations_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."organization_invitations"
+    ADD CONSTRAINT "organization_invitations_token_key" UNIQUE ("token");
+
+
 ALTER TABLE ONLY "public"."photos"
     ADD CONSTRAINT "photos_pkey" PRIMARY KEY ("id");
 
@@ -652,11 +863,6 @@ ALTER TABLE ONLY "public"."profiles"
 
 
 ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_org_role_check" CHECK (("org_role" = ANY (ARRAY['admin'::"text", 'member'::"text"])));
-
-
-
-ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
 
 
@@ -672,12 +878,20 @@ ALTER TABLE ONLY "public"."project_members"
 
 
 ALTER TABLE ONLY "public"."project_members"
-    ADD CONSTRAINT "project_members_role_check" CHECK (("role" = ANY (ARRAY['owner'::"text", 'editor'::"text", 'commenter'::"text", 'viewer'::"text"])));
+    ADD CONSTRAINT "project_members_role_check" CHECK (("role" = ANY (ARRAY['owner'::"text", 'editor'::"text", 'commenter'::"text"])));
 
 
 
 ALTER TABLE ONLY "public"."projects"
     ADD CONSTRAINT "projects_pkey" PRIMARY KEY ("id");
+
+
+
+-- Target of project_members_project_org_fkey. Its only purpose is to let a
+-- membership row reference (project, firm) as a pair, so a row naming a
+-- project in one firm and an organization in another cannot exist.
+ALTER TABLE ONLY "public"."projects"
+    ADD CONSTRAINT "projects_id_organization_id_key" UNIQUE ("id", "organization_id");
 
 
 
@@ -887,6 +1101,32 @@ CREATE INDEX "idx_projects_name_trgm" ON "public"."projects" USING "gin" ("name"
 
 
 
+CREATE INDEX IF NOT EXISTS "idx_projects_organization_id" ON "public"."projects" USING "btree" ("organization_id");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_project_members_organization_id" ON "public"."project_members" USING "btree" ("organization_id");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_project_members_user_org" ON "public"."project_members" USING "btree" ("user_id", "organization_id");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_organization_members_organization_id" ON "public"."organization_members" USING "btree" ("organization_id");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_organization_invitations_email" ON "public"."organization_invitations" USING "btree" ("email") WHERE ("accepted_at" IS NULL);
+
+
+
+-- At most one PENDING invitation per (firm, email). Deliberately partial: an
+-- accepted invitation must not block a later re-invite.
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_organization_invitations_pending_unique" ON "public"."organization_invitations" USING "btree" ("organization_id", "email") WHERE ("accepted_at" IS NULL);
+
+
+
 CREATE INDEX "idx_site_visits_date" ON "public"."site_visits" USING "btree" ("visit_date");
 
 
@@ -1027,6 +1267,23 @@ CREATE OR REPLACE TRIGGER "on_project_created" AFTER INSERT ON "public"."project
 
 
 
+CREATE OR REPLACE TRIGGER "set_updated_at_organizations" BEFORE UPDATE ON "public"."organizations" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
+
+
+
+-- BEFORE INSERT only: a project must not be able to change firms after
+-- creation, and RLS WITH CHECK is evaluated AFTER BEFORE-triggers, so the
+-- stamped value is what the policy sees.
+CREATE OR REPLACE TRIGGER "set_project_organization" BEFORE INSERT ON "public"."projects" FOR EACH ROW EXECUTE FUNCTION "public"."set_project_organization"();
+
+
+
+-- BEFORE INSERT OR UPDATE: re-derived on update too, so a membership row can
+-- never be edited to point at another firm.
+CREATE OR REPLACE TRIGGER "set_project_member_organization" BEFORE INSERT OR UPDATE ON "public"."project_members" FOR EACH ROW EXECUTE FUNCTION "public"."set_project_member_organization"();
+
+
+
 CREATE TRIGGER "check_plan_project_consistency_trigger" BEFORE INSERT OR UPDATE ON "public"."plans" FOR EACH ROW EXECUTE FUNCTION "public"."check_plan_project_consistency"();
 
 
@@ -1145,6 +1402,26 @@ ALTER TABLE ONLY "public"."notifications"
 
 
 
+ALTER TABLE ONLY "public"."organization_members"
+    ADD CONSTRAINT "organization_members_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."organization_members"
+    ADD CONSTRAINT "organization_members_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."organization_members"
+    ADD CONSTRAINT "organization_members_invited_by_fkey" FOREIGN KEY ("invited_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."organization_invitations"
+    ADD CONSTRAINT "organization_invitations_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."organization_invitations"
+    ADD CONSTRAINT "organization_invitations_invited_by_fkey" FOREIGN KEY ("invited_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."organization_invitations"
+    ADD CONSTRAINT "organization_invitations_accepted_by_fkey" FOREIGN KEY ("accepted_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
 ALTER TABLE ONLY "public"."observations"
     ADD CONSTRAINT "observations_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."locations"("id") ON DELETE SET NULL;
 
@@ -1242,6 +1519,39 @@ ALTER TABLE ONLY "public"."project_members"
 
 
 
+ALTER TABLE ONLY "public"."project_members"
+    ADD CONSTRAINT "project_members_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE RESTRICT;
+
+
+
+-- ---------------------------------------------------------------------------
+-- THE TWO COMPOSITE FOREIGN KEYS — the core of firm isolation.
+--
+-- Together they make a cross-firm membership row UNREPRESENTABLE rather than
+-- merely denied: the row must name a (project, firm) pair that exists on
+-- projects, AND a (user, firm) pair that exists on organization_members. No
+-- policy, trigger or application check is involved — referential integrity is
+-- the backstop, and it fails closed even if every policy above were dropped.
+--
+-- ON DELETE RESTRICT on the user side is deliberate: removing someone from a
+-- firm while they still hold project memberships must fail loudly rather than
+-- silently orphan their project access.
+-- ---------------------------------------------------------------------------
+ALTER TABLE ONLY "public"."project_members"
+    ADD CONSTRAINT "project_members_project_org_fkey" FOREIGN KEY ("project_id", "organization_id") REFERENCES "public"."projects"("id", "organization_id") ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."project_members"
+    ADD CONSTRAINT "project_members_user_org_fkey" FOREIGN KEY ("user_id", "organization_id") REFERENCES "public"."organization_members"("user_id", "organization_id") ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+
+ALTER TABLE ONLY "public"."projects"
+    ADD CONSTRAINT "projects_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE RESTRICT;
+
+
+
 ALTER TABLE ONLY "public"."projects"
     ADD CONSTRAINT "projects_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
@@ -1257,13 +1567,10 @@ ALTER TABLE ONLY "public"."site_visits"
 
 
 
-CREATE POLICY "Admins have full access to report_locations" ON "public"."report_locations" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
-CREATE POLICY "Admins have full access to report_visits" ON "public"."report_visits" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
-CREATE POLICY "Admins have full access to reports" ON "public"."reports" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
 CREATE POLICY "Editors can delete reports" ON "public"."reports" FOR DELETE USING ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
@@ -1281,27 +1588,21 @@ CREATE POLICY "Members can view report_visits" ON "public"."report_visits" FOR S
 CREATE POLICY "Members can view reports" ON "public"."reports" FOR SELECT USING ("public"."is_project_member"("project_id"));
 
 
-CREATE POLICY "Admins have full access to comment_mentions" ON "public"."comment_mentions" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
 
-CREATE POLICY "Admins have full access to comments" ON "public"."comments" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
 
-CREATE POLICY "Admins have full access to issues" ON "public"."issues" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
 
-CREATE POLICY "Admins have full access to levels" ON "public"."levels" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
 
-CREATE POLICY "Admins have full access to locations" ON "public"."locations" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
 
-CREATE POLICY "Admins have full access to observations" ON "public"."observations" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 CREATE POLICY "Editors can create observations" ON "public"."observations" FOR INSERT WITH CHECK ((("auth"."uid"() = "user_id") AND "public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"])));
 
@@ -1311,27 +1612,21 @@ CREATE POLICY "Editors can update observations" ON "public"."observations" FOR U
 
 CREATE POLICY "Members can view observations" ON "public"."observations" FOR SELECT USING ("public"."is_project_member"("project_id"));
 
-CREATE POLICY "Admins have full access to photos" ON "public"."photos" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
 
-CREATE POLICY "Admins have full access to pin_placements" ON "public"."pin_placements" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
 
-CREATE POLICY "Admins have full access to plan_files" ON "public"."plan_files" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
 
-CREATE POLICY "Admins have full access to plans" ON "public"."plans" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
 
-CREATE POLICY "Admins have full access to projects" ON "public"."projects" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
 
-CREATE POLICY "Admins have full access to site_visits" ON "public"."site_visits" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
 
@@ -1375,7 +1670,7 @@ CREATE POLICY "Creator can update their photos" ON "public"."photos" FOR UPDATE 
 
 
 
-CREATE POLICY "Creator can update their projects" ON "public"."projects" FOR UPDATE USING (("auth"."uid"() = "user_id"));
+CREATE POLICY "Creator can update their projects" ON "public"."projects" FOR UPDATE USING (("auth"."uid"() = "user_id")) WITH CHECK ((("auth"."uid"() = "user_id") AND ("organization_id" = "public"."current_org_id"())));
 
 
 
@@ -1441,23 +1736,47 @@ CREATE POLICY "Members can view plans" ON "public"."plans" FOR SELECT USING ("pu
 
 
 
-CREATE POLICY "Members can view their project roster" ON "public"."project_members" FOR SELECT USING (("public"."is_admin"() OR "public"."is_project_member"("project_id")));
+-- ---------------------------------------------------------------------------
+-- Organization tables.
+--
+-- SELECT only. organization_members and organization_invitations have NO
+-- INSERT/UPDATE/DELETE policy for `authenticated` — deliberately: a user must
+-- not be able to place themselves in a firm, or promote themselves within one.
+-- Every membership mutation goes through the edge function on the service
+-- role, which derives the target firm from the CALLER, never from the request.
+-- ---------------------------------------------------------------------------
+CREATE POLICY "Members can view their organization" ON "public"."organizations" FOR SELECT USING (("id" = "public"."current_org_id"()));
+
+
+CREATE POLICY "Members can view their organization roster" ON "public"."organization_members" FOR SELECT USING (("organization_id" = "public"."current_org_id"()));
+
+
+CREATE POLICY "Org admins can view their invitations" ON "public"."organization_invitations" FOR SELECT USING ("public"."is_org_admin"("organization_id"));
+
+
+-- Replaces nothing — added alongside "Users can view their own profile" and
+-- "Project teammates can view each other's profiles". Permissive policies OR
+-- together, so the effective rule is: own OR shares a project OR same firm.
+CREATE POLICY "Firm colleagues can view each other's profiles" ON "public"."profiles" FOR SELECT USING ("public"."is_org_member"("id"));
+
+
+CREATE POLICY "Members can view their project roster" ON "public"."project_members" FOR SELECT USING (("public"."is_org_admin"("organization_id") OR "public"."is_project_member"("project_id")));
 
 
 
-CREATE POLICY "Members can view their projects" ON "public"."projects" FOR SELECT USING ("public"."is_project_member"("id"));
+CREATE POLICY "Members can view their projects" ON "public"."projects" FOR SELECT USING (("public"."is_project_member"("id") AND ("organization_id" = "public"."current_org_id"())));
 
 
 
-CREATE POLICY "Owners and admins can add members" ON "public"."project_members" FOR INSERT WITH CHECK (("public"."is_admin"() OR "public"."has_project_role"("project_id", ARRAY['owner'::"text"])));
+CREATE POLICY "Owners and admins can add members" ON "public"."project_members" FOR INSERT WITH CHECK ((("organization_id" = "public"."current_org_id"()) AND ("public"."is_org_admin"("organization_id") OR "public"."has_project_role"("project_id", ARRAY['owner'::"text"]))));
 
 
 
-CREATE POLICY "Owners and admins can remove members" ON "public"."project_members" FOR DELETE USING (("public"."is_admin"() OR "public"."has_project_role"("project_id", ARRAY['owner'::"text"])));
+CREATE POLICY "Owners and admins can remove members" ON "public"."project_members" FOR DELETE USING (("public"."is_org_admin"("organization_id") OR "public"."has_project_role"("project_id", ARRAY['owner'::"text"])));
 
 
 
-CREATE POLICY "Owners and admins can update members" ON "public"."project_members" FOR UPDATE USING (("public"."is_admin"() OR "public"."has_project_role"("project_id", ARRAY['owner'::"text"])));
+CREATE POLICY "Owners and admins can update members" ON "public"."project_members" FOR UPDATE USING (("public"."is_org_admin"("organization_id") OR "public"."has_project_role"("project_id", ARRAY['owner'::"text"]))) WITH CHECK ((("organization_id" = "public"."current_org_id"()) AND ("public"."is_org_admin"("organization_id") OR "public"."has_project_role"("project_id", ARRAY['owner'::"text"]))));
 
 
 
@@ -1525,7 +1844,7 @@ CREATE POLICY "Project teammates can view each other's profiles" ON "public"."pr
 
 
 
-CREATE POLICY "Users can create their own projects" ON "public"."projects" FOR INSERT WITH CHECK (("auth"."uid"() = "user_id"));
+CREATE POLICY "Users can create their own projects" ON "public"."projects" FOR INSERT WITH CHECK ((("auth"."uid"() = "user_id") AND ("organization_id" = "public"."current_org_id"())));
 
 
 
@@ -1585,6 +1904,15 @@ ALTER TABLE "public"."locations" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."notifications" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."organizations" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."organization_members" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."organization_invitations" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."observations" ENABLE ROW LEVEL SECURITY;
@@ -1818,9 +2146,39 @@ GRANT ALL ON FUNCTION "public"."handle_new_project"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."is_admin"() TO "anon";
-GRANT ALL ON FUNCTION "public"."is_admin"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."is_admin"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."current_org_id"() TO "anon";
+GRANT ALL ON FUNCTION "public"."current_org_id"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."current_org_id"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."is_org_admin"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."is_org_admin"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_org_admin"("p_org_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."is_org_member"("p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."is_org_member"("p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_org_member"("p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."org_projects_for_admin"() TO "anon";
+GRANT ALL ON FUNCTION "public"."org_projects_for_admin"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."org_projects_for_admin"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."set_project_organization"() TO "anon";
+GRANT ALL ON FUNCTION "public"."set_project_organization"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."set_project_organization"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."set_project_member_organization"() TO "anon";
+GRANT ALL ON FUNCTION "public"."set_project_member_organization"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."set_project_member_organization"() TO "service_role";
 
 
 
@@ -1914,6 +2272,24 @@ GRANT ALL ON TABLE "public"."locations" TO "service_role";
 GRANT ALL ON TABLE "public"."notifications" TO "anon";
 GRANT ALL ON TABLE "public"."notifications" TO "authenticated";
 GRANT ALL ON TABLE "public"."notifications" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."organizations" TO "anon";
+GRANT ALL ON TABLE "public"."organizations" TO "authenticated";
+GRANT ALL ON TABLE "public"."organizations" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."organization_members" TO "anon";
+GRANT ALL ON TABLE "public"."organization_members" TO "authenticated";
+GRANT ALL ON TABLE "public"."organization_members" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."organization_invitations" TO "anon";
+GRANT ALL ON TABLE "public"."organization_invitations" TO "authenticated";
+GRANT ALL ON TABLE "public"."organization_invitations" TO "service_role";
 
 
 
