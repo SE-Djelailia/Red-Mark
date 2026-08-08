@@ -1266,7 +1266,7 @@ app.post("/make-server-9fe75696/organizations/members/provision", requireAuth, a
 // POST /organizations/members/:userId/recovery-link — re-issue the set-password
 // link for an account that was provisioned but never activated.
 //
-// WHY THIS IS RESTRICTED TO NEVER-SIGNED-IN ACCOUNTS
+// WHY THIS IS RESTRICTED TO ACCOUNTS WITH NO PASSWORD
 //
 // A password-recovery link is a full account takeover primitive: whoever holds
 // it sets the password. Handing firm admins the ability to mint one for ANY
@@ -1276,14 +1276,25 @@ app.post("/make-server-9fe75696/organizations/members/provision", requireAuth, a
 //
 // The problem this actually solves is narrower: an account created through
 // /members/provision has no password and no email was sent, so if the admin
-// loses the link the account is unreachable. That state is exactly
-// `last_sign_in_at IS NULL`. Once someone has signed in they have working
-// credentials, and the correct route for a forgotten password is the
-// self-service reset on the login screen — which needs no admin at all and
-// puts the link only in the mailbox owner's hands.
+// loses the link the account is unreachable. Anyone who HAS a password already
+// has working credentials, and the right path for them is the self-service
+// reset on the login screen — no admin involved, and the link goes only to the
+// mailbox owner.
 //
-// So: null last_sign_in_at → re-issue. Otherwise → refuse and point at the
-// self-service flow.
+// THE SIGNAL CHANGED; THE PROPERTY DID NOT.
+//
+// This gated on `last_sign_in_at IS NULL` because the Supabase admin API
+// exposes nothing at all about passwords. That proxy was wrong and broke in
+// production: GoTrue's /auth/v1/verify validates a recovery token, ISSUES A
+// SESSION (stamping last_sign_in_at), and only then redirects — so a user who
+// clicked a link whose redirect was broken ended up with last_sign_in_at set
+// and still no password. The gate then refused to re-issue, leaving an account
+// that could neither be activated nor helped.
+//
+// public.auth_user_has_password() (stage8-has-password.sql) reads the real
+// fact and returns a boolean — never the hash. The rule enforced is identical:
+// an account with working credentials can never have a link minted for it by
+// an admin. It simply now recognises dead-link victims as what they are.
 // ---------------------------------------------------------------------------
 app.post(
   "/make-server-9fe75696/organizations/members/:userId/recovery-link",
@@ -1305,11 +1316,22 @@ app.post(
         return c.json({ error: "Compte introuvable." }, 404);
       }
 
-      if (userData.user.last_sign_in_at) {
+      // Fails closed: an RPC error throws to the 500 below rather than
+      // falling through to mint a link, and the function itself returns true
+      // for an unknown id.
+      const { data: hasPassword, error: pwError } = await supabase.rpc("auth_user_has_password", {
+        p_user_id: targetId,
+      });
+      if (pwError) {
+        console.error("recovery-link: password check failed", pwError.message);
+        throw pwError;
+      }
+
+      if (hasPassword) {
         return c.json(
           {
             error:
-              "Cette personne s'est déjà connectée. Elle peut utiliser « Mot de passe oublié ? » à l'écran de connexion.",
+              "Cette personne a déjà un mot de passe. Elle peut utiliser « Mot de passe oublié ? » à l'écran de connexion.",
             code: "already_activated",
           },
           409,

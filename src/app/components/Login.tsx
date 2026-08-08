@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, MailCheck } from "lucide-react";
 import { LogoLockup } from "./ui-kit/Logo";
 import { useSupabaseAuth } from "../../contexts/SupabaseAuthContext"; // ✅ Using Supabase Auth
+import { supabase } from "../../lib/supabase";
 import { toast } from "sonner";
+
+type Mode = "signin" | "signup" | "reset";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -11,10 +14,13 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
   const [firm, setFirm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
+  const isSignUp = mode === "signup";
 
   // Rediriger si déjà connecté
   useEffect(() => {
@@ -43,6 +49,140 @@ export default function Login() {
       setLoading(false);
     }
   };
+
+  /**
+   * Password reset.
+   *
+   * The confirmation is deliberately the SAME whether or not the address has
+   * an account. Saying "aucun compte trouvé" would turn this form into an
+   * account-enumeration oracle: anyone could check which addresses at a firm
+   * use RedMark, one submission at a time. Supabase's own API is built the
+   * same way and returns success for unknown addresses.
+   *
+   * The only exception below is rate limiting, which is about the sender
+   * rather than the address and tells an attacker nothing.
+   *
+   * redirectTo is the SAME page invitations and provisioning land on — it
+   * already reads the recovery session Supabase establishes and completes the
+   * password change, so there is nothing reset-specific to build.
+   *
+   * ⚠ window.location.origin means every origin the app is served from
+   * (production, Vercel previews, localhost) must appear in Supabase's
+   * allowed Redirect URLs, or Supabase silently falls back to the Site URL.
+   */
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+        redirectTo: `${window.location.origin}/auth/set-password`,
+      });
+
+      if (error) {
+        console.error("Password reset error:", error);
+        const message = String(error.message || "");
+        if (/rate limit|too many|429/i.test(message)) {
+          toast.error("Trop de tentatives. Réessayez dans quelques minutes.");
+          return;
+        }
+        // Anything else is reported as success on purpose — see above.
+      }
+
+      setResetSent(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const goTo = (next: Mode) => {
+    setMode(next);
+    setResetSent(false);
+    setPassword("");
+  };
+
+  // ---------------------------------------------------------------------
+  // Reset flow
+  // ---------------------------------------------------------------------
+  if (mode === "reset") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-surface px-6">
+        <div className="w-full max-w-sm">
+          <div className="mb-12 flex justify-center">
+            <LogoLockup size={40} />
+          </div>
+
+          {resetSent ? (
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50">
+                <MailCheck className="h-6 w-6 text-brand-600" aria-hidden="true" />
+              </div>
+              <h1 className="text-lg font-semibold text-ink">Vérifiez vos courriels</h1>
+              <p className="mt-2 text-sm text-muted">
+                Si un compte existe pour cette adresse, un courriel de réinitialisation a été
+                envoyé. Le lien expire après environ une heure.
+              </p>
+              <p className="mt-2 text-xs text-muted">
+                Pensez à regarder dans vos indésirables.
+              </p>
+              <button
+                onClick={() => goTo("signin")}
+                className="mt-6 w-full py-3 border border-line text-ink rounded-lg hover:bg-canvas transition-colors"
+              >
+                Retour à la connexion
+              </button>
+            </div>
+          ) : (
+            <>
+              <h1 className="text-lg font-semibold text-ink text-center">Mot de passe oublié</h1>
+              <p className="mt-2 mb-6 text-sm text-muted text-center">
+                Entrez votre adresse courriel et nous vous enverrons un lien pour en choisir un
+                nouveau.
+              </p>
+
+              <form onSubmit={handleReset} className="space-y-5">
+                <div>
+                  <label htmlFor="reset-email" className="block text-sm text-ink mb-2">
+                    Courriel
+                  </label>
+                  <input
+                    id="reset-email"
+                    type="email"
+                    autoFocus
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="votre@courriel.com"
+                    className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 transition-all"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || !email.trim()}
+                  className="w-full py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? "Envoi..." : "Envoyer le lien"}
+                </button>
+              </form>
+
+              <div className="text-center mt-6">
+                <button
+                  onClick={() => goTo("signin")}
+                  className="text-sm text-body hover:text-brand-600 inline-flex items-center gap-1.5"
+                >
+                  <ArrowLeft size={14} aria-hidden="true" />
+                  Retour à la connexion
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-surface px-6">
@@ -105,9 +245,20 @@ export default function Login() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm text-ink mb-2">
-              Mot de passe
-            </label>
+            <div className="flex items-baseline justify-between gap-3 mb-2">
+              <label htmlFor="password" className="block text-sm text-ink">
+                Mot de passe
+              </label>
+              {!isSignUp && (
+                <button
+                  type="button"
+                  onClick={() => goTo("reset")}
+                  className="text-xs text-brand-strong hover:underline"
+                >
+                  Mot de passe oublié ?
+                </button>
+              )}
+            </div>
             <div className="relative">
               <input
                 id="password"
@@ -140,7 +291,7 @@ export default function Login() {
 
         <div className="text-center mt-6">
           <button
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => goTo(isSignUp ? "signin" : "signup")}
             className="text-sm text-body hover:text-brand-600"
           >
             {isSignUp ? "Déjà un compte? Se connecter" : "Nouveau? Créer un compte"}
