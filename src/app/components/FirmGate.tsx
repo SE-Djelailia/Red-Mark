@@ -118,7 +118,7 @@ export default function FirmGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl border border-default bg-surface p-6 text-center">
+      <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-6 text-center">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50">
           {isUnverified ? (
             <MailCheck className="h-6 w-6 text-brand-600" aria-hidden="true" />
@@ -127,7 +127,7 @@ export default function FirmGate({ children }: { children: React.ReactNode }) {
           )}
         </div>
 
-        <h1 className="text-lg font-semibold text-strong">
+        <h1 className="text-lg font-semibold text-ink">
           {isUnverified ? "Confirmez votre adresse courriel" : "Vous n'êtes dans aucune firme"}
         </h1>
 
@@ -156,7 +156,7 @@ export default function FirmGate({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => void supabase.auth.signOut()}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-default px-4 py-2.5 text-sm font-medium text-strong hover:bg-canvas"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-line px-4 py-2.5 text-sm font-medium text-ink hover:bg-canvas"
           >
             <LogOut className="h-4 w-4" aria-hidden="true" />
             Se déconnecter

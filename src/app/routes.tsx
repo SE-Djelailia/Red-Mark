@@ -21,6 +21,7 @@ import PhotoUploadPage from "./components/PhotoUploadPage";
 import PlanFileViewer from "./components/PlanFileViewer";
 import LocationDetail from "./components/LocationDetail";
 import MigrationPrompt from "./components/MigrationPrompt"; // ✅ Migration prompt
+import FirmAdmin from "./components/FirmAdmin";
 
 // Root component that provides SupabaseAuthContext to all routes
 function RootLayout() {
@@ -77,6 +78,10 @@ export const router = createBrowserRouter([
           { path: "issues", Component: IssueManagement }, // Legacy route
           { path: "search", Component: SearchView },
           { path: "profile", Component: Profile },
+          // Renders its own "réservé aux administrateurs" state for a
+          // non-admin rather than being route-guarded — and every write it
+          // makes is re-authorized server-side regardless.
+          { path: "firm", Component: FirmAdmin },
           { path: "branding", element: <Navigate to="/app/profile" replace /> },
           { path: "*", element: <Navigate to="/app/dashboard" replace /> },
         ],

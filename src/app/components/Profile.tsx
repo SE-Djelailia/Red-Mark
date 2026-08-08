@@ -11,6 +11,7 @@ import {
   Pencil,
   Check,
   X,
+  Users,
 } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import { getProfileStats } from "../../lib/supabaseApi";
@@ -18,6 +19,7 @@ import { toast } from "sonner";
 import GeneralSettings from "./GeneralSettings";
 import DataExport from "./DataExport";
 import { useModalOpen } from "../../hooks/useModalOpen";
+import { useFirm } from "../../hooks/useFirm";
 import { inputClassName } from "./ui-kit/Input";
 import { Card, Section } from "./ui-kit/Card";
 import { StatGrid, StatTile } from "./ui-kit/StatTile";
@@ -40,6 +42,7 @@ function clearRemovedSettingsKeys(userId: string) {
 export default function Profile() {
   const navigate = useNavigate();
   const { user, session, signOut, updateProfile } = useAuth();
+  const { firm, isOrgAdmin } = useFirm();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   useModalOpen(showLogoutConfirm);
   const [showGeneralSettings, setShowGeneralSettings] = useState(false);
@@ -276,6 +279,34 @@ export default function Profile() {
             </div>
           </Card>
         </Section>
+
+        {/* Firm administration. Hidden for a non-admin because the screen
+            would be nothing but a refusal card for them — not as a security
+            measure: /app/firm renders that card on direct navigation, and
+            every write it makes is re-authorized server-side. */}
+        {isOrgAdmin && (
+          <Section title="Firme">
+            <Card className="overflow-hidden">
+              <button
+                onClick={() => navigate("/app/firm")}
+                className="w-full px-4 py-3 min-h-11 flex items-center justify-between gap-3 text-left hover:bg-subtle transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <Users size={20} className="text-muted flex-shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-sm text-ink">Gérer la firme</div>
+                    <div className="text-xs text-muted truncate">
+                      {firm?.name
+                        ? `${firm.name} — membres, invitations, accès`
+                        : "Membres, invitations, accès aux projets"}
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight size={20} className="text-faint flex-shrink-0" />
+              </button>
+            </Card>
+          </Section>
+        )}
 
         {/* One panel with hairline rows rather than two free-floating
             cards — same treatment as the Dashboard's lists. */}
