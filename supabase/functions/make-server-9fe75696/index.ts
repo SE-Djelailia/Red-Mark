@@ -32,7 +32,9 @@ app.use(
   cors({
     origin: "*",
     allowHeaders: ["Content-Type", "Authorization"],
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    // PATCH is used by the firm-admin promote/demote route. Without it here
+    // the browser's preflight is rejected and the request never arrives.
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     exposeHeaders: ["Content-Length"],
     maxAge: 600,
   }),
@@ -136,37 +138,35 @@ app.get("/make-server-9fe75696/test", (c) => {
 // AUTHENTICATION ROUTES
 // ============================================
 
-// Sign up new user
+// Sign up new user — DISABLED.
+//
+// This route was UNAUTHENTICATED and called admin.createUser with
+// `email_confirm: true`, which handed any anonymous caller an account whose
+// email address was marked confirmed without ever proving control of the
+// mailbox.
+//
+// That defeats the firm-invitation handshake outright. /organizations/claim
+// grants firm membership on a verified-email match, and refuses when
+// email_confirmed_at is NULL — the one check the whole isolation model rests
+// on. With this route live, an attacker could create an account under a
+// colleague's address, get it auto-confirmed for free, and claim that
+// colleague's pending invitation, landing inside the firm.
+//
+// It has no client caller: the app signs up through supabase.auth.signUp()
+// in SupabaseAuthContext.tsx (which does NOT auto-confirm), and the only
+// client of this edge function is src/lib/voiceNotesApi.ts, which touches
+// five unrelated routes. Provisioning an account on someone's behalf is now
+// /organizations/members/provision, which requires a firm admin.
 app.post("/make-server-9fe75696/auth/signup", async (c) => {
-  try {
-    const { email, password, name, firm } = await c.req.json();
-
-    // Create user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true, // Auto-confirm since we don't have email configured
-      user_metadata: { name, firm },
-    });
-
-    if (authError) throw authError;
-
-    // Store user profile in KV store
-    await kv.set(`user:${authData.user.id}`, {
-      id: authData.user.id,
-      email,
-      name,
-      firm,
-      role: "architect",
-      created_at: new Date().toISOString(),
-    });
-
-    return c.json({ success: true, user: authData.user });
-  } catch (error: any) {
-    console.error("Signup error:", error);
-    return c.json({ error: error.message || "Signup failed" }, 400);
-  }
+  return c.json(
+    {
+      error: "Cette route a été retirée. Les comptes sont créés par invitation.",
+      code: "signup_route_disabled",
+    },
+    410,
+  );
 });
+
 
 // Get user profile
 app.get("/make-server-9fe75696/users/:id", requireAuth, async (c) => {
@@ -806,6 +806,605 @@ async function denyIfCannotManageAccess(c: any, projectId: string): Promise<Resp
     return c.json({ error: "Forbidden" }, 403);
   }
 }
+
+// ---------------------------------------------------------------------------
+// FIRM ADMINISTRATION
+//
+// Everything below manages who is IN a firm. It is the entry point to the
+// whole isolation model, so two rules are absolute:
+//
+//   1. `organization_id` is ALWAYS derived from the CALLER's own membership.
+//      It is never read from the request body, never from a path parameter,
+//      never from a lookup keyed on anything the caller supplied. An admin of
+//      firm A therefore has no way to address firm B at all — not "is denied
+//      access to", but has no way to name it.
+//
+//   2. Nothing here writes through the caller's identity. These routes run on
+//      the service role with no RLS backstop, and organization_members has no
+//      INSERT/UPDATE/DELETE policy for `authenticated` precisely so that these
+//      routes are the only path in. Which means every one of them has to
+//      authorize for itself.
+// ---------------------------------------------------------------------------
+
+/** How long a firm invitation stays claimable. */
+const INVITATION_TTL_DAYS = 14;
+
+/** Conservative address check; the DB CHECK constraint is the real authority. */
+function normalizeEmail(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const email = raw.trim().toLowerCase();
+  if (email.length < 3 || email.length > 320) return null;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
+  return email;
+}
+
+function normalizeOrgRole(raw: unknown): "admin" | "member" | null {
+  if (raw === undefined || raw === null || raw === "") return "member";
+  return raw === "admin" || raw === "member" ? raw : null;
+}
+
+/** Unguessable invitation token. Never the sole basis for a claim. */
+function newInvitationToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Gate for every firm-administration route.
+ *
+ * Returns the CALLER's own organization id, or a Response to send. That
+ * return value is the only source of `organization_id` anywhere below — which
+ * is what makes "an admin of firm A cannot invite into firm B" structural
+ * rather than a check someone has to remember to write.
+ */
+async function requireOrgAdmin(c: any): Promise<{ orgId: string } | Response> {
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Forbidden" }, 403);
+  try {
+    const orgId = await getUserOrgId(userId);
+    if (!orgId) {
+      return c.json(
+        { error: "Vous n'appartenez à aucune firme.", code: "not_in_organization" },
+        403,
+      );
+    }
+    if (!(await isOrgAdmin(userId, orgId))) {
+      return c.json(
+        { error: "Réservé aux administrateurs de la firme.", code: "not_org_admin" },
+        403,
+      );
+    }
+    return { orgId };
+  } catch (error: any) {
+    console.error("Org-admin check failed:", error?.message);
+    return c.json({ error: "Forbidden" }, 403);
+  }
+}
+
+/** How many admins does this firm have? Used to refuse removing the last one. */
+async function countOrgAdmins(orgId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("organization_members")
+    .select("user_id", { count: "exact", head: true })
+    .eq("organization_id", orgId)
+    .eq("org_role", "admin");
+  if (error) throw error;
+  return count ?? 0;
+}
+
+/** The target's membership row, but ONLY if they are in the caller's firm. */
+async function getFirmMember(
+  orgId: string,
+  userId: string,
+): Promise<{ user_id: string; org_role: string } | null> {
+  const { data, error } = await supabase
+    .from("organization_members")
+    .select("user_id, org_role")
+    .eq("organization_id", orgId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// POST /organizations/invitations — create a firm invitation
+// ---------------------------------------------------------------------------
+app.post("/make-server-9fe75696/organizations/invitations", requireAuth, async (c) => {
+  try {
+    const gate = await requireOrgAdmin(c);
+    if (gate instanceof Response) return gate;
+    const { orgId } = gate;
+    const inviterId = c.get("userId") as string;
+
+    const body = await c.req.json().catch(() => ({}));
+    const email = normalizeEmail(body?.email);
+    const orgRole = normalizeOrgRole(body?.orgRole);
+    if (!email) return c.json({ error: "Adresse courriel invalide." }, 400);
+    if (!orgRole) return c.json({ error: "Rôle de firme invalide." }, 400);
+
+    // Is this person already in the CALLER'S OWN firm? Scoped to the caller's
+    // firm on purpose: an admin may legitimately learn who is in their own
+    // firm, but this route must not become an oracle for membership in other
+    // firms. If they belong to some OTHER firm we say nothing and let the
+    // invitation be created — the claim will refuse it later, which leaks
+    // nothing to the inviter.
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (existingProfile?.id) {
+      const already = await getFirmMember(orgId, existingProfile.id);
+      if (already) {
+        return c.json(
+          { error: "Cette personne fait déjà partie de votre firme.", code: "already_member" },
+          409,
+        );
+      }
+    }
+
+    const token = newInvitationToken();
+    const expiresAt = new Date(Date.now() + INVITATION_TTL_DAYS * 86_400_000).toISOString();
+
+    // Bare insert, deliberately: no .select() chained on. See the note on the
+    // members/provision route below for why RETURNING is avoided throughout
+    // this section. The token is generated here, so nothing needs reading back.
+    const { error: insertError } = await supabase.from("organization_invitations").insert({
+      organization_id: orgId, // ← the caller's firm. Never body.organizationId.
+      email,
+      org_role: orgRole,
+      invited_by: inviterId,
+      token,
+      expires_at: expiresAt,
+    });
+
+    if (insertError) {
+      // idx_organization_invitations_pending_unique: one pending invitation
+      // per (firm, email).
+      if ((insertError as any).code === "23505") {
+        return c.json(
+          {
+            error: "Une invitation est déjà en attente pour cette adresse.",
+            code: "invitation_pending",
+          },
+          409,
+        );
+      }
+      throw insertError;
+    }
+
+    // Deliver the link. inviteUserByEmail fails when the address already has
+    // an account — that is fine and not an error worth surfacing: an existing
+    // user simply logs in, and the claim runs for them on login.
+    let emailed = false;
+    const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
+      data: { organization_id: orgId, invitation_token: token },
+    });
+    if (inviteError) {
+      console.warn("inviteUserByEmail did not send (likely existing account):", inviteError.message);
+    } else {
+      emailed = true;
+    }
+
+    return c.json({ success: true, email, orgRole, emailed, expiresAt });
+  } catch (error: any) {
+    console.error("Create invitation error:", error);
+    return c.json({ error: `Erreur lors de l'invitation: ${error.message}` }, 500);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// DELETE /organizations/invitations/:id — revoke
+// ---------------------------------------------------------------------------
+app.delete("/make-server-9fe75696/organizations/invitations/:id", requireAuth, async (c) => {
+  try {
+    const gate = await requireOrgAdmin(c);
+    if (gate instanceof Response) return gate;
+    const { orgId } = gate;
+
+    // The `.eq("organization_id", orgId)` is the whole security of this route:
+    // a firm-A admin passing a firm-B invitation id matches zero rows. There
+    // is no separate "is it yours?" check to forget.
+    const { data, error } = await supabase
+      .from("organization_invitations")
+      .delete()
+      .eq("id", c.req.param("id"))
+      .eq("organization_id", orgId)
+      .is("accepted_at", null)
+      .select("id");
+
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      return c.json({ error: "Invitation introuvable." }, 404);
+    }
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Revoke invitation error:", error);
+    return c.json({ error: `Erreur: ${error.message}` }, 500);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /organizations/claim — THE HANDSHAKE
+//
+// This is how a person ENTERS a firm, and therefore the single most
+// security-sensitive route in the application.
+//
+// The email is taken from the admin API, keyed on the id in the VERIFIED JWT.
+// It is never read from the request body — a body-supplied address would let
+// anyone claim any invitation. The token, when present, only DISAMBIGUATES
+// between multiple pending invitations for that same verified address; it can
+// never substitute for the email match.
+//
+// The unverified-email refusal below is the load-bearing check. Supabase
+// self-signup lets anyone create an account claiming a colleague's address;
+// without this, doing so would hand them that colleague's invitation. The
+// SQL function re-checks it independently, reading auth.users itself.
+// ---------------------------------------------------------------------------
+app.post("/make-server-9fe75696/organizations/claim", requireAuth, async (c) => {
+  try {
+    const userId = c.get("userId") as string;
+
+    const body = await c.req.json().catch(() => ({}));
+    const rawToken = typeof body?.token === "string" ? body.token.trim() : "";
+    const token = rawToken.length > 0 && rawToken.length <= 128 ? rawToken : null;
+
+    // Identity from the admin API, not from the request.
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+    if (userError || !userData?.user) {
+      console.error("claim: could not load user", userError?.message);
+      return c.json({ error: "Utilisateur introuvable." }, 404);
+    }
+
+    if (!userData.user.email_confirmed_at) {
+      return c.json(
+        {
+          error:
+            "Confirmez d'abord votre adresse courriel. Le lien de confirmation vous a été envoyé.",
+          code: "email_unverified",
+        },
+        403,
+      );
+    }
+
+    // One transaction, in the database. See stage6-claim-invitation.sql.
+    const { data, error } = await supabase.rpc("claim_organization_invitation", {
+      p_user_id: userId,
+      p_token: token,
+    });
+
+    if (error) {
+      // The function RAISEs rather than returning a status when the
+      // membership insert races another one, so that the invitation stamp
+      // rolls back with it and the invitation stays claimable.
+      if ((error.message || "").includes("ALREADY_IN_FIRM")) {
+        return c.json(
+          {
+            error: "Cette personne appartient déjà à une autre firme.",
+            code: "already_in_firm",
+          },
+          409,
+        );
+      }
+      throw error;
+    }
+
+    const status = (data as any)?.status as string;
+
+    switch (status) {
+      case "claimed":
+        return c.json({
+          status,
+          organizationId: (data as any).organization_id,
+          orgRole: (data as any).org_role,
+        });
+      case "already_member":
+        return c.json({ status, organizationId: (data as any).organization_id });
+      case "none":
+        return c.json(
+          { status, error: "Aucune invitation en attente pour votre adresse." },
+          404,
+        );
+      case "expired":
+        return c.json(
+          { status, error: "Votre invitation a expiré. Demandez-en une nouvelle." },
+          410,
+        );
+      case "already_accepted":
+        return c.json({ status, error: "Cette invitation a déjà été utilisée." }, 409);
+      case "ambiguous":
+        return c.json(
+          {
+            status,
+            error:
+              "Plusieurs invitations correspondent à votre adresse. Utilisez le lien reçu par courriel.",
+          },
+          409,
+        );
+      case "email_unverified":
+        return c.json(
+          { status, error: "Confirmez d'abord votre adresse courriel." },
+          403,
+        );
+      default:
+        console.error("claim: unexpected status", status);
+        return c.json({ error: "Impossible de rejoindre la firme." }, 500);
+    }
+  } catch (error: any) {
+    console.error("Claim invitation error:", error);
+    return c.json({ error: `Erreur lors de l'adhésion: ${error.message}` }, 500);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /organizations/members/provision — admin creates the account directly
+//
+// The no-email-round-trip path. Covers both "no account yet" and "has an
+// account but no firm". The admin never sees or sets a password: the account
+// is created without one and a recovery link is generated so the person sets
+// their own.
+// ---------------------------------------------------------------------------
+app.post("/make-server-9fe75696/organizations/members/provision", requireAuth, async (c) => {
+  try {
+    const gate = await requireOrgAdmin(c);
+    if (gate instanceof Response) return gate;
+    const { orgId } = gate;
+    const inviterId = c.get("userId") as string;
+
+    const body = await c.req.json().catch(() => ({}));
+    const email = normalizeEmail(body?.email);
+    const orgRole = normalizeOrgRole(body?.orgRole);
+    const name = typeof body?.name === "string" ? body.name.trim().slice(0, 200) : "";
+    if (!email) return c.json({ error: "Adresse courriel invalide." }, 400);
+    if (!orgRole) return c.json({ error: "Rôle de firme invalide." }, 400);
+
+    // Create the account. email_confirm: true is correct HERE and nowhere
+    // else — the address is being vouched for by a firm admin who is
+    // provisioning it, not asserted by whoever is holding the keyboard.
+    let targetUserId: string | null = null;
+    const { data: created, error: createError } = await supabase.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: { name },
+    });
+
+    if (created?.user) {
+      targetUserId = created.user.id;
+    } else if (createError) {
+      // Already registered — the "has an account but no firm" case. Resolve
+      // the id through profiles (written by the handle_new_user trigger).
+      const { data: existing } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
+      if (!existing?.id) {
+        console.error("provision: createUser failed and no profile found:", createError.message);
+        return c.json({ error: `Impossible de créer le compte: ${createError.message}` }, 400);
+      }
+      targetUserId = existing.id;
+    }
+
+    if (!targetUserId) return c.json({ error: "Impossible de créer le compte." }, 500);
+
+    // Bare insert. No .select() chained: a firm admin cannot necessarily read
+    // back every row they are entitled to write, and an INSERT ... RETURNING
+    // that trips a SELECT policy fails AFTER the write — verified in the
+    // sandbox, where the row was written but the read-back returned nothing.
+    const { error: memberError } = await supabase.from("organization_members").insert({
+      organization_id: orgId, // ← caller's firm, always
+      user_id: targetUserId,
+      org_role: orgRole,
+      invited_by: inviterId,
+    });
+
+    if (memberError) {
+      // UNIQUE(user_id) — one firm per user.
+      if ((memberError as any).code === "23505") {
+        return c.json(
+          { error: "Cette personne appartient déjà à une autre firme.", code: "already_in_firm" },
+          409,
+        );
+      }
+      throw memberError;
+    }
+
+    // Let them set their own password. The admin never handles a credential.
+    let actionLink: string | null = null;
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: "recovery",
+      email,
+    });
+    if (linkError) {
+      console.warn("provision: could not generate recovery link:", linkError.message);
+    } else {
+      actionLink = linkData?.properties?.action_link ?? null;
+    }
+
+    return c.json({ success: true, userId: targetUserId, email, orgRole, actionLink });
+  } catch (error: any) {
+    console.error("Provision member error:", error);
+    return c.json({ error: `Erreur lors de la création: ${error.message}` }, 500);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// PATCH /organizations/members/:userId — promote / demote
+// ---------------------------------------------------------------------------
+app.patch("/make-server-9fe75696/organizations/members/:userId", requireAuth, async (c) => {
+  try {
+    const gate = await requireOrgAdmin(c);
+    if (gate instanceof Response) return gate;
+    const { orgId } = gate;
+
+    const targetId = c.req.param("userId");
+    const body = await c.req.json().catch(() => ({}));
+    const orgRole = normalizeOrgRole(body?.orgRole);
+    if (!orgRole) return c.json({ error: "Rôle de firme invalide." }, 400);
+
+    // Looked up WITHIN the caller's firm, so a target in another firm reads
+    // as "not found" — same response as a nonexistent user, no cross-firm
+    // membership oracle.
+    const target = await getFirmMember(orgId, targetId);
+    if (!target) return c.json({ error: "Membre introuvable dans votre firme." }, 404);
+
+    // A firm with no admin cannot be administered again — nobody could
+    // promote anyone, because promotion requires an admin. Refuse rather
+    // than let someone strand their own firm.
+    if (target.org_role === "admin" && orgRole === "member") {
+      if ((await countOrgAdmins(orgId)) <= 1) {
+        return c.json(
+          {
+            error: "Votre firme doit conserver au moins un administrateur.",
+            code: "last_admin",
+          },
+          409,
+        );
+      }
+    }
+
+    const { error } = await supabase
+      .from("organization_members")
+      .update({ org_role: orgRole })
+      .eq("organization_id", orgId)
+      .eq("user_id", targetId);
+    if (error) throw error;
+
+    return c.json({ success: true, userId: targetId, orgRole });
+  } catch (error: any) {
+    console.error("Update member role error:", error);
+    return c.json({ error: `Erreur: ${error.message}` }, 500);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// DELETE /organizations/members/:userId — remove from the firm
+//
+// project_members_user_org_fkey is ON DELETE RESTRICT, deliberately: removing
+// someone from a firm while they still hold project memberships must fail
+// loudly rather than silently strip their project history. So this route
+// refuses and NAMES the projects instead of cascading.
+// ---------------------------------------------------------------------------
+app.delete("/make-server-9fe75696/organizations/members/:userId", requireAuth, async (c) => {
+  try {
+    const gate = await requireOrgAdmin(c);
+    if (gate instanceof Response) return gate;
+    const { orgId } = gate;
+    const callerId = c.get("userId") as string;
+    const targetId = c.req.param("userId");
+
+    if (targetId === callerId) {
+      return c.json(
+        { error: "Vous ne pouvez pas vous retirer vous-même de la firme.", code: "self_removal" },
+        409,
+      );
+    }
+
+    const target = await getFirmMember(orgId, targetId);
+    if (!target) return c.json({ error: "Membre introuvable dans votre firme." }, 404);
+
+    if (target.org_role === "admin" && (await countOrgAdmins(orgId)) <= 1) {
+      return c.json(
+        { error: "Votre firme doit conserver au moins un administrateur.", code: "last_admin" },
+        409,
+      );
+    }
+
+    // Check BEFORE attempting the delete, so the message can name the
+    // projects. The FK is still the real guarantee — this is for the wording.
+    //
+    // Two queries rather than `.select("project_id, projects(name)")`:
+    // project_members now has TWO foreign keys to projects — project_id_fkey
+    // and the composite project_org_fkey — so PostgREST cannot decide which
+    // relationship an embed means and fails with PGRST201.
+    const { data: assignments, error: assignError } = await supabase
+      .from("project_members")
+      .select("project_id")
+      .eq("organization_id", orgId)
+      .eq("user_id", targetId);
+    if (assignError) throw assignError;
+
+    if (assignments && assignments.length > 0) {
+      const projectIds = assignments.map((a: any) => a.project_id).slice(0, 10);
+      const { data: projectRows } = await supabase
+        .from("projects")
+        .select("name")
+        .in("id", projectIds);
+      const names = (projectRows || []).map((p: any) => p.name).filter(Boolean);
+      return c.json(
+        {
+          error: `Retirez d'abord cette personne de ses ${assignments.length} projet(s).`,
+          code: "has_project_memberships",
+          count: assignments.length,
+          projects: names,
+        },
+        409,
+      );
+    }
+
+    const { error } = await supabase
+      .from("organization_members")
+      .delete()
+      .eq("organization_id", orgId)
+      .eq("user_id", targetId);
+
+    if (error) {
+      // Belt and braces: a project membership created between the check above
+      // and this delete still fails closed, on the FK.
+      if ((error as any).code === "23503") {
+        return c.json(
+          {
+            error: "Retirez d'abord cette personne de ses projets.",
+            code: "has_project_memberships",
+          },
+          409,
+        );
+      }
+      throw error;
+    }
+
+    return c.json({ success: true, userId: targetId });
+  } catch (error: any) {
+    console.error("Remove member error:", error);
+    return c.json({ error: `Erreur: ${error.message}` }, 500);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /organizations/me — the caller's own firm and role.
+//
+// Read-only convenience for the client's post-login gate. Everything here is
+// already readable directly under RLS; this exists so the client can ask one
+// question instead of three.
+// ---------------------------------------------------------------------------
+app.get("/make-server-9fe75696/organizations/me", requireAuth, async (c) => {
+  try {
+    const userId = c.get("userId") as string;
+    const orgId = await getUserOrgId(userId);
+    if (!orgId) return c.json({ organization: null, orgRole: null });
+
+    const { data: org, error } = await supabase
+      .from("organizations")
+      .select("id, name, slug, report_firm_name")
+      .eq("id", orgId)
+      .maybeSingle();
+    if (error) throw error;
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("org_role")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    return c.json({ organization: org, orgRole: membership?.org_role ?? null });
+  } catch (error: any) {
+    console.error("Get organization error:", error);
+    return c.json({ error: `Erreur: ${error.message}` }, 500);
+  }
+});
 
 // Resolves the visit's project and checks membership. Returns a Response to
 // send when access is refused, or null to continue. Fails CLOSED: an
