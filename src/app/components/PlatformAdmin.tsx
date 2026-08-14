@@ -45,17 +45,49 @@ import RecoveryLinkDialog from "./RecoveryLinkDialog";
  * hand in psql — no code path anywhere can add a row to it.
  */
 
-type Phase = "checking" | "ready" | "denied";
+type Phase = "checking" | "ready" | "denied" | "signed-out";
+
+/**
+ * Failsafe for auth that never settles.
+ *
+ * `loading` going false is the normal exit from "checking". If it somehow
+ * never does, this route must still land somewhere a person can act on rather
+ * than spinning forever — which is exactly the failure this screen shipped
+ * with. SetPassword, the other route outside Layout, uses the same guard.
+ */
+const AUTH_WAIT_MS = 8000;
 
 export default function PlatformAdmin() {
-  const { user } = useAuth();
+  // `loading` is read, NOT just `user`.
+  //
+  // Reading only `user` is what made this page a permanent white spinner: the
+  // session lives in IndexedDB (see lib/supabase.ts), so `user` is null for a
+  // real interval on every cold load, and null forever when signed out. The
+  // loader below bailed out on `!user?.id` WITHOUT touching `phase`, so
+  // "checking" had no exit — no request was ever made, and nothing was ever
+  // thrown, which is why the console and network tab were both clean.
+  //
+  // Routes under /app never hit this because Layout resolves both states
+  // before rendering: it spins on `loading`, then redirects on `!user`. This
+  // route sits outside Layout by design, so it has to do that work itself.
+  const { user, loading } = useAuth();
   const [phase, setPhase] = useState<Phase>("checking");
   const [orgs, setOrgs] = useState<PlatformOrganization[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [linkDialog, setLinkDialog] = useState<{ link: string; recipient: string } | null>(null);
 
   const load = useCallback(async () => {
-    if (!user?.id) return;
+    // Auth still restoring. Deliberately stays in "checking": this effect
+    // re-runs when `loading` settles, because it is in the dependency list.
+    if (loading) return;
+
+    // Settled, and there is no session. Every branch below must leave
+    // "checking" — a state with no exit is the bug this replaces.
+    if (!user?.id) {
+      setPhase("signed-out");
+      return;
+    }
+
     try {
       setOrgs(await listOrganizations());
       setPhase("ready");
@@ -66,16 +98,52 @@ export default function PlatformAdmin() {
       if (err?.status !== 404) console.error("PlatformAdmin: load failed", err);
       setPhase("denied");
     }
-  }, [user?.id]);
+  }, [loading, user?.id]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
+  // Nothing should be able to leave this page spinning indefinitely.
+  useEffect(() => {
+    if (phase !== "checking") return;
+    const timer = window.setTimeout(() => {
+      setPhase((current) => {
+        if (current !== "checking") return current;
+        console.warn("PlatformAdmin: auth did not settle within", AUTH_WAIT_MS, "ms");
+        return "signed-out";
+      });
+    }, AUTH_WAIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [phase]);
+
   if (phase === "checking") {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-brand-600" aria-hidden="true" />
+      </div>
+    );
+  }
+
+  // Signed out. Told plainly rather than bounced silently to the login screen:
+  // this route is reached by typing the URL, so a redirect that discards it
+  // leaves someone wondering whether the page exists at all. It reveals
+  // nothing — "you are not signed in" is true of any address on this origin.
+  if (phase === "signed-out") {
+    return (
+      <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
+        <div className="w-full max-w-md text-center">
+          <h1 className="text-lg font-semibold text-ink">Vous n'êtes pas connecté</h1>
+          <p className="mt-2 text-sm text-muted">
+            Connectez-vous, puis revenez à cette adresse.
+          </p>
+          <Link
+            to="/"
+            className="mt-6 inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            Se connecter
+          </Link>
+        </div>
       </div>
     );
   }
