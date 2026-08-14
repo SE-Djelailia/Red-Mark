@@ -2,6 +2,12 @@
 // Kept separate from the `redmark_photos` database in indexedDB.ts.
 import { uploadPhoto } from "./supabaseApi";
 import { isRetriableUploadError } from "./networkErrors";
+import { materializeFile, UnreadablePhotoError, describeError } from "./queuePayload";
+
+// Re-exported: these used to live in this file and other modules import them
+// from here. The payload logic moved to queuePayload.ts so it can be executed
+// and verified without pulling in the Supabase client.
+export { UnreadablePhotoError, describeError } from "./queuePayload";
 
 const DB_NAME = "redmark_upload_queue";
 const DB_VERSION = 1;
@@ -34,7 +40,45 @@ export type QueuedUploadStatus = "pending" | "uploading" | "failed" | "permanent
 
 export interface QueuedUpload {
   id: string;
-  file: Blob;
+  /**
+   * The photo's BYTES. Deliberately an ArrayBuffer and never a Blob or File.
+   *
+   * THE BUG THIS EXISTS FOR — read off an iPhone (iOS 18.7):
+   *
+   *   [permanent] attempts=2 size=1065802 type=image/jpeg isFile=true
+   *               err=No content provided
+   *
+   * The queue used to store the File itself. WebKit does not serialise blob
+   * data into the record: it writes the bytes to a separate blob-file store
+   * and keeps a REFERENCE in the record. The reference can outlive what it
+   * points at — the OS reclaims the backing file on memory pressure, on app
+   * termination, or on relaunch. What comes back is a Blob whose `size` and
+   * `type` are intact (they live in the record) but whose bytes are gone.
+   *
+   * So the queue looked healthy — the diagnostic panel showed size=1065802,
+   * type=image/jpeg — while the upload POSTed a zero-length body and Supabase
+   * answered "No content provided". A photo taken on site was lost, and every
+   * signal available said it was fine.
+   *
+   * An ArrayBuffer is structured-cloned BY VALUE into the record, so the bytes
+   * are the record. There is no reference left to dangle. The bytes are read
+   * at capture time, while the file is definitely still readable, and a Blob is
+   * reconstructed only at the moment of upload.
+   */
+  bytes?: ArrayBuffer;
+  /** Original filename, kept because the ArrayBuffer does not carry one. */
+  fileName: string;
+  /** MIME type, likewise. */
+  fileType: string;
+  /** Byte length recorded at capture, so a short read-back is detectable. */
+  fileSize: number;
+  /**
+   * LEGACY: photos queued before the ArrayBuffer migration. Kept only so
+   * already-queued items are not orphaned by the upgrade — the drain reads the
+   * bytes out and rewrites the record in the new shape when it still can, and
+   * fails the item cleanly when it cannot. Nothing writes this field any more.
+   */
+  file?: Blob;
   userId: string;
   projectId: string;
   visitId: string;
@@ -105,13 +149,33 @@ const initDB = (): Promise<IDBDatabase> => {
 
 // Add a photo to the pending-upload queue
 export const addToQueue = async (
-  item: Omit<QueuedUpload, "id" | "status" | "createdAt">,
+  item: Omit<QueuedUpload, "id" | "status" | "createdAt" | "bytes" | "fileName" | "fileType" | "fileSize" | "file"> & {
+    file: File | Blob;
+  },
 ): Promise<string> => {
   const database = await initDB();
+  const { file, ...rest } = item;
+
+  const id = `queued-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+  // Read the bytes NOW, while the file is unquestionably readable, and store
+  // those. This is the whole fix: it moves the risky read from "some minutes
+  // later, after a relaunch, when the OS may have reclaimed the file" to
+  // "right now, in the same tick as the capture".
+  const bytes = await file.arrayBuffer();
+  if (bytes.byteLength === 0) {
+    // Refuse to queue an already-empty photo rather than store a record that
+    // can only ever fail on upload.
+    throw new UnreadablePhotoError("le fichier est vide au moment de la capture");
+  }
 
   const queuedItem: QueuedUpload = {
-    ...item,
-    id: `queued-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    ...rest,
+    id,
+    bytes,
+    fileName: file instanceof File && file.name ? file.name : `queued-photo-${id}.jpg`,
+    fileType: file.type || "image/jpeg",
+    fileSize: bytes.byteLength,
     status: "pending",
     createdAt: new Date().toISOString(),
   };
@@ -179,7 +243,22 @@ export const removeFromQueue = async (id: string): Promise<void> => {
 // Patch a queued item in place (status, attempt count, last error).
 export const updateQueueItem = async (
   id: string,
-  patch: Partial<Pick<QueuedUpload, "status" | "attempts" | "lastError">>,
+  patch: Partial<
+    Pick<
+      QueuedUpload,
+      // Status/diagnostics…
+      | "status"
+      | "attempts"
+      | "lastError"
+      // …and the payload fields, so the drain can rewrite a legacy Blob record
+      // in the ArrayBuffer shape without losing its place in the queue.
+      | "bytes"
+      | "fileName"
+      | "fileType"
+      | "fileSize"
+      | "file"
+    >
+  >,
 ): Promise<void> => {
   const database = await initDB();
 
@@ -265,38 +344,6 @@ function withTimeout<T>(work: (signal: AbortSignal) => Promise<T>, ms: number): 
   });
 }
 
-/**
- * Flattens an error into one diagnostic line.
- *
- * `error.message` alone is not enough to classify a failure: a Supabase
- * StorageApiError carries the HTTP status on `status`/`statusCode`, a
- * PostgrestError carries a Postgres SQLSTATE on `code` (42501 =
- * insufficient_privilege, i.e. an RLS denial) and nothing on `status`, and a
- * wrapped transport failure hides the real cause on `originalError`. Those
- * are exactly the fields that decide retriable vs permanent, so they are what
- * has to be visible when diagnosing from a phone with no dev tools.
- */
-export function describeError(error: unknown): string {
-  if (!error || typeof error !== "object") return String(error);
-  const e = error as Record<string, unknown>;
-  const parts: string[] = [];
-  const push = (key: string, value: unknown) => {
-    if (value !== undefined && value !== null && value !== "") parts.push(`${key}=${String(value)}`);
-  };
-  push("leg", e.leg); // which request failed: "storage" or "db-insert"
-  push("name", e.name);
-  push("status", e.status);
-  push("statusCode", e.statusCode);
-  push("code", e.code);
-  push("error", e.error);
-  const original = e.originalError as { name?: string; message?: string } | undefined;
-  if (original && typeof original === "object") {
-    push("origName", original.name);
-    push("origMsg", original.message);
-  }
-  push("msg", e.message ?? String(error));
-  return parts.join(" | ");
-}
 
 // Module-level, not per-caller: the mount drain and the "online" drain are
 // different call sites, and both firing together used to run two passes over
@@ -361,14 +408,22 @@ export async function processQueue(): Promise<ProcessQueueResult> {
       try {
         await updateQueueItem(item.id, { status: "uploading", attempts });
 
-        // IndexedDB's structured clone preserves File instances (name, type) as-is;
-        // fall back to a synthesized name for plain Blobs.
-        const fileForUpload =
-          item.file instanceof File
-            ? item.file
-            : new File([item.file], `queued-photo-${item.id}.jpg`, {
-                type: item.file.type || "image/jpeg",
-              });
+        // Rebuild the File from stored BYTES. Throws UnreadablePhotoError if
+        // the bytes are gone, rather than uploading an empty body.
+        const { file: fileForUpload, upgraded } = await materializeFile(item);
+
+        // A legacy record whose blob still read: persist it as bytes so it
+        // survives the next relaunch even if this attempt fails.
+        if (upgraded) {
+          await updateQueueItem(item.id, {
+            bytes: upgraded,
+            fileName: fileForUpload.name,
+            fileType: fileForUpload.type,
+            fileSize: upgraded.byteLength,
+            file: undefined,
+          });
+          console.log(`⬆️ Queued photo ${item.id} migrated from Blob to ArrayBuffer`);
+        }
 
         await withTimeout(
           (signal) =>
@@ -389,7 +444,13 @@ export async function processQueue(): Promise<ProcessQueueResult> {
         // A 403 (storage RLS) or 413 (too large) is a verdict, not a blip —
         // retrying it every reconnect forever is how a queue silently never
         // drains. isRetriableUploadError already knows the difference.
-        const retriable = isRetriableUploadError(error);
+        //
+        // Lost bytes are checked FIRST and never retried. They cannot be
+        // classified by isRetriableUploadError: its first test returns true for
+        // ANY error while navigator.onLine is false, which would pin a photo
+        // that can never upload in the retry set forever.
+        const retriable =
+          error instanceof UnreadablePhotoError ? false : isRetriableUploadError(error);
         const message = describeError(error);
         console.error(
           `❌ Queued photo failed (attempt ${attempts}, ${retriable ? "transient" : "PERMANENT"}):`,

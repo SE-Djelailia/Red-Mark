@@ -196,9 +196,17 @@ export default function OfflineIndicator() {
               {diagnostics.map((item) => (
                 <div key={item.id} className="border-t border-white/15 pt-2">
                   <div className="text-[10px] font-mono text-slate-400 break-all">
-                    {item.status} · essais {item.attempts ?? 0} · {item.file?.size ?? "?"} o ·{" "}
-                    {item.file?.type || "type inconnu"} ·{" "}
-                    {item.file instanceof File ? "File" : "Blob"}
+                    {/* `stored` is the field that actually matters now: "bytes"
+                        means the photo survives a relaunch, "blob" means it is
+                        a pre-migration record still holding a WebKit blob
+                        reference that iOS can invalidate. `read` is the real
+                        byte length, which is what "size" ought to have been —
+                        the old panel printed the RECORDED size and so read
+                        healthy for a photo whose bytes were already gone. */}
+                    {item.status} · essais {item.attempts ?? 0} ·{" "}
+                    {item.bytes ? "bytes" : item.file ? "blob(legacy)" : "aucun"} · read=
+                    {item.bytes?.byteLength ?? item.file?.size ?? "?"} o · attendu=
+                    {item.fileSize ?? "?"} o · {item.fileType || item.file?.type || "type inconnu"}
                   </div>
                   {/* The raw string. `select-all` so a long-press selects the
                       whole thing in one gesture on iOS. */}
