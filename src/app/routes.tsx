@@ -23,6 +23,7 @@ import LocationDetail from "./components/LocationDetail";
 import MigrationPrompt from "./components/MigrationPrompt"; // ✅ Migration prompt
 import FirmAdmin from "./components/FirmAdmin";
 import SetPassword from "./components/SetPassword";
+import PlatformAdmin from "./components/PlatformAdmin";
 
 // Root component that provides SupabaseAuthContext to all routes
 function RootLayout() {
@@ -65,6 +66,20 @@ export const router = createBrowserRouter([
         // must be on Supabase's allowed Redirect URLs list.
         path: "/auth/set-password",
         Component: SetPassword,
+      },
+      {
+        // Platform-operator surface. MUST stay outside /app, like
+        // /auth/set-password above and for a related reason: /app is wrapped in
+        // Layout → FirmGate, which stops anyone who belongs to no firm. A
+        // platform operator belongs to no firm BY DESIGN, so this screen would
+        // be permanently unreachable in there.
+        //
+        // Not linked from anywhere in the app. That is presentation, not access
+        // control — the component renders a generic "page introuvable" for a
+        // non-operator, and every call behind it is re-authorized against the
+        // platform_operators allowlist server-side.
+        path: "/platform",
+        Component: PlatformAdmin,
       },
       {
         path: "/icon-generator",

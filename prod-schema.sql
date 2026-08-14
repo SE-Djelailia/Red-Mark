@@ -293,6 +293,318 @@ $$;
 ALTER FUNCTION "public"."find_invitable_user"("p_email" "text") OWNER TO "postgres";
 
 
+-- ---------------------------------------------------------------------------
+-- FIRM-ADMINISTRATION TRANSACTIONS (Stages 6, 7, 8)
+--
+-- supabase-js cannot open a transaction, so each multi-statement firm
+-- operation that must be all-or-nothing lives here instead.
+--
+-- All three are SECURITY DEFINER and, unlike every other function in this
+-- schema, EXECUTE is granted to service_role ALONE — see the GRANTS section
+-- lower down. Each takes a user id as a PARAMETER, so a PostgREST RPC from a
+-- browser could otherwise forge whose behalf it acts on.
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION "public"."claim_organization_invitation"(
+    "p_user_id" "uuid",
+    "p_token"   "text" DEFAULT NULL
+) RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_email        text;
+    v_confirmed_at timestamptz;
+    v_existing_org uuid;
+    v_n            int;
+    v_n_any        int;
+    v_inv_id       uuid;
+    v_claimed      public.organization_invitations%ROWTYPE;
+BEGIN
+    -- -----------------------------------------------------------------------
+    -- 1. Identity, from auth.users — NEVER from a parameter.
+    -- -----------------------------------------------------------------------
+    SELECT lower(u.email), u.email_confirmed_at
+      INTO v_email, v_confirmed_at
+    FROM auth.users u
+    WHERE u.id = p_user_id;
+
+    IF v_email IS NULL THEN
+        RETURN jsonb_build_object('status', 'no_user');
+    END IF;
+
+    -- An unconfirmed address proves nothing. Self-signup lets anyone type a
+    -- colleague's address; without this check, doing so would claim that
+    -- colleague's pending invitation. This is THE gate of the whole model.
+    IF v_confirmed_at IS NULL THEN
+        RETURN jsonb_build_object('status', 'email_unverified');
+    END IF;
+
+    -- -----------------------------------------------------------------------
+    -- 2. Already in a firm? Idempotent success, not an error — the client
+    --    calls this on login and must be safe to call twice.
+    -- -----------------------------------------------------------------------
+    SELECT organization_id INTO v_existing_org
+    FROM public.organization_members
+    WHERE user_id = p_user_id;
+
+    IF v_existing_org IS NOT NULL THEN
+        RETURN jsonb_build_object('status', 'already_member',
+                                  'organization_id', v_existing_org);
+    END IF;
+
+    -- -----------------------------------------------------------------------
+    -- 3. Find the pending, unexpired invitations for this VERIFIED address.
+    --
+    --    The token, when supplied, only narrows this set. A verified-email
+    --    match is required either way — a token alone can never claim.
+    -- -----------------------------------------------------------------------
+    SELECT count(*) INTO v_n
+    FROM public.organization_invitations i
+    WHERE lower(i.email) = v_email
+      AND i.accepted_at IS NULL
+      AND i.expires_at > now()
+      AND (p_token IS NULL OR i.token = p_token);
+
+    IF v_n = 0 THEN
+        -- Distinguish "nothing was ever sent to you" from "you waited too
+        -- long" / "you already used it", so the UI can say something useful.
+        SELECT count(*) INTO v_n_any
+        FROM public.organization_invitations i
+        WHERE lower(i.email) = v_email
+          AND (p_token IS NULL OR i.token = p_token);
+
+        IF v_n_any = 0 THEN
+            RETURN jsonb_build_object('status', 'none');
+        END IF;
+
+        IF EXISTS (
+            SELECT 1 FROM public.organization_invitations i
+            WHERE lower(i.email) = v_email
+              AND (p_token IS NULL OR i.token = p_token)
+              AND i.accepted_at IS NOT NULL
+        ) THEN
+            RETURN jsonb_build_object('status', 'already_accepted');
+        END IF;
+
+        RETURN jsonb_build_object('status', 'expired');
+    END IF;
+
+    -- Two firms can each have a pending invitation for the same address: the
+    -- partial unique index is per (organization_id, email), not global. Which
+    -- one wins would otherwise be arbitrary — and a firm could deliberately
+    -- race another's invitation. Refuse and make the caller name one.
+    IF v_n > 1 AND p_token IS NULL THEN
+        RETURN jsonb_build_object('status', 'ambiguous', 'count', v_n);
+    END IF;
+
+    SELECT i.id INTO v_inv_id
+    FROM public.organization_invitations i
+    WHERE lower(i.email) = v_email
+      AND i.accepted_at IS NULL
+      AND i.expires_at > now()
+      AND (p_token IS NULL OR i.token = p_token)
+    ORDER BY i.created_at
+    LIMIT 1;
+
+    -- -----------------------------------------------------------------------
+    -- 4. Consume the invitation FIRST.
+    --
+    --    Order matters. `WHERE accepted_at IS NULL` plus the row lock this
+    --    UPDATE takes is what serializes two concurrent claims: the second
+    --    blocks here, re-evaluates the predicate after the first commits,
+    --    matches 0 rows, and bails out below. UNIQUE(user_id) on
+    --    organization_members is the second, independent backstop.
+    -- -----------------------------------------------------------------------
+    UPDATE public.organization_invitations
+       SET accepted_at = now(),
+           accepted_by = p_user_id
+     WHERE id = v_inv_id
+       AND accepted_at IS NULL
+    RETURNING * INTO v_claimed;
+
+    IF v_claimed.id IS NULL THEN
+        RETURN jsonb_build_object('status', 'already_accepted');
+    END IF;
+
+    -- -----------------------------------------------------------------------
+    -- 5. Create the membership. A unique_violation here means the user was
+    --    placed in a firm between step 2 and now; the whole function is one
+    --    transaction, so the invitation stamp above rolls back with it and
+    --    stays claimable.
+    -- -----------------------------------------------------------------------
+    BEGIN
+        INSERT INTO public.organization_members
+            (organization_id, user_id, org_role, invited_by)
+        VALUES
+            (v_claimed.organization_id, p_user_id, v_claimed.org_role, v_claimed.invited_by);
+    EXCEPTION WHEN unique_violation THEN
+        RAISE EXCEPTION 'ALREADY_IN_FIRM'
+            USING ERRCODE = 'raise_exception';
+    END;
+
+    RETURN jsonb_build_object(
+        'status',          'claimed',
+        'organization_id', v_claimed.organization_id,
+        'org_role',        v_claimed.org_role
+    );
+END;
+$$;
+
+ALTER FUNCTION "public"."claim_organization_invitation"("p_user_id" "uuid", "p_token" "text")
+    OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."claim_organization_invitation"("p_user_id" "uuid", "p_token" "text") IS
+  'Atomically claims a firm invitation. Reads the email and email_confirmed_at from auth.users — never from a parameter — so a claim always requires control of the invited mailbox. EXECUTE is granted to service_role only.';
+
+
+CREATE OR REPLACE FUNCTION "public"."remove_organization_member"(
+    "p_org_id"   "uuid",
+    "p_user_id"  "uuid",
+    "p_actor_id" "uuid"
+) RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_role     text;
+    v_admins   int;
+    v_projects int;
+BEGIN
+    -- -----------------------------------------------------------------------
+    -- 1. Self-removal. An admin removing themselves is almost always a
+    --    mistake, and if they are the only admin it strands the firm.
+    -- -----------------------------------------------------------------------
+    IF p_user_id = p_actor_id THEN
+        RETURN jsonb_build_object('status', 'self_removal');
+    END IF;
+
+    -- -----------------------------------------------------------------------
+    -- 2. The target must be in THIS firm. Scoped by organization_id, so a
+    --    caller naming someone in another firm gets 'not_found' — the same
+    --    answer as a nonexistent user, with no cross-firm membership oracle.
+    --
+    --    FOR UPDATE also pins the row for the rest of the transaction.
+    -- -----------------------------------------------------------------------
+    SELECT "org_role" INTO v_role
+    FROM "public"."organization_members"
+    WHERE "organization_id" = p_org_id AND "user_id" = p_user_id
+    FOR UPDATE;
+
+    IF v_role IS NULL THEN
+        RETURN jsonb_build_object('status', 'not_found');
+    END IF;
+
+    -- -----------------------------------------------------------------------
+    -- 3. The actor must be an admin OF THIS FIRM. Re-derived from the same
+    --    table rather than trusted from the caller.
+    -- -----------------------------------------------------------------------
+    IF NOT EXISTS (
+        SELECT 1 FROM "public"."organization_members"
+        WHERE "organization_id" = p_org_id
+          AND "user_id" = p_actor_id
+          AND "org_role" = 'admin'
+    ) THEN
+        RETURN jsonb_build_object('status', 'not_admin');
+    END IF;
+
+    -- -----------------------------------------------------------------------
+    -- 4. Last-admin guard, inside the lock.
+    --
+    --    THE LOCK IS THE LOAD-BEARING PART, NOT THE COUNT. PERFORM ... FOR
+    --    UPDATE locks every admin row of this firm. Two admins removing each
+    --    other simultaneously therefore serialize here: the second transaction
+    --    blocks, and by the time it proceeds it sees post-commit state instead
+    --    of its own stale snapshot. Sandbox-verified — one backend observed
+    --    waiting on a lock, and the firm ended with an administrator.
+    --
+    --    The `v_admins <= 1` branch below is, on inspection, unreachable in
+    --    practice: reaching it requires an admin target and an admin actor who
+    --    are different people, which already implies two admin rows — and if
+    --    the actor's own row was deleted concurrently, check 3 above rejects
+    --    with 'not_admin' first. That is exactly what the concurrent test
+    --    observed. It is kept as defence in depth: it costs one count, and it
+    --    means reordering the checks above cannot silently strand a firm.
+    --
+    --    (Written as PERFORM-then-count because FOR UPDATE cannot be combined
+    --    with an aggregate in a single statement.)
+    -- -----------------------------------------------------------------------
+    IF v_role = 'admin' THEN
+        PERFORM 1 FROM "public"."organization_members"
+         WHERE "organization_id" = p_org_id AND "org_role" = 'admin'
+         FOR UPDATE;
+
+        SELECT count(*) INTO v_admins
+        FROM "public"."organization_members"
+        WHERE "organization_id" = p_org_id AND "org_role" = 'admin';
+
+        IF v_admins <= 1 THEN
+            RETURN jsonb_build_object('status', 'last_admin');
+        END IF;
+    END IF;
+
+    -- -----------------------------------------------------------------------
+    -- 5. The revoke itself. Project access first — the RESTRICT foreign key
+    --    would reject the reverse order, which is precisely the property that
+    --    makes a half-finished removal impossible.
+    --
+    --    Scoped by organization_id as well as user_id. Redundant given
+    --    UNIQUE(user_id) and the composite FKs (a person's project_members
+    --    rows can only ever belong to their one firm), but this is the
+    --    statement that deletes another user's data, so it names the firm
+    --    explicitly rather than relying on an invariant proved elsewhere.
+    -- -----------------------------------------------------------------------
+    DELETE FROM "public"."project_members"
+     WHERE "user_id" = p_user_id
+       AND "organization_id" = p_org_id;
+    GET DIAGNOSTICS v_projects = ROW_COUNT;
+
+    DELETE FROM "public"."organization_members"
+     WHERE "organization_id" = p_org_id AND "user_id" = p_user_id;
+
+    RETURN jsonb_build_object(
+        'status',           'removed',
+        'projects_removed', v_projects
+    );
+END;
+$$;
+
+ALTER FUNCTION "public"."remove_organization_member"("p_org_id" "uuid", "p_user_id" "uuid", "p_actor_id" "uuid")
+    OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."remove_organization_member"("p_org_id" "uuid", "p_user_id" "uuid", "p_actor_id" "uuid") IS
+  'Atomically revokes a person''s firm and project access. Project rows first (project_members_user_org_fkey is RESTRICT), then the membership. Re-checks admin/own-firm/last-admin/self inside the transaction. Does NOT delete the auth account. EXECUTE granted to service_role only.';
+
+
+CREATE OR REPLACE FUNCTION "public"."auth_user_has_password"("p_user_id" "uuid")
+RETURNS boolean
+    LANGUAGE "sql"
+    STABLE
+    SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT coalesce(
+    (
+      -- Passwordless accounts (admin.createUser with no password, or an
+      -- invite that was never completed) carry NULL or ''. Both must read as
+      -- "no password".
+      SELECT coalesce(u."encrypted_password", '') <> ''
+      FROM "auth"."users" u
+      WHERE u."id" = p_user_id
+    ),
+    -- No such user → fail closed.
+    true
+  );
+$$;
+
+ALTER FUNCTION "public"."auth_user_has_password"("p_user_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."auth_user_has_password"("p_user_id" "uuid") IS
+  'True when the account has a password set. Returns a boolean only — never the hash. Used by the firm-admin recovery-link route to refuse minting a link for an account with working credentials. Fails closed (true) for an unknown id. EXECUTE granted to service_role only.';
+
+
 CREATE OR REPLACE FUNCTION "public"."check_plan_project_consistency"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     AS $$
@@ -472,6 +784,8 @@ CREATE TABLE IF NOT EXISTS "public"."organization_invitations" (
     "accepted_at" timestamp with time zone,
     "accepted_by" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "invited_name" "text",
+    "invited_role" "text",
     CONSTRAINT "organization_invitations_email_lowercase" CHECK ((("email" = "lower"("email")) AND ("strpos"("email", '@'::"text") > 1))),
     CONSTRAINT "organization_invitations_org_role_check" CHECK (("org_role" = ANY (ARRAY['admin'::"text", 'member'::"text"])))
 );
@@ -480,6 +794,12 @@ CREATE TABLE IF NOT EXISTS "public"."organization_invitations" (
 ALTER TABLE "public"."organization_invitations" OWNER TO "postgres";
 
 COMMENT ON TABLE "public"."organization_invitations" IS 'Pending firm invitations. Claimed by matching BOTH the token and the JWT-verified email; never the token alone.';
+
+COMMENT ON COLUMN "public"."organization_invitations"."invited_name" IS
+  'Optional pre-fill for the invitee''s profile name, entered by the inviting admin. Confirmed and editable by the person during activation — never authoritative.';
+
+COMMENT ON COLUMN "public"."organization_invitations"."invited_role" IS
+  'Optional pre-fill for the invitee''s job title (profiles.role). Free text: the UI offers a picklist, but firms invent titles and one that is not on the list must still be storable.';
 
 
 CREATE TABLE IF NOT EXISTS "public"."observations" (
@@ -1693,6 +2013,14 @@ CREATE POLICY "Members can create comments" ON "public"."comments" FOR INSERT WI
 CREATE POLICY "Members can create visits" ON "public"."site_visits" FOR INSERT WITH CHECK ("public"."is_project_member"("project_id"));
 
 
+-- Present on prod since before the organization migration, but MISSING from
+-- this dump until the platform-operator isolation sweep caught it: without
+-- this policy the creator and owner of a visit reads back ZERO rows, while
+-- observations, photos and reports in the same project stay visible. Drift in
+-- the dump, not a defect on prod.
+CREATE POLICY "Members can view visits" ON "public"."site_visits" FOR SELECT USING ("public"."is_project_member"("project_id"));
+
+
 
 CREATE POLICY "Members can upload photos" ON "public"."photos" FOR INSERT WITH CHECK ((("auth"."uid"() = "user_id") AND "public"."is_project_member"("project_id")));
 
@@ -2209,6 +2537,45 @@ GRANT ALL ON FUNCTION "public"."shares_project_with"("p_user_id" "uuid") TO "ser
 GRANT ALL ON FUNCTION "public"."find_invitable_user"("p_email" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."find_invitable_user"("p_email" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."find_invitable_user"("p_email" "text") TO "service_role";
+
+
+-- ---------------------------------------------------------------------------
+-- GRANTS — service_role only.
+--
+-- Every other function in this schema is granted to anon/authenticated/
+-- service_role alike. This one must not be: p_user_id is a parameter, and a
+-- PostgREST RPC from the browser could otherwise pass someone else's id.
+-- ---------------------------------------------------------------------------
+REVOKE ALL ON FUNCTION "public"."claim_organization_invitation"("p_user_id" "uuid", "p_token" "text") FROM PUBLIC;
+REVOKE ALL ON FUNCTION "public"."claim_organization_invitation"("p_user_id" "uuid", "p_token" "text") FROM "anon";
+REVOKE ALL ON FUNCTION "public"."claim_organization_invitation"("p_user_id" "uuid", "p_token" "text") FROM "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."claim_organization_invitation"("p_user_id" "uuid", "p_token" "text") TO "service_role";
+
+-- ---------------------------------------------------------------------------
+-- GRANTS — service_role only.
+--
+-- p_actor_id is a parameter, so a PostgREST RPC from the browser could
+-- otherwise claim to be an admin. Same reasoning as
+-- claim_organization_invitation() in Stage 6.
+-- ---------------------------------------------------------------------------
+REVOKE ALL ON FUNCTION "public"."remove_organization_member"("p_org_id" "uuid", "p_user_id" "uuid", "p_actor_id" "uuid") FROM PUBLIC;
+REVOKE ALL ON FUNCTION "public"."remove_organization_member"("p_org_id" "uuid", "p_user_id" "uuid", "p_actor_id" "uuid") FROM "anon";
+REVOKE ALL ON FUNCTION "public"."remove_organization_member"("p_org_id" "uuid", "p_user_id" "uuid", "p_actor_id" "uuid") FROM "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."remove_organization_member"("p_org_id" "uuid", "p_user_id" "uuid", "p_actor_id" "uuid") TO "service_role";
+
+-- ---------------------------------------------------------------------------
+-- GRANTS — service_role only.
+--
+-- p_user_id is a parameter, so a PostgREST RPC from the browser could
+-- otherwise probe any account. Even a boolean is worth withholding: it would
+-- reveal which addresses have completed activation. Same reasoning as
+-- claim_organization_invitation() (Stage 6) and remove_organization_member()
+-- (Stage 7).
+-- ---------------------------------------------------------------------------
+REVOKE ALL ON FUNCTION "public"."auth_user_has_password"("p_user_id" "uuid") FROM PUBLIC;
+REVOKE ALL ON FUNCTION "public"."auth_user_has_password"("p_user_id" "uuid") FROM "anon";
+REVOKE ALL ON FUNCTION "public"."auth_user_has_password"("p_user_id" "uuid") FROM "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."auth_user_has_password"("p_user_id" "uuid") TO "service_role";
 
 
 

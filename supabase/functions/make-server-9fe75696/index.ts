@@ -1168,7 +1168,7 @@ app.post("/make-server-9fe75696/organizations/claim", requireAuth, async (c) => 
       );
     }
 
-    // One transaction, in the database. See stage6-claim-invitation.sql.
+    // One transaction, in the database. See claim_organization_invitation() in prod-schema.sql.
     const { data, error } = await supabase.rpc("claim_organization_invitation", {
       p_user_id: userId,
       p_token: token,
@@ -1411,7 +1411,7 @@ app.post("/make-server-9fe75696/organizations/members/provision", requireAuth, a
 // and still no password. The gate then refused to re-issue, leaving an account
 // that could neither be activated nor helped.
 //
-// public.auth_user_has_password() (stage8-has-password.sql) reads the real
+// public.auth_user_has_password() (see prod-schema.sql) reads the real
 // fact and returns a boolean — never the hash. The rule enforced is identical:
 // an account with working credentials can never have a link minted for it by
 // an admin. It simply now recognises dead-link victims as what they are.
@@ -1539,7 +1539,7 @@ app.patch("/make-server-9fe75696/organizations/members/:userId", requireAuth, as
 //                       considered their project access gets told about it
 //                       rather than silently destroying it.
 //   with ?cascade=1   — revokes project access and firm membership together,
-//                       in one transaction (stage7-remove-member.sql).
+//                       in one transaction (remove_organization_member(), see prod-schema.sql).
 //
 // project_members_user_org_fkey is ON DELETE RESTRICT, which is what makes
 // both behaviours possible: the membership CANNOT be deleted while project
@@ -1614,7 +1614,7 @@ app.delete("/make-server-9fe75696/organizations/members/:userId", requireAuth, a
       );
     }
 
-    // One transaction, in the database — see stage7-remove-member.sql. The
+    // One transaction, in the database — see remove_organization_member() in prod-schema.sql. The
     // project rows MUST go before the membership (project_members_user_org_fkey
     // is RESTRICT), and a crash between the two would strip someone's project
     // access while leaving them in the firm. Doing it as two calls from here
@@ -1700,6 +1700,373 @@ app.get("/make-server-9fe75696/organizations/me", requireAuth, async (c) => {
     return c.json({ error: `Erreur: ${error.message}` }, 500);
   }
 });
+
+// ---------------------------------------------------------------------------
+// PLATFORM ADMINISTRATION
+//
+// A tier ABOVE firms. A platform operator can create a firm and designate its
+// first admin. That is the WHOLE capability.
+//
+// THE PROPERTY THAT MUST NOT FAIL: an operator can administer firms and can
+// read NONE of their data — no project, visit, photo, observation, report or
+// deficiency, in any firm, including firms they created themselves.
+//
+// That property is not enforced by the code below. It is inherited: every data
+// policy in the database resolves through current_org_id(), is_project_member()
+// or has_project_role(), and all three are false for a user who belongs to no
+// firm. An operator belongs to no firm, so to every data table they are an
+// ordinary stranger. Nothing here adds a data-reading capability, and nothing
+// here may ever be extended to.
+//
+// Which gives the rule for anyone adding to this section: a route belongs here
+// ONLY if it touches organizations or organization_members. If a route would
+// need to read a project, a visit, or anything inside one, it does not belong
+// in the platform tier at all — the answer is to ask that firm's own admin.
+//
+// The routes run on the service role with no RLS backstop, exactly like the
+// firm-admin routes above, so each one authorizes for itself.
+// ---------------------------------------------------------------------------
+
+/**
+ * Is this user a platform operator?
+ *
+ * DELIBERATELY AN INLINE QUERY AGAINST THE ALLOWLIST, and deliberately NOT
+ * backed by an is_platform_operator() SQL function. The old global is_admin()
+ * was dangerous less for what it read than for what it was: a tidy callable
+ * predicate that `OR is_admin()` could be pasted into any RLS policy, which is
+ * how it reached 19 of them. No such predicate exists in the database now, so
+ * that paste is not available to anyone.
+ *
+ * Fails CLOSED: any error is "not an operator".
+ */
+async function isPlatformOperator(userId: string): Promise<boolean> {
+  if (!userId) return false;
+  const { data, error } = await supabase
+    .from("platform_operators")
+    .select("user_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return !!data;
+}
+
+/**
+ * Gate for every platform route.
+ *
+ * Refuses with 404, not 403. A 403 would confirm that the platform tier exists
+ * and that this caller is not in it; a 404 tells an ordinary user exactly what
+ * a mistyped URL tells them. There is no UI path to these routes and nothing
+ * legitimate ever gets this response, so there is no usability cost to paying
+ * for the silence.
+ */
+async function requirePlatformOperator(c: any): Promise<{ userId: string } | Response> {
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Not found" }, 404);
+  try {
+    if (!(await isPlatformOperator(userId))) {
+      console.warn("Platform route refused for user", userId);
+      return c.json({ error: "Not found" }, 404);
+    }
+    return { userId };
+  } catch (error: any) {
+    console.error("Platform-operator check failed:", error?.message);
+    return c.json({ error: "Not found" }, 404);
+  }
+}
+
+/** firme d'architecture → "firme-d-architecture". Matches organizations_slug_format. */
+function slugify(raw: unknown): string {
+  if (typeof raw !== "string") return "";
+  return raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // strip accents — the CHECK allows [a-z0-9-] only
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 63);
+}
+
+// ---------------------------------------------------------------------------
+// GET /platform/organizations — every firm, and NOTHING inside any of them
+//
+// Returns names, slugs, report_firm_name, member counts and the admins'
+// identities. Deliberately NOT: projects, visits, or any content. A count of
+// members is administrative metadata; a list of projects would be the first
+// step across the line this tier exists to hold.
+// ---------------------------------------------------------------------------
+app.get("/make-server-9fe75696/platform/organizations", requireAuth, async (c) => {
+  try {
+    const gate = await requirePlatformOperator(c);
+    if (gate instanceof Response) return gate;
+
+    const { data: orgs, error } = await supabase
+      .from("organizations")
+      .select("id, name, slug, report_firm_name, created_at")
+      .order("name");
+    if (error) throw error;
+
+    const { data: members, error: memberError } = await supabase
+      .from("organization_members")
+      .select("organization_id, user_id, org_role");
+    if (memberError) throw memberError;
+
+    // Two queries joined in memory: there is no FK between organization_members
+    // and profiles, so PostgREST cannot embed one in the other.
+    const adminIds = (members ?? []).filter((m) => m.org_role === "admin").map((m) => m.user_id);
+    let profileById = new Map<string, { name: string | null; email: string | null }>();
+    if (adminIds.length > 0) {
+      const { data: profiles, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, name, email")
+        .in("id", adminIds);
+      if (profileError) throw profileError;
+      profileById = new Map((profiles ?? []).map((p) => [p.id, { name: p.name, email: p.email }]));
+    }
+
+    const organizations = (orgs ?? []).map((org) => {
+      const mine = (members ?? []).filter((m) => m.organization_id === org.id);
+      return {
+        ...org,
+        memberCount: mine.length,
+        admins: mine
+          .filter((m) => m.org_role === "admin")
+          .map((m) => ({
+            userId: m.user_id,
+            name: profileById.get(m.user_id)?.name ?? null,
+            email: profileById.get(m.user_id)?.email ?? null,
+          })),
+      };
+    });
+
+    return c.json({ organizations });
+  } catch (error: any) {
+    console.error("Platform list organizations error:", error);
+    return c.json({ error: `Erreur: ${error.message}` }, 500);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /platform/organizations — create a firm and install its first admin
+//
+// ORDER MATTERS, and where atomicity stops is worth being explicit about:
+//
+//   1. Resolve the admin's auth account (create it, or adopt an existing
+//      firm-less one). This is a GoTrue call and CANNOT join a Postgres
+//      transaction.
+//   2. platform_create_organization() does the organizations row and the
+//      organization_members row as ONE transaction. Either both land or
+//      neither does — a firm with no admin is a firm nobody can enter.
+//   3. Mint the set-password link. Best-effort; re-issuable afterwards.
+//
+// If step 2 fails, step 1 leaves an account belonging to no firm — the same
+// benign state the provisioning flow can already produce, and re-running with
+// the same email adopts it rather than making a second account.
+// ---------------------------------------------------------------------------
+app.post("/make-server-9fe75696/platform/organizations", requireAuth, async (c) => {
+  try {
+    const gate = await requirePlatformOperator(c);
+    if (gate instanceof Response) return gate;
+    const actorId = gate.userId;
+
+    const body = await c.req.json().catch(() => ({}));
+    const name = normalizeProfileText(body?.name, 120);
+    const reportFirmName = normalizeProfileText(body?.reportFirmName, 160);
+    const slug = slugify(body?.slug || name);
+    const adminEmail = normalizeEmail(body?.adminEmail);
+    const adminName = normalizeProfileText(body?.adminName, 120);
+    const adminRole = normalizeProfileText(body?.adminRole, 80);
+
+    if (!name) return c.json({ error: "Le nom de la firme est requis." }, 400);
+    if (!slug) return c.json({ error: "Identifiant de firme invalide." }, 400);
+    if (!adminEmail) return c.json({ error: "Adresse courriel de l'administrateur invalide." }, 400);
+
+    // --- step 1: the account -------------------------------------------
+    let adminUserId: string | null = null;
+    const { data: created, error: createError } = await supabase.auth.admin.createUser({
+      email: adminEmail,
+      // Vouched for by a platform operator who is standing up the firm, in the
+      // same sense a firm admin vouches for someone they provision. NOT the
+      // same as letting an anonymous caller assert their own address.
+      email_confirm: true,
+      user_metadata: {
+        ...(adminName ? { name: adminName } : {}),
+        ...(adminRole ? { role: adminRole } : {}),
+      },
+    });
+
+    if (created?.user) {
+      adminUserId = created.user.id;
+    } else if (createError) {
+      const { data: existing } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", adminEmail)
+        .maybeSingle();
+      if (!existing?.id) {
+        console.error("platform create: createUser failed, no profile:", createError.message);
+        return c.json({ error: `Impossible de créer le compte: ${createError.message}` }, 400);
+      }
+      adminUserId = existing.id;
+    }
+    if (!adminUserId) return c.json({ error: "Impossible de créer le compte." }, 500);
+
+    // --- step 2: the atomic pair ---------------------------------------
+    const { data: result, error: rpcError } = await supabase.rpc("platform_create_organization", {
+      p_name: name,
+      p_slug: slug,
+      p_report_firm_name: reportFirmName || null,
+      p_admin_user_id: adminUserId,
+      p_actor_id: actorId, // ← re-checked inside the function against the allowlist
+    });
+    if (rpcError) throw rpcError;
+
+    const status = (result as any)?.status;
+    if (status !== "created") {
+      const messages: Record<string, string> = {
+        not_operator: "Réservé aux opérateurs de la plateforme.",
+        no_user: "Compte administrateur introuvable.",
+        invalid_name: "Le nom de la firme est requis.",
+        invalid_slug: "Identifiant de firme invalide.",
+        slug_taken: "Cet identifiant est déjà utilisé par une autre firme.",
+        already_in_firm: "Cette personne appartient déjà à une firme.",
+      };
+      return c.json(
+        { error: messages[status] || "Impossible de créer la firme.", code: status },
+        status === "not_operator" ? 404 : 409,
+      );
+    }
+
+    // --- step 3: the activation link -----------------------------------
+    let actionLink: string | null = null;
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: "recovery",
+      email: adminEmail,
+      options: { redirectTo: SET_PASSWORD_URL },
+    });
+    if (linkError) {
+      console.warn("platform create: could not generate recovery link:", linkError.message);
+    } else {
+      actionLink = linkData?.properties?.action_link ?? null;
+    }
+
+    return c.json({
+      success: true,
+      organization: (result as any).organization,
+      adminUserId,
+      adminEmail,
+      actionLink,
+    });
+  } catch (error: any) {
+    console.error("Platform create organization error:", error);
+    return c.json({ error: `Erreur lors de la création: ${error.message}` }, 500);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// PATCH /platform/organizations/:id — rename a firm / set its report name
+//
+// The ONLY two fields. Not membership, not roles, not anything inside.
+// report_firm_name is what prints on generated reports, so a firm standing up
+// with it unset produces documents with a blank letterhead.
+// ---------------------------------------------------------------------------
+app.patch("/make-server-9fe75696/platform/organizations/:id", requireAuth, async (c) => {
+  try {
+    const gate = await requirePlatformOperator(c);
+    if (gate instanceof Response) return gate;
+
+    const orgId = c.req.param("id");
+    const body = await c.req.json().catch(() => ({}));
+
+    const patch: Record<string, string | null> = {};
+    if (typeof body?.name === "string") {
+      const name = normalizeProfileText(body.name, 120);
+      if (!name) return c.json({ error: "Le nom de la firme ne peut pas être vide." }, 400);
+      patch.name = name;
+    }
+    if (typeof body?.reportFirmName === "string") {
+      patch.report_firm_name = normalizeProfileText(body.reportFirmName, 160) || null;
+    }
+    if (Object.keys(patch).length === 0) return c.json({ error: "Rien à modifier." }, 400);
+
+    const { error } = await supabase.from("organizations").update(patch).eq("id", orgId);
+    if (error) throw error;
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Platform update organization error:", error);
+    return c.json({ error: `Erreur: ${error.message}` }, 500);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /platform/organizations/:id/admin-recovery-link — re-issue a lost link
+//
+// Same gate as the firm-admin re-issue route, and for the same reason: this
+// mints a credential-setting link, so it is refused once the person HAS a
+// password. After that they use "Mot de passe oublié ?" themselves. Operators
+// stand up firms; they do not hold anyone's identity.
+// ---------------------------------------------------------------------------
+app.post(
+  "/make-server-9fe75696/platform/organizations/:id/admin-recovery-link",
+  requireAuth,
+  async (c) => {
+    try {
+      const gate = await requirePlatformOperator(c);
+      if (gate instanceof Response) return gate;
+
+      const orgId = c.req.param("id");
+      const body = await c.req.json().catch(() => ({}));
+      const targetId = typeof body?.userId === "string" ? body.userId : "";
+      if (!targetId) return c.json({ error: "userId requis." }, 400);
+
+      // The target must be an admin OF THE NAMED FIRM. Without this an
+      // operator could mint a link for any account in the system by pairing an
+      // arbitrary userId with a firm they administer.
+      const { data: membership, error: memberError } = await supabase
+        .from("organization_members")
+        .select("user_id, org_role")
+        .eq("organization_id", orgId)
+        .eq("user_id", targetId)
+        .maybeSingle();
+      if (memberError) throw memberError;
+      if (!membership || membership.org_role !== "admin") {
+        return c.json({ error: "Cette personne n'est pas administratrice de cette firme." }, 404);
+      }
+
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(targetId);
+      if (userError) throw userError;
+      const email = userData?.user?.email;
+      if (!email) return c.json({ error: "Compte introuvable." }, 404);
+
+      const { data: hasPassword, error: pwError } = await supabase.rpc("auth_user_has_password", {
+        p_user_id: targetId,
+      });
+      if (pwError) throw pwError;
+      if (hasPassword) {
+        return c.json(
+          {
+            error:
+              "Cette personne a déjà un mot de passe. Elle peut utiliser « Mot de passe oublié ? » à l'écran de connexion.",
+            code: "already_activated",
+          },
+          409,
+        );
+      }
+
+      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+        type: "recovery",
+        email,
+        options: { redirectTo: SET_PASSWORD_URL },
+      });
+      if (linkError) throw linkError;
+
+      return c.json({ success: true, email, actionLink: linkData?.properties?.action_link ?? null });
+    } catch (error: any) {
+      console.error("Platform recovery-link error:", error);
+      return c.json({ error: `Erreur: ${error.message}` }, 500);
+    }
+  },
+);
 
 // Resolves the visit's project and checks membership. Returns a Response to
 // send when access is refused, or null to continue. Fails CLOSED: an
