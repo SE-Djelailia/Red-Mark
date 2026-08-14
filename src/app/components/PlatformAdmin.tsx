@@ -279,20 +279,48 @@ function FirmRow({
   const [saving, setSaving] = useState(false);
   const [busyAdmin, setBusyAdmin] = useState<string | null>(null);
 
-  async function save() {
+  // Resync the draft when the underlying firm changes.
+  //
+  // These fields seed from props on mount only, and this row is keyed on
+  // org.id — so React reuses the instance across a refetch. Without this, a
+  // refresh (the header button, or another save on the page) would leave a
+  // closed row holding values from before the refetch, and reopening it would
+  // show stale text that a save would then write back.
+  //
+  // Skipped while `editing`, so a refetch never clobbers what someone is in
+  // the middle of typing.
+  useEffect(() => {
+    if (editing) return;
+    setName(org.name);
+    setReportName(org.report_firm_name || "");
+  }, [editing, org.name, org.report_firm_name]);
+
+  async function save(e?: React.FormEvent) {
+    e?.preventDefault();
     const cleanName = normalizeName(name);
-    if (!cleanName) return;
+    if (!cleanName || saving) return;
     setSaving(true);
     try {
+      // Only the two administrative fields. The slug is a stable identifier
+      // and is deliberately not editable; nothing about the firm's CONTENTS is
+      // reachable from here, by design — see the header note on this screen.
       await updateOrganization(org.id, { name: cleanName, reportFirmName: reportName.trim() });
       toast.success("Firme mise à jour.");
       setEditing(false);
       onChanged();
     } catch (err: any) {
+      // Same shape as the create-firm form: the server's message when there is
+      // one, since it explains the actual refusal, and a fallback otherwise.
       toast.error(err?.message || "Impossible de mettre à jour la firme.");
     } finally {
       setSaving(false);
     }
+  }
+
+  function cancelEdit() {
+    setEditing(false);
+    setName(org.name);
+    setReportName(org.report_firm_name || "");
   }
 
   async function reissue(userId: string, label: string) {
@@ -319,7 +347,9 @@ function FirmRow({
 
         <div className="min-w-0 flex-1">
           {editing ? (
-            <div className="space-y-3">
+            // A real <form>, like the create-firm form: Enter submits, which is
+            // what anyone correcting a typo in a single field expects.
+            <form onSubmit={save} className="space-y-3">
               <div>
                 <label className={labelClassName} htmlFor={`name-${org.id}`}>
                   Nom de la firme
@@ -329,6 +359,9 @@ function FirmRow({
                   className={inputClassName}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  disabled={saving}
+                  required
+                  autoFocus
                 />
               </div>
               <div>
@@ -340,26 +373,28 @@ function FirmRow({
                   className={inputClassName}
                   value={reportName}
                   onChange={(e) => setReportName(e.target.value)}
+                  disabled={saving}
                   placeholder="ex. Jodoin Lamarre Pratte architectes"
                 />
+                <p className="mt-1 text-xs text-muted">
+                  Apparaît en en-tête des rapports de visite. Laissé vide, les rapports n'auront pas
+                  de nom de firme.
+                </p>
               </div>
               <div className="flex gap-2">
-                <Button onClick={() => void save()} disabled={saving || !normalizeName(name)}>
+                <Button type="submit" disabled={saving || !normalizeName(name)}>
                   {saving ? "Enregistrement…" : "Enregistrer"}
                 </Button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setEditing(false);
-                    setName(org.name);
-                    setReportName(org.report_firm_name || "");
-                  }}
-                  className="rounded-lg border border-line px-4 py-2.5 text-sm font-medium text-ink hover:bg-subtle"
+                  onClick={cancelEdit}
+                  disabled={saving}
+                  className="rounded-lg border border-line px-4 py-2.5 text-sm font-medium text-ink hover:bg-subtle disabled:opacity-50"
                 >
                   Annuler
                 </button>
               </div>
-            </div>
+            </form>
           ) : (
             <>
               <p className="font-medium text-ink">{org.name}</p>
