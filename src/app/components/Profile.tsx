@@ -20,6 +20,8 @@ import GeneralSettings from "./GeneralSettings";
 import DataExport from "./DataExport";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { useFirm } from "../../hooks/useFirm";
+import RolePicker from "./ui-kit/RolePicker";
+import { normalizeName, normalizeRole } from "../../lib/roles";
 import { inputClassName } from "./ui-kit/Input";
 import { Card, Section } from "./ui-kit/Card";
 import { StatGrid, StatTile } from "./ui-kit/StatTile";
@@ -59,7 +61,7 @@ export default function Profile() {
   // text field.
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [form, setForm] = useState({ name: "", firm: "", role: "" });
+  const [form, setForm] = useState({ name: "", role: "" });
 
   useEffect(() => {
     if (user?.id) {
@@ -84,15 +86,20 @@ export default function Profile() {
   const startEditing = () => {
     setForm({
       name: user?.user_metadata?.name || "",
-      firm: user?.user_metadata?.firm || "",
       role: user?.user_metadata?.role || "",
     });
     setIsEditing(true);
   };
 
   const handleSaveProfile = async () => {
-    if (!form.name.trim()) {
+    // Both are required, not just the name: the two print together on every
+    // generated report, under "Préparé par" and in the ASSISTAIENT table.
+    if (!normalizeName(form.name)) {
       toast.error("Le nom ne peut pas être vide");
+      return;
+    }
+    if (!normalizeRole(form.role)) {
+      toast.error("Le titre ne peut pas être vide");
       return;
     }
 
@@ -102,9 +109,8 @@ export default function Profile() {
       // the auth state change it triggers refreshes `user`, so the header
       // and these fields pick up the new values without a manual refetch.
       await updateProfile({
-        name: form.name.trim(),
-        firm: form.firm.trim(),
-        role: form.role.trim(),
+        name: normalizeName(form.name),
+        role: normalizeRole(form.role),
       });
       setIsEditing(false);
     } catch {
@@ -139,8 +145,7 @@ export default function Profile() {
 
   // Extract user metadata
   const userName = user.user_metadata?.name || user.email?.split("@")[0] || "Utilisateur";
-  const userFirm = user.user_metadata?.firm || "Non spécifié";
-  const userRole = user.user_metadata?.role || "architect";
+  const userRole = user.user_metadata?.role || "Non spécifié";
 
   return (
     <div className="min-h-screen pb-20 bg-canvas">
@@ -242,20 +247,20 @@ export default function Profile() {
               </div>
             </div>
 
+            {/* Read-only, and now sourced from the firm the person actually
+                BELONGS to rather than free text they typed. The editable
+                version was dead: it carried no authority over anything, while
+                looking exactly like the field that decides which firm you are
+                in. */}
             <div className="p-4 flex items-center gap-3">
               <Building2 size={20} className="text-faint flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-xs text-muted mb-1">Entreprise</div>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={form.firm}
-                    onChange={(e) => setForm({ ...form, firm: e.target.value })}
-                    className={inputClassName}
-                    placeholder="Nom de votre entreprise"
-                  />
-                ) : (
-                  <div className="text-sm text-ink">{userFirm}</div>
+                <div className="text-xs text-muted mb-1">Firme</div>
+                <div className="text-sm text-ink">{firm?.name || "Aucune firme"}</div>
+                {isEditing && (
+                  <div className="text-xs text-faint mt-1">
+                    Votre firme est définie par votre invitation.
+                  </div>
                 )}
               </div>
             </div>
@@ -263,17 +268,16 @@ export default function Profile() {
             <div className="p-4 flex items-center gap-3">
               <Settings size={20} className="text-faint flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-xs text-muted mb-1">Rôle</div>
+                <div className="text-xs text-muted mb-1">Titre</div>
                 {isEditing ? (
-                  <input
-                    type="text"
+                  <RolePicker
+                    id="profile-role"
                     value={form.role}
-                    onChange={(e) => setForm({ ...form, role: e.target.value })}
-                    className={inputClassName}
-                    placeholder="Ex : Architecte, Technologue"
+                    onChange={(role) => setForm({ ...form, role })}
+                    required
                   />
                 ) : (
-                  <div className="text-sm text-ink capitalize">{userRole}</div>
+                  <div className="text-sm text-ink">{userRole}</div>
                 )}
               </div>
             </div>

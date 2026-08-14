@@ -26,6 +26,7 @@ import {
 import { Card, Section } from "./ui-kit/Card";
 import Button from "./ui-kit/Button";
 import { inputClassName, labelClassName, selectClassName } from "./ui-kit/Input";
+import RolePicker from "./ui-kit/RolePicker";
 import FirmProjectAccess from "./FirmProjectAccess";
 import { getMemberProjects, type FirmProject } from "../../lib/firmProjectsApi";
 import RecoveryLinkDialog from "./RecoveryLinkDialog";
@@ -112,6 +113,7 @@ function InviteForm({
   const [method, setMethod] = useState<Method>("invite");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [jobRole, setJobRole] = useState("");
   const [orgRole, setOrgRole] = useState<OrgRole>("member");
   const [busy, setBusy] = useState(false);
 
@@ -123,7 +125,7 @@ function InviteForm({
     setBusy(true);
     try {
       if (method === "invite") {
-        const result = await createInvitation(trimmed, orgRole);
+        const result = await createInvitation(trimmed, orgRole, name.trim(), jobRole.trim());
         toast.success(
           result.emailed
             ? `Invitation envoyée à ${trimmed}.`
@@ -131,11 +133,13 @@ function InviteForm({
         );
         setEmail("");
         setName("");
+        setJobRole("");
         onDone();
       } else {
-        const result = await provisionMember(trimmed, orgRole, name.trim());
+        const result = await provisionMember(trimmed, orgRole, name.trim(), jobRole.trim());
         setEmail("");
         setName("");
+        setJobRole("");
         if (result.actionLink) {
           // Straight into a modal. The admin must dismiss it deliberately,
           // because this link is the only path to the account they just made.
@@ -218,21 +222,33 @@ function InviteForm({
           />
         </div>
 
-        {method === "provision" && (
-          <div>
-            <label className={labelClassName} htmlFor="firm-invite-name">
-              Nom <span className="font-normal text-muted">(optionnel)</span>
-            </label>
-            <input
-              id="firm-invite-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Prénom Nom"
-              className={inputClassName}
-            />
-          </div>
-        )}
+        {/* Shown for BOTH methods. These are pre-fills: the person confirms
+            and can correct them when they activate, and activation requires
+            both regardless. Filling them here just saves a new colleague
+            re-typing what the admin already knew. */}
+        <div>
+          <label className={labelClassName} htmlFor="firm-invite-name">
+            Nom <span className="font-normal text-muted">(optionnel)</span>
+          </label>
+          <input
+            id="firm-invite-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Prénom Nom"
+            className={inputClassName}
+          />
+        </div>
+
+        <div>
+          <label className={labelClassName} htmlFor="firm-invite-job-role">
+            Titre <span className="font-normal text-muted">(optionnel)</span>
+          </label>
+          <RolePicker id="firm-invite-job-role" value={jobRole} onChange={setJobRole} />
+          <p className="text-xs text-muted mt-1.5">
+            Apparaît sur les rapports, sous « Préparé par ».
+          </p>
+        </div>
 
         <div>
           <label className={labelClassName} htmlFor="firm-invite-role">

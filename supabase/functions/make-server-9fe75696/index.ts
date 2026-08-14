@@ -858,6 +858,18 @@ const SET_PASSWORD_URL = `${APP_BASE_URL}/auth/set-password`;
 console.log("APP_BASE_URL:", APP_BASE_URL);
 console.log("Auth redirect target:", SET_PASSWORD_URL);
 
+/**
+ * Profile fields an admin may pre-fill on an invitation.
+ *
+ * Both print on generated reports, so they are trimmed and length-capped here
+ * rather than trusted raw. Neither is authoritative: the person confirms and
+ * can correct both during activation.
+ */
+function normalizeProfileText(raw: unknown, max = 120): string {
+  if (typeof raw !== "string") return "";
+  return raw.trim().replace(/\s+/g, " ").slice(0, max);
+}
+
 /** Conservative address check; the DB CHECK constraint is the real authority. */
 function normalizeEmail(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
@@ -950,6 +962,8 @@ app.post("/make-server-9fe75696/organizations/invitations", requireAuth, async (
     const body = await c.req.json().catch(() => ({}));
     const email = normalizeEmail(body?.email);
     const orgRole = normalizeOrgRole(body?.orgRole);
+    const invitedName = normalizeProfileText(body?.name);
+    const invitedRole = normalizeProfileText(body?.role, 80);
     if (!email) return c.json({ error: "Adresse courriel invalide." }, 400);
     if (!orgRole) return c.json({ error: "Rôle de firme invalide." }, 400);
 
@@ -988,6 +1002,10 @@ app.post("/make-server-9fe75696/organizations/invitations", requireAuth, async (
       invited_by: inviterId,
       token,
       expires_at: expiresAt,
+      // Pre-fill only, and null rather than '' so "not provided" and
+      // "provided as blank" are the same thing downstream.
+      invited_name: invitedName || null,
+      invited_role: invitedRole || null,
     });
 
     if (insertError) {
@@ -1009,9 +1027,18 @@ app.post("/make-server-9fe75696/organizations/invitations", requireAuth, async (
     // an account — that is fine and not an error worth surfacing: an existing
     // user simply logs in, and the claim runs for them on login.
     let emailed = false;
+    // name/role ride along in user_metadata as well as on the invitation row.
+    // The two serve different readers: the activation screen reads metadata
+    // (it runs BEFORE the claim), while the claim reads the invitation row to
+    // fill in someone who already had an account and never sees that screen.
     const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
       redirectTo: SET_PASSWORD_URL,
-      data: { organization_id: orgId, invitation_token: token },
+      data: {
+        organization_id: orgId,
+        invitation_token: token,
+        ...(invitedName ? { name: invitedName } : {}),
+        ...(invitedRole ? { role: invitedRole } : {}),
+      },
     });
     if (inviteError) {
       console.warn("inviteUserByEmail did not send (likely existing account):", inviteError.message);
@@ -1074,6 +1101,47 @@ app.delete("/make-server-9fe75696/organizations/invitations/:id", requireAuth, a
 // without this, doing so would hand them that colleague's invitation. The
 // SQL function re-checks it independently, reading auth.users itself.
 // ---------------------------------------------------------------------------
+/**
+ * Copies invited_name / invited_role from the invitation this user just
+ * claimed onto their profile, filling BLANK fields only.
+ *
+ * Best-effort throughout: every failure is logged and swallowed. The caller
+ * has already joined the firm by this point, and the activation screen
+ * requires both fields regardless, so there is nothing here worth failing a
+ * request over.
+ */
+async function prefillProfileFromInvitation(userId: string): Promise<void> {
+  try {
+    const { data: invitation } = await supabase
+      .from("organization_invitations")
+      .select("invited_name, invited_role")
+      .eq("accepted_by", userId)
+      .order("accepted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const invitedName = (invitation?.invited_name || "").trim();
+    const invitedRole = (invitation?.invited_role || "").trim();
+    if (!invitedName && !invitedRole) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("name, role")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const patch: Record<string, string> = {};
+    if (invitedName && !(profile?.name || "").trim()) patch.name = invitedName;
+    if (invitedRole && !(profile?.role || "").trim()) patch.role = invitedRole;
+    if (Object.keys(patch).length === 0) return;
+
+    const { error } = await supabase.from("profiles").update(patch).eq("id", userId);
+    if (error) console.warn("claim: could not pre-fill profile:", error.message);
+  } catch (error: any) {
+    console.warn("claim: profile pre-fill threw:", error?.message);
+  }
+}
+
 app.post("/make-server-9fe75696/organizations/claim", requireAuth, async (c) => {
   try {
     const userId = c.get("userId") as string;
@@ -1126,6 +1194,18 @@ app.post("/make-server-9fe75696/organizations/claim", requireAuth, async (c) => 
 
     switch (status) {
       case "claimed":
+        // Pre-fill the profile from whatever the inviting admin entered.
+        //
+        // This is the path for someone who ALREADY had an account and so never
+        // sees the activation screen — without it, their invited_name and
+        // invited_role would be recorded on the invitation and then quietly
+        // discarded.
+        //
+        // Deliberately NOT inside the claim transaction: a display name is not
+        // a security boundary, and failing the whole firm-join because a
+        // cosmetic update errored would be the wrong trade. Blank fields only,
+        // so this can never overwrite a name the person set themselves.
+        await prefillProfileFromInvitation(userId);
         return c.json({
           status,
           organizationId: (data as any).organization_id,
@@ -1187,7 +1267,8 @@ app.post("/make-server-9fe75696/organizations/members/provision", requireAuth, a
     const body = await c.req.json().catch(() => ({}));
     const email = normalizeEmail(body?.email);
     const orgRole = normalizeOrgRole(body?.orgRole);
-    const name = typeof body?.name === "string" ? body.name.trim().slice(0, 200) : "";
+    const name = normalizeProfileText(body?.name);
+    const jobRole = normalizeProfileText(body?.role, 80);
     if (!email) return c.json({ error: "Adresse courriel invalide." }, 400);
     if (!orgRole) return c.json({ error: "Rôle de firme invalide." }, 400);
 
@@ -1198,7 +1279,12 @@ app.post("/make-server-9fe75696/organizations/members/provision", requireAuth, a
     const { data: created, error: createError } = await supabase.auth.admin.createUser({
       email,
       email_confirm: true,
-      user_metadata: { name },
+      // handle_new_user copies these into the profiles row on insert, and the
+      // activation screen reads them back as its pre-fill.
+      user_metadata: {
+        ...(name ? { name } : {}),
+        ...(jobRole ? { role: jobRole } : {}),
+      },
     });
 
     if (created?.user) {
@@ -1240,6 +1326,40 @@ app.post("/make-server-9fe75696/organizations/members/provision", requireAuth, a
         );
       }
       throw memberError;
+    }
+
+    // Write the profile directly too.
+    //
+    // user_metadata alone is not enough: handle_new_user only fires for a
+    // NEWLY created account, so the "already has an account, no firm" branch
+    // above would leave the profile untouched. And reports read profiles, not
+    // user_metadata.
+    //
+    // coalesce-style guard: only fill fields that are actually blank, so
+    // provisioning someone who already set their own name cannot overwrite it
+    // with an admin's guess.
+    if (name || jobRole) {
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("name, role")
+        .eq("id", targetUserId)
+        .maybeSingle();
+
+      const patch: Record<string, string> = {};
+      if (name && !(existingProfile?.name || "").trim()) patch.name = name;
+      if (jobRole && !(existingProfile?.role || "").trim()) patch.role = jobRole;
+
+      if (Object.keys(patch).length > 0) {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update(patch)
+          .eq("id", targetUserId);
+        // Non-fatal: the account and membership exist, and activation asks
+        // for both fields anyway. Losing the pre-fill is not worth failing on.
+        if (profileError) {
+          console.warn("provision: could not pre-fill profile:", profileError.message);
+        }
+      }
     }
 
     // Let them set their own password. The admin never handles a credential.

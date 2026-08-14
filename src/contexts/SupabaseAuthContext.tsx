@@ -11,7 +11,7 @@ interface AuthContextType {
   signUp: (
     email: string,
     password: string,
-    metadata: { name: string; firm: string },
+    metadata: { name: string; role: string },
   ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -50,10 +50,22 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     return () => subscription.unsubscribe();
   }, []);
 
+  /**
+   * `firm` is gone from this signature.
+   *
+   * It was free text the person typed at signup, and under the organization
+   * model it carried no authority whatsoever: firm membership comes from
+   * organization_members, and the name printed on reports comes from
+   * organizations.report_firm_name. Collecting it only invited people to
+   * believe they had joined a firm by naming one.
+   *
+   * `role` replaces it as the second field, and now carries the person's
+   * actual job title rather than the hardcoded "architect" this used to write.
+   */
   const signUp = async (
     email: string,
     password: string,
-    metadata: { name: string; firm: string },
+    metadata: { name: string; role: string },
   ) => {
     try {
       // Créer le compte avec Supabase Auth
@@ -63,8 +75,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         options: {
           data: {
             name: metadata.name,
-            firm: metadata.firm,
-            role: "architect",
+            role: metadata.role,
           },
         },
       });

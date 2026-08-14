@@ -136,13 +136,20 @@ export async function getMyOrganization(): Promise<MyOrganization> {
 // Firm administration (consumed by the Part 2 admin screen)
 // ---------------------------------------------------------------------------
 
+/**
+ * `name` and `role` are optional PRE-FILLS for the invitee's profile, not
+ * assertions about them: the person confirms and can correct both during
+ * activation, which requires them either way.
+ */
 export async function createInvitation(
   email: string,
   orgRole: "admin" | "member" = "member",
+  name = "",
+  role = "",
 ): Promise<{ success: true; email: string; orgRole: string; emailed: boolean; expiresAt: string }> {
   return request("/organizations/invitations", {
     method: "POST",
-    body: JSON.stringify({ email, orgRole }),
+    body: JSON.stringify({ email, orgRole, name, role }),
   });
 }
 
@@ -154,10 +161,11 @@ export async function provisionMember(
   email: string,
   orgRole: "admin" | "member" = "member",
   name = "",
+  role = "",
 ): Promise<{ success: true; userId: string; email: string; actionLink: string | null }> {
   return request("/organizations/members/provision", {
     method: "POST",
-    body: JSON.stringify({ email, orgRole, name }),
+    body: JSON.stringify({ email, orgRole, name, role }),
   });
 }
 

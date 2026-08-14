@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ArrowLeft, Eye, EyeOff, MailCheck } from "lucide-react";
 import { LogoLockup } from "./ui-kit/Logo";
+import RolePicker from "./ui-kit/RolePicker";
 import { useSupabaseAuth } from "../../contexts/SupabaseAuthContext"; // ✅ Using Supabase Auth
 import { supabase } from "../../lib/supabase";
 import { toast } from "sonner";
@@ -16,7 +17,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
-  const [firm, setFirm] = useState("");
+  const [jobRole, setJobRole] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
@@ -36,7 +37,7 @@ export default function Login() {
 
     try {
       if (isSignUp) {
-        await signUp(email, password, { name, firm });
+        await signUp(email, password, { name: name.trim(), role: jobRole.trim() });
         navigate("/app");
       } else {
         await signIn(email, password);
@@ -212,19 +213,16 @@ export default function Login() {
                 />
               </div>
 
+              {/* The free-text "Firme d'architecture" field used to sit here.
+                  It was dead: nobody self-selects a firm in this model —
+                  membership comes from an invitation — and the value carried
+                  no authority at all, which made it actively misleading.
+                  Replaced by the title, which is real and prints on reports. */}
               <div>
-                <label htmlFor="firm" className="block text-sm text-ink mb-2">
-                  Firme d'architecture
+                <label htmlFor="signup-role" className="block text-sm text-ink mb-2">
+                  Titre
                 </label>
-                <input
-                  id="firm"
-                  type="text"
-                  value={firm}
-                  onChange={(e) => setFirm(e.target.value)}
-                  placeholder="Jodoin Lamarre Pratte"
-                  className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 transition-all"
-                  required
-                />
+                <RolePicker id="signup-role" value={jobRole} onChange={setJobRole} required />
               </div>
             </>
           )}
@@ -282,7 +280,7 @@ export default function Login() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (isSignUp && (!name.trim() || !jobRole.trim()))}
             className="w-full py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Chargement..." : isSignUp ? "S'inscrire" : "Se connecter"}

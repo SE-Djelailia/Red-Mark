@@ -412,6 +412,8 @@ export type Database = {
           expires_at: string
           id: string
           invited_by: string | null
+          invited_name: string | null
+          invited_role: string | null
           org_role: string
           organization_id: string
           token: string
@@ -424,6 +426,8 @@ export type Database = {
           expires_at: string
           id?: string
           invited_by?: string | null
+          invited_name?: string | null
+          invited_role?: string | null
           org_role?: string
           organization_id: string
           token: string
@@ -436,6 +440,8 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_by?: string | null
+          invited_name?: string | null
+          invited_role?: string | null
           org_role?: string
           organization_id?: string
           token?: string

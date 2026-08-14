@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { AlertTriangle, Check, Eye, EyeOff, KeyRound } from "lucide-react";
+import { AlertTriangle, Check, Eye, EyeOff, KeyRound, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "../../lib/supabase";
 import Button from "./ui-kit/Button";
 import { inputClassName, labelClassName } from "./ui-kit/Input";
+import RolePicker from "./ui-kit/RolePicker";
+import { normalizeName, normalizeRole } from "../../lib/roles";
 
 /**
  * The recipient's side of an invitation or an admin-provisioned account:
@@ -46,7 +48,11 @@ const MIN_PASSWORD_LENGTH = 8;
 // doesn't leave someone staring at a spinner.
 const SESSION_WAIT_MS = 6000;
 
-type Phase = "verifying" | "ready" | "invalid" | "done";
+// "profile" sits between the password and the app: activation is not complete
+// until we know who this person is. Both fields print on generated reports
+// (under "Préparé par", and in the ASSISTAIENT table), so an account that
+// reaches the app blank produces reports with an anonymous author.
+type Phase = "verifying" | "ready" | "profile" | "invalid" | "done";
 
 /** Supabase reports failures as hash params rather than an HTTP error. */
 function readHashError(): string | null {
@@ -77,6 +83,12 @@ export default function SetPassword() {
   const [reveal, setReveal] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Pre-filled from whatever the inviting admin entered, then confirmed by
+  // the person themselves — an admin's guess at a colleague's title must
+  // never be the last word on it.
+  const [profileName, setProfileName] = useState("");
+  const [profileRole, setProfileRole] = useState("");
+
   const settled = useRef(false);
 
   useEffect(() => {
@@ -88,10 +100,17 @@ export default function SetPassword() {
       return;
     }
 
-    const accept = (userEmail: string | undefined) => {
+    const accept = (session: { user: { email?: string; user_metadata?: any } }) => {
       if (settled.current) return;
       settled.current = true;
-      setEmail(userEmail ?? null);
+      setEmail(session.user.email ?? null);
+      // user_metadata is the pre-fill carrier here, not the profiles row: for
+      // an emailed invitation the claim has not run yet (FirmGate does that
+      // once they reach /app), so no profile row has been populated. Both
+      // inviteUserByEmail and admin.createUser stash name/role there.
+      const meta = session.user.user_metadata ?? {};
+      setProfileName(normalizeName(meta.name));
+      setProfileRole(normalizeRole(meta.role));
       setPhase("ready");
     };
 
@@ -102,12 +121,12 @@ export default function SetPassword() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-        accept(session.user.email);
+        accept(session);
       }
     });
 
     void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) accept(data.session.user.email);
+      if (data.session) accept(data.session);
     });
 
     const timer = window.setTimeout(() => {
@@ -125,6 +144,58 @@ export default function SetPassword() {
     };
   }, []);
 
+  /**
+   * Second step: who is this person.
+   *
+   * Written to BOTH profiles and user_metadata. profiles is what the app and
+   * the report generator read; user_metadata keeps the two from drifting,
+   * since other screens still read it as a fallback.
+   */
+  async function submitProfile(e: React.FormEvent) {
+    e.preventDefault();
+    const name = normalizeName(profileName);
+    const role = normalizeRole(profileRole);
+    if (!name || !role) {
+      toast.error("Le nom et le titre sont requis.");
+      return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user.id;
+    if (!userId) {
+      toast.error("Votre session a expiré. Reconnectez-vous.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ name, role, updated_at: new Date().toISOString() })
+        .eq("id", userId);
+      if (profileError) throw profileError;
+
+      const { error: metaError } = await supabase.auth.updateUser({ data: { name, role } });
+      // Non-fatal: profiles is the source of truth for everything that reads
+      // a name, and it is already written.
+      if (metaError) console.warn("Could not sync user_metadata:", metaError.message);
+
+      setPhase("done");
+      toast.success("Bienvenue dans RedMark.");
+
+      // updateUser on a recovery session leaves the user signed in, so this
+      // goes straight into the app. FirmGate then does the rest: a
+      // provisioned user is already in their firm, and someone who arrived
+      // from an email invitation has their invitation claimed there.
+      window.setTimeout(() => navigate("/app/dashboard", { replace: true }), 900);
+    } catch (err: any) {
+      console.error("Save profile failed:", err);
+      toast.error(err?.message || "Impossible d'enregistrer votre profil.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (password.length < MIN_PASSWORD_LENGTH) {
@@ -141,14 +212,9 @@ export default function SetPassword() {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
 
-      setPhase("done");
-      toast.success("Mot de passe défini. Bienvenue dans RedMark.");
-
-      // updateUser on a recovery session leaves the user signed in, so this
-      // goes straight into the app. FirmGate then does the rest: a
-      // provisioned user is already in their firm, and someone who arrived
-      // from an email invitation has their invitation claimed there.
-      window.setTimeout(() => navigate("/app/dashboard", { replace: true }), 900);
+      // Straight on to identity. The password alone does not make an account
+      // usable — a profile with no name produces reports signed by nobody.
+      setPhase("profile");
     } catch (err: any) {
       console.error("Set password failed:", err);
       const message = String(err?.message || "");
@@ -187,6 +253,61 @@ export default function SetPassword() {
               Retour à la connexion
             </Button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === "profile") {
+    const nameOk = normalizeName(profileName).length > 0;
+    const roleOk = normalizeRole(profileRole).length > 0;
+    return (
+      <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
+        <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-6">
+          <div className="text-center mb-6">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50">
+              <UserRound className="h-6 w-6 text-brand-600" aria-hidden="true" />
+            </div>
+            <h1 className="text-lg font-semibold text-ink">Confirmez votre identité</h1>
+            <p className="mt-2 text-sm text-muted">
+              Ces informations apparaissent sur les rapports de visite que vous produirez.
+            </p>
+          </div>
+
+          <form onSubmit={submitProfile} className="space-y-4">
+            <div>
+              <label className={labelClassName} htmlFor="profile-name">
+                Nom complet
+              </label>
+              <input
+                id="profile-name"
+                type="text"
+                required
+                autoFocus
+                autoComplete="name"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                placeholder="Prénom Nom"
+                className={inputClassName}
+              />
+            </div>
+
+            <div>
+              <label className={labelClassName} htmlFor="profile-role">
+                Titre
+              </label>
+              <RolePicker
+                id="profile-role"
+                value={profileRole}
+                onChange={setProfileRole}
+                required
+              />
+            </div>
+
+            <Button type="submit" disabled={saving || !nameOk || !roleOk} fullWidth>
+              {saving ? "Enregistrement…" : "Terminer"}
+            </Button>
+          </form>
         </div>
       </div>
     );
@@ -274,7 +395,7 @@ export default function SetPassword() {
             disabled={saving || password.length < MIN_PASSWORD_LENGTH || password !== confirm}
             fullWidth
           >
-            {saving ? "Enregistrement…" : "Activer mon compte"}
+            {saving ? "Enregistrement…" : "Continuer"}
           </Button>
         </form>
       </div>

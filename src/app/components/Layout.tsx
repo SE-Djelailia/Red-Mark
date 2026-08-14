@@ -22,6 +22,7 @@ import PWAUpdateNotification from "./PWAUpdateNotification";
 import AppHeader from "./AppHeader";
 import ErrorBoundary from "./ErrorBoundary";
 import FirmGate from "./FirmGate";
+import ProfileCompletionGate from "./ProfileCompletionGate";
 
 export default function Layout() {
   const { user, loading } = useAuth();
@@ -123,6 +124,7 @@ export default function Layout() {
   // fully working app containing nothing at all — which reads as data loss.
   return (
     <FirmGate>
+    <ProfileCompletionGate>
     <PageHeaderProvider>
       <div className="min-h-screen bg-canvas pb-14 md:pb-16">
         <AppHeader />
@@ -140,6 +142,7 @@ export default function Layout() {
         <BottomNav />
       </div>
     </PageHeaderProvider>
+    </ProfileCompletionGate>
     </FirmGate>
   );
 }
