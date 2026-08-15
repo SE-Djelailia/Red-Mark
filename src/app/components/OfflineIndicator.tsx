@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { WifiOff, Upload, AlertTriangle, RotateCw, ChevronDown, Copy } from "lucide-react";
+import { WifiOff, Upload, AlertTriangle, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import {
   getQueuedItems,
   retryFailedUploads,
   UPLOAD_QUEUE_CHANGED_EVENT,
   type QueuedUpload,
-  type QueuedUploadStatus,
 } from "../../lib/uploadQueue";
 
 interface QueueCounts {
@@ -22,14 +21,10 @@ function tally(items: QueuedUpload[]): QueueCounts {
   return { syncing: items.length - failed, failed, total: items.length };
 }
 
-const hasDiagnostics = (status: QueuedUploadStatus): boolean =>
-  status === "permanent" || status === "failed";
-
 export default function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [items, setItems] = useState<QueuedUpload[]>([]);
   const [retrying, setRetrying] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
 
   const refresh = useCallback(() => {
     getQueuedItems()
@@ -76,38 +71,6 @@ export default function OfflineIndicator() {
     }
   };
 
-  // ── TEMPORARY DIAGNOSTIC — remove once the iOS standalone failure is
-  // identified. Everything between this marker and its closing twin exists
-  // only so a raw error string can be read on a phone with no dev tools.
-  const diagnostics = items.filter((i) => hasDiagnostics(i.status));
-
-  const diagnosticText = () =>
-    [
-      `standalone=${window.matchMedia("(display-mode: standalone)").matches}`,
-      `onLine=${navigator.onLine}`,
-      `abortSignalTimeout=${typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"}`,
-      `ua=${navigator.userAgent}`,
-      ...diagnostics.map(
-        (i) =>
-          `[${i.status}] attempts=${i.attempts ?? 0} size=${i.file?.size ?? "?"} type=${
-            i.file?.type || "?"
-          } isFile=${i.file instanceof File} err=${i.lastError ?? "(none)"}`,
-      ),
-    ].join("\n");
-
-  const copyDiagnostics = async () => {
-    const text = diagnosticText();
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success("Diagnostic copié");
-    } catch {
-      // Clipboard API is blocked in some iOS standalone contexts; fall back to
-      // a log so the text can still be retrieved another way.
-      console.log("QUEUE DIAGNOSTIC:\n" + text);
-      toast.error("Copie impossible — voir le détail affiché");
-    }
-  };
-  // ── end TEMPORARY DIAGNOSTIC ──
 
   if (isOnline && counts.total === 0) {
     return null;
@@ -153,73 +116,6 @@ export default function OfflineIndicator() {
         )}
       </div>
 
-      {/* ── TEMPORARY DIAGNOSTIC PANEL — remove with its logic above. ── */}
-      {diagnostics.length > 0 && (
-        <div className="mt-2">
-          <div className="flex justify-center">
-            <button
-              onClick={() => setShowDetails((v) => !v)}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-900/90 text-white text-[11px] font-medium shadow-lg min-h-[32px]"
-            >
-              <ChevronDown
-                size={12}
-                className={showDetails ? "rotate-180 transition-transform" : "transition-transform"}
-              />
-              Détail de l'erreur ({diagnostics.length})
-            </button>
-          </div>
-
-          {showDetails && (
-            <div className="mt-2 bg-slate-900/95 text-white rounded-xl shadow-xl p-3 space-y-2 max-h-[50vh] overflow-y-auto">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-300">
-                  Diagnostic file d'attente
-                </span>
-                <button
-                  onClick={() => void copyDiagnostics()}
-                  className="flex items-center gap-1 px-2 py-1 rounded bg-white/15 hover:bg-white/25 text-[11px] min-h-[30px]"
-                >
-                  <Copy size={11} />
-                  Copier
-                </button>
-              </div>
-
-              <p className="text-[10px] leading-relaxed text-slate-400 font-mono break-all">
-                standalone=
-                {String(window.matchMedia("(display-mode: standalone)").matches)} · onLine=
-                {String(navigator.onLine)} · abortSignalTimeout=
-                {String(
-                  typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function",
-                )}
-              </p>
-
-              {diagnostics.map((item) => (
-                <div key={item.id} className="border-t border-white/15 pt-2">
-                  <div className="text-[10px] font-mono text-slate-400 break-all">
-                    {/* `stored` is the field that actually matters now: "bytes"
-                        means the photo survives a relaunch, "blob" means it is
-                        a pre-migration record still holding a WebKit blob
-                        reference that iOS can invalidate. `read` is the real
-                        byte length, which is what "size" ought to have been —
-                        the old panel printed the RECORDED size and so read
-                        healthy for a photo whose bytes were already gone. */}
-                    {item.status} · essais {item.attempts ?? 0} ·{" "}
-                    {item.bytes ? "bytes" : item.file ? "blob(legacy)" : "aucun"} · read=
-                    {item.bytes?.byteLength ?? item.file?.size ?? "?"} o · attendu=
-                    {item.fileSize ?? "?"} o · {item.fileType || item.file?.type || "type inconnu"}
-                  </div>
-                  {/* The raw string. `select-all` so a long-press selects the
-                      whole thing in one gesture on iOS. */}
-                  <p className="mt-1 text-[11px] leading-snug font-mono break-all select-all text-amber-200">
-                    {item.lastError || "(aucun message enregistré)"}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-      {/* ── end TEMPORARY DIAGNOSTIC PANEL ── */}
     </div>
   );
 }

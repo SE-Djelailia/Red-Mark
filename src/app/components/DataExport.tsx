@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
 import { getProjects, getSiteVisits, getPhotos, getIssues } from "../../lib/supabaseApi";
 import { useModalOpen } from "../../hooks/useModalOpen";
+import { useFirm } from "../../hooks/useFirm";
 
 interface DataExportProps {
   onClose: () => void;
@@ -12,6 +13,7 @@ interface DataExportProps {
 export default function DataExport({ onClose }: DataExportProps) {
   useModalOpen();
   const { user } = useAuth();
+  const { firm } = useFirm();
   const [exporting, setExporting] = useState(false);
   const [exportType, setExportType] = useState<"json" | "csv">("json");
   const [includePhotos, setIncludePhotos] = useState(false);
@@ -54,7 +56,12 @@ export default function DataExport({ onClose }: DataExportProps) {
           id: user.id,
           email: user.email,
           name: user.user_metadata?.name,
-          firm: user.user_metadata?.firm,
+          // The firm comes from organization membership, not from
+          // user_metadata. `user_metadata.firm` was free text someone typed at
+          // signup; the field was removed with the organization model, so it is
+          // blank for every account created since and carried no authority even
+          // before that. This is the real firm the person belongs to.
+          firm: firm?.name ?? null,
         },
         projects: enrichedProjects,
         stats: {
