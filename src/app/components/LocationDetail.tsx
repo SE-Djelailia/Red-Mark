@@ -304,6 +304,42 @@ export default function LocationDetail() {
     return map;
   }, [activityVisits]);
 
+  // Visits that touched THIS location, derived from the photos and
+  // déficiences already loaded above — no extra query, and therefore no way
+  // to bypass the RLS-scoped paths those two fetches already went through.
+  //
+  // The link is location_id ONLY. Legacy free-text photo locations are not
+  // counted: they were never tied to this row, so including them would
+  // attribute someone else's "Cuisine" to this local.
+  //
+  // A visit whose summary hasn't resolved yet (or failed to) still appears,
+  // undated — the counts are the useful part and hiding a visit because its
+  // label is missing would be worse.
+  const visitsAtLocation = useMemo(() => {
+    const byVisit = new Map<string, { photos: number; issues: number }>();
+    const bump = (visitId: string, key: "photos" | "issues") => {
+      if (!visitId) return;
+      const entry = byVisit.get(visitId) ?? { photos: 0, issues: 0 };
+      entry[key] += 1;
+      byVisit.set(visitId, entry);
+    };
+    // photos/issues here are ALREADY scoped to this location by
+    // getPhotosByLocation / getIssuesByLocation, so no further filter is
+    // needed — every row in them belongs to this local by location_id.
+    for (const p of photos) bump(p.visitId, "photos");
+    for (const i of issues) bump(i.visitId, "issues");
+
+    return [...byVisit.entries()]
+      .map(([visitId, counts]) => ({
+        visitId,
+        date: visitDatesById[visitId] ?? null,
+        ...counts,
+      }))
+      // Newest first: on a location page the most recent visit is the one
+      // being asked about. Undated entries sort last rather than to the top.
+      .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
+  }, [photos, issues, visitDatesById]);
+
   const startAddIssue = () => {
     setPendingAction("issue");
     setShowVisitPicker(true);
@@ -780,6 +816,50 @@ export default function LocationDetail() {
                   <div className="text-xs text-muted">
                     {STATUS_LABEL[issue.status]} · {issue.createdDate}
                   </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Visits at this location — derived, not stored. Sits above Photos
+            because "when was this looked at" frames everything below it. */}
+        <div className="bg-surface rounded-xl border border-line p-5">
+          <h2 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
+            <Calendar size={18} className="text-muted" />
+            Visites à cet emplacement
+            {!loadingPhotos && !loadingIssues && visitsAtLocation.length > 0 && (
+              <span className="text-muted font-normal">({visitsAtLocation.length})</span>
+            )}
+          </h2>
+          {loadingPhotos || loadingIssues ? (
+            <div className="text-sm text-muted">Chargement…</div>
+          ) : visitsAtLocation.length === 0 ? (
+            <div className="text-sm text-muted">
+              Aucune visite n'a encore documenté cet emplacement.
+            </div>
+          ) : (
+            <div className="-mx-5 -mb-5 border-t border-line">
+              {visitsAtLocation.map((v) => (
+                <button
+                  key={v.visitId}
+                  onClick={() => navigate(`/app/projects/${projectId}/visits/${v.visitId}`)}
+                  className="w-full flex items-center gap-3 px-5 py-3 border-b border-line last:border-b-0 hover:bg-subtle transition-colors min-h-[44px] text-left"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-ink truncate">
+                      {v.date ? formatDateHeader(v.date) : "Date inconnue"}
+                    </div>
+                    <div className="text-xs text-muted mt-0.5">
+                      {[
+                        v.photos > 0 && `${v.photos} photo${v.photos !== 1 ? "s" : ""}`,
+                        v.issues > 0 && `${v.issues} déficience${v.issues !== 1 ? "s" : ""}`,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </div>
+                  </div>
+                  <ChevronRight size={16} className="text-faint flex-shrink-0" />
                 </button>
               ))}
             </div>

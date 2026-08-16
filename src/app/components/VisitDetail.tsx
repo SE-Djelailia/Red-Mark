@@ -14,11 +14,12 @@ import {
   Pencil,
   LayoutGrid,
   Mic,
+  ChevronRight,
 } from "lucide-react";
 import { getLocations, type Location } from "../../lib/locationsApi";
 import type { LocationExtras, Photo as ApiPhoto } from "../../lib/supabase";
 import PhotoMetadataEditor, { type EditablePhoto } from "./PhotoMetadataEditor";
-import { indexLocations, resolvePhotoZone } from "../../lib/photoZone";
+import { indexLocations, resolvePhotoZone, locationLabel } from "../../lib/photoZone";
 import {
   getSiteVisit,
   getProject,
@@ -258,6 +259,38 @@ export default function VisitDetail() {
 
   // Rebuilt only when the locations list changes, not per photo per render.
   const locationsById = useMemo(() => indexLocations(locations), [locations]);
+
+  // Locations documented in THIS visit, derived from the photos and
+  // déficiences the page already holds — no extra query.
+  //
+  // Counts location_id ONLY. A photo carrying legacy free text has no link
+  // to any locations row, so there is nothing to navigate to; including it
+  // would produce a dead entry.
+  //
+  // A location_id that isn't in `locations` (deleted, or the list hasn't
+  // resolved) is skipped rather than listed as a nameless row — unlike the
+  // visit list on the location page, here the label IS the destination.
+  const locationsInVisit = useMemo(() => {
+    const byLocation = new Map<string, { photos: number; issues: number }>();
+    const bump = (locationId: string | null | undefined, key: "photos" | "issues") => {
+      if (!locationId || !locationsById.has(locationId)) return;
+      const entry = byLocation.get(locationId) ?? { photos: 0, issues: 0 };
+      entry[key] += 1;
+      byLocation.set(locationId, entry);
+    };
+    for (const p of visit?.photos ?? []) bump(p.location_id, "photos");
+    for (const i of issues) bump(i.locationId, "issues");
+
+    return [...byLocation.entries()]
+      .map(([locationId, counts]) => ({
+        locationId,
+        label: locationLabel(locationsById.get(locationId)!),
+        ...counts,
+      }))
+      // By local number, so the list reads in the same order as the plan and
+      // the Locaux tab rather than in whatever order photos were taken.
+      .sort((a, b) => a.label.localeCompare(b.label, "fr", { numeric: true }));
+  }, [visit?.photos, issues, locationsById]);
 
   // Patch the visit's photo list in place so the grid badge, the filter and
   // the lightbox all reflect the edit immediately. Refetching the whole
@@ -1047,6 +1080,40 @@ export default function VisitDetail() {
               is now a single compact line instead of a large card. Same
               fields as before (title, description, priority, status, linked
               photos, assignee), just condensed. */}
+          {locationsInVisit.length > 0 && (
+            <div className="bg-surface rounded-xl border border-line p-4">
+              <h2 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
+                <MapPin size={18} className="text-muted" />
+                Emplacements documentés
+                <span className="text-muted font-normal">({locationsInVisit.length})</span>
+              </h2>
+              <div className="-mx-4 -mb-4 border-t border-line">
+                {locationsInVisit.map((l) => (
+                  <button
+                    key={l.locationId}
+                    onClick={() =>
+                      navigate(`/app/projects/${projectId}/locations/${l.locationId}`)
+                    }
+                    className="w-full flex items-center gap-3 px-4 py-3 border-b border-line last:border-b-0 hover:bg-subtle transition-colors min-h-[44px] text-left"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-ink truncate">{l.label}</div>
+                      <div className="text-xs text-muted mt-0.5">
+                        {[
+                          l.photos > 0 && `${l.photos} photo${l.photos !== 1 ? "s" : ""}`,
+                          l.issues > 0 && `${l.issues} déficience${l.issues !== 1 ? "s" : ""}`,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-faint flex-shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-surface rounded-xl border border-line p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
