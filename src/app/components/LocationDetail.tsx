@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   ArrowLeft,
@@ -32,6 +32,7 @@ import { usePageHeader } from "../../contexts/PageHeaderContext";
 import { useAuth } from "../../contexts/useAuth";
 import { useProjectRole } from "../../hooks/useProjectRole";
 import { parseLocalDate, formatDateLong } from "../../lib/dateUtils";
+import LocationPhotoCompare from "./LocationPhotoCompare";
 import type { SiteVisit } from "../../lib/supabase";
 import VisitPicker from "./VisitPicker";
 import IssueForm from "./IssueForm";
@@ -281,6 +282,17 @@ export default function LocationDetail() {
       cancelled = true;
     };
   }, [issues, photos, loadingIssues, loadingPhotos]);
+
+  // Visit id -> visit_date, reused from the activity feed's existing batched
+  // fetch rather than a second query: getSiteVisitsSummaryByIds is already
+  // called above with exactly the visit ids these photos belong to, and it
+  // goes through the same RLS-scoped path. Adding a fetch here would be a
+  // second door to the same rows.
+  const visitDatesById = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const v of activityVisits) map[v.id] = v.visitDate;
+    return map;
+  }, [activityVisits]);
 
   const startAddIssue = () => {
     setPendingAction("issue");
@@ -793,17 +805,12 @@ export default function LocationDetail() {
           ) : photos.length === 0 ? (
             <div className="text-sm text-muted">Aucune photo à ce local pour le moment.</div>
           ) : (
-            <div className="grid grid-cols-3 gap-2">
-              {photos.map((photo) => (
-                <button
-                  key={photo.id}
-                  onClick={() => setLightboxPhoto(photo)}
-                  className="aspect-square rounded-lg overflow-hidden bg-subtle"
-                >
-                  <img src={photo.url} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
+            <LocationPhotoCompare
+              photos={photos}
+              visitDates={visitDatesById}
+              datesLoading={loadingActivity}
+              onOpenPhoto={setLightboxPhoto}
+            />
           )}
         </div>
 
