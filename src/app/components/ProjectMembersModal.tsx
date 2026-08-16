@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useProjectRole } from "../../hooks/useProjectRole";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import ConfirmDialog from "./ConfirmDialog";
+import type { Insert } from "../../lib/supabase";
 
 type ProjectRole = "owner" | "editor" | "commenter";
 
@@ -198,7 +199,10 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
       const invitee = matches[0];
       const { data: newMember, error: insertError } = await supabase
         .from("project_members")
-        .insert([{ project_id: projectId, user_id: invitee.id, role: inviteRole }])
+        // organization_id omitted — trigger-filled from the project's firm.
+        .insert([
+          { project_id: projectId, user_id: invitee.id, role: inviteRole } as Insert<"project_members">,
+        ])
         .select("id, user_id, role, created_at")
         .single();
       if (insertError) throw insertError;

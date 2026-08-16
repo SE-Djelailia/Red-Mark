@@ -139,7 +139,11 @@ export function formatRelativeDate(date: Date | string): string {
  * Extrait seulement la partie date (sans heure) d'un timestamp
  * Retourne au format YYYY-MM-DD
  */
-export function extractDateOnly(dateString: string | Date): string {
+// Accepts null/undefined because the columns it reads (photos.created_at,
+// site_visits.created_at) are nullable in the schema. The empty-string
+// guard below already handled it correctly at runtime; the signature was
+// simply narrower than the callers.
+export function extractDateOnly(dateString: string | Date | null | undefined): string {
   if (!dateString) return "";
 
   const dateObj = typeof dateString === "string" ? new Date(dateString) : dateString;

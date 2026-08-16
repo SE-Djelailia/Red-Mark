@@ -13,6 +13,7 @@
 // So an admin sees project names and who is on them, and never a visit,
 // photo, observation or déficience.
 import { supabase } from "./supabase";
+import type { Insert } from "./supabase";
 
 export type ProjectRole = "owner" | "editor" | "commenter";
 
@@ -72,7 +73,8 @@ export async function assignToProject(
 ): Promise<void> {
   const { error } = await supabase
     .from("project_members")
-    .insert({ project_id: projectId, user_id: userId, role });
+    // organization_id omitted — trigger-filled from the project's firm.
+    .insert({ project_id: projectId, user_id: userId, role } as Insert<"project_members">);
   if (error) throw error;
 }
 

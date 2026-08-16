@@ -6,6 +6,8 @@
 // Photos are now a real relationship (photos.issue_id), not a JSONB array.
 
 import { supabase } from "./supabase";
+import type { Update } from "./supabase";
+import type { Json } from "./database.types";
 import {
   DEFAULT_ISSUE_STATUS,
   TERMINAL_ISSUE_STATUS,
@@ -175,11 +177,17 @@ async function attachPhotos(rows: Omit<Issue, "photos">[]): Promise<Issue[]> {
 
 // Build the location JSONB payload from client-facing fields. Narrowed to
 // just label/tags — photos and assignedTo have real columns now.
-function buildExtras(data: { location?: string; tags?: string[] }): IssueExtras {
-  return {
+// Returns Json rather than IssueExtras: this value is written straight into
+// a jsonb column, and TypeScript will not structurally narrow an interface
+// to the recursive `Json` union (interfaces lack an implicit index
+// signature). Declaring the return type at the single producer keeps the
+// cast out of both call sites.
+function buildExtras(data: { location?: string; tags?: string[] }): Json {
+  const extras: IssueExtras = {
     label: data.location || "",
     tags: data.tags || [],
   };
+  return extras as unknown as Json;
 }
 
 // Attach/detach photos so that exactly `photoIds` end up linked to this
@@ -405,8 +413,15 @@ export async function getAllUserIssues(
 // issue/visit events regardless of status).
 
 // Create a new issue
+// `assignedTo` is optional on the way IN even though it is a required
+// string on the way out: `assigned_to_name` is nullable in the schema, and a
+// déficience raised from a plan pin genuinely has no assignee yet. It was
+// only required here because the input type was derived from the read shape,
+// which forced callers to pass a meaningless empty string.
 export async function createIssue(
-  issueData: Omit<Issue, "id" | "createdBy" | "createdDate">,
+  issueData: Omit<Issue, "id" | "createdBy" | "createdDate" | "assignedTo"> & {
+    assignedTo?: string;
+  },
 ): Promise<Issue> {
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("User not authenticated");
@@ -465,7 +480,7 @@ export async function updateIssue(
   if (!current) return null;
 
   const merged = { ...current, ...updates };
-  const payload: Record<string, any> = {};
+  const payload: Update<"issues"> = {};
 
   if (updates.title !== undefined) payload.title = updates.title;
   if (updates.description !== undefined) payload.description = updates.description;
@@ -590,11 +605,17 @@ export async function setIssueStatus(
   toStatus: IssueStatus,
   options: { note?: string | null; visitId?: string | null } = {},
 ): Promise<SetIssueStatusOutcome> {
+  // The generator types optional SQL parameters as `p_note?: string` — it
+  // does not model the `DEFAULT NULL` in the signature, so a JSON null is
+  // not expressible in its type even though the function accepts one and
+  // treats it as "no note". Passing undefined would drop the key instead,
+  // which happens to reach the same default; null states the intent, so the
+  // narrow cast here is preferred over changing the call's meaning.
   const { data, error } = await supabase.rpc("set_issue_status", {
     p_issue_id: issueId,
     p_to_status: toStatus,
-    p_note: options.note?.trim() ? options.note.trim() : null,
-    p_visit_id: options.visitId || null,
+    p_note: (options.note?.trim() ? options.note.trim() : null) as unknown as string | undefined,
+    p_visit_id: (options.visitId || null) as unknown as string | undefined,
   });
 
   if (error) {

@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -107,8 +107,8 @@ export type Database = {
       }
       issue_status_events: {
         Row: {
-          created_at: string
           changed_by: string | null
+          created_at: string
           from_status: string | null
           id: string
           issue_id: string
@@ -117,8 +117,8 @@ export type Database = {
           visit_id: string | null
         }
         Insert: {
-          created_at?: string
           changed_by?: string | null
+          created_at?: string
           from_status?: string | null
           id?: string
           issue_id: string
@@ -127,8 +127,8 @@ export type Database = {
           visit_id?: string | null
         }
         Update: {
-          created_at?: string
           changed_by?: string | null
+          created_at?: string
           from_status?: string | null
           id?: string
           issue_id?: string
@@ -392,121 +392,6 @@ export type Database = {
         }
         Relationships: []
       }
-      organizations: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          report_firm_name: string | null
-          slug: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          report_firm_name?: string | null
-          slug: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          report_firm_name?: string | null
-          slug?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      organization_members: {
-        Row: {
-          created_at: string
-          id: string
-          invited_by: string | null
-          org_role: string
-          organization_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          invited_by?: string | null
-          org_role?: string
-          organization_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          invited_by?: string | null
-          org_role?: string
-          organization_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_members_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_invitations: {
-        Row: {
-          accepted_at: string | null
-          accepted_by: string | null
-          created_at: string
-          email: string
-          expires_at: string
-          id: string
-          invited_by: string | null
-          invited_name: string | null
-          invited_role: string | null
-          org_role: string
-          organization_id: string
-          token: string
-        }
-        Insert: {
-          accepted_at?: string | null
-          accepted_by?: string | null
-          created_at?: string
-          email: string
-          expires_at: string
-          id?: string
-          invited_by?: string | null
-          invited_name?: string | null
-          invited_role?: string | null
-          org_role?: string
-          organization_id: string
-          token: string
-        }
-        Update: {
-          accepted_at?: string | null
-          accepted_by?: string | null
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          invited_by?: string | null
-          invited_name?: string | null
-          invited_role?: string | null
-          org_role?: string
-          organization_id?: string
-          token?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_invitations_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       observations: {
         Row: {
           action_by: string | null
@@ -568,112 +453,120 @@ export type Database = {
           },
         ]
       }
-      report_locations: {
+      organization_invitations: {
         Row: {
-          location_id: string
-          report_id: string
-        }
-        Insert: {
-          location_id: string
-          report_id: string
-        }
-        Update: {
-          location_id?: string
-          report_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "report_locations_location_id_fkey"
-            columns: ["location_id"]
-            isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_locations_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "reports"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      report_visits: {
-        Row: {
-          report_id: string
-          sort_order: number
-          visit_id: string
-        }
-        Insert: {
-          report_id: string
-          sort_order?: number
-          visit_id: string
-        }
-        Update: {
-          report_id?: string
-          sort_order?: number
-          visit_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "report_visits_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_visits_visit_id_fkey"
-            columns: ["visit_id"]
-            isOneToOne: false
-            referencedRelation: "site_visits"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      reports: {
-        Row: {
-          created_at: string | null
-          generated_at: string
-          generated_by: string | null
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
           id: string
-          project_id: string
-          regenerated_at: string | null
-          report_number: string
-          report_prefix: string
-          report_seq: number
+          invited_by: string | null
+          invited_name: string | null
+          invited_role: string | null
+          org_role: string
+          organization_id: string
+          token: string
         }
         Insert: {
-          created_at?: string | null
-          generated_at?: string
-          generated_by?: string | null
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
           id?: string
-          project_id: string
-          regenerated_at?: string | null
-          report_number: string
-          report_prefix?: string
-          report_seq: number
+          invited_by?: string | null
+          invited_name?: string | null
+          invited_role?: string | null
+          org_role?: string
+          organization_id: string
+          token: string
         }
         Update: {
-          created_at?: string | null
-          generated_at?: string
-          generated_by?: string | null
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
           id?: string
-          project_id?: string
-          regenerated_at?: string | null
-          report_number?: string
-          report_prefix?: string
-          report_seq?: number
+          invited_by?: string | null
+          invited_name?: string | null
+          invited_role?: string | null
+          org_role?: string
+          organization_id?: string
+          token?: string
         }
         Relationships: [
           {
-            foreignKeyName: "reports_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "organization_invitations_organization_id_fkey"
+            columns: ["organization_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
+      }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by: string | null
+          org_role: string
+          organization_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          org_role?: string
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          org_role?: string
+          organization_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          report_firm_name: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          report_firm_name?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          report_firm_name?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       photos: {
         Row: {
@@ -900,6 +793,24 @@ export type Database = {
           },
         ]
       }
+      platform_operators: {
+        Row: {
+          created_at: string
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -908,7 +819,6 @@ export type Database = {
           firm: string | null
           id: string
           name: string | null
-          org_role: string
           role: string | null
           updated_at: string | null
         }
@@ -919,7 +829,6 @@ export type Database = {
           firm?: string | null
           id: string
           name?: string | null
-          org_role?: string
           role?: string | null
           updated_at?: string | null
         }
@@ -930,7 +839,6 @@ export type Database = {
           firm?: string | null
           id?: string
           name?: string | null
-          org_role?: string
           role?: string | null
           updated_at?: string | null
         }
@@ -950,7 +858,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           invited_by?: string | null
-          organization_id?: string
+          organization_id: string
           project_id: string
           role?: string | null
           user_id: string
@@ -966,11 +874,32 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "project_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "project_members_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_project_org_fkey"
+            columns: ["project_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "project_members_user_org_fkey"
+            columns: ["user_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["user_id", "organization_id"]
           },
         ]
       }
@@ -1005,7 +934,7 @@ export type Database = {
           file_number?: string | null
           id?: string
           name: string
-          organization_id?: string
+          organization_id: string
           start_date?: string | null
           status?: string | null
           updated_at?: string | null
@@ -1029,11 +958,126 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_locations: {
+        Row: {
+          location_id: string
+          report_id: string
+        }
+        Insert: {
+          location_id: string
+          report_id: string
+        }
+        Update: {
+          location_id?: string
+          report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_locations_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_locations_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_visits: {
+        Row: {
+          report_id: string
+          sort_order: number
+          visit_id: string
+        }
+        Insert: {
+          report_id: string
+          sort_order?: number
+          visit_id: string
+        }
+        Update: {
+          report_id?: string
+          sort_order?: number
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_visits_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_visits_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "site_visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          created_at: string | null
+          generated_at: string
+          generated_by: string | null
+          id: string
+          project_id: string
+          regenerated_at: string | null
+          report_number: string
+          report_prefix: string
+          report_seq: number
+        }
+        Insert: {
+          created_at?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          project_id: string
+          regenerated_at?: string | null
+          report_number: string
+          report_prefix?: string
+          report_seq: number
+        }
+        Update: {
+          created_at?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          project_id?: string
+          regenerated_at?: string | null
+          report_number?: string
+          report_prefix?: string
+          report_seq?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_visits: {
         Row: {
-          attendees: { name: string; organization: string; role: string; initials: string }[] | null
+          attendees: Json | null
           created_at: string | null
           end_time: string | null
           id: string
@@ -1048,7 +1092,7 @@ export type Database = {
           weather: string | null
         }
         Insert: {
-          attendees?: { name: string; organization: string; role: string; initials: string }[] | null
+          attendees?: Json | null
           created_at?: string | null
           end_time?: string | null
           id?: string
@@ -1063,7 +1107,7 @@ export type Database = {
           weather?: string | null
         }
         Update: {
-          attendees?: { name: string; organization: string; role: string; initials: string }[] | null
+          attendees?: Json | null
           created_at?: string | null
           end_time?: string | null
           id?: string
@@ -1092,12 +1136,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auth_user_has_password: { Args: { p_user_id: string }; Returns: boolean }
+      claim_organization_invitation: {
+        Args: { p_token?: string; p_user_id: string }
+        Returns: Json
+      }
       comment_project_id: {
         Args: { p_issue_id: string; p_photo_id: string; p_visit_id: string }
         Returns: string
       }
       create_report: {
-        Args: { p_location_ids?: string[]; p_project_id: string; p_visit_ids: string[] }
+        Args: {
+          p_location_ids?: string[]
+          p_project_id: string
+          p_visit_ids: string[]
+        }
         Returns: {
           created_at: string | null
           generated_at: string
@@ -1108,8 +1161,15 @@ export type Database = {
           report_number: string
           report_prefix: string
           report_seq: number
-        }[]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "reports"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
+      current_org_id: { Args: never; Returns: string }
       find_invitable_user: {
         Args: { p_email: string }
         Returns: {
@@ -1122,18 +1182,6 @@ export type Database = {
         Args: { p_project_id: string; p_roles: string[] }
         Returns: boolean
       }
-      set_issue_status: {
-        Args: {
-          p_issue_id: string
-          p_note?: string | null
-          p_to_status: string
-          p_visit_id?: string | null
-        }
-        Returns: Json
-      }
-      current_org_id: { Args: never; Returns: string | null }
-      /** @deprecated Global, cross-firm admin flag. Dropped in Stage 5. */
-      is_admin: { Args: never; Returns: boolean }
       is_org_admin: { Args: { p_org_id: string }; Returns: boolean }
       is_org_member: { Args: { p_user_id: string }; Returns: boolean }
       is_project_member: { Args: { p_project_id: string }; Returns: boolean }
@@ -1143,6 +1191,29 @@ export type Database = {
           id: string
           name: string
         }[]
+      }
+      platform_create_organization: {
+        Args: {
+          p_actor_id: string
+          p_admin_user_id: string
+          p_name: string
+          p_report_firm_name: string
+          p_slug: string
+        }
+        Returns: Json
+      }
+      remove_organization_member: {
+        Args: { p_actor_id: string; p_org_id: string; p_user_id: string }
+        Returns: Json
+      }
+      set_issue_status: {
+        Args: {
+          p_issue_id: string
+          p_note?: string
+          p_to_status: string
+          p_visit_id?: string
+        }
+        Returns: Json
       }
       shares_project_with: { Args: { p_user_id: string }; Returns: boolean }
     }

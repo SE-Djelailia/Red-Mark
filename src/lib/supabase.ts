@@ -42,31 +42,46 @@ export interface Profile {
   // drops it, but nothing in the client reads it any more.
 }
 
-export interface Project {
-  id: string;
-  user_id: string;
-  /**
-   * Owning firm. NOT NULL in the database, but optional here because the
-   * client never sends it: a BEFORE INSERT trigger fills it from
-   * current_org_id(), and the RLS INSERT policy then requires it to equal the
-   * caller's firm. Sending one would at best be redundant and at worst be
-   * rejected as a forged value.
-   */
-  organization_id?: string;
-  name: string;
-  address?: string;
-  client_name?: string;
-  status: "planning" | "in-progress" | "on-hold" | "completed" | "active" | "archived";
-  start_date?: string;
-  created_at: string;
-  updated_at: string;
-  file_number?: string;
-  contractor_name?: string;
-  contractor_contact?: string;
-  contractor_address?: string;
-  contractor_phone?: string;
-  contractor_email?: string;
-}
+// ---------------------------------------------------------------------------
+// Row types
+// ---------------------------------------------------------------------------
+//
+// DERIVED from database.types.ts rather than hand-written. These used to be
+// hand-copied parallel declarations, and they had drifted from the real
+// schema in a way that mattered: a dozen genuinely-nullable columns were
+// declared `?: string` (i.e. `string | undefined`). Postgres returns `null`,
+// never `undefined`, so `??` / `?.` guards behaved as written but any
+// `field === undefined` test or `Object.keys`-style check silently missed the
+// null case, and the compiler could not warn about it.
+//
+// Deriving means the next `supabase gen types` run cannot leave them stale.
+// Where the app genuinely knows more than the schema does, the narrowing is
+// stated explicitly below with the reason.
+
+type Row<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Row"];
+
+// Write shapes. A row type is NOT a valid insert payload — the generated
+// Insert/Update types mark defaulted and trigger-filled columns optional,
+// and PostgREST rejects excess properties — so write signatures must use
+// these rather than `Partial<Row>`.
+export type Insert<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Insert"];
+export type Update<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Update"];
+
+// `organization_id` is NOT NULL on projects/project_members, so the generated
+// Insert types demand it — but a BEFORE INSERT trigger
+// (set_project_organization / set_project_member_organization) derives it
+// from the caller's firm, and the RLS INSERT policy then requires it to match.
+// The client must NOT send one: a supplied value is overwritten by the
+// trigger, and the composite FKs exist precisely so a cross-firm row is
+// unrepresentable rather than merely denied. This alias states that the
+// column is the database's to fill.
+export type InsertTriggerOrg<T extends "projects" | "project_members"> = Omit<
+  Insert<T>,
+  "organization_id"
+>;
 
 /** One row of the report's ASSISTAIENT table. Stored on the visit. */
 export interface VisitAttendee {
@@ -76,100 +91,59 @@ export interface VisitAttendee {
   initials: string;
 }
 
-export interface SiteVisit {
-  id: string;
-  user_id: string;
-  project_id: string;
-  visit_date: string;
-  phase?: string;
-  weather?: string;
-  temperature?: string;
-  start_time?: string | null;
-  end_time?: string | null;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-  /** Who was on site. Null on visits saved before attendees existed. */
+/** Free-form location blob carried on photos and issues (`location` jsonb). */
+export interface LocationExtras {
+  floor?: string;
+  room?: string;
+}
+
+export type Project = Omit<Row<"projects">, "status"> & {
+  // `status` is a plain text column with a DEFAULT of 'active' and no CHECK
+  // constraint, so the database will return whatever is stored. The union is
+  // the set the app writes and understands; `& {}` keeps an unrecognised
+  // legacy value assignable rather than making a stale row a type error.
+  status: ProjectStatus | (string & {}) | null;
+};
+
+export type ProjectStatus =
+  | "planning"
+  | "in-progress"
+  | "on-hold"
+  | "completed"
+  | "active"
+  | "archived";
+
+export type SiteVisit = Omit<Row<"site_visits">, "attendees"> & {
+  // Stored as jsonb; the app is the only writer and always writes this shape.
+  // Null on visits saved before attendees existed.
   attendees?: VisitAttendee[] | null;
-}
+};
 
-export interface Photo {
-  id: string;
-  user_id: string;
-  visit_id: string;
-  project_id: string;
-  file_url: string;
-  storage_path: string;
-  tags: string[];
-  location?: {
-    floor?: string;
-    room?: string;
-  };
-  description?: string;
-  location_id?: string | null;
-  created_at: string;
-}
+export type Photo = Omit<Row<"photos">, "location"> & {
+  location?: LocationExtras | null;
+};
 
-export interface Issue {
-  id: string;
-  user_id: string;
-  project_id: string;
-  visit_id?: string;
-  photo_id?: string;
-  title: string;
-  description?: string;
-  priority: "low" | "medium" | "high" | "critical";
-  status: IssueStatus;
-  status_changed_at?: string | null;
-  discipline?: string;
-  due_date?: string;
-  assigned_to?: string;
-  assigned_to_name?: string;
-  location?: {
-    floor?: string;
-    room?: string;
-  };
-  created_at: string;
-  updated_at: string;
-  resolved_at?: string;
-}
+export type Issue = Omit<Row<"issues">, "location" | "status"> & {
+  location?: LocationExtras | null;
+  // Narrowed against the DB CHECK constraint (Stage 12/13), which now permits
+  // exactly these four values — so unlike `Project.status` this union really
+  // is exhaustive. Still nullable: the column has a default, not NOT NULL.
+  status: IssueStatus | null;
+};
 
-export interface Comment {
-  id: string;
-  user_id: string;
-  photo_id?: string;
-  issue_id?: string;
-  visit_id?: string;
-  parent_comment_id?: string;
-  content: string;
-  created_at: string;
-}
+export type Comment = Row<"comments">;
 
-export interface CommentMention {
-  id: string;
-  comment_id: string;
-  user_id: string;
-  created_at: string;
-}
+export type Notification = Row<"notifications">;
 
-export interface Notification {
-  id: string;
-  user_id: string;
-  type: string;
-  title: string;
-  message?: string;
-  data?: any;
-  read: boolean;
-  created_at: string;
-}
+export type ProjectMember = Omit<Row<"project_members">, "role"> & {
+  // Column default is 'viewer' with no CHECK, but every write path in the app
+  // sets one of these three. Same `& {}` escape hatch as Project.status for
+  // rows predating the current vocabulary.
+  role: ProjectRole | (string & {}) | null;
+};
 
-export interface ProjectMember {
-  id: string;
-  project_id: string;
-  user_id: string;
-  /** Derived from the project by a trigger; never set by the client. */
-  organization_id?: string;
-  role: "owner" | "editor" | "commenter";
-  invited_by?: string;
-  created_at: string;
-}
+export type ProjectRole = "owner" | "editor" | "commenter";
+
+export type CommentMention = Row<"comment_mentions">;
+
+

@@ -5,9 +5,15 @@
 // a project that was `active` or `archived` rendered an undefined class and
 // an empty label. Typing the maps as total Records means adding a status is
 // a compile error here rather than a blank chip at runtime.
-import type { Project } from "../../../lib/supabaseApi";
+import type { ProjectStatus } from "../../../lib/supabase";
 
-type Status = Project["status"];
+// The closed vocabulary, NOT Project["status"] (which is `string | null`:
+// the column is plain text with a DEFAULT and no CHECK, so the database can
+// return anything, including null). Keeping this total is the whole point of
+// the file — every map below is a Record over it, so adding a status is a
+// compile error here rather than a blank chip at runtime. Rows are coerced
+// into the union by normalizeProjectStatus at the boundary.
+type Status = ProjectStatus;
 
 // Neutral by design: project status is context, not urgency. The states
 // meaning "currently relevant" get a subtle brand tint; the rest stay grey.
@@ -53,12 +59,26 @@ export const PROJECT_STATUS_OPTIONS: { value: Status; label: string }[] = (
   .sort((a, b) => STATUS_RANK[a] - STATUS_RANK[b])
   .map((value) => ({ value, label: STATUS_LABEL[value] }));
 
-export function ProjectStatusBadge({ status }: { status: Status }) {
+/**
+ * Coerces a raw `projects.status` value into the closed union.
+ *
+ * The column has a DEFAULT of 'active' but no CHECK constraint and no NOT
+ * NULL, so a row can legitimately carry null or an unrecognised string.
+ * Both fall back to "active" — the DEFAULT the database itself would have
+ * applied — rather than rendering an undefined class and an empty label,
+ * which is what the untyped code did before.
+ */
+export function normalizeProjectStatus(value: string | null | undefined): Status {
+  return value && value in STATUS_LABEL ? (value as Status) : "active";
+}
+
+export function ProjectStatusBadge({ status }: { status: string | null | undefined }) {
+  const safe = normalizeProjectStatus(status);
   return (
     <span
-      className={`inline-flex items-center h-[22px] px-2 rounded-full text-[11px] font-medium whitespace-nowrap ${STATUS_STYLE[status]}`}
+      className={`inline-flex items-center h-[22px] px-2 rounded-full text-[11px] font-medium whitespace-nowrap ${STATUS_STYLE[safe]}`}
     >
-      {STATUS_LABEL[status]}
+      {STATUS_LABEL[safe]}
     </span>
   );
 }

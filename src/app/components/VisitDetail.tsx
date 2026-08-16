@@ -68,8 +68,11 @@ interface VisitDisplay {
   photoCount: number;
   notes: string;
   photos: Photo[];
-  weather?: string;
-  temperature?: string;
+  // Nullable, not optional: both columns are nullable in the schema and the
+  // API hands the raw value straight through. Every consumer below already
+  // tests truthiness, so this is the annotation catching up to the data.
+  weather?: string | null;
+  temperature?: string | null;
   createdBy: string;
   attendees: VisitAttendee[];
 }

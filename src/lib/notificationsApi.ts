@@ -6,6 +6,7 @@
 
 import { supabase } from "./supabase";
 import { RlsWriteError } from "./rlsErrors";
+import type { Json } from "./database.types";
 
 export interface Notification {
   id: string;
@@ -141,7 +142,9 @@ export async function createNotification(params: CreateNotificationParams): Prom
       type: params.type,
       title: TITLES[params.type],
       message: params.message,
-      data,
+      // jsonb column: same interface-vs-Json narrowing limitation as
+      // issuesApi's buildExtras.
+      data: data as unknown as Json,
     },
   ]);
 

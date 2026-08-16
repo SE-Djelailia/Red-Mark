@@ -7,6 +7,7 @@ import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import { Card, ListRow, ListRows } from "./ui-kit/Card";
 import { inputClassName, labelClassName } from "./ui-kit/Input";
 import ConfirmDialog from "./ConfirmDialog";
+import type { Json } from "../../lib/database.types";
 
 interface Props {
   visitId: string;
@@ -48,7 +49,10 @@ export default function VisitAttendeesSection({ visitId, attendees, canEdit, onC
   const persist = async (next: VisitAttendee[]) => {
     setSaving(true);
     try {
-      await updateSiteVisit(visitId, { attendees: next });
+      // Cast through unknown: `attendees` is a jsonb column typed `Json` by
+      // the generator, and VisitAttendee[] is a structural subset of it that
+      // TypeScript will not narrow to automatically.
+      await updateSiteVisit(visitId, { attendees: next as unknown as Json });
       onChanged(next);
       setEditing(null);
       setDraft(EMPTY);

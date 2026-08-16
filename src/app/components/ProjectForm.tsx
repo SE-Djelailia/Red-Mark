@@ -6,7 +6,12 @@ import { useAuth } from "../../contexts/useAuth";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { getTodayForInput } from "../../lib/dateUtils";
 import { inputClassName, labelClassName } from "./ui-kit/Input";
-import { ProjectStatusBadge, PROJECT_STATUS_OPTIONS } from "./ui-kit/ProjectStatus";
+import {
+  ProjectStatusBadge,
+  PROJECT_STATUS_OPTIONS,
+  normalizeProjectStatus,
+} from "./ui-kit/ProjectStatus";
+import type { ProjectStatus } from "../../lib/supabase";
 
 interface Props {
   // When present, the form edits this project; when absent, it creates a
@@ -66,14 +71,19 @@ export default function ProjectForm({ project, onCancel, onSaved }: Props) {
       name: formData.name,
       address: formData.address,
       client_name: formData.client,
-      start_date: formData.startDate || undefined,
+      // `|| null`, not `|| undefined`: these columns are nullable, and an
+      // undefined value is DROPPED from the JSON payload rather than sent.
+      // On an edit that meant clearing a field left the old value in place —
+      // the user blanked the contractor's phone, saw it disappear from the
+      // form, and it was still in the database.
+      start_date: formData.startDate || null,
       status: formData.status,
-      file_number: formData.fileNumber || undefined,
-      contractor_name: formData.contractorName || undefined,
-      contractor_contact: formData.contractorContact || undefined,
-      contractor_address: formData.contractorAddress || undefined,
-      contractor_phone: formData.contractorPhone || undefined,
-      contractor_email: formData.contractorEmail || undefined,
+      file_number: formData.fileNumber || null,
+      contractor_name: formData.contractorName || null,
+      contractor_contact: formData.contractorContact || null,
+      contractor_address: formData.contractorAddress || null,
+      contractor_phone: formData.contractorPhone || null,
+      contractor_email: formData.contractorEmail || null,
     };
 
     setIsSaving(true);
@@ -243,8 +253,8 @@ export default function ProjectForm({ project, onCancel, onSaved }: Props) {
                   so opening an `archived` project and saving silently reset
                   it to whichever option happened to be selected. */}
               <select
-                value={formData.status}
-                onChange={(e) => set("status", e.target.value as Project["status"])}
+                value={normalizeProjectStatus(formData.status)}
+                onChange={(e) => set("status", e.target.value as ProjectStatus)}
                 className={inputClassName}
               >
                 {PROJECT_STATUS_OPTIONS.map((opt) => (

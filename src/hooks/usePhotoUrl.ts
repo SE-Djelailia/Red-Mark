@@ -21,13 +21,18 @@ export function usePhotoUrl(storagePath: string | null | undefined) {
     }
 
     let mounted = true;
+    // Captured after the guard above: TypeScript cannot carry the narrowing
+    // from `if (!storagePath) return` into an async function declared in the
+    // same scope, because that function could in principle run later. The
+    // runtime behaviour was always correct; this makes it provable.
+    const path = storagePath;
 
     async function fetchSignedUrl() {
       try {
         setLoading(true);
         setError(null);
 
-        const signedUrl = await getPhotoSignedUrl(storagePath);
+        const signedUrl = await getPhotoSignedUrl(path);
 
         if (mounted) {
           setUrl(signedUrl);

@@ -1,7 +1,13 @@
 import { supabase } from "./supabase";
 import { RlsWriteError } from "./rlsErrors";
-import { TERMINAL_ISSUE_STATUS } from "./issueStatus";
+import { TERMINAL_ISSUE_STATUS, normalizeIssueStatus, type IssueStatus } from "./issueStatus";
+import type { Json } from "./database.types";
 import type {
+  Insert,
+  InsertTriggerOrg,
+  Update,
+  VisitAttendee,
+  LocationExtras,
   Project,
   SiteVisit,
   Photo,
@@ -90,10 +96,16 @@ export async function getProject(projectId: string): Promise<Project | null> {
 }
 
 export async function createProject(
-  project: Omit<Project, "id" | "created_at" | "updated_at">,
+  project: InsertTriggerOrg<"projects">,
 ): Promise<Project> {
   try {
-    const { data, error } = await supabase.from("projects").insert([project]).select().single();
+    const { data, error } = await supabase
+      .from("projects")
+      // organization_id omitted by design — the set_project_organization
+      // trigger derives it from the caller's firm (see InsertTriggerOrg).
+      .insert([project as Insert<"projects">])
+      .select()
+      .single();
 
     if (error) throw error;
     return data;
@@ -105,7 +117,7 @@ export async function createProject(
 
 export async function updateProject(
   projectId: string,
-  updates: Partial<Project>,
+  updates: Update<"projects">,
 ): Promise<Project> {
   try {
     const { data, error } = await supabase
@@ -143,6 +155,54 @@ export async function deleteProject(projectId: string): Promise<void> {
 // SITE VISITS API
 // ============================================
 
+// `site_visits.attendees` is a jsonb column, so the generated types call it
+// `Json`. The app is its only writer and always writes VisitAttendee[], but
+// jsonb accepts anything, so this asserts the shape at the read boundary
+// rather than scattering casts through the callers. A non-array value (a row
+// hand-edited in the SQL console, say) becomes null rather than a runtime
+// crash in whatever component maps over it.
+function toSiteVisit<T extends { attendees?: Json | null }>(
+  row: T,
+): Omit<T, "attendees"> & { attendees: VisitAttendee[] | null } {
+  const { attendees, ...rest } = row;
+  return { ...rest, attendees: Array.isArray(attendees) ? (attendees as unknown as VisitAttendee[]) : null };
+}
+
+// `photos.location` / `issues.location` are jsonb, typed `Json` by the
+// generator. Same boundary reasoning as toSiteVisit: assert the shape once
+// on the way out instead of casting at every consumer, and degrade a
+// non-object value to null rather than handing a caller a string to read
+// `.floor` off.
+function toLocationExtras(value: Json | null | undefined): LocationExtras | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as LocationExtras)
+    : null;
+}
+
+// Issues carry the same jsonb `location` blob as photos, plus a `status`
+// the generator can only see as `string | null` (the four-state vocabulary
+// lives in a CHECK constraint, which the type generator does not read).
+function toIssue<T extends { location?: Json | null; status?: string | null }>(
+  row: T,
+): Omit<T, "location" | "status"> & {
+  location: LocationExtras | null;
+  status: IssueStatus | null;
+} {
+  const { location, status, ...rest } = row;
+  return {
+    ...rest,
+    location: toLocationExtras(location),
+    status: status === null || status === undefined ? null : normalizeIssueStatus(status),
+  };
+}
+
+function toPhoto<T extends { location?: Json | null }>(
+  row: T,
+): Omit<T, "location"> & { location: LocationExtras | null } {
+  const { location, ...rest } = row;
+  return { ...rest, location: toLocationExtras(location) };
+}
+
 export async function getSiteVisits(projectId: string): Promise<SiteVisit[]> {
   try {
     const { data, error } = await supabase
@@ -152,7 +212,7 @@ export async function getSiteVisits(projectId: string): Promise<SiteVisit[]> {
       .order("visit_date", { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(toSiteVisit);
   } catch (error) {
     console.error("❌ Error fetching visits:", error);
     throw error;
@@ -310,7 +370,7 @@ export async function getSiteVisit(visitId: string): Promise<SiteVisit | null> {
       .single();
 
     if (error) throw error;
-    return data;
+    return toSiteVisit(data);
   } catch (error) {
     console.error("❌ Error fetching visit:", error);
     throw error;
@@ -341,13 +401,13 @@ export async function getSiteVisitsSummaryByIds(
 }
 
 export async function createSiteVisit(
-  visit: Omit<SiteVisit, "id" | "created_at" | "updated_at">,
+  visit: Insert<"site_visits">,
 ): Promise<SiteVisit> {
   try {
     const { data, error } = await supabase.from("site_visits").insert([visit]).select().single();
 
     if (error) throw error;
-    return data;
+    return toSiteVisit(data);
   } catch (error) {
     console.error("❌ Error creating visit:", error);
     throw error;
@@ -356,7 +416,7 @@ export async function createSiteVisit(
 
 export async function updateSiteVisit(
   visitId: string,
-  updates: Partial<SiteVisit>,
+  updates: Update<"site_visits">,
 ): Promise<SiteVisit> {
   try {
     const { data, error } = await supabase
@@ -367,7 +427,7 @@ export async function updateSiteVisit(
       .single();
 
     if (error) throw error;
-    return data;
+    return toSiteVisit(data);
   } catch (error) {
     console.error("❌ Error updating visit:", error);
     throw error;
@@ -401,7 +461,7 @@ export async function getPhotos(visitId: string): Promise<Photo[]> {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(toPhoto);
   } catch (error) {
     console.error("❌ Error fetching photos:", error);
     throw error;
@@ -470,7 +530,7 @@ export async function getPhotosByLocation(locationId: string): Promise<Photo[]> 
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(toPhoto);
   } catch (error) {
     console.error("❌ Error fetching photos by location:", error);
     throw error;
@@ -486,7 +546,7 @@ export async function getPhoto(photoId: string): Promise<Photo | null> {
       .maybeSingle();
 
     if (error) throw error;
-    return data;
+    return data ? toPhoto(data) : null;
   } catch (error) {
     console.error("❌ Error fetching photo:", error);
     return null;
@@ -570,7 +630,7 @@ export async function uploadPhoto(
       throw photoError;
     }
 
-    return photoData;
+    return toPhoto(photoData);
   } catch (error) {
     console.error("❌ Error uploading photo:", error);
     throw error;
@@ -645,7 +705,7 @@ export async function saveAnnotatedPhoto(
   }
 }
 
-export async function updatePhoto(photoId: string, updates: Partial<Photo>): Promise<Photo> {
+export async function updatePhoto(photoId: string, updates: Update<"photos">): Promise<Photo> {
   try {
     const { data, error } = await supabase
       .from("photos")
@@ -655,7 +715,7 @@ export async function updatePhoto(photoId: string, updates: Partial<Photo>): Pro
       .single();
 
     if (error) throw error;
-    return data;
+    return toPhoto(data);
   } catch (error) {
     console.error("❌ Error updating photo:", error);
     throw error;
@@ -979,7 +1039,7 @@ export async function getIssues(projectId: string): Promise<Issue[]> {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(toIssue);
   } catch (error) {
     console.error("❌ Error fetching issues:", error);
     throw error;
@@ -1089,12 +1149,14 @@ export async function addProjectMember(
     const { data, error } = await supabase
       .from("project_members")
       .insert([
+        // organization_id deliberately omitted — filled by the
+        // set_project_member_organization trigger from the project's firm.
         {
           project_id: projectId,
           user_id: userId,
           role,
           invited_by: invitedBy,
-        },
+        } satisfies InsertTriggerOrg<"project_members"> as Insert<"project_members">,
       ])
       .select()
       .single();

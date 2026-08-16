@@ -66,7 +66,11 @@ interface DisplayPhoto {
   id: string;
   url: string;
   description: string | null;
-  createdAt: string;
+  // Nullable: photos.created_at has a DEFAULT but no NOT NULL. The timeline
+  // builder below already skips rows without one (`if (!photo.createdAt)
+  // continue`) — the type was simply claiming a guarantee the schema does
+  // not make.
+  createdAt: string | null;
   visitId: string;
 }
 

@@ -4,6 +4,7 @@
 // commenters/other members can only read).
 
 import { supabase } from "./supabase";
+import type { Update } from "./supabase";
 
 export interface Level {
   id: string;
@@ -139,7 +140,10 @@ export async function updateLocation(
     parentLocationId: string | null;
   }>,
 ): Promise<Location> {
-  const dbPatch: Record<string, unknown> = {};
+  // Typed against the generated Update shape rather than an untyped bag,
+  // so a misspelled column here is a compile error instead of a silently
+  // ignored key in the PATCH payload.
+  const dbPatch: Update<"locations"> = {};
   if ("name" in patch) dbPatch.name = patch.name;
   if ("discipline" in patch) dbPatch.discipline = patch.discipline;
   if ("type" in patch) dbPatch.type = patch.type;

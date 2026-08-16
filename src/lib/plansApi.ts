@@ -7,6 +7,7 @@
 
 import { supabase } from "./supabase";
 import { RlsWriteError } from "./rlsErrors";
+import type { Update } from "./supabase";
 
 export const PLAN_FILES_BUCKET = "project-plans";
 
@@ -248,7 +249,10 @@ export async function updatePlan(
   id: string,
   patch: Partial<{ levelId: string; type: PlanType; name: string | null }>,
 ): Promise<Plan> {
-  const dbPatch: Record<string, unknown> = {};
+  // Typed against the generated Update shape rather than an untyped bag,
+  // so a misspelled column here is a compile error instead of a silently
+  // ignored key in the PATCH payload.
+  const dbPatch: Update<"plans"> = {};
   if ("levelId" in patch) dbPatch.level_id = patch.levelId;
   if ("type" in patch) dbPatch.type = patch.type;
   if ("name" in patch) dbPatch.name = patch.name;
