@@ -238,6 +238,151 @@ CREATE OR REPLACE FUNCTION "public"."has_project_role"("p_project_id" "uuid", "p
 $$;
 
 
+CREATE OR REPLACE FUNCTION "public"."issues_status_stamp"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        NEW.status := coalesce(NEW.status, 'signale');
+        NEW.status_changed_at := coalesce(NEW.status_changed_at, now());
+        IF NEW.status = 'verifie' THEN
+            NEW.resolved_at := coalesce(NEW.resolved_at, now());
+        END IF;
+        RETURN NEW;
+    END IF;
+
+    -- UPDATE, status actually changed. IS DISTINCT FROM so that re-saving a
+    -- form with an unchanged status neither stamps nor logs.
+    IF NEW.status IS DISTINCT FROM OLD.status THEN
+        NEW.status_changed_at := now();
+
+        -- resolved_at now means "reached verifie", and is cleared on the way
+        -- back out — a deficiency reopened after verification is not resolved.
+        IF NEW.status = 'verifie' THEN
+            NEW.resolved_at := now();
+        ELSIF OLD.status = 'verifie' THEN
+            NEW.resolved_at := NULL;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."issues_status_stamp"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."issues_log_status_event"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_note  text := nullif(btrim(coalesce(current_setting('app.issue_status_note', true), '')), '');
+    v_visit uuid;
+    v_actor uuid;
+BEGIN
+    IF TG_OP = 'UPDATE' AND NEW.status IS NOT DISTINCT FROM OLD.status THEN
+        RETURN NULL;   -- AFTER trigger: return value ignored
+    END IF;
+
+    BEGIN
+        v_visit := nullif(btrim(coalesce(current_setting('app.issue_status_visit', true), '')), '')::uuid;
+    EXCEPTION WHEN others THEN
+        v_visit := NULL;   -- a malformed setting must never block the change
+    END;
+
+    -- auth.uid() reads and casts a GUC, so a malformed or blank JWT claim can
+    -- make it RAISE rather than return NULL. Unhandled, that would abort the
+    -- whole status change — the logging of a change must never be what
+    -- prevents it. An unattributed event is a far better outcome than a
+    -- refused update, and "changed_by IS NULL" is itself informative.
+    BEGIN
+        v_actor := auth.uid();
+    EXCEPTION WHEN others THEN
+        v_actor := NULL;
+    END;
+
+    INSERT INTO public.issue_status_events
+        (issue_id, from_status, to_status, changed_by, visit_id, note)
+    VALUES (
+        NEW.id,
+        CASE WHEN TG_OP = 'UPDATE' THEN OLD.status ELSE NULL END,
+        NEW.status,
+        v_actor,
+        v_visit,
+        v_note
+    );
+
+    -- Consume the context so it cannot leak onto a later change in the same
+    -- transaction.
+    PERFORM set_config('app.issue_status_note',  '', true);
+    PERFORM set_config('app.issue_status_visit', '', true);
+
+    RETURN NULL;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."issues_log_status_event"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."set_issue_status"(
+    "p_issue_id" "uuid",
+    "p_to_status" "text",
+    "p_note" "text" DEFAULT NULL,
+    "p_visit_id" "uuid" DEFAULT NULL
+) RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_from text;
+    n int;
+BEGIN
+    IF p_to_status IS NULL OR p_to_status NOT IN ('signale','a_corriger','corrige','verifie') THEN
+        RETURN jsonb_build_object('status','invalid_status');
+    END IF;
+
+    -- Visible under the SELECT policy? Distinguishes "not found" from "not
+    -- permitted to change" below.
+    SELECT status INTO v_from FROM public.issues WHERE id = p_issue_id;
+    IF v_from IS NULL THEN
+        RETURN jsonb_build_object('status','not_found');
+    END IF;
+
+    IF v_from = p_to_status THEN
+        RETURN jsonb_build_object('status','unchanged','from',v_from,'to',p_to_status);
+    END IF;
+
+    -- Context for the trigger. is_local = true: dies with the transaction, so
+    -- it cannot leak into another request on the same pooled connection.
+    PERFORM set_config('app.issue_status_note',  coalesce(p_note,''), true);
+    PERFORM set_config('app.issue_status_visit', coalesce(p_visit_id::text,''), true);
+
+    UPDATE public.issues SET status = p_to_status WHERE id = p_issue_id;
+    GET DIAGNOSTICS n = ROW_COUNT;
+
+    IF n = 0 THEN
+        -- Visible but not updatable: the caller is a commenter, or not a
+        -- member with a write role. Stage 12's policy refused it.
+        PERFORM set_config('app.issue_status_note',  '', true);
+        PERFORM set_config('app.issue_status_visit', '', true);
+        RETURN jsonb_build_object('status','not_permitted');
+    END IF;
+
+    RETURN jsonb_build_object('status','changed','from',v_from,'to',p_to_status);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."set_issue_status"("p_issue_id" "uuid", "p_to_status" "text", "p_note" "text", "p_visit_id" "uuid") OWNER TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."set_issue_status"("uuid", "text", "text", "uuid") FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION "public"."set_issue_status"("uuid", "text", "text", "uuid") TO "authenticated", "service_role";
+
+
 ALTER FUNCTION "public"."has_project_role"("p_project_id" "uuid", "p_roles" "text"[]) OWNER TO "postgres";
 
 
@@ -661,6 +806,26 @@ CREATE TABLE IF NOT EXISTS "public"."comments" (
 ALTER TABLE "public"."comments" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."issue_status_events" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "issue_id" "uuid" NOT NULL,
+    "from_status" "text",
+    "to_status" "text" NOT NULL,
+    "changed_by" "uuid",
+    "visit_id" "uuid",
+    "note" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "issue_status_events_from_status_check" CHECK ((("from_status" IS NULL) OR ("from_status" = ANY (ARRAY['signale'::"text", 'a_corriger'::"text", 'corrige'::"text", 'verifie'::"text"])))),
+    CONSTRAINT "issue_status_events_to_status_check" CHECK (("to_status" = ANY (ARRAY['signale'::"text", 'a_corriger'::"text", 'corrige'::"text", 'verifie'::"text"])))
+);
+
+
+ALTER TABLE "public"."issue_status_events" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."issue_status_events" IS 'Append-only history of deficiency status transitions. Written ONLY by the issues_log_status_event trigger (SECURITY DEFINER); there is deliberately no INSERT/UPDATE/DELETE policy and no write grant to authenticated, so a client cannot forge or rewrite an entry.';
+
+
 CREATE TABLE IF NOT EXISTS "public"."issues" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -670,7 +835,7 @@ CREATE TABLE IF NOT EXISTS "public"."issues" (
     "title" "text" NOT NULL,
     "description" "text",
     "priority" "text" DEFAULT 'medium'::"text",
-    "status" "text" DEFAULT 'open'::"text",
+    "status" "text" DEFAULT 'signale'::"text",
     "assigned_to" "uuid",
     "location" "jsonb",
     "created_at" timestamp with time zone DEFAULT "now"(),
@@ -679,7 +844,8 @@ CREATE TABLE IF NOT EXISTS "public"."issues" (
     "location_id" "uuid",
     "discipline" "text",
     "due_date" "date",
-    "assigned_to_name" "text"
+    "assigned_to_name" "text",
+    "status_changed_at" timestamp with time zone
 );
 
 
@@ -1061,6 +1227,18 @@ ALTER TABLE ONLY "public"."comments"
 
 ALTER TABLE ONLY "public"."issues"
     ADD CONSTRAINT "issues_pkey" PRIMARY KEY ("id");
+
+
+ALTER TABLE ONLY "public"."issues"
+    ADD CONSTRAINT "issues_status_check" CHECK (("status" = ANY (ARRAY['signale'::"text", 'a_corriger'::"text", 'corrige'::"text", 'verifie'::"text"])));
+
+
+ALTER TABLE ONLY "public"."issues"
+    ADD CONSTRAINT "issues_priority_check" CHECK ((("priority" IS NULL) OR ("priority" = ANY (ARRAY['low'::"text", 'medium'::"text", 'high'::"text", 'critical'::"text"]))));
+
+
+ALTER TABLE ONLY "public"."issue_status_events"
+    ADD CONSTRAINT "issue_status_events_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1569,6 +1747,10 @@ CREATE INDEX "kv_store_9fe75696_key_idx9" ON "public"."kv_store_9fe75696" USING 
 
 CREATE OR REPLACE TRIGGER "set_updated_at_issues" BEFORE UPDATE ON "public"."issues" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
 
+CREATE OR REPLACE TRIGGER "trg_issues_status_stamp" BEFORE INSERT OR UPDATE ON "public"."issues" FOR EACH ROW EXECUTE FUNCTION "public"."issues_status_stamp"();
+
+CREATE OR REPLACE TRIGGER "trg_issues_log_status_event" AFTER INSERT OR UPDATE OF "status" ON "public"."issues" FOR EACH ROW EXECUTE FUNCTION "public"."issues_log_status_event"();
+
 
 
 CREATE OR REPLACE TRIGGER "set_updated_at_profiles" BEFORE UPDATE ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
@@ -1684,6 +1866,18 @@ ALTER TABLE ONLY "public"."issues"
 
 ALTER TABLE ONLY "public"."issues"
     ADD CONSTRAINT "issues_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
+
+
+ALTER TABLE ONLY "public"."issue_status_events"
+    ADD CONSTRAINT "issue_status_events_issue_id_fkey" FOREIGN KEY ("issue_id") REFERENCES "public"."issues"("id") ON DELETE CASCADE;
+
+
+ALTER TABLE ONLY "public"."issue_status_events"
+    ADD CONSTRAINT "issue_status_events_changed_by_fkey" FOREIGN KEY ("changed_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+ALTER TABLE ONLY "public"."issue_status_events"
+    ADD CONSTRAINT "issue_status_events_visit_id_fkey" FOREIGN KEY ("visit_id") REFERENCES "public"."site_visits"("id") ON DELETE SET NULL;
 
 
 
@@ -1982,7 +2176,12 @@ CREATE POLICY "Creator can delete their visits" ON "public"."site_visits" FOR DE
 
 
 
-CREATE POLICY "Creator can update their issues" ON "public"."issues" FOR UPDATE USING (("auth"."uid"() = "user_id"));
+CREATE POLICY "Editors can update issues" ON "public"."issues" FOR UPDATE USING ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"])) WITH CHECK ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
+
+
+CREATE POLICY "Members can view issue status events" ON "public"."issue_status_events" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."issues" "i"
+  WHERE (("i"."id" = "issue_status_events"."issue_id") AND "public"."is_project_member"("i"."project_id")))));
 
 
 
@@ -2217,6 +2416,16 @@ ALTER TABLE "public"."comment_mentions" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."comments" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."issue_status_events" ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE "public"."issue_status_events" FROM PUBLIC;
+REVOKE ALL ON TABLE "public"."issue_status_events" FROM "anon";
+REVOKE ALL ON TABLE "public"."issue_status_events" FROM "authenticated";
+GRANT SELECT ON TABLE "public"."issue_status_events" TO "authenticated";
+GRANT ALL ON TABLE "public"."issue_status_events" TO "service_role";
+
 
 
 ALTER TABLE "public"."issues" ENABLE ROW LEVEL SECURITY;

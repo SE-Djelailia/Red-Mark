@@ -1,5 +1,23 @@
 # 🚀 Instructions de Migration vers Supabase
 
+> ## ⚠️ DOCUMENT HISTORIQUE — NE PAS SUIVRE
+>
+> Ce guide décrit la migration ponctuelle de localStorage vers Supabase,
+> effectuée en juin 2026. Il est conservé comme trace de cette migration.
+>
+> **Ne l'exécute pas.** Il pointe vers `/supabase-schema.sql`, un fichier de
+> juin qui ne contient que 8 des 22 tables actuelles — il ignore entre autres
+> `organizations`, `organization_members`, `locations`, `plans`, `reports` et
+> `issue_status_events`. Le suivre produirait une base incapable de faire
+> tourner l'application. Pire, les étapes ci-dessous visent le projet de
+> PRODUCTION (`kcaxzgomyzuvsghnzufo`), qui est déjà migré.
+>
+> **Pour monter une base à jour**, charge `/prod-schema.sql` — le dump complet
+> du schéma de production, tenu à jour à chaque migration.
+
+---
+
+
 ## 📋 Vue d'ensemble
 
 Cette migration permet à RedMark de passer de localStorage (stockage local) à Supabase (base de données cloud), offrant :
