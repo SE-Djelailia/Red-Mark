@@ -22,6 +22,10 @@ export interface ComparePhoto {
   description: string | null;
   createdAt: string | null;
   visitId: string;
+  // Carried only so the parent's lightbox — which this grid opens — can
+  // hand a fully-populated photo to the metadata editor.
+  locationId: string | null;
+  tags: string[];
 }
 
 interface Props {

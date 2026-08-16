@@ -13,6 +13,7 @@ import {
   Calendar,
   CheckCircle2,
   FileText,
+  MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getLocation, getLevels, getLocations, type Location, type Level } from "../../lib/locationsApi";
@@ -30,7 +31,7 @@ import { useModalOpen } from "../../hooks/useModalOpen";
 import { useSmartBack } from "../../hooks/useSmartBack";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
 import { useAuth } from "../../contexts/useAuth";
-import { useProjectRole } from "../../hooks/useProjectRole";
+import { useProjectRole, canEditPhotoMetadata } from "../../hooks/useProjectRole";
 import { parseLocalDate, formatDateLong } from "../../lib/dateUtils";
 import LocationPhotoCompare from "./LocationPhotoCompare";
 import type { SiteVisit } from "../../lib/supabase";
@@ -41,6 +42,7 @@ import FloatingActions from "./FloatingActions";
 import ErrorBoundary from "./ErrorBoundary";
 import { PRIORITY_LABEL, STATUS_LABEL } from "./ui-kit/Badge";
 import { TERMINAL_ISSUE_STATUS } from "../../lib/issueStatus";
+import PhotoMetadataEditor, { type EditablePhoto } from "./PhotoMetadataEditor";
 
 // Timeline entries are grouped by day; this formats the group header
 // ("21 juillet 2026"). Uses parseLocalDate (not plain `new Date(...)`) to
@@ -73,6 +75,11 @@ interface DisplayPhoto {
   // not make.
   createdAt: string | null;
   visitId: string;
+  // Carried so the metadata editor opens pre-filled. Every photo on this
+  // screen was reached THROUGH a location, so location_id is normally set —
+  // but it can still be edited (reassigned to a neighbouring local).
+  locationId: string | null;
+  tags: string[];
 }
 
 interface ActivityVisit {
@@ -139,6 +146,7 @@ export default function LocationDetail() {
   const [photosLoadError, setPhotosLoadError] = useState(false);
 
   const [lightboxPhoto, setLightboxPhoto] = useState<DisplayPhoto | null>(null);
+  const [editingPhotos, setEditingPhotos] = useState<EditablePhoto[]>([]);
   useModalOpen(!!lightboxPhoto);
   useModalOpen(pendingAction !== null && !!activeVisit);
 
@@ -227,6 +235,8 @@ export default function LocationDetail() {
           description: p.description ?? null,
           createdAt: p.created_at,
           visitId: p.visit_id,
+          locationId: p.location_id,
+          tags: p.tags || [],
         })),
       );
     } catch (e) {
@@ -862,7 +872,28 @@ export default function LocationDetail() {
           className="fixed inset-0 bg-black/95 z-50 flex flex-col"
           onClick={() => setLightboxPhoto(null)}
         >
-          <div className="flex items-center justify-end px-6 py-4">
+          <div
+            className="flex items-center justify-end gap-2 px-6 py-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {canEditPhotoMetadata(projectRole) && (
+              <button
+                onClick={() =>
+                  setEditingPhotos([
+                    {
+                      id: lightboxPhoto.id,
+                      location_id: lightboxPhoto.locationId,
+                      description: lightboxPhoto.description,
+                      tags: lightboxPhoto.tags,
+                    },
+                  ])
+                }
+                className="px-4 py-2 bg-surface/10 hover:bg-surface/20 rounded-lg flex items-center gap-2 text-white transition-colors font-medium min-h-[44px]"
+              >
+                <MapPin size={18} />
+                Modifier
+              </button>
+            )}
             <button
               onClick={() => setLightboxPhoto(null)}
               className="w-11 h-11 flex items-center justify-center text-white hover:bg-surface/10 rounded-full transition-colors"
@@ -882,6 +913,36 @@ export default function LocationDetail() {
             />
           </div>
         </div>
+      )}
+
+      {editingPhotos.length > 0 && location && (
+        <PhotoMetadataEditor
+          open
+          photos={editingPhotos}
+          projectId={location.projectId}
+          onCancel={() => setEditingPhotos([])}
+          onSaved={(updated) => {
+            const byId = new Map(updated.map((u) => [u.id, u]));
+            // A photo reassigned to ANOTHER local no longer belongs on this
+            // screen; drop it rather than showing it under the wrong local.
+            setPhotos((prev) =>
+              prev
+                .map((p) => {
+                  const u = byId.get(p.id);
+                  return u
+                    ? {
+                        ...p,
+                        locationId: u.location_id,
+                        description: u.description,
+                        tags: u.tags || [],
+                      }
+                    : p;
+                })
+                .filter((p) => p.locationId === locationId),
+            );
+            setLightboxPhoto(null);
+          }}
+        />
       )}
 
       {/* Visit picker — shared first step for both "add deficiency" and

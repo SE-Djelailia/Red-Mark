@@ -40,7 +40,7 @@ import {
 import VisitCard from "./VisitCard";
 import ProjectVisitCalendar from "./ProjectVisitCalendar";
 import { useAuth } from "../../contexts/useAuth";
-import { useProjectRole } from "../../hooks/useProjectRole";
+import { useProjectRole, canEditPhotoMetadata } from "../../hooks/useProjectRole";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { useSmartBack } from "../../hooks/useSmartBack";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
@@ -59,6 +59,7 @@ import { getLocations, getLevels, type Location, type Level } from "../../lib/lo
 import { PLANS_ENABLED } from "../../lib/featureFlags";
 import type { IssueStatus } from "../../lib/issueStatus";
 import IssuesTab from "./IssuesTab";
+import PhotoMetadataEditor, { type EditablePhoto } from "./PhotoMetadataEditor";
 
 interface Issue {
   id: string;
@@ -263,7 +264,13 @@ export default function ProjectDetail() {
     phase?: string;
     storage_path: string;
     visit_id?: string;
+    // Carried so the metadata editor opens PRE-FILLED with the photo's
+    // current local and caption rather than blank, which would read as
+    // "no local set" and invite the user to overwrite a good value.
+    location_id?: string | null;
+    description?: string | null;
   } | null>(null);
+  const [editingPhotos, setEditingPhotos] = useState<EditablePhoto[]>([]);
   const [siteVisits, setSiteVisits] = useState<SiteVisit[]>([]);
   const [isLoadingVisits, setIsLoadingVisits] = useState(true);
   const [visitsHasMore, setVisitsHasMore] = useState(false);
@@ -354,6 +361,8 @@ export default function ProjectDetail() {
     // disabled for every photo opened from the gallery.
     storage_path: p.storage_path,
     visit_id: p.visit_id,
+    location_id: p.location_id,
+    description: p.description,
   }));
 
   // Filter photos based on search and filters
@@ -1439,6 +1448,15 @@ export default function ProjectDetail() {
               <Pencil size={18} />
               <span>Annoter</span>
             </button>
+            {canEditPhotoMetadata(projectRole) && (
+              <button
+                onClick={() => setEditingPhotos([selectedPhoto])}
+                className="flex-1 py-3 bg-surface/10 text-white rounded-lg hover:bg-surface/20 transition-colors flex items-center justify-center gap-2"
+              >
+                <MapPin size={18} />
+                <span>Modifier</span>
+              </button>
+            )}
           </div>
 
           {/* Metadata */}
@@ -1486,6 +1504,37 @@ export default function ProjectDetail() {
           photo={selectedPhoto}
           onClose={() => setShowAnnotator(false)}
           onSave={handleSaveAnnotation}
+        />
+      )}
+
+      {editingPhotos.length > 0 && id && (
+        <PhotoMetadataEditor
+          open
+          photos={editingPhotos}
+          projectId={id}
+          onCancel={() => setEditingPhotos([])}
+          onSaved={(updated) => {
+            // Patch the gallery source list so the lightbox and any tag
+            // filter reflect the edit without a refetch.
+            const byId = new Map(updated.map((u) => [u.id, u]));
+            setGalleryPhotos((prev) =>
+              prev.map((p) => {
+                const u = byId.get(p.id);
+                return u ? { ...p, ...u, site_visits: p.site_visits } : p;
+              }),
+            );
+            setSelectedPhoto((prev) => {
+              const u = prev ? byId.get(prev.id) : undefined;
+              return u && prev
+                ? {
+                    ...prev,
+                    tags: u.tags || [],
+                    location_id: u.location_id,
+                    description: u.description,
+                  }
+                : prev;
+            });
+          }}
         />
       )}
 

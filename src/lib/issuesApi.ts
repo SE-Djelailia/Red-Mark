@@ -55,7 +55,18 @@ export interface Issue {
   // write the annotated copy under). photos.visit_id is NOT NULL in the
   // schema, so every photo genuinely has a visit — making these optional
   // would only hide a missing field behind a silently disabled button.
-  photos: { id: string; url: string; storagePath: string; visitId: string }[];
+  // locationId/description/tags are carried so the photo metadata editor
+  // can open pre-filled from the issue view, rather than showing a blank
+  // form that invites overwriting a good value with nothing.
+  photos: {
+    id: string;
+    url: string;
+    storagePath: string;
+    visitId: string;
+    locationId: string | null;
+    description: string | null;
+    tags: string[];
+  }[];
   tags: string[];
   location: string;
   locationId?: string | null;
@@ -155,7 +166,7 @@ async function attachPhotos(rows: Omit<Issue, "photos">[]): Promise<Issue[]> {
   const ids = rows.map((r) => r.id);
   const { data, error } = await supabase
     .from("photos")
-    .select("id, file_url, storage_path, issue_id, visit_id")
+    .select("id, file_url, storage_path, issue_id, visit_id, location_id, description, tags")
     .in("issue_id", ids);
 
   const byIssue: Record<string, Issue["photos"]> = {};
@@ -169,6 +180,9 @@ async function attachPhotos(rows: Omit<Issue, "photos">[]): Promise<Issue[]> {
         url: p.file_url,
         storagePath: p.storage_path,
         visitId: p.visit_id,
+        locationId: p.location_id,
+        description: p.description,
+        tags: p.tags || [],
       });
     }
   }

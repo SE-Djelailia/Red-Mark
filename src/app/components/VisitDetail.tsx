@@ -16,7 +16,8 @@ import {
   Mic,
 } from "lucide-react";
 import { getLocations, type Location } from "../../lib/locationsApi";
-import type { LocationExtras } from "../../lib/supabase";
+import type { LocationExtras, Photo as ApiPhoto } from "../../lib/supabase";
+import PhotoMetadataEditor, { type EditablePhoto } from "./PhotoMetadataEditor";
 import { indexLocations, resolvePhotoZone } from "../../lib/photoZone";
 import {
   getSiteVisit,
@@ -40,7 +41,12 @@ import VisitComments from "./VisitComments";
 import IssueForm from "./IssueForm";
 import VoiceNotesSection from "./VoiceNotesSection";
 import { useAuth } from "../../contexts/useAuth";
-import { useProjectRole, canEditIssue, canManagePhoto } from "../../hooks/useProjectRole";
+import {
+  useProjectRole,
+  canEditIssue,
+  canManagePhoto,
+  canEditPhotoMetadata,
+} from "../../hooks/useProjectRole";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
 import { uploadIssuePhotos, WEATHER_EVIDENCE_TAG } from "../../lib/issuePhotoUpload";
@@ -102,6 +108,10 @@ export default function VisitDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [uploadingWeatherPhoto, setUploadingWeatherPhoto] = useState(false);
+
+  // Photos currently open in the metadata editor. Empty = closed; one entry
+  // is single mode, several is bulk.
+  const [editingPhotos, setEditingPhotos] = useState<EditablePhoto[]>([]);
 
   // Photo selection for deletion
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -249,6 +259,39 @@ export default function VisitDetail() {
   // Rebuilt only when the locations list changes, not per photo per render.
   const locationsById = useMemo(() => indexLocations(locations), [locations]);
 
+  // Patch the visit's photo list in place so the grid badge, the filter and
+  // the lightbox all reflect the edit immediately. Refetching the whole
+  // visit would work too but would blank the grid for a beat.
+  const handleMetadataSaved = (updated: ApiPhoto[]) => {
+    const byId = new Map(updated.map((u) => [u.id, u]));
+    setVisit((prev) =>
+      prev
+        ? {
+            ...prev,
+            photos: prev.photos.map((p) => {
+              const u = byId.get(p.id);
+              return u
+                ? {
+                    ...p,
+                    location_id: u.location_id,
+                    location: u.location ?? undefined,
+                    tags: u.tags || [],
+                  }
+                : p;
+            }),
+          }
+        : prev,
+    );
+    setSelectedPhoto((prev) => {
+      const u = prev ? byId.get(prev.id) : undefined;
+      return u && prev
+        ? { ...prev, location_id: u.location_id, location: u.location ?? undefined, tags: u.tags || [] }
+        : prev;
+    });
+    setIsSelectionMode(false);
+    setSelectedPhotoIds([]);
+  };
+
   const projectRole = useProjectRole(projectId);
 
   // Mirrors the site_visits "Creator can update their visits" RLS policy.
@@ -339,6 +382,9 @@ export default function VisitDetail() {
           url: p.url,
           storagePath: p.storage_path,
           visitId: visitId || "",
+          locationId: p.location_id ?? null,
+          description: null,
+          tags: p.tags || [],
         })) || [];
     setInitialIssuePhotos(preSelected);
     setIsSelectionMode(false);
@@ -849,6 +895,28 @@ export default function VisitDetail() {
                   sélectionnée{selectedPhotoIds.length !== 1 ? "s" : ""}
                 </span>
                 <div className="flex gap-2">
+                  {canEditPhotoMetadata(projectRole) && (
+                    <button
+                      onClick={() =>
+                        setEditingPhotos(
+                          (visit?.photos ?? [])
+                            .filter((p) => selectedPhotoIds.includes(p.id))
+                            // description omitted deliberately: bulk mode
+                            // does not edit it, and the local view-model
+                            // does not carry it.
+                            .map((p) => ({
+                              id: p.id,
+                              location_id: p.location_id,
+                              tags: p.tags,
+                            })),
+                        )
+                      }
+                      className="py-2 px-3 bg-subtle hover:bg-line text-ink rounded-lg transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
+                    >
+                      <MapPin size={16} />
+                      Modifier le local
+                    </button>
+                  )}
                   {projectRole.canCreateIssues && (
                     <button
                       onClick={handleCreateIssueFromPhotos}
@@ -1137,6 +1205,19 @@ export default function VisitDetail() {
         >
           <div className="relative max-w-4xl w-full">
             <div className="absolute top-4 right-4 flex gap-2 z-10">
+              {canEditPhotoMetadata(projectRole) && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingPhotos([selectedPhoto]);
+                  }}
+                  className="px-4 py-2 bg-surface/10 hover:bg-surface/20 rounded-lg flex items-center gap-2 text-white transition-colors font-medium"
+                  title="Modifier"
+                >
+                  <MapPin size={18} />
+                  Modifier
+                </button>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1226,6 +1307,16 @@ export default function VisitDetail() {
             />
           </div>
         </div>
+      )}
+
+      {editingPhotos.length > 0 && projectId && (
+        <PhotoMetadataEditor
+          open
+          photos={editingPhotos}
+          projectId={projectId}
+          onCancel={() => setEditingPhotos([])}
+          onSaved={handleMetadataSaved}
+        />
       )}
 
       {/* Photo Annotator */}

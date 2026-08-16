@@ -171,6 +171,30 @@ export function canEditIssue(
  * A firm admin is NOT included — and note the storage policy is stricter
  * still: since Stage 4, `project-photos delete` is uploader-only.
  */
+/**
+ * Whether the current user can edit a photo's METADATA (location,
+ * description, tags) — the project owner or any editor, regardless of who
+ * uploaded it.
+ *
+ * Deliberately separate from canManagePhoto, and deliberately wider. That
+ * one gates DELETION, where the storage policy really is uploader-only.
+ * Editing is governed by the `Editors can update project photos` RLS
+ * policy, which has no uploader condition — so reusing canManagePhoto here
+ * would block a non-creator editor in the UI even though the database
+ * allows the write. Fixing a colleague's missing local is the whole point
+ * of the feature.
+ *
+ * (A commenter can in fact still edit a photo THEY uploaded, via the older
+ * `Creator can update their photos` policy. Only reachable if their role
+ * was downgraded after uploading; narrowing it would need a migration, so
+ * the UI simply doesn't offer them the action.)
+ */
+export function canEditPhotoMetadata(
+  role: Pick<ProjectRoleInfo, "isOwner" | "projectRole">,
+): boolean {
+  return role.isOwner || role.projectRole === "editor";
+}
+
 export function canManagePhoto(
   role: Pick<ProjectRoleInfo, "isOwner" | "projectRole" | "userId">,
   photoUploadedBy: string | undefined,

@@ -70,6 +70,9 @@ export async function uploadIssuePhotos(
         url: photo.file_url,
         storagePath: photo.storage_path,
         visitId: context.visitId,
+        locationId: photo.location_id,
+        description: photo.description,
+        tags: photo.tags || [],
       });
     } catch (uploadError) {
       if (isRetriableUploadError(uploadError)) {

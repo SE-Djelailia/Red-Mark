@@ -7,7 +7,7 @@ import { getLocation, type Location } from "../../lib/locationsApi";
 import type { Issue } from "../../lib/issuesApi";
 import { saveAnnotatedPhoto } from "../../lib/supabaseApi";
 import { getRlsErrorMessage } from "../../lib/rlsErrors";
-import { useProjectRole, canEditIssue } from "../../hooks/useProjectRole";
+import { useProjectRole, canEditIssue, canEditPhotoMetadata } from "../../hooks/useProjectRole";
 import { useAuth } from "../../contexts/useAuth";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import CommentThread from "./CommentThread";
@@ -16,6 +16,7 @@ import IssueForm from "./IssueForm";
 import { PhotoAnnotator } from "./PhotoAnnotator";
 import { PriorityBadge, StatusBadge } from "./ui-kit/Badge";
 import IssueStatusTimeline from "./IssueStatusTimeline";
+import PhotoMetadataEditor, { type EditablePhoto } from "./PhotoMetadataEditor";
 import { ageInDays, isOverdue } from "../../lib/issueStatus";
 
 interface Props {
@@ -35,6 +36,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
   const [editing, setEditing] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<Issue["photos"][number] | null>(null);
   const [showAnnotator, setShowAnnotator] = useState(false);
+  const [editingPhotos, setEditingPhotos] = useState<EditablePhoto[]>([]);
   useModalOpen(!!selectedPhoto);
 
   // Annotation is gated the same way the "Modifier" button above is, so the
@@ -283,8 +285,8 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
               className="w-full h-auto rounded-lg"
               onClick={(e) => e.stopPropagation()}
             />
-            {canAnnotate && (
-              <div className="mt-3 flex" onClick={(e) => e.stopPropagation()}>
+            <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+              {canAnnotate && (
                 <button
                   onClick={() => setShowAnnotator(true)}
                   className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-brand-800 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
@@ -292,14 +294,62 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
                   <Pencil size={18} />
                   <span>Annoter</span>
                 </button>
-              </div>
-            )}
+              )}
+              {canEditPhotoMetadata(projectRole) && (
+                <button
+                  onClick={() =>
+                    setEditingPhotos([
+                      {
+                        id: selectedPhoto.id,
+                        location_id: selectedPhoto.locationId,
+                        description: selectedPhoto.description,
+                        tags: selectedPhoto.tags,
+                      },
+                    ])
+                  }
+                  className="flex-1 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+                >
+                  <MapPin size={18} />
+                  <span>Modifier</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {/* Photo annotation — same canonical annotator and non-destructive
           save path the visit and project screens use. */}
+      {editingPhotos.length > 0 && (
+        <PhotoMetadataEditor
+          open
+          photos={editingPhotos}
+          projectId={projectId}
+          onCancel={() => setEditingPhotos([])}
+          onSaved={(updated) => {
+            // The issue's photo list lives on the parent's Issue object, so
+            // the patched issue is bubbled up through onIssueUpdated — the
+            // same channel an edit or a status change already uses.
+            const byId = new Map(updated.map((u) => [u.id, u]));
+            onIssueUpdated({
+              ...issue,
+              photos: issue.photos.map((p) => {
+                const u = byId.get(p.id);
+                return u
+                  ? {
+                      ...p,
+                      locationId: u.location_id,
+                      description: u.description,
+                      tags: u.tags || [],
+                    }
+                  : p;
+              }),
+            });
+            setSelectedPhoto(null);
+          }}
+        />
+      )}
+
       {showAnnotator && selectedPhoto && (
         <PhotoAnnotator
           photo={{ id: selectedPhoto.id, storage_path: selectedPhoto.storagePath }}

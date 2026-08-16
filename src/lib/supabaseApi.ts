@@ -722,6 +722,49 @@ export async function updatePhoto(photoId: string, updates: Update<"photos">): P
   }
 }
 
+/** The metadata fields the photo editor may change. */
+export interface PhotoMetadataPatch {
+  location_id?: string | null;
+  description?: string | null;
+  tags?: string[];
+}
+
+export interface UpdatePhotosResult {
+  updated: Photo[];
+  /** One entry per photo that failed, so the caller can name the count. */
+  failed: { id: string; error: unknown }[];
+}
+
+/**
+ * Applies the same metadata patch to several photos.
+ *
+ * allSettled, not all: with N photos some can succeed and some fail (RLS
+ * denies one row, the network drops mid-batch), and Promise.all would
+ * abandon the remainder on the first rejection while the earlier writes had
+ * already landed. The caller gets both lists so it can report "3 modifiées,
+ * 1 échec" rather than a blanket success toast that may be false.
+ *
+ * Deliberately not a single `.in("id", ids)` statement: PostgREST would
+ * report an RLS-skipped row as a silent short count with no way to tell
+ * WHICH row was refused.
+ */
+export async function updatePhotosMetadata(
+  photoIds: string[],
+  patch: PhotoMetadataPatch,
+): Promise<UpdatePhotosResult> {
+  const results = await Promise.allSettled(
+    photoIds.map((id) => updatePhoto(id, patch)),
+  );
+
+  const updated: Photo[] = [];
+  const failed: { id: string; error: unknown }[] = [];
+  results.forEach((r, i) => {
+    if (r.status === "fulfilled") updated.push(r.value);
+    else failed.push({ id: photoIds[i], error: r.reason });
+  });
+  return { updated, failed };
+}
+
 export async function deletePhoto(photoId: string): Promise<void> {
   try {
     // 1. Get photo to find storage path
