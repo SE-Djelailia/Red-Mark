@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { RlsWriteError } from "./rlsErrors";
+import { TERMINAL_ISSUE_STATUS } from "./issueStatus";
 import type {
   Project,
   SiteVisit,
@@ -763,6 +764,12 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     const projectIds = projects.map((p) => p.id);
 
     // Décomptes en parallèle via `head: true` (ne transfère pas les lignes, juste le count)
+    // "Ouvertes" is now everything short of `verifie`, not a single status:
+    // the lifecycle has three outstanding states, and counting only the
+    // first would silently drop every déficience a contractor had marked
+    // corrected but nobody had verified — exactly the ones needing chasing.
+    // The two counts stay complementary (they partition the project's
+    // issues), so the dashboard's totals still add up.
     const [openIssues, resolvedIssues] = await Promise.all([
       resolveCount(
         projectIds.length
@@ -770,7 +777,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
               .from("issues")
               .select("id", { count: "exact", head: true })
               .in("project_id", projectIds)
-              .eq("status", "open")
+              .neq("status", TERMINAL_ISSUE_STATUS)
           : null,
       ),
       resolveCount(
@@ -779,7 +786,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
               .from("issues")
               .select("id", { count: "exact", head: true })
               .in("project_id", projectIds)
-              .eq("status", "resolved")
+              .eq("status", TERMINAL_ISSUE_STATUS)
           : null,
       ),
     ]);
@@ -866,7 +873,7 @@ export async function getRecentActivity(
       .from("issues")
       .select("id, title, project_id, resolved_at, projects(name)")
       .in("project_id", projectIds)
-      .eq("status", "resolved")
+      .eq("status", TERMINAL_ISSUE_STATUS)
       .not("resolved_at", "is", null)
       .order("resolved_at", { ascending: false })
       .limit(limit),
@@ -979,36 +986,12 @@ export async function getIssues(projectId: string): Promise<Issue[]> {
   }
 }
 
-export async function createIssue(
-  issue: Omit<Issue, "id" | "created_at" | "updated_at">,
-): Promise<Issue> {
-  try {
-    const { data, error } = await supabase.from("issues").insert([issue]).select().single();
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error("❌ Error creating issue:", error);
-    throw error;
-  }
-}
-
-export async function updateIssue(issueId: string, updates: Partial<Issue>): Promise<Issue> {
-  try {
-    const { data, error } = await supabase
-      .from("issues")
-      .update(updates)
-      .eq("id", issueId)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error("❌ Error updating issue:", error);
-    throw error;
-  }
-}
+// createIssue/updateIssue used to live here as thin passthroughs that wrote
+// whatever `status` a caller handed them. They had no callers — every screen
+// imports the issuesApi pair — and they were the exact shape of the bug the
+// lifecycle release fixes: a raw INSERT of a client-chosen status, bypassing
+// normalization and the set_issue_status RPC. Removed rather than left as a
+// working second door into the same table.
 
 // ============================================
 // COMMENTS API

@@ -105,6 +105,54 @@ export type Database = {
           },
         ]
       }
+      issue_status_events: {
+        Row: {
+          created_at: string
+          changed_by: string | null
+          from_status: string | null
+          id: string
+          issue_id: string
+          note: string | null
+          to_status: string
+          visit_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          changed_by?: string | null
+          from_status?: string | null
+          id?: string
+          issue_id: string
+          note?: string | null
+          to_status: string
+          visit_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          changed_by?: string | null
+          from_status?: string | null
+          id?: string
+          issue_id?: string
+          note?: string | null
+          to_status?: string
+          visit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issue_status_events_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issue_status_events_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "site_visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       issues: {
         Row: {
           assigned_to: string | null
@@ -121,6 +169,7 @@ export type Database = {
           project_id: string
           resolved_at: string | null
           status: string | null
+          status_changed_at: string | null
           title: string
           updated_at: string | null
           user_id: string
@@ -141,6 +190,7 @@ export type Database = {
           project_id: string
           resolved_at?: string | null
           status?: string | null
+          status_changed_at?: string | null
           title: string
           updated_at?: string | null
           user_id: string
@@ -161,6 +211,7 @@ export type Database = {
           project_id?: string
           resolved_at?: string | null
           status?: string | null
+          status_changed_at?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string
@@ -1070,6 +1121,15 @@ export type Database = {
       has_project_role: {
         Args: { p_project_id: string; p_roles: string[] }
         Returns: boolean
+      }
+      set_issue_status: {
+        Args: {
+          p_issue_id: string
+          p_note?: string | null
+          p_to_status: string
+          p_visit_id?: string | null
+        }
+        Returns: Json
       }
       current_org_id: { Args: never; Returns: string | null }
       /** @deprecated Global, cross-firm admin flag. Dropped in Stage 5. */

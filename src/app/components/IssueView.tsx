@@ -15,6 +15,8 @@ import SecureImage from "./SecureImage";
 import IssueForm from "./IssueForm";
 import { PhotoAnnotator } from "./PhotoAnnotator";
 import { PriorityBadge, StatusBadge } from "./ui-kit/Badge";
+import IssueStatusTimeline from "./IssueStatusTimeline";
+import { ageInDays, isOverdue } from "../../lib/issueStatus";
 
 interface Props {
   issue: Issue;
@@ -41,6 +43,11 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
   // photo) — deliberately: RLS is the security floor, this is the product
   // decision about who is offered the action.
   const canAnnotate = canEditIssue(projectRole, issue.createdBy);
+
+  // Age counts from creation, not from the last status move: "this has been
+  // outstanding for 40 days" is the number that matters on a punch list.
+  const age = ageInDays(issue.createdAt ?? null);
+  const overdue = isOverdue(issue.dueDate, issue.status);
 
   const handleSaveAnnotation = async (photoId: string, annotatedImageBlob: Blob) => {
     const target = issue.photos.find((p) => p.id === photoId);
@@ -147,6 +154,11 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
         <div className="flex flex-wrap gap-2 mb-3">
           <PriorityBadge priority={issue.priority} />
           <StatusBadge status={issue.status} />
+          {overdue && (
+            <span className="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-md border border-brand-100 bg-brand-50 text-brand-strong text-[11px] font-medium">
+              En retard
+            </span>
+          )}
           {issue.discipline && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-line text-xs font-medium text-muted">
               {issue.discipline}
@@ -160,6 +172,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
           <div className="flex items-center gap-2 text-body">
             <Calendar size={14} className="text-faint flex-shrink-0" />
             Créée le {issue.createdDate}
+            {age !== null && age > 0 && <span className="text-muted">· {age} j</span>}
           </div>
           {issue.dueDate && (
             <div className="flex items-center gap-2 text-body">
@@ -222,6 +235,15 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
           </div>
         </div>
       )}
+
+      {/* Status history. Keyed on statusChangedAt so a transition made in
+          this session refetches the timeline instead of showing a stale one
+          — the new event is written by a DB trigger, so the client has no
+          copy of it to append optimistically. */}
+      <IssueStatusTimeline
+        key={issue.statusChangedAt ?? issue.id}
+        issueId={issue.id}
+      />
 
       {/* Comments */}
       <div className="bg-surface rounded-xl border border-line p-5">

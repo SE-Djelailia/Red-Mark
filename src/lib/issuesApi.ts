@@ -6,6 +6,12 @@
 // Photos are now a real relationship (photos.issue_id), not a JSONB array.
 
 import { supabase } from "./supabase";
+import {
+  DEFAULT_ISSUE_STATUS,
+  TERMINAL_ISSUE_STATUS,
+  normalizeIssueStatus,
+  type IssueStatus,
+} from "./issueStatus";
 
 export interface Issue {
   id: string;
@@ -14,7 +20,11 @@ export interface Issue {
   title: string;
   description: string;
   priority: "low" | "medium" | "high" | "critical";
-  status: "open" | "resolved";
+  status: IssueStatus;
+  // When the status last moved, maintained by the DB trigger (Stage 13).
+  // Distinct from updated_at, which any edit bumps — this only advances on
+  // an actual lifecycle transition, so "days in current state" is real.
+  statusChangedAt?: string | null;
   discipline?: string;
   dueDate?: string | null;
   // Free-text assignee (external contractor not in the app). Kept as
@@ -116,7 +126,11 @@ function rowToIssueBase(row: any): Omit<Issue, "photos"> {
     title: row.title,
     description: row.description || "",
     priority: row.priority,
-    status: row.status,
+    // Coerced rather than trusted: a row can reach here from a cached
+    // response or an offline queue entry written under the old vocabulary,
+    // and an unmapped value would break every Record<IssueStatus, …> lookup.
+    status: normalizeIssueStatus(row.status),
+    statusChangedAt: row.status_changed_at ?? null,
     discipline: row.discipline || undefined,
     dueDate: row.due_date ?? null,
     assignedTo: assignedToName,
@@ -261,8 +275,14 @@ export async function getIssuesByLocation(locationId: string): Promise<Issue[]> 
 }
 
 // For a batch of location ids, reports which ones have at least one
-// non-resolved issue — the live signal behind the plan viewer's pin color
-// (red = has an open issue, green = all resolved or no issues at all).
+// UNVERIFIED issue — the live signal behind the plan viewer's pin color
+// (red = something outstanding, green = everything verified or no issues).
+//
+// "Outstanding" means not `verifie`: a deficiency the contractor marked
+// `corrige` is NOT closed until an inspector verifies it, so the pin must
+// stay red. Treating `corrige` as done would let the pin go green on the
+// contractor's say-so, which is the whole failure mode the lifecycle exists
+// to prevent.
 // Never stored: recomputed from current issue statuses every time it's
 // needed, so it can't drift from reality.
 export async function getIssueStatusesByLocations(
@@ -281,13 +301,15 @@ export async function getIssueStatusesByLocations(
 
   const hasOpenIssue: Record<string, boolean> = {};
   for (const row of data || []) {
-    if (row.location_id && row.status !== "resolved") hasOpenIssue[row.location_id] = true;
+    if (row.location_id && normalizeIssueStatus(row.status) !== TERMINAL_ISSUE_STATUS) {
+      hasOpenIssue[row.location_id] = true;
+    }
   }
   return hasOpenIssue;
 }
 
 // The set of visit ids (within a project) that have at least one
-// non-resolved issue — powers the Visits list's "has open issues" filter.
+// UNVERIFIED issue — powers the Visits list's "has open issues" filter.
 // One batched query for the whole project, then applied client-side as an
 // `.in("id", ...)` restriction on the paginated visits query (see
 // supabaseApi.ts's SiteVisitPageFilters.visitIds) — deliberately not an
@@ -296,7 +318,7 @@ export async function getIssueStatusesByLocations(
 /**
  * Cross-project sibling of getVisitIdsWithOpenIssues, for the Dashboard
  * calendar's red/green pills. Same predicate — a visit counts as "open" if
- * any of its issues is not resolved — widened to several projects in one
+ * any of its issues is not yet verified — widened to several projects in one
  * query rather than one query per project.
  */
 export async function getVisitIdsWithOpenIssuesAcrossProjects(
@@ -308,7 +330,7 @@ export async function getVisitIdsWithOpenIssuesAcrossProjects(
     .from("issues")
     .select("visit_id")
     .in("project_id", projectIds)
-    .neq("status", "resolved")
+    .neq("status", TERMINAL_ISSUE_STATUS)
     .not("visit_id", "is", null);
 
   if (error) {
@@ -323,7 +345,7 @@ export async function getVisitIdsWithOpenIssues(projectId: string): Promise<Set<
     .from("issues")
     .select("visit_id")
     .eq("project_id", projectId)
-    .neq("status", "resolved")
+    .neq("status", TERMINAL_ISSUE_STATUS)
     .not("visit_id", "is", null);
 
   if (error) {
@@ -399,7 +421,11 @@ export async function createIssue(
         title: issueData.title,
         description: issueData.description,
         priority: issueData.priority,
-        status: issueData.status,
+        // Normalized, never passed through. The DB CHECK now accepts only
+        // the four lifecycle states, so a stale 'open' from any caller —
+        // including a queued offline capture written before this release —
+        // would make the INSERT fail outright rather than degrade.
+        status: issueData.status ? normalizeIssueStatus(issueData.status) : DEFAULT_ISSUE_STATUS,
         discipline: issueData.discipline || null,
         due_date: issueData.dueDate || null,
         assigned_to: issueData.assignedToUserId || null,
@@ -445,8 +471,15 @@ export async function updateIssue(
   if (updates.description !== undefined) payload.description = updates.description;
   if (updates.priority !== undefined) payload.priority = updates.priority;
   if (updates.status !== undefined) {
-    payload.status = updates.status;
-    payload.resolved_at = updates.status === "resolved" ? new Date().toISOString() : null;
+    // resolved_at and status_changed_at are NO LONGER written here: the
+    // Stage 13 trigger maintains both, and it fires on a bare UPDATE too.
+    // Setting resolved_at from the client would race the trigger and could
+    // only ever disagree with it.
+    //
+    // Prefer setIssueStatus() for lifecycle moves — it carries a note and
+    // visit_id into the timeline. This path still works (and still logs an
+    // event, via the trigger), it just logs one with no note.
+    payload.status = normalizeIssueStatus(updates.status);
   }
   if (updates.visitId !== undefined) payload.visit_id = updates.visitId || null;
   if (updates.createdDate !== undefined) {
@@ -509,4 +542,159 @@ export async function deleteIssue(issueId: string): Promise<boolean> {
     throw new IssueUpdateError("No rows deleted", "PGRST116");
   }
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// Lifecycle: status transitions and history
+// ---------------------------------------------------------------------------
+
+// One entry in a déficience's status timeline, from `issue_status_events`.
+// The table is append-only (SELECT policy only; the DB trigger is the sole
+// writer), so these rows are a record, not a cache — nothing the client
+// does can edit or forge one.
+export interface IssueStatusEvent {
+  id: string;
+  issueId: string;
+  fromStatus: IssueStatus | null;
+  toStatus: IssueStatus;
+  changedBy: string | null;
+  changedByName?: string | null;
+  visitId: string | null;
+  note: string | null;
+  createdAt: string;
+}
+
+// What the set_issue_status RPC reports back. Every case is explicit —
+// notably `not_permitted`, which exists because a policy denial on UPDATE
+// is otherwise a silent 0-row no-op: the UI would show success while
+// nothing changed.
+export type SetIssueStatusOutcome =
+  | { result: "changed"; from: IssueStatus | null; to: IssueStatus }
+  | { result: "unchanged"; from: IssueStatus; to: IssueStatus }
+  | { result: "not_found" }
+  | { result: "not_permitted" }
+  | { result: "invalid_status" };
+
+/**
+ * Move a déficience to a new lifecycle state.
+ *
+ * Routed through the `set_issue_status` RPC rather than a plain UPDATE so
+ * the note and visit_id reach the history trigger — a bare UPDATE still
+ * logs an event, but an anonymous one with no explanation attached.
+ *
+ * The RPC is SECURITY INVOKER: authorization is Stage 12's owner/editor
+ * UPDATE policy, not a second rule duplicated inside the function.
+ */
+export async function setIssueStatus(
+  issueId: string,
+  toStatus: IssueStatus,
+  options: { note?: string | null; visitId?: string | null } = {},
+): Promise<SetIssueStatusOutcome> {
+  const { data, error } = await supabase.rpc("set_issue_status", {
+    p_issue_id: issueId,
+    p_to_status: toStatus,
+    p_note: options.note?.trim() ? options.note.trim() : null,
+    p_visit_id: options.visitId || null,
+  });
+
+  if (error) {
+    console.error("Error setting issue status:", error);
+    throw new IssueUpdateError(error.message, error.code);
+  }
+
+  const payload = (data ?? {}) as Record<string, unknown>;
+  const result = payload.status as SetIssueStatusOutcome["result"] | undefined;
+
+  switch (result) {
+    case "changed":
+    case "unchanged":
+      return {
+        result,
+        from: (payload.from as IssueStatus) ?? null,
+        to: (payload.to as IssueStatus) ?? toStatus,
+      } as SetIssueStatusOutcome;
+    case "not_found":
+    case "not_permitted":
+    case "invalid_status":
+      return { result };
+    default:
+      // The RPC always returns one of the five. Anything else means the
+      // deployed function is older than this client — surface it rather
+      // than reporting a success that may not have happened.
+      throw new IssueUpdateError(
+        `Réponse inattendue de set_issue_status: ${JSON.stringify(data)}`,
+      );
+  }
+}
+
+/** A user-facing French message for a non-`changed` RPC outcome. */
+export function getSetStatusErrorMessage(outcome: SetIssueStatusOutcome): string | null {
+  switch (outcome.result) {
+    case "changed":
+    case "unchanged":
+      return null;
+    case "not_permitted":
+      return "Vous n'avez pas les droits pour modifier l'état de cette déficience.";
+    case "not_found":
+      return "Déficience introuvable.";
+    case "invalid_status":
+      return "État invalide.";
+  }
+}
+
+/**
+ * The status history of one déficience, oldest first.
+ *
+ * Author names are resolved through `profiles` in a second batched query
+ * rather than an embedded join: `issue_status_events.changed_by` points at
+ * auth.users, which PostgREST cannot traverse, and the column is nullable
+ * (SET NULL on user deletion, plus events written with no session) so an
+ * inner join would silently drop those rows from the timeline.
+ */
+export async function getIssueStatusEvents(issueId: string): Promise<IssueStatusEvent[]> {
+  const { data, error } = await supabase
+    .from("issue_status_events")
+    .select("id, issue_id, from_status, to_status, changed_by, visit_id, note, created_at")
+    .eq("issue_id", issueId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching issue status events:", error);
+    return [];
+  }
+
+  const rows = data || [];
+  const userIds = [...new Set(rows.map((r) => r.changed_by).filter((v): v is string => !!v))];
+
+  const names: Record<string, string> = {};
+  if (userIds.length > 0) {
+    const { data: profiles, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, name, email")
+      .in("id", userIds);
+    if (profileError) {
+      // Non-fatal: the timeline is still readable without names.
+      console.error("Error fetching status event authors:", profileError);
+    } else {
+      for (const p of profiles || []) {
+        // `name` is nullable on profiles; email is the only field
+        // guaranteed present, and attributing an event to an address
+        // beats attributing it to nobody.
+        const label = p.name?.trim() || p.email || "";
+        if (label) names[p.id] = label;
+      }
+    }
+  }
+
+  return rows.map((r) => ({
+    id: r.id,
+    issueId: r.issue_id,
+    fromStatus: r.from_status ? normalizeIssueStatus(r.from_status) : null,
+    toStatus: normalizeIssueStatus(r.to_status),
+    changedBy: r.changed_by ?? null,
+    changedByName: r.changed_by ? (names[r.changed_by] ?? null) : null,
+    visitId: r.visit_id ?? null,
+    note: r.note ?? null,
+    createdAt: r.created_at,
+  }));
 }

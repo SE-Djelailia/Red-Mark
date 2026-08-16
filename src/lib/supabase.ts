@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { projectId, publicAnonKey } from "../../utils/supabase/info";
 import type { Database } from "./database.types";
 import { indexedDbAuthStorage } from "./authStorage";
+import type { IssueStatus } from "./issueStatus";
 
 // Supabase URL et clé publique
 const supabaseUrl = `https://${projectId}.supabase.co`;
@@ -118,7 +119,8 @@ export interface Issue {
   title: string;
   description?: string;
   priority: "low" | "medium" | "high" | "critical";
-  status: "open" | "resolved";
+  status: IssueStatus;
+  status_changed_at?: string | null;
   discipline?: string;
   due_date?: string;
   assigned_to?: string;

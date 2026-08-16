@@ -9,6 +9,7 @@ import { createIssue, updateIssue, getIssuesByLocation, type Issue } from "../..
 import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
 import { STATUS_LABEL, PRIORITY_OPTIONS } from "./ui-kit/Badge";
+import { DEFAULT_ISSUE_STATUS } from "../../lib/issueStatus";
 
 // Same 3-choice priority set as IssueForm (the canonical spec deliberately
 // excludes "critical") — this lite variant must not be able to create data
@@ -96,7 +97,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
         title: title.trim(),
         description: description.trim(),
         priority,
-        status: "open",
+        status: DEFAULT_ISSUE_STATUS,
         photos: [],
         tags: [],
         location: location.name || location.locationNumber,

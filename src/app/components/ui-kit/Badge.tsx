@@ -10,6 +10,10 @@
 // are deliberately neutral, so urgency reads as a colour gradient (red →
 // amber → grey → white) rather than four competing hues.
 import type { Issue } from "../../../lib/issuesApi";
+import {
+  ISSUE_STATUS_LABEL as STATUS_LABEL,
+  TERMINAL_ISSUE_STATUS,
+} from "../../../lib/issueStatus";
 
 type Priority = Issue["priority"];
 type Status = Issue["status"];
@@ -60,19 +64,24 @@ export const PRIORITY_OPTIONS: { value: Priority; label: string; dot: string }[]
   .sort((a, b) => PRIORITY_RANK[a] - PRIORITY_RANK[b])
   .map((value) => ({ value, label: PRIORITY_LABEL[value], dot: PRIORITY_DOT[value] }));
 
+// The four lifecycle states read as a progression from "needs attention"
+// to "closed": brand red while nobody has acted, amber once correction is
+// underway, neutral when the contractor says it is fixed but nobody has
+// confirmed, and the resolved green only at "Vérifié".
+//
+// "Corrigé" deliberately gets NO green treatment — it is a claim, not a
+// confirmation, and colouring it like a finished item is precisely the
+// misreading the lifecycle was introduced to prevent.
 const STATUS_STYLE: Record<Status, string> = {
-  open: "bg-brand-50 border-brand-100 text-brand-strong",
-  resolved: "bg-subtle border-line text-body",
+  signale: "bg-brand-50 border-brand-100 text-brand-strong",
+  a_corriger: "bg-amber-50 border-amber-200 text-warn",
+  corrige: "bg-subtle border-line text-body",
+  verifie: "bg-subtle border-line text-body",
 };
 
-const STATUS_LABEL: Record<Status, string> = {
-  open: "Ouvert",
-  resolved: "Résolu",
-};
-
-// A small filled dot marks the two states that carry the most weight —
-// "Critique" and "Résolu". It does the colour-coding work for "Résolu",
-// whose neutral chip would otherwise give no hint that it means resolved.
+// A small filled dot marks the states that carry the most weight —
+// "Critique" and "Vérifié". It does the colour-coding work for "Vérifié",
+// whose neutral chip would otherwise give no hint that it means closed.
 function Dot({ className }: { className: string }) {
   return <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${className}`} aria-hidden="true" />;
 }
@@ -89,7 +98,7 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
 export function StatusBadge({ status }: { status: Status }) {
   return (
     <span className={`${BASE} ${STATUS_STYLE[status]}`}>
-      {status === "resolved" && <Dot className="bg-resolved" />}
+      {status === TERMINAL_ISSUE_STATUS && <Dot className="bg-resolved" />}
       {STATUS_LABEL[status]}
     </span>
   );
@@ -97,4 +106,6 @@ export function StatusBadge({ status }: { status: Status }) {
 
 // Exported for the few places that need the words without the pill (e.g.
 // filter dropdowns, select options) so labels can't drift again.
+// STATUS_LABEL is re-exported from lib/issueStatus, which is the single
+// definition shared by the API layer and the UI.
 export { PRIORITY_LABEL, STATUS_LABEL };

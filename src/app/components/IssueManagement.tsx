@@ -9,6 +9,7 @@ import { PriorityBadge, StatusBadge, PRIORITY_LABEL, STATUS_LABEL } from "./ui-k
 import { StatGrid, StatTile } from "./ui-kit/StatTile";
 import { inputClassName } from "./ui-kit/Input";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
+import { ISSUE_STATUS_OPTIONS, TERMINAL_ISSUE_STATUS } from "../../lib/issueStatus";
 
 type IssueWithProject = Issue & { projectName: string };
 
@@ -79,7 +80,10 @@ export default function IssueManagement() {
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
-  const countByStatus = (status: string) => issues.filter((i) => i.status === status).length;
+  // "À traiter" spans the three non-verified states, not a single one:
+  // counting only "Signalé" would hide everything already in progress.
+  const verifiedCount = issues.filter((i) => i.status === TERMINAL_ISSUE_STATUS).length;
+  const outstandingCount = issues.length - verifiedCount;
 
   usePageHeader("Déficiences", "Toutes vos déficiences, tous projets confondus");
 
@@ -87,8 +91,8 @@ export default function IssueManagement() {
     <div className="min-h-screen pb-20 bg-canvas">
       <div className="px-4 sm:px-6 py-5 max-w-2xl mx-auto space-y-5">
         <StatGrid className="grid-cols-2">
-          <StatTile label={STATUS_LABEL.open} value={countByStatus("open")} emphasis />
-          <StatTile label={STATUS_LABEL.resolved} value={countByStatus("resolved")} />
+          <StatTile label="À traiter" value={outstandingCount} emphasis />
+          <StatTile label={STATUS_LABEL.verifie} value={verifiedCount} />
         </StatGrid>
 
         <div className="space-y-3">
@@ -108,9 +112,12 @@ export default function IssueManagement() {
               onChange={(e) => setStatusFilter(e.target.value as Issue["status"] | "all")}
               className="h-10 px-3 bg-surface border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-brand-600"
             >
-              <option value="all">Tous les statuts</option>
-              <option value="open">{STATUS_LABEL.open}</option>
-              <option value="resolved">{STATUS_LABEL.resolved}</option>
+              <option value="all">Tous les états</option>
+              {ISSUE_STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
             <select
               value={priorityFilter}

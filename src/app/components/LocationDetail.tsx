@@ -39,6 +39,7 @@ import PhotoCaptureButtons from "./PhotoCaptureButtons";
 import FloatingActions from "./FloatingActions";
 import ErrorBoundary from "./ErrorBoundary";
 import { PRIORITY_LABEL, STATUS_LABEL } from "./ui-kit/Badge";
+import { TERMINAL_ISSUE_STATUS } from "../../lib/issueStatus";
 
 // Timeline entries are grouped by day; this formats the group header
 // ("21 juillet 2026"). Uses parseLocalDate (not plain `new Date(...)`) to
@@ -403,7 +404,10 @@ export default function LocationDetail() {
         </>
       ),
     });
-    if (issue.status === "resolved" && issue.resolvedAt) {
+    // resolved_at now means "reached Vérifié" — the DB trigger sets it on
+    // arrival at the terminal state and CLEARS it if the déficience is
+    // reopened, so this entry can't outlive the verification it records.
+    if (issue.status === TERMINAL_ISSUE_STATUS && issue.resolvedAt) {
       timeline.push({
         key: `issue-resolved-${issue.id}`,
         date: issue.resolvedAt,
@@ -414,10 +418,10 @@ export default function LocationDetail() {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm text-ink font-medium truncate">{issue.title}</span>
               <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-700 flex-shrink-0">
-                Résolue
+                Vérifiée
               </span>
             </div>
-            <div className="text-xs text-muted">Déficience marquée résolue</div>
+            <div className="text-xs text-muted">Déficience vérifiée</div>
           </>
         ),
       });

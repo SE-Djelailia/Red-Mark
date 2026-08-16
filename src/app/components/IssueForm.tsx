@@ -2,7 +2,20 @@ import { useEffect, useState } from "react";
 import { X, User, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
-import { createIssue, updateIssue, type Issue } from "../../lib/issuesApi";
+import {
+  createIssue,
+  updateIssue,
+  getIssue,
+  setIssueStatus,
+  getSetStatusErrorMessage,
+  type Issue,
+} from "../../lib/issuesApi";
+import {
+  DEFAULT_ISSUE_STATUS,
+  ISSUE_STATUS_OPTIONS,
+  TERMINAL_ISSUE_STATUS,
+} from "../../lib/issueStatus";
+import { DISCIPLINES } from "../../lib/disciplines";
 import { getLocation, type Location } from "../../lib/locationsApi";
 import { getProjectTeammates, type Teammate } from "../../lib/commentsApi";
 import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
@@ -10,8 +23,6 @@ import SecureImage from "./SecureImage";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
 import { inputClassName, labelClassName, textareaClassName } from "./ui-kit/Input";
 import { PRIORITY_OPTIONS } from "./ui-kit/Badge";
-
-const DISCIPLINES = ["Architecture", "Structure", "Mécanique", "Électricité", "Plomberie"];
 
 interface Props {
   projectId: string;
@@ -52,7 +63,11 @@ export default function IssueForm({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Issue["priority"]>("medium");
-  const [status, setStatus] = useState<Issue["status"]>("open");
+  const [status, setStatus] = useState<Issue["status"]>(DEFAULT_ISSUE_STATUS);
+  // Explanation attached to a lifecycle move, carried into the history
+  // timeline by the RPC. Create mode has nothing to explain — the issue
+  // starts at "Signalé" and the description IS the explanation.
+  const [statusNote, setStatusNote] = useState("");
   const [discipline, setDiscipline] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -93,7 +108,8 @@ export default function IssueForm({
       setTitle("");
       setDescription("");
       setPriority("medium");
-      setStatus("open");
+      setStatus(DEFAULT_ISSUE_STATUS);
+      setStatusNote("");
       setDiscipline("");
       setDueDate("");
       setTags([]);
@@ -109,6 +125,7 @@ export default function IssueForm({
     setDescription(issue.description);
     setPriority(issue.priority);
     setStatus(issue.status);
+    setStatusNote("");
     setDiscipline(issue.discipline || "");
     setDueDate(issue.dueDate || "");
     setTags(issue.tags);
@@ -144,6 +161,10 @@ export default function IssueForm({
     setAssignedToName("");
   };
 
+  // A lifecycle move is in progress in this edit session — the only case
+  // where a note is meaningful.
+  const statusChanged = isEdit && !!issue && status !== issue.status;
+
   const addTag = () => {
     const t = tagInput.trim();
     if (t && !tags.includes(t)) setTags((prev) => [...prev, t]);
@@ -178,7 +199,6 @@ export default function IssueForm({
         title: title.trim(),
         description: description.trim(),
         priority,
-        status,
         discipline: discipline || undefined,
         dueDate: dueDate || null,
         assignedTo: assigneeMode === "external" ? assignedToName.trim() : "",
@@ -192,11 +212,37 @@ export default function IssueForm({
 
       let savedIssue: Issue;
       if (issue) {
+        // Field edits and the lifecycle move are two different operations.
+        // The status goes through set_issue_status so the note and the
+        // visit reach the history timeline; folding it into the UPDATE
+        // would still log an event (the trigger fires either way) but an
+        // anonymous one with no explanation attached.
         const updated = await updateIssue(issue.id, payload);
         if (!updated) throw new Error("Cette déficience n'existe plus.");
         savedIssue = updated;
+
+        if (status !== issue.status) {
+          const outcome = await setIssueStatus(issue.id, status, {
+            note: statusNote,
+            visitId: visitId || null,
+          });
+          const message = getSetStatusErrorMessage(outcome);
+          if (message) {
+            // The field edits above DID persist — say so, rather than
+            // letting the user believe the whole save failed and repeat it.
+            toast.error(`${message} Les autres modifications ont été enregistrées.`);
+          } else {
+            // Re-read rather than patching locally: the trigger sets
+            // status_changed_at and resolved_at during the RPC, and the
+            // detail view keys its history timeline on status_changed_at.
+            // A locally-patched status would leave that key stale and the
+            // new timeline entry invisible until a manual reload.
+            const refreshed = await getIssue(issue.id);
+            savedIssue = refreshed ?? { ...savedIssue, status };
+          }
+        }
       } else {
-        savedIssue = await createIssue(payload);
+        savedIssue = await createIssue({ ...payload, status: DEFAULT_ISSUE_STATUS });
       }
 
       const { uploaded: uploadedRefs, queuedCount } = await uploadIssuePhotos(newPhotoFiles, {
@@ -283,34 +329,46 @@ export default function IssueForm({
         </div>
       </div>
 
-      {/* Status */}
-      <div>
-        <label className={labelClassName}>Statut</label>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setStatus("open")}
-            className={`py-2.5 px-3 rounded-lg border-2 transition-all text-sm min-h-[44px] ${
-              status === "open"
-                ? "border-brand-600 bg-brand-50 text-brand-strong"
-                : "border-line hover:border-line-strong"
-            }`}
-          >
-            Ouvert
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatus("resolved")}
-            className={`py-2.5 px-3 rounded-lg border-2 transition-all text-sm min-h-[44px] ${
-              status === "resolved"
-                ? "border-resolved bg-resolved/10 text-resolved"
-                : "border-line hover:border-line-strong"
-            }`}
-          >
-            Résolu
-          </button>
+      {/* Status — the four lifecycle states. Hidden in create mode: a new
+          déficience always starts at "Signalé", and offering to create one
+          already "Vérifié" would mint a closed item with no history of ever
+          having been open. */}
+      {isEdit && (
+        <div>
+          <label className={labelClassName}>État</label>
+          <div className="grid grid-cols-2 gap-2">
+            {ISSUE_STATUS_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setStatus(opt.value)}
+                aria-pressed={status === opt.value}
+                className={`py-2.5 px-3 rounded-lg border-2 transition-all text-sm min-h-[44px] ${
+                  status === opt.value
+                    ? opt.value === TERMINAL_ISSUE_STATUS
+                      ? "border-resolved bg-resolved/10 text-resolved"
+                      : "border-brand-600 bg-brand-50 text-brand-strong"
+                    : "border-line hover:border-line-strong"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {statusChanged && (
+            <div className="mt-2">
+              <label className={labelClassName}>Note sur le changement d'état</label>
+              <input
+                type="text"
+                value={statusNote}
+                onChange={(e) => setStatusNote(e.target.value)}
+                placeholder="Optionnel — ex. « corrigé par l'entrepreneur »"
+                className={inputClassName}
+              />
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Discipline */}
       <div>

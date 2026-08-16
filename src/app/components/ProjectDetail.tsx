@@ -55,16 +55,21 @@ import LocationsTab from "./LocationsTab";
 import FloatingActions from "./FloatingActions";
 import VisitPicker from "./VisitPicker";
 import VoiceRecorderModal from "./VoiceRecorderModal";
-import { PriorityBadge, StatusBadge } from "./ui-kit/Badge";
 import { getLocations, getLevels, type Location, type Level } from "../../lib/locationsApi";
 import { PLANS_ENABLED } from "../../lib/featureFlags";
+import type { IssueStatus } from "../../lib/issueStatus";
+import IssuesTab from "./IssuesTab";
 
 interface Issue {
   id: string;
   title: string;
   description: string;
   priority: "low" | "medium" | "high" | "critical";
-  status: "open" | "resolved";
+  status: IssueStatus;
+  statusChangedAt?: string | null;
+  discipline?: string;
+  dueDate?: string | null;
+  createdAt?: string;
   assignedTo: string;
   createdBy: string;
   createdDate: string;
@@ -219,7 +224,6 @@ export default function ProjectDetail() {
     );
   };
 
-  const [issueLocationFilter, setIssueLocationFilter] = useState("");
   const [showProjectInfo, setShowProjectInfo] = useState(false);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
@@ -405,10 +409,6 @@ export default function ProjectDetail() {
     setSelectedPhotoPhase("");
   };
 
-  const filteredIssues = issueLocationFilter
-    ? issues.filter((issue) => issue.locationId === issueLocationFilter)
-    : issues;
-
   // Header stats, muted and secondary to déficiences — zero-value ones are
   // dropped entirely rather than shown as e.g. "0 commentaires", which read
   // as noise/broken rather than as real information.
@@ -430,7 +430,7 @@ export default function ProjectDetail() {
   // fallback from the old visit-room flow, so it's not used here at all.
   // Returns null when there's no real linked location, so the caller can
   // hide the chip entirely instead of showing a phantom value.
-  const resolveLocationLabel = (issue: Issue): string | null => {
+  const resolveLocationLabel = (issue: { locationId?: string | null }): string | null => {
     if (!issue.locationId) return null;
     const loc = locations.find((l) => l.id === issue.locationId);
     return loc ? loc.locationNumber + (loc.name ? ` — ${loc.name}` : "") : null;
@@ -1260,94 +1260,14 @@ export default function ProjectDetail() {
 
         {/* Déficiences Tab */}
         {activeTab === "issues" && (
-          <div className="space-y-4">
-            {/* An empty list must not be able to mean "load failed" — on site
-                that reads as "nothing outstanding". */}
-            {issuesLoadError && (
-              <div className="text-center py-12">
-                <AlertCircle size={48} className="mx-auto text-faint mb-4" />
-                <p className="text-muted mb-2">{issuesLoadError}</p>
-                <button
-                  onClick={loadIssues}
-                  className="text-sm text-brand-strong hover:text-brand-800 font-medium"
-                >
-                  Réessayer
-                </button>
-              </div>
-            )}
-            {!issuesLoadError && locations.length > 0 && (
-              <select
-                value={issueLocationFilter}
-                onChange={(e) => setIssueLocationFilter(e.target.value)}
-                className="w-full sm:max-w-xs px-4 py-3 bg-surface border border-line-strong rounded-lg text-sm min-h-[48px]"
-              >
-                <option value="">Tous les locaux</option>
-                {locations.map((loc) => (
-                  <option key={loc.id} value={loc.id}>
-                    {loc.locationNumber}
-                    {loc.name ? ` — ${loc.name}` : ""}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {issuesLoadError ? null : filteredIssues.length === 0 && issueLocationFilter ? (
-              <div className="text-center py-8">
-                <MapPin size={40} className="mx-auto text-faint mb-3" />
-                <p className="text-muted text-sm mb-2">Aucune déficience pour ce local</p>
-                <button
-                  onClick={() => setIssueLocationFilter("")}
-                  className="text-sm text-brand-strong hover:text-brand-800"
-                >
-                  Effacer le filtre
-                </button>
-              </div>
-            ) : (
-              <div className="bg-surface rounded-xl border border-line overflow-hidden">
-                {filteredIssues.map((issue) => {
-                  const locationLabel = resolveLocationLabel(issue);
-                  return (
-                    <button
-                      key={issue.id}
-                      onClick={() => navigate(`/app/projects/${id}/issues/${issue.id}`)}
-                      className="w-full flex items-center gap-3 px-4 py-3 bg-surface border-b border-line hover:bg-subtle transition-colors min-h-[44px] text-left"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-ink truncate">{issue.title}</div>
-                        <div className="flex items-center gap-1.5 text-xs text-muted mt-0.5 flex-wrap">
-                          <span className="whitespace-nowrap">
-                            {parseLocalDate(issue.createdDate).toLocaleDateString("fr-CA", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </span>
-                          {locationLabel && (
-                            <span className="flex items-center gap-1 min-w-0">
-                              <span>·</span>
-                              <MapPin size={10} className="flex-shrink-0" />
-                              <span className="truncate">{locationLabel}</span>
-                            </span>
-                          )}
-                          {issue.photos.length > 0 && (
-                            <span className="flex items-center gap-1 flex-shrink-0">
-                              <span>·</span>
-                              <Camera size={10} />
-                              {issue.photos.length}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <PriorityBadge priority={issue.priority} />
-                        <StatusBadge status={issue.status} />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <IssuesTab
+            issues={issues}
+            locations={locations}
+            loadError={issuesLoadError}
+            onRetry={loadIssues}
+            onOpenIssue={(issueId) => navigate(`/app/projects/${id}/issues/${issueId}`)}
+            resolveLocationLabel={resolveLocationLabel}
+          />
         )}
 
         {/* Plans Tab */}
