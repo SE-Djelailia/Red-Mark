@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Camera, Plus, X, Check, MapPin, Building2, Navigation } from "lucide-react";
+import { ArrowLeft, Camera, Plus, X, Check, MapPin, Navigation, Search } from "lucide-react";
 import { uploadPhoto } from "../../lib/supabaseApi";
+import { getLocations, type Location } from "../../lib/locationsApi";
+import { locationLabel } from "../../lib/photoZone";
 import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
 import { compressImage } from "../../lib/imageCompression";
@@ -13,6 +15,13 @@ import { useSmartBack } from "../../hooks/useSmartBack";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
 
 
+// Per-photo pending location assignment, keyed by index in photosToUpload.
+// Named rather than inlined: three reindexing helpers rebuild this map, and
+// as three separate inline literals they had to be kept in sync by hand.
+type PhotoLocationMap = {
+  [key: string]: { locationId?: string; freeText?: string };
+};
+
 export default function PhotoUploadPage() {
   const navigate = useNavigate();
   const { projectId, visitId } = useParams();
@@ -22,18 +31,47 @@ export default function PhotoUploadPage() {
 
   const [photosToUpload, setPhotosToUpload] = useState<File[]>([]);
   const [photoTags, setPhotoTags] = useState<{ [key: string]: string[] }>({});
-  const [photoLocations, setPhotoLocations] = useState<{
-    [key: string]: { floor?: string; room?: string; lat?: number; lng?: number };
-  }>({});
+  // Per-photo location assignment, keyed by the photo's index in
+  // photosToUpload. `locationId` is the real FK and the normal case;
+  // `freeText` only ever gets set on projects with NO imported locations,
+  // where the picker would otherwise leave a field user unable to label
+  // anything at all.
+  const [photoLocations, setPhotoLocations] = useState<PhotoLocationMap>({});
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
   const [selectedPhotoIndices, setSelectedPhotoIndices] = useState<number[]>([]);
   const [currentTag, setCurrentTag] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   useModalOpen(showLocationModal);
-  const [tempLevel, setTempLevel] = useState("");
-  const [tempRoom, setTempRoom] = useState("");
+  const [tempLocationId, setTempLocationId] = useState("");
+  const [tempFreeText, setTempFreeText] = useState("");
+  const [locationSearch, setLocationSearch] = useState("");
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const gpsToastShown = useRef(false);
+
+  // The project's imported locations, for the picker. Failure is not fatal:
+  // an empty list degrades to the free-text fallback below, which is the
+  // same path a project with no imported locations takes.
+  useEffect(() => {
+    if (!projectId) return;
+    let cancelled = false;
+    setLocationsLoading(true);
+    getLocations(projectId)
+      .then((locs) => {
+        if (!cancelled) setLocations(locs);
+      })
+      .catch((e) => {
+        console.error("Error loading locations for photo upload:", e);
+        if (!cancelled) setLocations([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLocationsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -60,7 +98,7 @@ export default function PhotoUploadPage() {
 
     // Initialize empty tags and locations for each photo
     const newPhotoTags: { [key: string]: string[] } = {};
-    const newPhotoLocations: { [key: string]: { floor?: string; room?: string } } = {};
+    const newPhotoLocations: PhotoLocationMap = {};
     fileArray.forEach((_, index) => {
       newPhotoTags[index.toString()] = [];
       newPhotoLocations[index.toString()] = {};
@@ -78,7 +116,7 @@ export default function PhotoUploadPage() {
 
     // Update tags and locations mapping
     const newPhotoTags: { [key: string]: string[] } = {};
-    const newPhotoLocations: { [key: string]: { floor?: string; room?: string } } = {};
+    const newPhotoLocations: PhotoLocationMap = {};
     combined.forEach((_, index) => {
       newPhotoTags[index.toString()] = photoTags[index.toString()] || [];
       newPhotoLocations[index.toString()] = photoLocations[index.toString()] || {};
@@ -93,7 +131,7 @@ export default function PhotoUploadPage() {
 
     // Update tags, locations and selected indices
     const newPhotoTags: { [key: string]: string[] } = {};
-    const newPhotoLocations: { [key: string]: { floor?: string; room?: string } } = {};
+    const newPhotoLocations: PhotoLocationMap = {};
     newPhotos.forEach((_, newIndex) => {
       const oldIndex = newIndex >= index ? newIndex + 1 : newIndex;
       newPhotoTags[newIndex.toString()] = photoTags[oldIndex.toString()] || [];
@@ -129,25 +167,46 @@ export default function PhotoUploadPage() {
     setPhotoTags(newPhotoTags);
   };
 
+  const filteredLocations = locationSearch.trim()
+    ? locations.filter((l) => {
+        const q = locationSearch.trim().toLowerCase();
+        return (
+          l.locationNumber.toLowerCase().includes(q) ||
+          (l.name || "").toLowerCase().includes(q)
+        );
+      })
+    : locations;
+
+  // Label for a photo's pending assignment, for the thumbnail badge.
+  const assignedLabel = (index: number): string | null => {
+    const a = photoLocations[index.toString()];
+    if (!a) return null;
+    if (a.locationId) {
+      const loc = locations.find((l) => l.id === a.locationId);
+      return loc ? locationLabel(loc) : null;
+    }
+    return a.freeText || null;
+  };
+
   const handleAssignLocation = () => {
-    if (!tempLevel && !tempRoom) {
-      toast.error("Veuillez renseigner au moins le niveau ou la pièce");
+    const freeText = tempFreeText.trim();
+    if (!tempLocationId && !freeText) {
+      toast.error("Veuillez choisir un local.");
       return;
     }
 
     const newPhotoLocations = { ...photoLocations };
     selectedPhotoIndices.forEach((photoIndex) => {
-      newPhotoLocations[photoIndex.toString()] = {
-        floor: tempLevel || undefined,
-        room: tempRoom || undefined,
-        ...(gpsCoords ?? {}),
-      };
+      newPhotoLocations[photoIndex.toString()] = tempLocationId
+        ? { locationId: tempLocationId }
+        : { freeText };
     });
     setPhotoLocations(newPhotoLocations);
     setShowLocationModal(false);
-    setTempLevel("");
-    setTempRoom("");
-    toast.success(`Localisation assignée à ${selectedPhotoIndices.length} photo(s)`);
+    setTempLocationId("");
+    setTempFreeText("");
+    setLocationSearch("");
+    toast.success(`Local assigné à ${selectedPhotoIndices.length} photo(s)`);
   };
 
   const handleRemoveLocation = () => {
@@ -192,14 +251,20 @@ export default function PhotoUploadPage() {
         const tags = photoTags[i.toString()] || [];
         const location = photoLocations[i.toString()];
 
-        // Build location object — include GPS if available
-        const hasManualLocation = location?.floor || location?.room;
+        // The `location` JSONB now carries GPS ONLY. The structured local
+        // goes to photos.location_id (the FK) instead, so the free-text
+        // floor/room keys are no longer written at all — old rows keep
+        // theirs and are still read via resolvePhotoZone.
+        //
+        // The one exception is a project with no imported locations, where
+        // the picker has nothing to offer: that free text is preserved in
+        // the legacy `room` key precisely so the existing read fallback
+        // displays it without needing a fifth code path.
         const locationObj =
-          hasManualLocation || gpsCoords
+          gpsCoords || location?.freeText
             ? {
-                floor: location?.floor,
-                room: location?.room,
                 ...(gpsCoords ?? {}),
+                ...(location?.freeText ? { room: location.freeText } : {}),
               }
             : undefined;
 
@@ -218,6 +283,7 @@ export default function PhotoUploadPage() {
           await uploadPhoto(compressedFile, user.id, projectId, visitId, {
             tags: tags,
             location: locationObj,
+            locationId: location?.locationId,
           });
           successCount++;
         } catch (uploadError) {
@@ -230,6 +296,7 @@ export default function PhotoUploadPage() {
                 visitId,
                 tags,
                 location: locationObj,
+                locationId: location?.locationId,
               });
               queuedCount++;
               console.warn("⚠️ Upload failed, queued for later:", file.name, uploadError);
@@ -472,17 +539,13 @@ export default function PhotoUploadPage() {
 
                       {/* Location badge (top priority) */}
                       {(() => {
-                        const location = photoLocations[index.toString()];
-                        if (!location?.floor && !location?.room) return null;
+                        const label = assignedLabel(index);
+                        if (!label) return null;
                         return (
-                          <div className="absolute top-10 left-2">
+                          <div className="absolute top-10 left-2 max-w-[calc(100%-1rem)]">
                             <div className="px-2 py-1 bg-blue-600 text-white rounded text-xs font-bold flex items-center gap-1 shadow-lg">
-                              <MapPin size={12} />
-                              <span>
-                                {location.floor && location.room
-                                  ? `${location.floor} - ${location.room}`
-                                  : location.floor || location.room}
-                              </span>
+                              <MapPin size={12} className="flex-shrink-0" />
+                              <span className="truncate">{label}</span>
                             </div>
                           </div>
                         );
@@ -701,59 +764,85 @@ export default function PhotoUploadPage() {
                 </p>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-body mb-2 flex items-center gap-2">
-                    <Building2 size={16} className="text-brand-600" />
-                    Niveau / Étage
-                  </label>
-                  <input
-                    type="text"
-                    value={tempLevel}
-                    onChange={(e) => setTempLevel(e.target.value)}
-                    placeholder="Ex: Sous-sol, RDC, Niveau 1..."
-                    className="w-full px-4 py-3 text-base border-2 border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"
-                    list="modal-level-options"
-                  />
-                  <datalist id="modal-level-options">
-                    <option value="Sous-sol" />
-                    <option value="Rez-de-chaussée" />
-                    <option value="Niveau 1" />
-                    <option value="Niveau 2" />
-                    <option value="Niveau 3" />
-                    <option value="Niveau 4" />
-                    <option value="Toit" />
-                    <option value="Extérieur" />
-                  </datalist>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-body mb-2 flex items-center gap-2">
+              {locationsLoading ? (
+                <p className="text-sm text-muted py-4">Chargement des locaux…</p>
+              ) : locations.length > 0 ? (
+                <div className="space-y-3">
+                  <label className="block text-sm font-bold text-body flex items-center gap-2">
                     <MapPin size={16} className="text-brand-600" />
-                    Pièce / Zone
+                    Local
                   </label>
-                  <input
-                    type="text"
-                    value={tempRoom}
-                    onChange={(e) => setTempRoom(e.target.value)}
-                    placeholder="Ex: Cuisine, Hall, Bureau..."
-                    className="w-full px-4 py-3 text-base border-2 border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"
-                    list="modal-room-options"
-                  />
-                  <datalist id="modal-room-options">
-                    <option value="Hall d'entrée" />
-                    <option value="Cuisine" />
-                    <option value="Salon" />
-                    <option value="Chambre" />
-                    <option value="Salle de bain" />
-                    <option value="Bureau" />
-                    <option value="Couloir" />
-                    <option value="Cage d'escalier" />
-                    <option value="Stationnement" />
-                    <option value="Local technique" />
-                  </datalist>
+                  <div className="relative">
+                    <Search
+                      size={16}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-faint"
+                    />
+                    <input
+                      type="text"
+                      value={locationSearch}
+                      onChange={(e) => setLocationSearch(e.target.value)}
+                      placeholder="Rechercher un local…"
+                      className="w-full pl-10 pr-4 py-3 text-base border-2 border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"
+                    />
+                  </div>
+                  <div className="max-h-64 overflow-y-auto border border-line rounded-lg divide-y divide-line">
+                    {filteredLocations.length === 0 ? (
+                      <p className="text-sm text-muted px-4 py-3">
+                        Aucun local ne correspond à cette recherche.
+                      </p>
+                    ) : (
+                      filteredLocations.map((l) => (
+                        <button
+                          key={l.id}
+                          onClick={() => setTempLocationId(l.id)}
+                          aria-pressed={tempLocationId === l.id}
+                          className={`w-full text-left px-4 py-3 min-h-[44px] flex items-center justify-between gap-2 transition-colors ${
+                            tempLocationId === l.id
+                              ? "bg-brand-50 text-brand-strong font-medium"
+                              : "hover:bg-subtle text-ink"
+                          }`}
+                        >
+                          <span className="truncate">{locationLabel(l)}</span>
+                          {tempLocationId === l.id && (
+                            <Check size={16} className="flex-shrink-0" />
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                /*
+                  No imported locations for this project. Rather than block
+                  labelling entirely, fall back to free text — a field user
+                  on a project nobody has set up yet must still be able to
+                  say where a photo was taken. This writes the legacy `room`
+                  key, so it displays through the same fallback old photos
+                  use.
+                */
+                <div className="space-y-3">
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <p className="text-sm text-warn">
+                      Aucun local n'a été importé pour ce projet. Vous pouvez saisir un
+                      emplacement manuellement — ou importer la liste des locaux depuis
+                      l'onglet <strong>Locaux</strong> du projet pour un suivi structuré.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-body mb-2 flex items-center gap-2">
+                      <MapPin size={16} className="text-brand-600" />
+                      Emplacement
+                    </label>
+                    <input
+                      type="text"
+                      value={tempFreeText}
+                      onChange={(e) => setTempFreeText(e.target.value)}
+                      placeholder="Ex : Niveau 2 — corridor est"
+                      className="w-full px-4 py-3 text-base border-2 border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex gap-3 mt-6">

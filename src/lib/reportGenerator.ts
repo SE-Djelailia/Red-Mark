@@ -10,6 +10,7 @@ import { getObservationsByVisit, type Observation } from "./observationsApi";
 import { getLocations, type Location } from "./locationsApi";
 import { formatDateLong, extractDateOnly } from "./dateUtils";
 import { WEATHER_EVIDENCE_TAG } from "./issuePhotoUpload";
+import { indexLocations, resolvePhotoZoneOrDefault } from "./photoZone";
 
 const TEMPLATE_URL = "/templates/note-visite-chantier.docx";
 const PHOTO_MAX_WIDTH_PX = 195;
@@ -161,13 +162,21 @@ export function selectableReportPhotos(photos: Photo[]): Photo[] {
 async function buildPhotoRows(
   photos: Photo[],
   visitDates: Record<string, string>,
+  // The project's locations, already fetched by the caller for the
+  // observation zones. Used to resolve each photo's location_id into a real
+  // zone label; photos predating the FK fall back to their legacy free text.
+  locations: Location[],
 ): Promise<PhotoRow[]> {
+  const locationsById = indexLocations(locations);
   if (photos.length === 0) return [];
 
   const signedUrls = await getPhotosSignedUrls(photos.map((p) => p.storage_path));
 
   const slots: PhotoSlot[] = photos.map((photo, index) => {
-    const zone = photo.location?.room || photo.location?.floor || "Zone non spécifiée";
+    // Prefers the linked local ("A-101 — Bureau"), falling back to the
+    // legacy free text so photos taken before the structured picker still
+    // print a real zone instead of "Zone non spécifiée".
+    const zone = resolvePhotoZoneOrDefault(photo, locationsById);
     // The date of the visit the photo was TAKEN on — not the report's visit,
     // and not created_at. created_at is the upload timestamp, which drifts
     // from the visit whenever photos are added later; and with photos now
@@ -335,7 +344,7 @@ export async function generateSiteVisitReport(
   const visitDates = photoSelection
     ? photoSelection.visitDates
     : { [visit.id]: visit.visit_date };
-  const photoRows = await buildPhotoRows(includedPhotos, visitDates);
+  const photoRows = await buildPhotoRows(includedPhotos, visitDates, locations);
 
   const data = {
     noteNumber: reportNumber || manual.noteNumber,

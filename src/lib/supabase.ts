@@ -91,10 +91,27 @@ export interface VisitAttendee {
   initials: string;
 }
 
-/** Free-form location blob carried on photos and issues (`location` jsonb). */
+/**
+ * The `location` jsonb blob carried on photos and issues.
+ *
+ * Two unrelated things share this column:
+ *
+ *  - `lat`/`lng`, the GPS fix captured at upload time. Still written.
+ *  - `floor`/`room`, the LEGACY free-text label. No longer written — photos
+ *    now carry a real `location_id` FK to the imported locations list — but
+ *    it is still READ, so photos taken before that change keep their label
+ *    in the report, the visit grid and the lightbox. See resolvePhotoZone.
+ *
+ * `lat`/`lng` were being written all along and were simply missing from this
+ * type, so the declaration was quietly narrower than the data.
+ */
 export interface LocationExtras {
+  /** @deprecated Legacy free text. Read for old rows; never write. */
   floor?: string;
+  /** @deprecated Legacy free text. Read for old rows; never write. */
   room?: string;
+  lat?: number;
+  lng?: number;
 }
 
 export type Project = Omit<Row<"projects">, "status"> & {

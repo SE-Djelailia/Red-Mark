@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import {
   ArrowLeft,
@@ -15,6 +15,9 @@ import {
   LayoutGrid,
   Mic,
 } from "lucide-react";
+import { getLocations, type Location } from "../../lib/locationsApi";
+import type { LocationExtras } from "../../lib/supabase";
+import { indexLocations, resolvePhotoZone } from "../../lib/photoZone";
 import {
   getSiteVisit,
   getProject,
@@ -57,7 +60,11 @@ interface Photo {
   storage_path: string; // Secure storage path for signed URLs
   user_id: string; // Uploader, used for per-photo manage permission
   tags?: string[];
-  location?: { floor?: string; room?: string };
+  // The link to an imported local, written by the structured picker. Photos
+  // predating it have null here and carry free text in `location` instead —
+  // resolvePhotoZone prefers this and falls back to that.
+  location_id?: string | null;
+  location?: LocationExtras | null;
 }
 
 interface VisitDisplay {
@@ -87,6 +94,10 @@ export default function VisitDetail() {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [editedNotes, setEditedNotes] = useState("");
   const [visit, setVisit] = useState<VisitDisplay | null>(null);
+  // The project's imported locations, purely to turn a photo's location_id
+  // into a readable zone. Optional context: a failure degrades to the legacy
+  // free-text label rather than hiding the photos.
+  const [locations, setLocations] = useState<Location[]>([]);
   const [projectName, setProjectName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -164,6 +175,7 @@ export default function VisitDetail() {
           storage_path: p.storage_path,
           user_id: p.user_id,
           tags: p.tags || [],
+          location_id: p.location_id,
           location: p.location || undefined,
         })),
         weather: apiVisit.weather,
@@ -220,6 +232,22 @@ export default function VisitDetail() {
       alert("Erreur lors de la sauvegarde des notes");
     }
   };
+
+  useEffect(() => {
+    if (!projectId) return;
+    let cancelled = false;
+    getLocations(projectId)
+      .then((locs) => {
+        if (!cancelled) setLocations(locs);
+      })
+      .catch((e) => console.error("Error loading locations for visit photos:", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
+
+  // Rebuilt only when the locations list changes, not per photo per render.
+  const locationsById = useMemo(() => indexLocations(locations), [locations]);
 
   const projectRole = useProjectRole(projectId);
 
@@ -719,16 +747,14 @@ export default function VisitDetail() {
               visit.photos.length > 0 &&
               (() => {
                 const allTags = Array.from(new Set(visit.photos.flatMap((p) => p.tags || [])));
+                // Distinct zone labels across the visit's photos, resolving
+                // location_id first so photos taken with the structured
+                // picker appear in this filter alongside legacy ones.
                 const allLocations = Array.from(
                   new Set(
                     visit.photos
-                      .filter((p) => p.location?.floor || p.location?.room)
-                      .map((p) => {
-                        const loc = p.location!;
-                        return loc.floor && loc.room
-                          ? `${loc.floor} - ${loc.room}`
-                          : loc.floor || loc.room || "";
-                      }),
+                      .map((p) => resolvePhotoZone(p, locationsById))
+                      .filter((z): z is string => !!z),
                   ),
                 );
 
@@ -850,13 +876,12 @@ export default function VisitDetail() {
                   if (selectedTagFilter && (!photo.tags || !photo.tags.includes(selectedTagFilter))) {
                     return false;
                   }
-                  // Filter by location
+                  // Filter by location. MUST resolve the same way the option
+                  // list above does — if the options came from location_id
+                  // and the match only looked at free text, selecting a zone
+                  // would return nothing.
                   if (selectedLocationFilter) {
-                    const photoLocation =
-                      photo.location?.floor && photo.location?.room
-                        ? `${photo.location.floor} - ${photo.location.room}`
-                        : photo.location?.floor || photo.location?.room || "";
-                    if (photoLocation !== selectedLocationFilter) {
+                    if (resolvePhotoZone(photo, locationsById) !== selectedLocationFilter) {
                       return false;
                     }
                   }
@@ -882,14 +907,12 @@ export default function VisitDetail() {
                       )}
 
                       {/* Location badge - top priority */}
-                      {photo.location && (photo.location.floor || photo.location.room) && (
-                        <div className="absolute top-2 left-2">
+                      {resolvePhotoZone(photo, locationsById) && (
+                        <div className="absolute top-2 left-2 max-w-[calc(100%-1rem)]">
                           <div className="px-2 py-1 bg-blue-600 text-white rounded text-xs font-bold flex items-center gap-1 shadow-lg">
-                            <MapPin size={12} />
-                            <span>
-                              {photo.location.floor && photo.location.room
-                                ? `${photo.location.floor} - ${photo.location.room}`
-                                : photo.location.floor || photo.location.room}
+                            <MapPin size={12} className="flex-shrink-0" />
+                            <span className="truncate">
+                              {resolvePhotoZone(photo, locationsById)}
                             </span>
                           </div>
                         </div>
@@ -1140,19 +1163,16 @@ export default function VisitDetail() {
             />
 
             {/* Location badge in fullscreen */}
-            {selectedPhoto.location &&
-              (selectedPhoto.location.floor || selectedPhoto.location.room) && (
-                <div className="absolute top-4 left-4">
-                  <div className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 shadow-xl">
-                    <MapPin size={18} />
-                    <span>
-                      {selectedPhoto.location.floor && selectedPhoto.location.room
-                        ? `${selectedPhoto.location.floor} - ${selectedPhoto.location.room}`
-                        : selectedPhoto.location.floor || selectedPhoto.location.room}
-                    </span>
-                  </div>
+            {resolvePhotoZone(selectedPhoto, locationsById) && (
+              <div className="absolute top-4 left-4 max-w-[calc(100%-2rem)]">
+                <div className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 shadow-xl">
+                  <MapPin size={18} className="flex-shrink-0" />
+                  <span className="truncate">
+                    {resolvePhotoZone(selectedPhoto, locationsById)}
+                  </span>
                 </div>
-              )}
+              </div>
+            )}
 
             {/* Tags at bottom */}
             {selectedPhoto.tags && selectedPhoto.tags.length > 0 && (

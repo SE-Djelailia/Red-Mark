@@ -23,11 +23,13 @@ import {
 } from "../../lib/annotationModel";
 
 interface PhotoAnnotatorProps {
+  // Only what the annotator actually reads. `location`/`tags` used to be
+  // declared here and were never touched; keeping `location` in particular
+  // forced every caller's photo shape to match a legacy free-text blob the
+  // annotator has no interest in.
   photo: {
     id: string;
     storage_path: string;
-    tags?: string[];
-    location?: { floor?: string; room?: string };
   };
   onClose: () => void;
   onSave?: (photoId: string, annotatedImageBlob: Blob) => Promise<void>;
