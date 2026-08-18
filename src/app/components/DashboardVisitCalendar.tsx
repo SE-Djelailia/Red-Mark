@@ -100,7 +100,7 @@ export default function DashboardVisitCalendar({ projectIds }: Props) {
   return (
     <div>
       {loadError && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 mb-3">
+        <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] p-4 text-sm text-ink mb-3">
           {loadError}
         </div>
       )}
@@ -112,7 +112,7 @@ export default function DashboardVisitCalendar({ projectIds }: Props) {
       </div>
 
       {/* Agenda — phones. Same month, same data, chronological list. */}
-      <div className="sm:hidden bg-surface rounded-xl border border-line overflow-hidden">
+      <div className="sm:hidden bg-surface rounded-[4px] border border-line overflow-hidden">
         {/* Header mirrors MonthCalendar's so month navigation is identical
             in both views. */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-line">
@@ -120,20 +120,20 @@ export default function DashboardVisitCalendar({ projectIds }: Props) {
           <div className="flex items-center gap-1">
             <button
               onClick={() => setMonth(addMonths(month, -1))}
-              className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-subtle text-muted"
+              className="w-9 h-9 flex items-center justify-center rounded-[4px] hover:bg-subtle text-muted"
               aria-label="Mois précédent"
             >
               <ChevronLeft size={18} />
             </button>
             <button
               onClick={() => setMonth(new Date())}
-              className="px-3 h-9 flex items-center justify-center rounded-lg hover:bg-subtle text-sm font-medium text-body"
+              className="px-3 h-9 flex items-center justify-center rounded-[4px] hover:bg-subtle text-sm font-medium text-body"
             >
               Aujourd'hui
             </button>
             <button
               onClick={() => setMonth(addMonths(month, 1))}
-              className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-subtle text-muted"
+              className="w-9 h-9 flex items-center justify-center rounded-[4px] hover:bg-subtle text-muted"
               aria-label="Mois suivant"
             >
               <ChevronRight size={18} />

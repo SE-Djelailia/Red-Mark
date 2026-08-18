@@ -71,7 +71,7 @@ export default function ProjectVisitCalendar({ projectId, month, onMonthChange }
   return (
     <div>
       {loadError && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 mb-3">
+        <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] p-4 text-sm text-ink mb-3">
           {loadError}
         </div>
       )}

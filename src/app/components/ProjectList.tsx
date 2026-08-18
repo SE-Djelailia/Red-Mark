@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { Plus, Building2, MapPin, Calendar, Users, Search, X } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import {
@@ -27,6 +27,7 @@ const STATUS_FILTERS: { value: Project["status"] | "all"; label: string }[] = [
 ];
 
 export default function ProjectList() {
+  const navigate = useNavigate();
   const { user, loading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -115,7 +116,7 @@ export default function ProjectList() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-ink mx-auto mb-4"></div>
           <p className="text-body">Chargement...</p>
         </div>
       </div>
@@ -128,7 +129,7 @@ export default function ProjectList() {
         <p className="text-muted text-lg mb-4">Veuillez vous connecter</p>
         <button
           onClick={() => (window.location.href = "/")}
-          className="px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
+          className="px-6 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors"
         >
           Aller à la connexion
         </button>
@@ -183,7 +184,7 @@ export default function ProjectList() {
                 <button
                   key={f.value}
                   onClick={() => setFilterStatus(f.value)}
-                  className={`px-3.5 h-9 rounded-full text-[13px] font-medium transition-colors whitespace-nowrap flex items-center ${
+                  className={`px-4 h-9 rounded-[4px] text-sm font-medium transition-colors whitespace-nowrap flex items-center ${
                     active
                       ? "bg-ink text-white"
                       : "bg-subtle text-body hover:bg-line active:bg-line-strong"
@@ -218,13 +219,13 @@ export default function ProjectList() {
 
       {/* Empty State */}
       {projects.length === 0 && (
-        <div className="text-center py-16 bg-canvas rounded-xl">
+        <div className="text-center py-16 bg-canvas rounded-[4px]">
           <Building2 size={64} className="mx-auto text-faint mb-4" />
           <h3 className="text-xl font-semibold text-ink mb-2">Aucun projet</h3>
           <p className="text-body mb-6">Commencez par créer votre premier projet</p>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors inline-flex items-center gap-2"
+            className="px-6 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors inline-flex items-center gap-2"
           >
             <Plus size={20} />
             Créer un projet
@@ -252,9 +253,15 @@ export default function ProjectList() {
             </div>
           ) : (
             filteredProjects.map((project) => (
+              // The card itself is the target. Previously each card carried
+              // its own red "Ouvrir" button, so a list of ten projects put
+              // ten red fills on screen at once — the single loudest breach
+              // of the red budget in the app. Opening a project is now the
+              // card click; deleting stays an explicit secondary action.
               <div
                 key={project.id}
-                className="bg-surface rounded-xl shadow-sm border border-line p-6 hover:shadow-md transition-shadow"
+                onClick={() => navigate(`/app/projects/${project.id}`)}
+                className="bg-surface rounded-[4px] border border-line border-l-2 border-l-transparent hover:border-l-brand-600 hover:bg-subtle/40 p-5 cursor-pointer transition-colors"
               >
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="text-lg font-semibold text-ink flex-1">{project.name}</h3>
@@ -282,16 +289,13 @@ export default function ProjectList() {
                   )}
                 </div>
 
-                <div className="flex gap-2 mt-4 pt-4 border-t border-line">
+                <div className="flex justify-end mt-4 pt-4 border-t border-line">
                   <button
-                    onClick={() => (window.location.href = `/app/projects/${project.id}`)}
-                    className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm"
-                  >
-                    Ouvrir
-                  </button>
-                  <button
-                    onClick={() => setDeleteTarget({ id: project.id, name: project.name })}
-                    className="px-4 py-2 border border-line-strong text-body rounded-lg hover:bg-subtle transition-colors text-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTarget({ id: project.id, name: project.name });
+                    }}
+                    className="px-3 min-h-[36px] text-sm text-muted hover:text-ink hover:bg-subtle rounded-[4px] transition-colors"
                   >
                     Supprimer
                   </button>

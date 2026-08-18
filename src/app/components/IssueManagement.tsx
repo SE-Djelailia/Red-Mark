@@ -110,7 +110,7 @@ export default function IssueManagement() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as Issue["status"] | "all")}
-              className="h-10 px-3 bg-surface border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-brand-600"
+              className="h-10 px-3 bg-subtle border border-line-strong rounded-[4px] text-sm text-ink focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/10"
             >
               <option value="all">Tous les états</option>
               {ISSUE_STATUS_OPTIONS.map((opt) => (
@@ -122,7 +122,7 @@ export default function IssueManagement() {
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value as Issue["priority"] | "all")}
-              className="h-10 px-3 bg-surface border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-brand-600"
+              className="h-10 px-3 bg-subtle border border-line-strong rounded-[4px] text-sm text-ink focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/10"
             >
               <option value="all">Toutes les priorités</option>
               <option value="critical">{PRIORITY_LABEL.critical}</option>
@@ -156,7 +156,9 @@ export default function IssueManagement() {
               <div
                 key={issue.id}
                 onClick={() => navigate(`/app/projects/${issue.projectId}/issues/${issue.id}`)}
-                className="bg-surface rounded-xl border border-line p-4 hover:border-brand-600 transition-all cursor-pointer"
+                // Leading rule on hover rather than a full red outline: hovering a
+                // list of deficiencies should not repaint the whole card edge.
+                className="bg-surface rounded-[4px] border border-line border-l-2 border-l-transparent hover:border-l-brand-600 hover:bg-subtle/40 p-4 transition-colors cursor-pointer"
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">

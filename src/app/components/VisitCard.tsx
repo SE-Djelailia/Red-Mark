@@ -31,7 +31,8 @@ export default function VisitCard({ visit, onOpen }: Props) {
         </span>
         <span className="text-sm text-ink font-medium truncate">{visit.authorName}</span>
       </div>
-      <span className="px-2 py-1 bg-brand-50 text-brand-600 rounded-md text-xs font-medium flex-shrink-0">
+      // Phase is metadata, not an alert — outline and ink, no red tint.
+      <span className="inline-flex items-center h-5 px-2 border border-line-strong text-muted rounded-[2px] text-[11px] font-semibold uppercase tracking-[0.08em] flex-shrink-0">
         {visit.phase}
       </span>
     </button>

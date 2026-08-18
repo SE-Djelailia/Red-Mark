@@ -138,7 +138,7 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
       {/* Bell Icon */}
       <button
         onClick={() => setShowPanel(!showPanel)}
-        className="relative w-9 h-9 flex items-center justify-center text-body hover:bg-subtle rounded-lg transition-colors"
+        className="relative w-9 h-9 flex items-center justify-center text-body hover:bg-subtle rounded-[4px] transition-colors"
         title="Notifications"
         aria-label={
           unreadCount > 0 ? `Notifications (${unreadCount} non lues)` : "Notifications"
@@ -149,7 +149,7 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
             a count bubble. The exact number is still announced to screen
             readers via aria-label, and shown in the panel's filter tabs. */}
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 w-[7px] h-[7px] bg-brand-600 border-[1.5px] border-surface rounded-full" />
+          <span className="absolute top-1.5 right-1.5 w-[7px] h-[7px] bg-brand-600 border-[1.5px] border-surface rounded-[1px]" />
         )}
       </button>
 
@@ -160,7 +160,7 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
           <div className="fixed inset-0 z-40" onClick={() => setShowPanel(false)} />
 
           {/* Panel */}
-          <div className="absolute right-0 top-12 w-80 md:w-96 bg-surface rounded-xl shadow-lg border border-line z-50 max-h-[500px] flex flex-col">
+          <div className="absolute right-0 top-12 w-80 md:w-96 bg-surface rounded-[4px] shadow-[0_8px_24px_rgb(20_20_20/0.12)] border border-line z-50 max-h-[500px] flex flex-col">
             {/* Header */}
             <div className="p-4 border-b border-line">
               <div className="flex items-center justify-between mb-3">
@@ -176,10 +176,10 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
               </div>
 
               {/* Filter Tabs */}
-              <div className="flex gap-1 bg-subtle rounded-lg p-1">
+              <div className="flex gap-1 bg-subtle rounded-[4px] p-1">
                 <button
                   onClick={() => setFilter("all")}
-                  className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  className={`flex-1 px-3 py-1.5 rounded-[2px] text-xs font-medium transition-colors ${
                     filter === "all"
                       ? "bg-surface text-ink shadow-sm"
                       : "text-muted hover:text-ink"
@@ -189,7 +189,7 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
                 </button>
                 <button
                   onClick={() => setFilter("unread")}
-                  className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  className={`flex-1 px-3 py-1.5 rounded-[2px] text-xs font-medium transition-colors ${
                     filter === "unread"
                       ? "bg-surface text-ink shadow-sm"
                       : "text-muted hover:text-ink"
@@ -199,7 +199,7 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
                 </button>
                 <button
                   onClick={() => setFilter("read")}
-                  className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  className={`flex-1 px-3 py-1.5 rounded-[2px] text-xs font-medium transition-colors ${
                     filter === "read"
                       ? "bg-surface text-ink shadow-sm"
                       : "text-muted hover:text-ink"
@@ -232,15 +232,14 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
                     <div
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification)}
-                      className={`p-4 cursor-pointer hover:bg-subtle transition-colors relative ${
-                        !notification.read ? "bg-brand-50/40" : ""
+                      // Unread carried a red tint AND a red dot — two reds per
+                      // row, times every unread row. Now one 2px leading rule,
+                      // always present so marking a row cannot reflow the list.
+                      className={`border-l-2 p-4 cursor-pointer hover:bg-subtle transition-colors ${
+                        !notification.read ? "border-l-brand-600" : "border-l-transparent"
                       }`}
                     >
-                      {!notification.read && (
-                        <div className="absolute left-2 top-1/2 -translate-y-1/2 w-2 h-2 bg-brand-600 rounded-full" />
-                      )}
-
-                      <div className="flex items-start gap-3 ml-3">
+                      <div className="flex items-start gap-3">
                         <div className="text-2xl flex-shrink-0">
                           {getNotificationIcon(notification.type)}
                         </div>
@@ -255,7 +254,7 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
                         </div>
                         <button
                           onClick={(e) => handleDeleteNotification(e, notification.id)}
-                          className="p-1 text-faint hover:text-brand-600 transition-colors flex-shrink-0"
+                          className="p-1 text-faint hover:text-ink transition-colors flex-shrink-0"
                           title="Supprimer"
                         >
                           <X size={16} />

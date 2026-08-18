@@ -135,9 +135,9 @@ export default function Dashboard() {
         {/* Shown above everything: zeros and empty lists below would
             otherwise read as "nothing outstanding" rather than a failure. */}
         {loadError && (
-          <div className="bg-brand-50 border border-brand-100 rounded-xl px-4 py-3 flex items-center gap-3">
-            <AlertCircle size={18} className="text-brand-strong flex-shrink-0" aria-hidden="true" />
-            <p className="flex-1 text-sm text-brand-strong">{loadError}</p>
+          <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] px-4 py-3 flex items-center gap-3">
+            <AlertCircle size={18} className="text-brand-600 flex-shrink-0" aria-hidden="true" />
+            <p className="flex-1 text-sm text-ink">{loadError}</p>
             <button
               onClick={() => loadData(true)}
               disabled={refreshing}

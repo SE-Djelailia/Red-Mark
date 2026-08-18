@@ -42,7 +42,7 @@ export default function MonthCalendar({
   const days = getMonthGridDays(month.getFullYear(), month.getMonth());
 
   return (
-    <div className="bg-white rounded-xl border border-line overflow-hidden">
+    <div className="bg-surface rounded-[4px] border border-line overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-line">
         <h2 className="text-base font-semibold text-ink capitalize">
@@ -51,20 +51,20 @@ export default function MonthCalendar({
         <div className="flex items-center gap-1">
           <button
             onClick={() => onMonthChange(addMonths(month, -1))}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-subtle text-muted"
+            className="w-9 h-9 flex items-center justify-center rounded-[4px] hover:bg-subtle text-muted"
             aria-label="Mois précédent"
           >
             <ChevronLeft size={18} />
           </button>
           <button
             onClick={() => onMonthChange(new Date())}
-            className="px-3 h-9 flex items-center justify-center rounded-lg hover:bg-subtle text-sm font-medium text-body"
+            className="px-3 h-9 flex items-center justify-center rounded-[4px] hover:bg-subtle text-sm font-medium text-body"
           >
             Aujourd'hui
           </button>
           <button
             onClick={() => onMonthChange(addMonths(month, 1))}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-subtle text-muted"
+            className="w-9 h-9 flex items-center justify-center rounded-[4px] hover:bg-subtle text-muted"
             aria-label="Mois suivant"
           >
             <ChevronRight size={18} />
@@ -101,9 +101,13 @@ export default function MonthCalendar({
             >
               <div className="flex items-center justify-center mb-1">
                 <span
-                  className={`text-xs sm:text-sm w-6 h-6 flex items-center justify-center rounded-full flex-shrink-0 ${
+                  // Today is INK, not red. A red disc on every calendar
+                  // permanently spends the mark on "the date is today",
+                  // which is never the thing needing attention. Square-cut
+                  // to match the system's 4px ceiling.
+                  className={`text-xs sm:text-sm w-6 h-6 flex items-center justify-center rounded-[2px] flex-shrink-0 rm-figures ${
                     isToday
-                      ? "bg-brand-600 text-white font-semibold"
+                      ? "bg-ink text-white font-semibold"
                       : inMonth
                         ? "text-ink"
                         : "text-faint"
@@ -123,8 +127,13 @@ export default function MonthCalendar({
                         pill.onClick();
                       }}
                       title={pill.label}
-                      className={`w-full truncate text-left px-1.5 py-0.5 rounded-md text-[10px] sm:text-xs font-medium ${
-                        pill.color === "red" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+                      // THE REDMARK MOVE at pill scale: a 2px leading rule
+                      // instead of a tinted fill. A month of red and green
+                      // blocks was a wall of colour in which nothing stood
+                      // out; a ruled edge marks the days with outstanding
+                      // work and leaves the rest as quiet ink.
+                      className={`w-full truncate text-left border-l-2 pl-1.5 pr-1 py-0.5 text-[10px] sm:text-xs font-medium text-ink hover:bg-subtle ${
+                        pill.color === "red" ? "border-l-brand-600" : "border-l-line-strong"
                       }`}
                     >
                       {pill.label}
@@ -138,8 +147,8 @@ export default function MonthCalendar({
                         pills[2].onClick();
                       }}
                       title={pills[2].label}
-                      className={`hidden sm:block w-full truncate text-left px-1.5 py-0.5 rounded-md text-xs font-medium ${
-                        pills[2].color === "red" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+                      className={`hidden sm:block w-full truncate text-left border-l-2 pl-1.5 pr-1 py-0.5 text-xs font-medium text-ink hover:bg-subtle ${
+                        pills[2].color === "red" ? "border-l-brand-600" : "border-l-line-strong"
                       }`}
                     >
                       {pills[2].label}
