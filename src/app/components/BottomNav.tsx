@@ -35,13 +35,18 @@ export default function BottomNav() {
               aria-label={item.label}
               aria-current={active ? "page" : undefined}
               className={`relative flex items-center justify-center transition-colors min-h-[48px] ${
-                active ? "text-brand-600" : "text-faint hover:text-body active:bg-subtle"
+                // The active icon is INK, not red. The red is spent on the
+                // 2px rule above it — that is the position marker. Colouring
+                // the icon too would put two reds on one element.
+                active ? "text-ink" : "text-faint hover:text-body active:bg-subtle"
               }`}
             >
-              {/* Active indicator — the only cue left now that labels are
-                  gone, so it stays. */}
+              {/* THE REDMARK MOVE, applied to navigation: a 2px red rule
+                  marking position. Square-cut, not a rounded pill — this is
+                  a drawn line, not a lozenge. It is the only cue left now
+                  that labels are gone, so it stays. */}
               {active && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-brand-600 rounded-b-full" />
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-brand-600" />
               )}
               <Icon size={22} strokeWidth={active ? 2.25 : 1.75} />
             </button>

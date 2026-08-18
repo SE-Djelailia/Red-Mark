@@ -13,7 +13,7 @@ export function Card({
   children: ReactNode;
 }) {
   return (
-    <div className={`bg-surface border border-line rounded-xl ${className}`}>{children}</div>
+    <div className={`bg-surface border border-line rounded-[4px] ${className}`}>{children}</div>
   );
 }
 
@@ -73,18 +73,34 @@ export function SectionAction({
 
 // Compact, tappable list row. py-3 + min-h-11 meets the 44px touch target
 // the design system specifies (the previous py-2.5 fell short of it).
+//
+// THE REDMARK MOVE lives here. Every row carries a 2px leading edge that is
+// transparent at rest and red when `marked` — so the bar never changes the
+// row's geometry, only its colour. That is what lets a list of twenty rows
+// show one marked item without anything shifting.
+//
+// `marked` means active, urgent, or outstanding — the caller decides which
+// of those applies on its screen. It is the ONLY red a list row may carry.
 export function ListRow({
   onClick,
+  marked = false,
   className = "",
   children,
 }: {
   onClick?: () => void;
+  /** Draws the red leading rule. Use for active/urgent/outstanding rows. */
+  marked?: boolean;
   className?: string;
   children: ReactNode;
 }) {
   const interactive = onClick ? "hover:bg-subtle cursor-pointer transition-colors" : "";
+  // border-l-2 is always present so marking a row cannot reflow the list.
+  const rule = marked ? "border-l-brand-600" : "border-l-transparent";
   return (
-    <div onClick={onClick} className={`px-4 py-3 min-h-11 ${interactive} ${className}`}>
+    <div
+      onClick={onClick}
+      className={`border-l-2 ${rule} px-4 py-3 min-h-11 ${interactive} ${className}`}
+    >
       {children}
     </div>
   );

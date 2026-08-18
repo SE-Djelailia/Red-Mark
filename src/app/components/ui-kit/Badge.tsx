@@ -20,13 +20,20 @@ type Status = Issue["status"];
 
 // h-[22px] with centred content rather than vertical padding, so every
 // badge is the same height regardless of its label.
+// Title-block type: 11px, uppercase, tracked. A badge NAMES a state, so it
+// takes the label voice rather than sentence-case body type. 2px radius,
+// 20px tall — on the 4px grid.
 const BASE =
-  "inline-flex items-center gap-1.5 h-[22px] px-2 rounded-md border text-[11px] font-medium whitespace-nowrap";
+  "inline-flex items-center gap-1.5 h-5 px-2 rounded-[2px] border text-[11px] font-semibold uppercase tracking-[0.08em] whitespace-nowrap";
 
+// Only "Critique" is allowed near the red, and even then as tinted ground
+// with red TEXT — never a red fill. A filled red priority badge would
+// compete with the status badge and with the screen's primary action, and
+// three reds in a row is exactly the dilution the system forbids.
 const PRIORITY_STYLE: Record<Priority, string> = {
   critical: "bg-brand-50 border-brand-100 text-brand-strong",
   high: "bg-amber-50 border-amber-200 text-warn",
-  medium: "bg-subtle border-line text-body",
+  medium: "bg-surface border-line-strong text-body",
   low: "bg-surface border-line text-muted",
 };
 
@@ -72,11 +79,19 @@ export const PRIORITY_OPTIONS: { value: Priority; label: string; dot: string }[]
 // "Corrigé" deliberately gets NO green treatment — it is a claim, not a
 // confirmation, and colouring it like a finished item is precisely the
 // misreading the lifecycle was introduced to prevent.
+// The déficience state is one of the four things red is FOR, so this is
+// where the filled red is spent: "Signalé" — nobody has acted yet — is the
+// red pen's mark. Everything downstream de-escalates to outline, and
+// "Vérifié" carries the only green in the system as a dot.
+//
+// "Corrigé" deliberately gets no green: it is a claim by the contractor,
+// not a confirmation by the inspector, and colouring it as done is the
+// exact misreading the lifecycle exists to prevent.
 const STATUS_STYLE: Record<Status, string> = {
-  signale: "bg-brand-50 border-brand-100 text-brand-strong",
-  a_corriger: "bg-amber-50 border-amber-200 text-warn",
-  corrige: "bg-subtle border-line text-body",
-  verifie: "bg-subtle border-line text-body",
+  signale: "bg-brand-600 border-brand-600 text-white",
+  a_corriger: "bg-surface border-line-strong text-ink",
+  corrige: "bg-surface border-line-strong text-muted",
+  verifie: "bg-surface border-line-strong text-muted",
 };
 
 // A small filled dot marks the states that carry the most weight —
@@ -89,7 +104,7 @@ function Dot({ className }: { className: string }) {
 export function PriorityBadge({ priority }: { priority: Priority }) {
   return (
     <span className={`${BASE} ${PRIORITY_STYLE[priority]}`}>
-      {priority === "critical" && <Dot className="bg-open" />}
+      {priority === "critical" && <Dot className="bg-brand-600" />}
       {PRIORITY_LABEL[priority]}
     </span>
   );

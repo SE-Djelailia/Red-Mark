@@ -16,7 +16,7 @@ export function StatGrid({
 }) {
   return (
     <div
-      className={`grid gap-[1px] bg-line border border-line rounded-xl overflow-hidden ${className}`}
+      className={`grid gap-[1px] bg-line border border-line rounded-[4px] overflow-hidden ${className}`}
     >
       {children}
     </div>
@@ -28,7 +28,11 @@ export function StatTile({
   value,
   /** Secondary text set beside the value, e.g. "/ 41 au total". */
   suffix,
-  /** Red value — reserved for "déficiences ouvertes"; everything else is ink. */
+  /**
+   * Red value. Reserved for the OUTSTANDING count — the number that means
+   * "work remains". Every other tile is ink: a grid of red numbers would
+   * make none of them urgent.
+   */
   emphasis = false,
   onClick,
 }: {
@@ -40,14 +44,14 @@ export function StatTile({
 }) {
   const interactive = onClick ? "cursor-pointer hover:bg-subtle transition-colors" : "";
   return (
-    <div onClick={onClick} className={`bg-surface p-3.5 sm:p-4 ${interactive}`}>
-      <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted mb-1.5">
+    <div onClick={onClick} className={`bg-surface p-4 ${interactive}`}>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted mb-1.5">
         {label}
       </div>
       <div className="flex items-baseline gap-1.5">
         <span
           className={`text-[26px] lg:text-[30px] font-semibold tracking-tight tabular-nums leading-none ${
-            emphasis ? "text-open" : "text-ink"
+            emphasis ? "text-brand-strong" : "text-ink"
           }`}
         >
           {value}
