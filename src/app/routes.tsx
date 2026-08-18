@@ -24,6 +24,7 @@ import MigrationPrompt from "./components/MigrationPrompt"; // ✅ Migration pro
 import FirmAdmin from "./components/FirmAdmin";
 import SetPassword from "./components/SetPassword";
 import AuthCallback from "./components/AuthCallback";
+import DesignSystemPreview from "./components/DesignSystemPreview";
 import PlatformAdmin from "./components/PlatformAdmin";
 
 // Root component that provides SupabaseAuthContext to all routes
@@ -79,6 +80,13 @@ export const router = createBrowserRouter([
         // for every origin the app is served from.
         path: "/auth/callback",
         Component: AuthCallback,
+      },
+      {
+        // Design-system specimen. Outside /app: it needs no session and
+        // grants nothing. Not linked from anywhere — it exists to review
+        // the visual system, not to ship as a feature.
+        path: "/design",
+        Component: DesignSystemPreview,
       },
       {
         // Platform-operator surface. MUST stay outside /app, like

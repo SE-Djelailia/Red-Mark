@@ -1,98 +1,274 @@
 /**
- * RedMark design tokens — Step 1 (foundations).
+ * ═══════════════════════════════════════════════════════════════════════
+ * RedMark — "The Architect's Red Pen"
+ * Design tokens. THE single source of truth.
+ * ═══════════════════════════════════════════════════════════════════════
  *
- * Tailwind 4 is configured CSS-first: this `@theme` block IS the config,
- * there is no tailwind.config.js (and adding one would fight this).
- * Registering a token here generates the matching utilities, so
- * `--color-surface` gives `bg-surface` / `text-surface` / `border-surface`,
- * `--color-brand-600` gives `text-brand-600`, and so on.
+ * Tailwind 4 is configured CSS-first: this `@theme` block IS the config.
+ * There is no tailwind.config.js and adding one would fight this file.
+ * Registering a token here generates its utilities — `--color-ink` gives
+ * `text-ink` / `bg-ink` / `border-ink`, and so on.
  *
- * Imported AFTER theme.css (the vendored shadcn/ui token layer) so this
- * wins on any overlap. The only name shared by both layers is `muted`:
- * shadcn used it for a near-white background (#ececf0), the design system
- * uses it for secondary text (#71717A). Redefining is safe here because
- * nothing live consumes the shadcn tokens — all 48 components in
- * app/components/ui/ are unimported dead code.
+ * Imported AFTER theme.css (the vendored shadcn token layer) so this wins
+ * on any overlap.
  *
- * Step 1 deliberately does NOT restyle components. The app still uses
- * hardcoded hex (#E10600, #1A1A1A) and gray-* utilities in ~1600 places;
- * migrating those onto these tokens is Step 2.
+ * ── THE IDEA ──────────────────────────────────────────────────────────
+ *
+ * A set of construction drawings is black ink on white paper: precise,
+ * neutral, information-dense. The architect reviews it with ONE red pen.
+ * Everything the red pen touches is, by definition, the thing that needs
+ * attention. Its authority comes entirely from its scarcity.
+ *
+ * That is the whole system. The interface is the drawing — near-black on
+ * off-white, ruled, aligned, quiet. Red is the pen.
+ *
+ * ── THE RED RULE (non-negotiable) ─────────────────────────────────────
+ *
+ * Red is permitted ONLY for:
+ *   1. The primary action of a screen — at most ONE per view.
+ *   2. Deficiency / alert / destructive state.
+ *   3. The active navigation position — as a 2px rule, not a fill.
+ *   4. The logo mark.
+ *
+ * Red is FORBIDDEN for:
+ *   - Decorative headings, icons, dividers, or illustration.
+ *   - Secondary/tertiary buttons (those are ink outline or ghost).
+ *   - Hover states on non-primary elements.
+ *   - Any surface larger than a button, badge, or 2px rule.
+ *   - More than one filled red element visible at rest in a viewport.
+ *
+ * The test: if you can see two red fills at once, one of them is wrong.
+ *
+ * ── THE REDMARK MOVE ──────────────────────────────────────────────────
+ *
+ * The signature that repeats until it is recognisable:
+ *
+ *   THE RULE — a 2px red vertical bar on the leading edge of anything
+ *   that is active, urgent, or primary; a 1px ink rule everywhere else.
+ *
+ * It is the red pen's stroke in the margin. It reads at a glance, costs
+ * almost no ink, scales from a nav item to a full card, and never fills
+ * an area. Utilities: `.rm-rule` / `.rm-rule-active` (defined below).
+ *
+ * Second move: the TITLE BLOCK — a hairline-ruled header band with
+ * uppercase tracked labels above their values, borrowed directly from a
+ * drawing sheet's title block.
  */
 
-/* `static` forces every variable below to be emitted even when no utility
- * references it yet. Without it Tailwind 4 tree-shakes unused theme vars,
- * which would leave most of these tokens unavailable to hand-written CSS
- * (var(--color-ink)) until Step 2 happens to use the matching utility. */
 @theme static {
-  /* ---- Neutrals ---- */
-  --color-ink: #1a1a1a; /* headings, primary text */
+  /* ═════════════════════════════════════════════════════════════════
+   * COLOR
+   * Two hues total: a neutral ramp, and the red. Nothing else has a
+   * hue budget — see the semantic block for why green/amber are the
+   * only exceptions and how far they are held back.
+   * ═════════════════════════════════════════════════════════════════ */
+
+  /* ---- Ground ----
+   * Paper, not screen-white. #FCFCFC reads as stock; pure white is
+   * reserved for raised surfaces so elevation needs no shadow. */
+  --color-canvas: #fcfcfc; /* app background — the sheet */
+  --color-surface: #ffffff; /* cards, sheets — raised above the sheet */
+  --color-subtle: #f4f4f5; /* inset fills, hover, code wells */
+
+  /* ---- Ink ----
+   * Near-black, never #000. Pure black on white vibrates and reads as
+   * cheap; #141414 is the density of a good drafting pen. */
+  --color-ink: #141414; /* headings, primary text, the drawn line */
   --color-body: #3f3f46; /* body copy */
-  --color-muted: #71717a; /* secondary text */
-  --color-faint: #a1a1aa; /* tertiary text, placeholders */
-  --color-line: #e4e4e7; /* default borders, dividers */
-  --color-line-strong: #d4d4d8; /* emphasized borders */
-  --color-subtle: #f4f4f5; /* subtle fills, hover states */
-  --color-canvas: #fafafa; /* app background */
-  --color-surface: #ffffff; /* cards, sheets, elevated surfaces */
+  --color-muted: #71717a; /* secondary text, metadata */
+  --color-faint: #a1a1aa; /* tertiary, placeholders, disabled */
 
-  /* ---- Brand (red) ---- */
-  --color-brand-50: #fef2f1; /* tinted backgrounds */
-  --color-brand-100: #f9dcd9; /* tinted borders */
-  --color-brand-600: #e10600; /* primary accent — current app red */
+  /* ---- Rules ----
+   * Structural lines. Hairlines by default: the grid should be felt
+   * before it is seen. */
+  --color-line: #e4e4e7; /* default 1px rules, dividers */
+  --color-line-strong: #d4d4d8; /* input borders, emphasised rules */
+
+  /* ---- THE RED ----
+   * #E10600 — taken from the logo mark, verified identical across
+   * Logo.tsx and every public asset. It is the one hue with authority. */
+  --color-brand-600: #e10600; /* THE red. Fills. Rules. Nothing else. */
   --color-brand-700: #c00500; /* hover */
-  --color-brand-800: #8f0400; /* active/pressed */
-  /* Red text ON a light background. brand-600 is too light to read at small
-   * sizes over white/brand-50; the design system uses this darker red for
-   * "Tout voir" links, counts, and badge text. Not a background colour. */
-  --color-brand-strong: #b80500;
+  --color-brand-800: #8f0400; /* active / pressed */
+  --color-brand-strong: #b80500; /* red TEXT on light — #E10600 fails
+                                    contrast at small sizes */
+  --color-brand-50: #fef2f1; /* tinted ground — badges only */
+  --color-brand-100: #f9dcd9; /* tinted rule — badges only */
 
-  /* ---- Amber (the single warm tint, used only for priority "Élevé") ---- */
-  --color-amber-50: #fffbeb; /* badge background */
-  --color-amber-200: #f5e7c4; /* badge border */
+  /* ---- Semantic ----
+   * Deliberately austere. Green appears ONLY on a resolved/verified
+   * state — the one place the eye must distinguish "done" from "red
+   * pen". Amber ONLY on "élevé" priority and overdue. Neither is ever
+   * a fill larger than a badge, and neither may compete with the red.
+   * There is no blue in this system: it currently appears 46 times in
+   * the app and every one of them is off-system. */
+  --color-open: #e10600; /* déficience outstanding — same as the red,
+                            named separately so status can diverge */
+  --color-resolved: #15803d; /* vérifié — the only green */
+  --color-warn: #a16207; /* élevé / overdue — the only amber text */
+  --color-amber-50: #fffbeb;
+  --color-amber-200: #f5e7c4;
 
-  /* ---- Semantic status ---- */
-  --color-open: #e10600; /* déficience ouverte (same value as brand-600,
-                            kept separate so status and brand can diverge) */
-  --color-resolved: #15803d; /* déficience résolue */
-  --color-warn: #a16207; /* warnings, due-soon */
+  /* ═════════════════════════════════════════════════════════════════
+   * TYPOGRAPHY
+   *
+   * Swiss precision with zero webfont cost. The stack leads with Inter
+   * (already the de-facto neo-grotesque of choice, and present on many
+   * systems) then falls through to each platform's own grotesque —
+   * SF on Apple, Segoe on Windows, Roboto on Android. All are
+   * Helvetica-lineage: closed apertures, even rhythm, no personality
+   * competing with the content. A drawing's lettering is anonymous by
+   * design; so is this.
+   *
+   * The discipline is NOT in the typeface. It is in the hierarchy:
+   * five defined roles, each with a fixed size/weight/tracking pair,
+   * and nothing in between. Weight does the work, never colour.
+   * ═════════════════════════════════════════════════════════════════ */
 
-  /* ---- Type ----
-   * System stack per the design system. Nothing set font-family before
-   * this (fonts.css is empty), so the app was inheriting Tailwind's
-   * ui-sans-serif default — this makes the intent explicit.
-   */
   --font-sans:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji";
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 
-  /* Type scale, pinned for documentation. These match Tailwind's own
-   * defaults exactly (12 / 14 / 16 / 18 / 20 / 24 / 30px), so declaring
-   * them changes nothing visually — it just makes the intended scale
-   * explicit and guards against a future Tailwind default drifting.
-   * Line-heights are intentionally left to Tailwind's paired defaults. */
-  --text-xs: 0.75rem; /* 12px — meta, captions */
-  --text-sm: 0.875rem; /* 14px — secondary UI text */
-  --text-base: 1rem; /* 16px — body */
-  --text-lg: 1.125rem; /* 18px — section headings */
-  --text-xl: 1.25rem; /* 20px — page headings */
-  --text-2xl: 1.5rem; /* 24px */
-  --text-3xl: 1.875rem; /* 30px — display */
+  /* Tabular figures for anything that stacks and must align: counts,
+   * dates, dimensions, report numbers. A drawing's numbers line up. */
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* ---- The scale ----
+   * A restrained 1.2-ish ramp. Only these seven sizes exist. */
+  --text-2xs: 0.6875rem; /* 11px — LABEL, tracked, uppercase */
+  --text-xs: 0.75rem; /* 12px — CAPTION, metadata */
+  --text-sm: 0.875rem; /* 14px — secondary UI, dense rows */
+  --text-base: 1rem; /* 16px — BODY */
+  --text-lg: 1.125rem; /* 18px — HEADING (section) */
+  --text-xl: 1.375rem; /* 22px — HEADING (page) */
+  --text-3xl: 1.75rem; /* 28px — DISPLAY. Rare. */
+
+  /* ---- Tracking ----
+   * Tighten as size grows (optical compensation); open right up for
+   * small uppercase labels, which are unreadable when set solid. */
+  --tracking-display: -0.02em;
+  --tracking-heading: -0.01em;
+  --tracking-label: 0.08em; /* uppercase labels — the title-block voice */
+
+  /* ═════════════════════════════════════════════════════════════════
+   * SPACING & GRID
+   *
+   * A strict 4px base. Every gap, pad and margin is a multiple — no
+   * 5px, no 13px, no optical nudges. Alignment is the point: things
+   * line up because they are on the same grid, not because they were
+   * eyeballed.
+   *
+   * Tailwind's default spacing is already a 4px ramp, so the utilities
+   * (p-4, gap-6) land on this grid natively. These named tokens exist
+   * for hand-written CSS and to document the intended rhythm.
+   * ═════════════════════════════════════════════════════════════════ */
+
+  --space-1: 0.25rem; /*  4px — hairline gaps */
+  --space-2: 0.5rem; /*  8px — within a component */
+  --space-3: 0.75rem; /* 12px — between related elements */
+  --space-4: 1rem; /* 16px — component padding (dense) */
+  --space-5: 1.25rem; /* 20px — component padding (default) */
+  --space-6: 1.5rem; /* 24px — between components */
+  --space-8: 2rem; /* 32px — between groups */
+  --space-12: 3rem; /* 48px — between sections */
+  --space-16: 4rem; /* 64px — page top/bottom breathing */
+
+  /* Minimum touch target. Non-negotiable: this is used on site, in
+   * gloves, one-handed. */
+  --size-touch: 2.75rem; /* 44px */
+
+  /* ═════════════════════════════════════════════════════════════════
+   * FORM
+   *
+   * Sharp, not soft. A drawing has square corners; rounded UI reads as
+   * consumer-friendly, which is the opposite of the intent. 2px is
+   * enough to avoid looking broken, no more.
+   * ═════════════════════════════════════════════════════════════════ */
+
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px; /* the ceiling — nothing is rounder than this */
+  --radius-full: 9999px; /* avatars and dots ONLY */
+
+  /* ---- Elevation ----
+   * Almost none. Depth comes from the rule and the ground/surface
+   * contrast, not from shadow. A drawing is flat. */
+  --shadow-raised: 0 1px 2px rgb(20 20 20 / 0.04);
+  --shadow-overlay: 0 8px 24px rgb(20 20 20 / 0.12);
 }
 
-/**
- * Radius: adopted in Step 2 via a single `--radius: 0.5rem` in theme.css,
- * whose existing scale derives --radius-lg (0.5rem) and --radius-xl
- * (calc(--radius + 4px) = 0.75rem) — both design values exactly, with no
- * per-class migration across the ~436 rounded-lg/xl usages.
- */
+/* ═══════════════════════════════════════════════════════════════════════
+ * THE REDMARK MOVE — the repeating signature
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /**
+   * The rule. A leading-edge bar: hairline ink at rest, 2px red when the
+   * thing is active/urgent/primary. Applied to nav items, list rows,
+   * cards, and section headers — everywhere the eye scans a left edge.
+   *
+   * Implemented as a border rather than a pseudo-element so it
+   * participates in layout and can never overlap content.
+   */
+  .rm-rule {
+    border-left: 2px solid var(--color-line);
+    padding-left: var(--space-4);
+  }
+
+  .rm-rule-active {
+    border-left-color: var(--color-brand-600);
+  }
+
+  /**
+   * The title block. Uppercase, tracked, small — the lettering on a
+   * drawing sheet. For field labels, table headers, section eyebrows.
+   * Never for content, only for naming content.
+   */
+  .rm-label {
+    font-size: var(--text-2xs);
+    font-weight: 600;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  /**
+   * Tabular numerals. Anything that stacks in a column — counts, dates,
+   * dimensions, report numbers — so digits align vertically.
+   */
+  .rm-figures {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /**
+   * The hairline grid. A 1px ink rule at the top of a band, used to
+   * separate title-block regions the way a drawing's borders do.
+   */
+  .rm-hairline {
+    border-top: 1px solid var(--color-line);
+  }
+}
 
 @layer base {
-  /* Canvas background. theme.css's `body { @apply bg-background }` resolves
-   * to #FFFFFF; this later rule in the same cascade layer supersedes it.
-   * Text colour is intentionally left alone in Step 1 — a lot of elements
-   * inherit it, so moving it onto the ink/body tokens belongs with the
-   * component work rather than a foundations pass. */
   body {
     background-color: var(--color-canvas);
+    color: var(--color-body);
+    font-family: var(--font-sans);
+    /* Grotesques are designed with generous sidebearings; let the
+     * browser do proper kerning and ligature work at display sizes. */
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Headings default to ink and tightened tracking — the hierarchy
+   * should hold even where a component forgets to set it. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: var(--color-ink);
+    letter-spacing: var(--tracking-heading);
   }
 }
