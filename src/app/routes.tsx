@@ -23,6 +23,7 @@ import LocationDetail from "./components/LocationDetail";
 import MigrationPrompt from "./components/MigrationPrompt"; // ✅ Migration prompt
 import FirmAdmin from "./components/FirmAdmin";
 import SetPassword from "./components/SetPassword";
+import AuthCallback from "./components/AuthCallback";
 import PlatformAdmin from "./components/PlatformAdmin";
 
 // Root component that provides SupabaseAuthContext to all routes
@@ -66,6 +67,18 @@ export const router = createBrowserRouter([
         // must be on Supabase's allowed Redirect URLs list.
         path: "/auth/set-password",
         Component: SetPassword,
+      },
+      {
+        // OAuth (Microsoft) return. Outside /app for the same reason as
+        // /auth/set-password: it must render BEFORE a session exists, which
+        // is exactly what Layout refuses to do. It waits for the token
+        // exchange to finish, then forwards to /app — where FirmGate applies
+        // the normal firm-membership check.
+        //
+        // This exact path must be on Supabase's allowed Redirect URLs list,
+        // for every origin the app is served from.
+        path: "/auth/callback",
+        Component: AuthCallback,
       },
       {
         // Platform-operator surface. MUST stay outside /app, like

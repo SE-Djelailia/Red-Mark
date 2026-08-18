@@ -5,6 +5,7 @@ import { LogoLockup } from "./ui-kit/Logo";
 import RolePicker from "./ui-kit/RolePicker";
 import { useSupabaseAuth } from "../../contexts/SupabaseAuthContext"; // ✅ Using Supabase Auth
 import { supabase } from "../../lib/supabase";
+import { signInWithMicrosoft } from "../../lib/authProviders";
 import { toast } from "sonner";
 
 type Mode = "signin" | "signup" | "reset";
@@ -20,6 +21,7 @@ export default function Login() {
   const [jobRole, setJobRole] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
 
   const isSignUp = mode === "signup";
 
@@ -30,6 +32,22 @@ export default function Login() {
       navigate("/app", { replace: true });
     }
   }, [user, navigate]);
+
+  const handleMicrosoftSignIn = async () => {
+    setOauthLoading(true);
+    try {
+      // On success this NAVIGATES AWAY to Microsoft, so there is no success
+      // path to handle here — only the failure to even start the handshake.
+      // oauthLoading is deliberately never reset on success: the button must
+      // stay disabled during the redirect rather than flicking back to
+      // enabled and inviting a second click.
+      await signInWithMicrosoft();
+    } catch (error: any) {
+      console.error("Microsoft sign-in error:", error);
+      toast.error("Impossible de démarrer la connexion Microsoft.");
+      setOauthLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,6 +210,33 @@ export default function Login() {
             that the tagline is gone. */}
         <div className="mb-12 flex justify-center">
           <LogoLockup size={40} />
+        </div>
+
+        {/* Federated sign-in. Above the form because it is the faster path
+            for firm staff whose Microsoft account already exists; the
+            email/password form below stays as the full fallback for anyone
+            without one (external contractors, invited guests). */}
+        <button
+          type="button"
+          onClick={handleMicrosoftSignIn}
+          disabled={oauthLoading || loading}
+          className="w-full py-3 bg-canvas border border-line rounded-lg text-ink font-medium hover:bg-subtle transition-colors flex items-center justify-center gap-3 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {/* Microsoft's four-square mark, inline so the strict CSP has no
+              external host to block. */}
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+            <rect x="0" y="0" width="8.5" height="8.5" fill="#F25022" />
+            <rect x="9.5" y="0" width="8.5" height="8.5" fill="#7FBA00" />
+            <rect x="0" y="9.5" width="8.5" height="8.5" fill="#00A4EF" />
+            <rect x="9.5" y="9.5" width="8.5" height="8.5" fill="#FFB900" />
+          </svg>
+          {oauthLoading ? "Redirection…" : "Continuer avec Microsoft"}
+        </button>
+
+        <div className="flex items-center gap-3 my-6">
+          <span className="h-px flex-1 bg-line" />
+          <span className="text-xs text-muted">ou</span>
+          <span className="h-px flex-1 bg-line" />
         </div>
 
         {/* Login/Signup Form */}
