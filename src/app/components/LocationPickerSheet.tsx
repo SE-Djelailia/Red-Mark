@@ -34,7 +34,7 @@ export default function LocationPickerSheet({ open, locations, onSelect, onCance
       onClick={onCancel}
     >
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[80vh] flex flex-col shadow-xl"
+        className="bg-surface rounded-t-2xl sm:rounded-[4px] w-full sm:max-w-md max-h-[80vh] flex flex-col shadow-xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -43,7 +43,7 @@ export default function LocationPickerSheet({ open, locations, onSelect, onCance
           <h3 className="text-base font-medium text-ink">Placer un pin</h3>
           <button
             onClick={onCancel}
-            className="w-9 h-9 flex items-center justify-center text-faint hover:text-ink rounded-lg"
+            className="w-9 h-9 flex items-center justify-center text-faint hover:text-ink rounded-[4px]"
             aria-label="Fermer"
           >
             <X size={20} />
@@ -58,7 +58,7 @@ export default function LocationPickerSheet({ open, locations, onSelect, onCance
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher un local…"
-              className="w-full pl-9 pr-3 py-2.5 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
+              className="w-full pl-9 pr-3 py-2.5 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/15"
               autoFocus
             />
           </div>
@@ -77,9 +77,9 @@ export default function LocationPickerSheet({ open, locations, onSelect, onCance
                 <button
                   key={loc.id}
                   onClick={() => onSelect(loc)}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-subtle text-left min-h-[44px]"
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-[4px] hover:bg-subtle text-left min-h-[44px]"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-brand-600/10 text-brand-600 flex items-center justify-center flex-shrink-0">
+                  <div className="w-9 h-9 rounded-[4px] bg-subtle text-ink flex items-center justify-center flex-shrink-0">
                     <MapPin size={16} />
                   </div>
                   <div className="flex-1 min-w-0">

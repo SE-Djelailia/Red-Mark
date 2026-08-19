@@ -42,19 +42,19 @@ export default function SecurityPrivacy() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Status du pilote */}
-        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6">
+        <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] p-6">
           <div className="flex items-start gap-3">
-            <AlertCircle className="size-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="size-6 text-brand-strong flex-shrink-0 mt-0.5" />
             <div>
-              <h2 className="text-lg font-bold text-yellow-900 mb-2">
+              <h2 className="text-lg font-bold text-ink mb-2">
                 Version Pilote - Phase de test
               </h2>
-              <p className="text-yellow-800 mb-3">
+              <p className="text-ink mb-3">
                 RedMark est actuellement en phase pilote gratuite pour validation du concept. Cette
                 version n'est <strong>pas encore conforme à la Loi 25</strong> et ne devrait pas
                 être utilisée pour des projets sensibles ou confidentiels.
               </p>
-              <div className="bg-yellow-100 rounded p-3 text-sm text-yellow-900">
+              <div className="bg-subtle rounded p-3 text-sm text-ink">
                 <strong>Projets appropriés pour le pilote:</strong>
                 <ul className="list-disc ml-5 mt-1 space-y-1">
                   <li>Projets commerciaux standard</li>
@@ -73,7 +73,7 @@ export default function SecurityPrivacy() {
         </div>
 
         {/* Où sont les données */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-surface rounded-[4px] shadow-md p-6">
           <div className="flex items-center gap-3 mb-4">
             <MapPin className="size-6 text-brand-600" />
             <h2 className="text-xl font-bold">Localisation des données</h2>
@@ -110,8 +110,8 @@ export default function SecurityPrivacy() {
               </div>
             </div>
 
-            <div className="bg-blue-50 rounded p-4 mt-4">
-              <p className="text-sm text-blue-900">
+            <div className="bg-subtle rounded p-4 mt-4">
+              <p className="text-sm text-ink">
                 <strong>Plan post-pilote:</strong> Si le pilote réussit, migration vers
                 infrastructure 100% canadienne (AWS ca-central-1 ou Azure Canada) pour conformité
                 Loi 25.
@@ -121,7 +121,7 @@ export default function SecurityPrivacy() {
         </div>
 
         {/* Mesures de sécurité actuelles */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-surface rounded-[4px] shadow-md p-6">
           <div className="flex items-center gap-3 mb-4">
             <Lock className="size-6 text-brand-600" />
             <h2 className="text-xl font-bold">Mesures de sécurité en place</h2>
@@ -192,7 +192,7 @@ export default function SecurityPrivacy() {
         </div>
 
         {/* Conformité */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-surface rounded-[4px] shadow-md p-6">
           <div className="flex items-center gap-3 mb-4">
             <FileText className="size-6 text-brand-600" />
             <h2 className="text-xl font-bold">Conformité réglementaire</h2>
@@ -225,7 +225,7 @@ export default function SecurityPrivacy() {
         </div>
 
         {/* Vos droits */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-surface rounded-[4px] shadow-md p-6">
           <div className="flex items-center gap-3 mb-4">
             <Key className="size-6 text-brand-600" />
             <h2 className="text-xl font-bold">Vos droits sur vos données</h2>
@@ -256,7 +256,7 @@ export default function SecurityPrivacy() {
         </div>
 
         {/* Contact */}
-        <div className="bg-surface border border-line rounded-xl p-6">
+        <div className="bg-surface border border-line rounded-[4px] p-6">
           <h2 className="text-lg font-semibold text-ink mb-3">Questions ou préoccupations?</h2>
           <p className="text-body mb-4">
             Pour toute question concernant la sécurité, la confidentialité ou l'utilisation de vos
@@ -298,7 +298,7 @@ function SecurityItem({
   return (
     <div className="flex items-start gap-3 p-3 rounded bg-canvas">
       {status === "active" ? (
-        <CheckCircle className="size-5 text-green-600 flex-shrink-0 mt-0.5" />
+        <CheckCircle className="size-5 text-body flex-shrink-0 mt-0.5" />
       ) : (
         <XCircle className="size-5 text-faint flex-shrink-0 mt-0.5" />
       )}
@@ -329,23 +329,23 @@ function ComplianceItem({
   note?: string;
 }) {
   const colors = {
-    active: "text-green-600",
-    partial: "text-yellow-600",
+    active: "text-body",
+    partial: "text-brand-strong",
     inactive: "text-faint",
   };
 
   const bgColors = {
-    active: "bg-green-50",
-    partial: "bg-yellow-50",
+    active: "bg-subtle",
+    partial: "bg-subtle",
     inactive: "bg-canvas",
   };
 
   return (
     <div className={`flex items-start gap-3 p-3 rounded ${bgColors[status]}`}>
       {status === "active" ? (
-        <CheckCircle className="size-5 text-green-600 flex-shrink-0 mt-0.5" />
+        <CheckCircle className="size-5 text-body flex-shrink-0 mt-0.5" />
       ) : status === "partial" ? (
-        <AlertCircle className="size-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+        <AlertCircle className="size-5 text-brand-strong flex-shrink-0 mt-0.5" />
       ) : (
         <XCircle className="size-5 text-faint flex-shrink-0 mt-0.5" />
       )}

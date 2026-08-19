@@ -135,8 +135,8 @@ export default function Login() {
 
           {resetSent ? (
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50">
-                <MailCheck className="h-6 w-6 text-brand-600" aria-hidden="true" />
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[4px] bg-subtle">
+                <MailCheck className="h-6 w-6 text-ink" aria-hidden="true" />
               </div>
               <h1 className="text-lg font-semibold text-ink">Vérifiez vos courriels</h1>
               <p className="mt-2 text-sm text-muted">
@@ -148,7 +148,7 @@ export default function Login() {
               </p>
               <button
                 onClick={() => goTo("signin")}
-                className="mt-6 w-full py-3 border border-line text-ink rounded-lg hover:bg-canvas transition-colors"
+                className="mt-6 w-full py-3 border border-line text-ink rounded-[4px] hover:bg-canvas transition-colors"
               >
                 Retour à la connexion
               </button>
@@ -173,7 +173,7 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="votre@courriel.com"
-                    className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 transition-all"
+                    className="w-full px-4 py-3 bg-canvas border border-line rounded-[4px] focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/15 transition-all"
                     required
                   />
                 </div>
@@ -181,7 +181,7 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={loading || !email.trim()}
-                  className="w-full py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? "Envoi..." : "Envoyer le lien"}
                 </button>
@@ -190,7 +190,7 @@ export default function Login() {
               <div className="text-center mt-6">
                 <button
                   onClick={() => goTo("signin")}
-                  className="text-sm text-body hover:text-brand-600 inline-flex items-center gap-1.5"
+                  className="text-sm text-body hover:text-ink inline-flex items-center gap-1.5"
                 >
                   <ArrowLeft size={14} aria-hidden="true" />
                   Retour à la connexion
@@ -220,7 +220,7 @@ export default function Login() {
           type="button"
           onClick={handleMicrosoftSignIn}
           disabled={oauthLoading || loading}
-          className="w-full py-3 bg-canvas border border-line rounded-lg text-ink font-medium hover:bg-subtle transition-colors flex items-center justify-center gap-3 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-canvas border border-line rounded-[4px] text-ink font-medium hover:bg-subtle transition-colors flex items-center justify-center gap-3 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {/* Microsoft's four-square mark, inline so the strict CSP has no
               external host to block. */}
@@ -253,7 +253,7 @@ export default function Login() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Jean Dupont"
-                  className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 transition-all"
+                  className="w-full px-4 py-3 bg-canvas border border-line rounded-[4px] focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/15 transition-all"
                   required
                 />
               </div>
@@ -282,7 +282,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="votre@courriel.com"
-              className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 transition-all"
+              className="w-full px-4 py-3 bg-canvas border border-line rounded-[4px] focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/15 transition-all"
               required
             />
           </div>
@@ -309,7 +309,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 transition-all pr-12"
+                className="w-full px-4 py-3 bg-canvas border border-line rounded-[4px] focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/15 transition-all pr-12"
                 required
                 minLength={6}
               />
@@ -326,7 +326,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading || (isSignUp && (!name.trim() || !jobRole.trim()))}
-            className="w-full py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Chargement..." : isSignUp ? "S'inscrire" : "Se connecter"}
           </button>
@@ -335,7 +335,7 @@ export default function Login() {
         <div className="text-center mt-6">
           <button
             onClick={() => goTo(isSignUp ? "signin" : "signup")}
-            className="text-sm text-body hover:text-brand-600"
+            className="text-sm text-body hover:text-ink"
           >
             {isSignUp ? "Déjà un compte? Se connecter" : "Nouveau? Créer un compte"}
           </button>

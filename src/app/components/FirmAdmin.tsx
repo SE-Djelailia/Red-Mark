@@ -56,11 +56,11 @@ const ORG_ROLE_LABEL: Record<OrgRole, string> = {
 function OrgRoleBadge({ role }: { role: OrgRole }) {
   const style =
     role === "admin"
-      ? "bg-brand-50 border-brand-100 text-brand-strong"
+      ? "bg-subtle border-line-strong text-ink font-medium"
       : "bg-subtle border-line text-body";
   return (
     <span
-      className={`inline-flex items-center gap-1.5 h-[22px] px-2 rounded-md border text-[11px] font-medium whitespace-nowrap ${style}`}
+      className={`inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[4px] border text-[11px] font-medium whitespace-nowrap ${style}`}
     >
       {ORG_ROLE_LABEL[role]}
     </span>
@@ -176,16 +176,16 @@ function InviteForm({
                 type="button"
                 aria-pressed={selected}
                 onClick={() => setMethod(m.value)}
-                className={`text-left p-3 rounded-lg border transition-colors ${
+                className={`text-left p-3 rounded-[4px] border transition-colors ${
                   selected
-                    ? "bg-brand-50 border-brand-600 ring-2 ring-brand-600/20"
+                    ? "bg-surface border-line-strong border-l-2 border-l-brand-600"
                     : "bg-surface border-line hover:bg-subtle"
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <m.Icon
                     size={16}
-                    className={selected ? "text-brand-600" : "text-muted"}
+                    className={selected ? "text-ink" : "text-muted"}
                     aria-hidden="true"
                   />
                   <span
@@ -404,7 +404,7 @@ export default function FirmAdmin() {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-600 mx-auto" />
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-ink mx-auto" />
           <p className="mt-4 text-muted">Chargement…</p>
         </div>
       </div>
@@ -439,8 +439,8 @@ export default function FirmAdmin() {
 
         {/* Firm header */}
         <Card className="p-4 flex items-center gap-4">
-          <div className="h-12 w-12 rounded-xl bg-brand-50 flex items-center justify-center flex-shrink-0">
-            <Building2 size={22} className="text-brand-600" aria-hidden="true" />
+          <div className="h-12 w-12 rounded-[4px] bg-subtle flex items-center justify-center flex-shrink-0">
+            <Building2 size={22} className="text-ink" aria-hidden="true" />
           </div>
           <div className="min-w-0">
             <h1 className="text-base font-semibold text-ink truncate">{firm?.name}</h1>

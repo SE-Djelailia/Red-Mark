@@ -52,7 +52,7 @@ export default function FloorPlanUploadModal({
     <div className="fixed inset-0 bg-black/50 z-[60] overflow-y-auto" onClick={onCancel}>
       <div className="min-h-screen flex items-center justify-center py-8 pb-20 px-4 safe-area-bottom">
         <div
-          className="bg-white rounded-xl w-full max-w-md shadow-xl"
+          className="bg-surface rounded-[4px] w-full max-w-md shadow-xl"
           onClick={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
@@ -69,7 +69,7 @@ export default function FloorPlanUploadModal({
           </div>
 
           <div className="p-6 space-y-5">
-            <div className="rounded-lg border border-line overflow-hidden bg-canvas">
+            <div className="rounded-[4px] border border-line overflow-hidden bg-canvas">
               {preview ? (
                 <img src={preview} alt="Aperçu du plan" className="w-full h-40 object-contain" />
               ) : (
@@ -90,7 +90,7 @@ export default function FloorPlanUploadModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ex. Niveau 1 — Aile Nord"
-                className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 min-h-[44px]"
+                className="w-full px-4 py-3 bg-canvas border border-line rounded-[4px] focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/15 min-h-[44px]"
               />
             </div>
 
@@ -101,7 +101,7 @@ export default function FloorPlanUploadModal({
                 value={level}
                 onChange={(e) => setLevel(e.target.value)}
                 placeholder="Ex. RDC, Niveau 2, Sous-sol"
-                className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 min-h-[44px]"
+                className="w-full px-4 py-3 bg-canvas border border-line rounded-[4px] focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/15 min-h-[44px]"
               />
             </div>
 
@@ -112,15 +112,15 @@ export default function FloorPlanUploadModal({
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
                 placeholder="Ex. Plan tel que construit, révision 3"
-                className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 resize-none"
+                className="w-full px-4 py-3 bg-canvas border border-line rounded-[4px] focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/15 resize-none"
               />
             </div>
           </div>
 
-          <div className="px-6 py-4 border-t border-line flex gap-3 bg-white rounded-b-xl">
+          <div className="px-6 py-4 border-t border-line flex gap-3 bg-surface rounded-b-xl">
             <button
               onClick={onCancel}
-              className="flex-1 py-3 bg-subtle text-ink rounded-lg hover:bg-line transition-colors font-medium min-h-[48px]"
+              className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors font-medium min-h-[48px]"
             >
               Annuler
             </button>
@@ -134,7 +134,7 @@ export default function FloorPlanUploadModal({
                 })
               }
               disabled={!valid || saving}
-              className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium min-h-[48px] disabled:opacity-50 inline-flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium min-h-[48px] disabled:opacity-50 inline-flex items-center justify-center gap-2"
             >
               <Upload size={16} />
               {saving ? "Téléversement…" : "Téléverser"}

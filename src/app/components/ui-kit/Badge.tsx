@@ -2,7 +2,7 @@
 //
 // Replaces nine hand-rolled implementations that had drifted apart in both
 // colour and wording ("Moyen" vs "Moyenne", "Élevé" vs "Élevée", solid
-// bg-red-600 pills in one screen vs bordered bg-red-100 in another).
+// bg-brand-600 pills in one screen vs bordered bg-subtle in another).
 //
 // Follows the design system's four-tier treatment: a tinted background, a
 // matching 1px border, and text dark enough to read on it. Amber is the
@@ -32,7 +32,7 @@ const BASE =
 // three reds in a row is exactly the dilution the system forbids.
 const PRIORITY_STYLE: Record<Priority, string> = {
   critical: "bg-brand-50 border-brand-100 text-brand-strong",
-  high: "bg-amber-50 border-amber-200 text-warn",
+  high: "bg-subtle border-line-strong text-warn",
   medium: "bg-surface border-line-strong text-body",
   low: "bg-surface border-line text-muted",
 };

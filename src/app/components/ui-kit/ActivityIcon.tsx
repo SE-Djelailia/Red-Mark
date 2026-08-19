@@ -1,7 +1,7 @@
 // Activity-feed icon, monochrome per the design system.
 //
 // The previous treatment gave each activity kind a coloured chip
-// (bg-red-100/bg-green-100/bg-blue-100 rounded squares). The design system
+// (bg-subtle/bg-subtle/bg-subtle rounded squares). The design system
 // reduces those to bare 16px icons in three semantic tints — the chips
 // were the loudest remaining pre-refresh element on the Dashboard, and
 // with four hues in play the colour carried no real meaning.

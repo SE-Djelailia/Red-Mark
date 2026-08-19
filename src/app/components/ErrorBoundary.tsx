@@ -87,7 +87,7 @@ export default class ErrorBoundary extends Component<Props, State> {
 
     if (this.props.variant === "section") {
       return (
-        <div className="bg-surface border border-line rounded-xl p-5 text-center">
+        <div className="bg-surface border border-line rounded-[4px] p-5 text-center">
           <AlertTriangle size={28} className="mx-auto text-warn mb-2.5" aria-hidden="true" />
           <p className="text-sm font-medium text-ink mb-1">
             Impossible d'afficher {this.props.label || "cette section"}
@@ -95,12 +95,12 @@ export default class ErrorBoundary extends Component<Props, State> {
           <p className="text-xs text-muted mb-4">
             Le reste de la page reste utilisable.
           </p>
-          <p className="text-xs text-muted font-mono bg-subtle border border-line rounded-lg px-3 py-2 mb-4 break-words text-left">
+          <p className="text-xs text-muted font-mono bg-subtle border border-line rounded-[4px] px-3 py-2 mb-4 break-words text-left">
             {message}
           </p>
           <button
             onClick={this.reset}
-            className="h-10 px-4 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors min-h-[44px]"
+            className="h-10 px-4 rounded-[4px] bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors min-h-[44px]"
           >
             Réessayer
           </button>
@@ -121,20 +121,20 @@ export default class ErrorBoundary extends Component<Props, State> {
           {/* The message is shown rather than hidden: this app is used on
               site, where being able to read what broke (and relay it) is
               worth more than a polished-but-opaque apology. */}
-          <p className="text-xs text-muted font-mono bg-subtle border border-line rounded-lg px-3 py-2.5 mb-6 break-words text-left">
+          <p className="text-xs text-muted font-mono bg-subtle border border-line rounded-[4px] px-3 py-2.5 mb-6 break-words text-left">
             {message}
           </p>
 
           <div className="flex gap-3 justify-center">
             <button
               onClick={this.reset}
-              className="h-11 px-4 rounded-lg border border-line bg-surface text-ink text-sm font-medium hover:bg-canvas transition-colors min-h-[44px]"
+              className="h-11 px-4 rounded-[4px] border border-line bg-surface text-ink text-sm font-medium hover:bg-canvas transition-colors min-h-[44px]"
             >
               Réessayer
             </button>
             <button
               onClick={this.handleReload}
-              className="h-11 px-4 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors min-h-[44px]"
+              className="h-11 px-4 rounded-[4px] bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors min-h-[44px]"
             >
               Recharger
             </button>

@@ -154,7 +154,7 @@ export default function DashboardVisitCalendar({ projectIds }: Props) {
                 <div key={group.date}>
                   <div
                     className={`px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.09em] ${
-                      isToday ? "bg-brand-50 text-brand-strong" : "bg-subtle text-muted"
+                      isToday ? "bg-subtle text-ink" : "bg-subtle text-muted"
                     }`}
                   >
                     {groupDate.toLocaleDateString("fr-CA", { weekday: "short", day: "numeric" })}

@@ -75,11 +75,11 @@ export default function PWAInstallPrompt() {
       {/* Install Prompt */}
       {showPrompt && deferredPrompt && (
         <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-50 animate-in slide-in-from-bottom-5">
-          <div className="bg-ink text-white rounded-2xl shadow-2xl border border-white/15 overflow-hidden">
+          <div className="bg-ink text-white rounded-[4px] shadow-2xl border border-white/15 overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-brand-600 to-brand-700 p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-surface rounded-[4px] flex items-center justify-center">
                   <Smartphone size={24} className="text-brand-600" />
                 </div>
                 <div>
@@ -89,7 +89,7 @@ export default function PWAInstallPrompt() {
               </div>
               <button
                 onClick={handleDismiss}
-                className="w-8 h-8 flex items-center justify-center hover:bg-white/20 rounded-lg transition-colors"
+                className="w-8 h-8 flex items-center justify-center hover:bg-white/20 rounded-[4px] transition-colors"
                 aria-label="Fermer"
               >
                 <X size={20} />
@@ -121,13 +121,13 @@ export default function PWAInstallPrompt() {
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={handleDismiss}
-                  className="flex-1 py-3 bg-white/15 text-white rounded-lg hover:bg-white/20 transition-colors font-medium min-h-[44px]"
+                  className="flex-1 py-3 bg-white/15 text-white rounded-[4px] hover:bg-white/20 transition-colors font-medium min-h-[44px]"
                 >
                   Plus tard
                 </button>
                 <button
                   onClick={handleInstall}
-                  className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium flex items-center justify-center gap-2 min-h-[44px]"
+                  className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium flex items-center justify-center gap-2 min-h-[44px]"
                 >
                   <Download size={18} />
                   <span>Installer</span>

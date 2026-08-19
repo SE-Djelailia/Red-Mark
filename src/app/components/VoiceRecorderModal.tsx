@@ -59,7 +59,7 @@ export default function VoiceRecorderModal({ open, visitId, onClose, onSaved }: 
       onClick={cancel}
     >
       <div
-        className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm shadow-xl"
+        className="bg-surface rounded-t-2xl sm:rounded-[4px] w-full sm:max-w-sm shadow-xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -73,7 +73,7 @@ export default function VoiceRecorderModal({ open, visitId, onClose, onSaved }: 
             onClick={cancel}
             disabled={recording || uploading}
             aria-label="Fermer"
-            className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink disabled:opacity-30 rounded-lg"
+            className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink disabled:opacity-30 rounded-[4px]"
           >
             <X size={20} />
           </button>

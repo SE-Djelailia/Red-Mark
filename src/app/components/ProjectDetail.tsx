@@ -696,13 +696,13 @@ export default function ProjectDetail() {
           <div className="flex gap-3 justify-center">
             <button
               onClick={goBack}
-              className="px-4 h-11 bg-subtle text-ink rounded-lg hover:bg-line text-sm font-medium min-h-[44px]"
+              className="px-4 h-11 bg-subtle text-ink rounded-[4px] hover:bg-line text-sm font-medium min-h-[44px]"
             >
               Retour
             </button>
             <button
               onClick={() => fetchData()}
-              className="px-4 h-11 bg-brand-600 text-white rounded-lg hover:bg-brand-700 text-sm font-medium min-h-[44px]"
+              className="px-4 h-11 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 text-sm font-medium min-h-[44px]"
             >
               Réessayer
             </button>
@@ -795,14 +795,14 @@ export default function ProjectDetail() {
                   setShowEditModal(true);
                 }
               }}
-              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-lg transition-colors"
+              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-[4px] transition-colors"
               title="Modifier le projet"
             >
               <Pencil size={20} />
             </button>
             <button
               onClick={() => setShowMembersModal(true)}
-              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-lg transition-colors"
+              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-[4px] transition-colors"
               title="Gérer les membres"
             >
               <Users size={20} />
@@ -810,7 +810,7 @@ export default function ProjectDetail() {
             {projectRole.canCreateIssues && (
               <button
                 onClick={() => setShowLocationsImportModal(true)}
-                className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-lg transition-colors"
+                className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-[4px] transition-colors"
                 title="Importer les emplacements"
               >
                 <Upload size={20} />
@@ -824,7 +824,7 @@ export default function ProjectDetail() {
               onClick={() => navigate(`/app/projects/${id}/report`)}
               title="Générer un rapport"
               aria-label="Générer un rapport"
-              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-lg transition-colors"
+              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-[4px] transition-colors"
             >
               <FileText size={20} />
             </button>
@@ -914,18 +914,18 @@ export default function ProjectDetail() {
           <button
             onClick={() => setActiveTab("visits")}
             className={`flex-1 lg:flex-none lg:px-6 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === "visits" ? "text-brand-600" : "text-body hover:text-ink"
+              activeTab === "visits" ? "text-ink" : "text-muted hover:text-ink"
             }`}
           >
             Visites ({totalVisitsCount})
             {activeTab === "visits" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-600" />
+              <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand-600" />
             )}
           </button>
           <button
             onClick={() => setActiveTab("issues")}
             className={`flex-1 lg:flex-none lg:px-6 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === "issues" ? "text-brand-600" : "text-body hover:text-ink"
+              activeTab === "issues" ? "text-ink" : "text-muted hover:text-ink"
             }`}
           >
             {/* Four tabs at flex-1 leave ~94px each on a 375px phone, which
@@ -934,42 +934,42 @@ export default function ProjectDetail() {
             <span className="sm:hidden">Déf. ({issues.length})</span>
             <span className="hidden sm:inline">Déficiences ({issues.length})</span>
             {activeTab === "issues" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-600" />
+              <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand-600" />
             )}
           </button>
           <button
             onClick={() => setActiveTab("photos")}
             className={`flex-1 lg:flex-none lg:px-6 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === "photos" ? "text-brand-600" : "text-body hover:text-ink"
+              activeTab === "photos" ? "text-ink" : "text-muted hover:text-ink"
             }`}
           >
             Photos ({totalPhotosCount})
             {activeTab === "photos" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-600" />
+              <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand-600" />
             )}
           </button>
           {PLANS_ENABLED && (
             <button
               onClick={() => setActiveTab("plans")}
               className={`flex-1 lg:flex-none lg:px-6 py-3 text-sm font-medium transition-colors relative ${
-                activeTab === "plans" ? "text-brand-600" : "text-body hover:text-ink"
+                activeTab === "plans" ? "text-ink" : "text-muted hover:text-ink"
               }`}
             >
               Plans
               {activeTab === "plans" && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-600" />
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand-600" />
               )}
             </button>
           )}
           <button
             onClick={() => setActiveTab("locations")}
             className={`flex-1 lg:flex-none lg:px-6 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === "locations" ? "text-brand-600" : "text-body hover:text-ink"
+              activeTab === "locations" ? "text-ink" : "text-muted hover:text-ink"
             }`}
           >
             Locaux
             {activeTab === "locations" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-600" />
+              <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand-600" />
             )}
           </button>
         </div>
@@ -981,12 +981,12 @@ export default function ProjectDetail() {
         {activeTab === "visits" && (
           <div className="space-y-3">
             {/* List/Calendar toggle */}
-            <div className="inline-flex rounded-lg border border-line-strong overflow-hidden">
+            <div className="inline-flex rounded-[4px] border border-line-strong overflow-hidden">
               <button
                 onClick={() => setVisitsView("list")}
                 className={`px-4 py-2 text-sm font-medium min-h-[44px] transition-colors ${
                   visitsView === "list"
-                    ? "bg-brand-600 text-white"
+                    ? "bg-ink text-white"
                     : "bg-surface text-body hover:bg-subtle"
                 }`}
               >
@@ -996,7 +996,7 @@ export default function ProjectDetail() {
                 onClick={() => setVisitsView("calendar")}
                 className={`px-4 py-2 text-sm font-medium min-h-[44px] transition-colors ${
                   visitsView === "calendar"
-                    ? "bg-brand-600 text-white"
+                    ? "bg-ink text-white"
                     : "bg-surface text-body hover:bg-subtle"
                 }`}
               >
@@ -1019,7 +1019,7 @@ export default function ProjectDetail() {
                   <select
                     value={visitPhaseFilter}
                     onChange={(e) => setVisitPhaseFilter(e.target.value)}
-                    className="px-3 py-2 bg-surface border border-line-strong rounded-lg text-sm min-h-[44px]"
+                    className="px-3 py-2 bg-surface border border-line-strong rounded-[4px] text-sm min-h-[44px]"
                   >
                     <option value="">Toutes les phases</option>
                     {visitPhasesInUse.map((phase) => (
@@ -1033,20 +1033,20 @@ export default function ProjectDetail() {
                     value={visitDateFrom}
                     onChange={(e) => setVisitDateFrom(e.target.value)}
                     aria-label="Du"
-                    className="px-3 py-2 bg-surface border border-line-strong rounded-lg text-sm min-h-[44px]"
+                    className="px-3 py-2 bg-surface border border-line-strong rounded-[4px] text-sm min-h-[44px]"
                   />
                   <input
                     type="date"
                     value={visitDateTo}
                     onChange={(e) => setVisitDateTo(e.target.value)}
                     aria-label="Au"
-                    className="px-3 py-2 bg-surface border border-line-strong rounded-lg text-sm min-h-[44px]"
+                    className="px-3 py-2 bg-surface border border-line-strong rounded-[4px] text-sm min-h-[44px]"
                   />
                   <button
                     onClick={toggleVisitOpenIssuesOnly}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium min-h-[44px] transition-colors ${
+                    className={`px-3 py-2 rounded-[4px] text-sm font-medium min-h-[44px] transition-colors ${
                       visitOpenIssuesOnly
-                        ? "bg-brand-600 text-white"
+                        ? "bg-ink text-white"
                         : "bg-surface border border-line-strong text-body hover:border-brand-600"
                     }`}
                   >
@@ -1060,7 +1060,7 @@ export default function ProjectDetail() {
                         setVisitDateTo("");
                         setVisitOpenIssuesOnly(false);
                       }}
-                      className="px-3 py-2 text-sm text-body hover:text-brand-600"
+                      className="px-3 py-2 text-sm text-body hover:text-ink"
                     >
                       Effacer
                     </button>
@@ -1076,7 +1076,7 @@ export default function ProjectDetail() {
                   </div>
                 ) : (
                   <>
-                    <div className="bg-surface rounded-xl border border-line overflow-hidden">
+                    <div className="bg-surface rounded-[4px] border border-line overflow-hidden">
                       {siteVisits.map((visit) => (
                         <VisitCard
                           key={visit.id}
@@ -1089,7 +1089,7 @@ export default function ProjectDetail() {
                       <button
                         onClick={() => loadVisits(false)}
                         disabled={loadingMoreVisits}
-                        className="w-full py-3 bg-surface border border-line rounded-xl text-sm font-medium text-ink hover:border-brand-600 hover:text-brand-600 disabled:opacity-50 transition-colors min-h-[48px]"
+                        className="w-full py-3 bg-surface border border-line rounded-[4px] text-sm font-medium text-ink hover:border-ink hover:text-ink disabled:opacity-50 transition-colors min-h-[48px]"
                       >
                         {loadingMoreVisits ? "Chargement…" : "Charger plus de visites"}
                       </button>
@@ -1132,7 +1132,7 @@ export default function ProjectDetail() {
                       value={photoSearchQuery}
                       onChange={(e) => setPhotoSearchQuery(e.target.value)}
                       placeholder="Rechercher par emplacement, phase, catégorie..."
-                      className="w-full pl-10 pr-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent min-h-[48px]"
+                      className="w-full pl-10 pr-4 py-3 border border-line-strong rounded-[4px] focus:outline-none focus:ring-2 focus:ring-ink focus:border-transparent min-h-[48px]"
                     />
                   </div>
 
@@ -1149,9 +1149,9 @@ export default function ProjectDetail() {
                             onClick={() =>
                               setSelectedPhotoPhase(selectedPhotoPhase === phase ? "" : phase)
                             }
-                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors min-h-[36px] whitespace-nowrap flex-shrink-0 ${
+                            className={`px-3 py-1.5 rounded-[4px] text-sm font-medium transition-colors min-h-[36px] whitespace-nowrap flex-shrink-0 ${
                               selectedPhotoPhase === phase
-                                ? "bg-brand-600 text-white"
+                                ? "bg-ink text-white"
                                 : "bg-subtle text-ink hover:bg-line"
                             }`}
                           >
@@ -1175,9 +1175,9 @@ export default function ProjectDetail() {
                             <button
                               key={tag}
                               onClick={() => togglePhotoTag(tag)}
-                              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors min-h-[36px] whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 ${
+                              className={`px-3 py-1.5 rounded-[4px] text-sm font-medium transition-colors min-h-[36px] whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 ${
                                 selectedPhotoTags.includes(tag)
-                                  ? "bg-brand-600 text-white"
+                                  ? "bg-ink text-white"
                                   : "bg-subtle text-ink hover:bg-line"
                               }`}
                             >
@@ -1198,7 +1198,7 @@ export default function ProjectDetail() {
                     {(photoSearchQuery || selectedPhotoTags.length > 0 || selectedPhotoPhase) && (
                       <button
                         onClick={clearPhotoFilters}
-                        className="px-4 py-2 text-sm text-body hover:text-brand-600 transition-colors flex items-center gap-2"
+                        className="px-4 py-2 text-sm text-body hover:text-ink transition-colors flex items-center gap-2"
                       >
                         <X size={16} />
                         <span>Effacer les filtres</span>
@@ -1234,7 +1234,7 @@ export default function ProjectDetail() {
                       <div
                         key={photo.id}
                         onClick={() => setSelectedPhoto(photo)}
-                        className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-subtle"
+                        className="relative aspect-square rounded-[4px] overflow-hidden cursor-pointer group bg-subtle"
                       >
                         <img
                           src={photo.url}
@@ -1247,7 +1247,7 @@ export default function ProjectDetail() {
                               {parseLocalDate(photo.date).toLocaleDateString("fr-CA")}
                             </div>
                             <div className="flex items-center gap-1 flex-wrap">
-                              <div className="text-xs px-2 py-0.5 bg-brand-600 rounded inline-block">
+                              <div className="text-xs px-2 py-0.5 bg-white/25 rounded-[2px] inline-block">
                                 {photo.phase}
                               </div>
                               {photo.tags && photo.tags.length > 0 && (
@@ -1352,7 +1352,7 @@ export default function ProjectDetail() {
         >
           <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
             <div
-              className="bg-surface rounded-xl w-full max-w-md"
+              className="bg-surface rounded-[4px] w-full max-w-md"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -1378,7 +1378,7 @@ export default function ProjectDetail() {
                   onChange={(e) => setCommentText(e.target.value)}
                   placeholder="Ajouter une observation, question ou feedback..."
                   rows={4}
-                  className="w-full px-4 py-3 bg-canvas border border-line rounded-lg mb-4 resize-none focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
+                  className="w-full px-4 py-3 bg-canvas border border-line rounded-[4px] mb-4 resize-none focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/15"
                 />
                 <div className="flex gap-3">
                   <button
@@ -1386,7 +1386,7 @@ export default function ProjectDetail() {
                       setShowCommentModal(false);
                       setCommentText("");
                     }}
-                    className="flex-1 py-3 bg-subtle text-ink rounded-lg hover:bg-line-strong font-medium min-h-[48px]"
+                    className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line-strong font-medium min-h-[48px]"
                   >
                     Annuler
                   </button>
@@ -1396,7 +1396,7 @@ export default function ProjectDetail() {
                       setCommentText("");
                       alert("Commentaire ajouté!");
                     }}
-                    className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium min-h-[48px]"
+                    className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 font-medium min-h-[48px]"
                   >
                     Publier
                   </button>
@@ -1432,7 +1432,7 @@ export default function ProjectDetail() {
             <img
               src={selectedPhoto.url}
               alt="Photo"
-              className="max-w-full max-h-full object-contain rounded-lg"
+              className="max-w-full max-h-full object-contain rounded-[4px]"
             />
           </div>
 
@@ -1443,7 +1443,7 @@ export default function ProjectDetail() {
           >
             <button
               onClick={() => setShowAnnotator(true)}
-              className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-white/15 text-white rounded-[4px] hover:bg-white/25 transition-colors flex items-center justify-center gap-2"
             >
               <Pencil size={18} />
               <span>Annoter</span>
@@ -1451,7 +1451,7 @@ export default function ProjectDetail() {
             {canEditPhotoMetadata(projectRole) && (
               <button
                 onClick={() => setEditingPhotos([selectedPhoto])}
-                className="flex-1 py-3 bg-surface/10 text-white rounded-lg hover:bg-surface/20 transition-colors flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-surface/10 text-white rounded-[4px] hover:bg-surface/20 transition-colors flex items-center justify-center gap-2"
               >
                 <MapPin size={18} />
                 <span>Modifier</span>
@@ -1477,12 +1477,12 @@ export default function ProjectDetail() {
                 <span className="text-sm text-faint">Phase et étiquettes</span>
               </div>
               <div className="flex flex-wrap gap-2 ml-6">
-                <span className="px-2 py-1 bg-brand-600 text-white rounded-md text-xs">
+                <span className="px-2 py-1 bg-white/15 text-white rounded-[4px] text-xs">
                   {selectedPhoto.phase}
                 </span>
                 {selectedPhoto.tags && selectedPhoto.tags.length > 0 ? (
                   selectedPhoto.tags.map((tag) => (
-                    <span key={tag} className="px-2 py-1 bg-white/15 text-white rounded-md text-xs">
+                    <span key={tag} className="px-2 py-1 bg-white/15 text-white rounded-[4px] text-xs">
                       {tag}
                     </span>
                   ))
@@ -1545,7 +1545,7 @@ export default function ProjectDetail() {
           onClick={() => setShowVisitModal(false)}
         >
           <div
-            className="bg-surface h-full flex flex-col md:m-auto md:h-[85vh] md:max-w-2xl md:w-full md:rounded-xl"
+            className="bg-surface h-full flex flex-col md:m-auto md:h-[85vh] md:max-w-2xl md:w-full md:rounded-[4px]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -1575,13 +1575,13 @@ export default function ProjectDetail() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-3 py-1.5 bg-brand-600/10 text-brand-600 rounded-lg text-sm font-medium">
+                  <span className="px-3 py-1.5 border border-line-strong text-body rounded-[4px] rm-label">
                     {selectedVisit.phase}
                   </span>
                   {selectedVisit.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="px-3 py-1.5 bg-subtle text-body rounded-lg text-sm flex items-center gap-1.5"
+                      className="px-3 py-1.5 bg-subtle text-body rounded-[4px] text-sm flex items-center gap-1.5"
                     >
                       <Tag size={14} />
                       {tag}
@@ -1616,7 +1616,7 @@ export default function ProjectDetail() {
                   <FileText size={18} className="text-muted" />
                   <span className="text-xs text-muted">Notes de visite</span>
                 </div>
-                <p className="text-sm text-body leading-relaxed bg-canvas rounded-lg p-4">
+                <p className="text-sm text-body leading-relaxed bg-canvas rounded-[4px] p-4">
                   {selectedVisit.notes}
                 </p>
               </div>
@@ -1636,7 +1636,7 @@ export default function ProjectDetail() {
                           setSelectedPhoto(photo);
                           setShowVisitModal(false);
                         }}
-                        className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-subtle"
+                        className="relative aspect-square rounded-[4px] overflow-hidden cursor-pointer group bg-subtle"
                       >
                         <img
                           src={photo.url}
@@ -1663,9 +1663,9 @@ export default function ProjectDetail() {
                     {comments
                       .filter((c) => c.visitId === selectedVisit.id)
                       .map((comment) => (
-                        <div key={comment.id} className="bg-canvas rounded-lg p-4">
+                        <div key={comment.id} className="bg-canvas rounded-[4px] p-4">
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-medium">
+                            <div className="w-6 h-6 rounded-[2px] bg-ink text-white flex items-center justify-center text-xs font-medium">
                               {comment.author
                                 .split(" ")
                                 .map((n) => n[0])
@@ -1690,7 +1690,7 @@ export default function ProjectDetail() {
             <div className="bg-surface border-t border-line px-6 py-4 flex gap-3 flex-shrink-0 safe-area-bottom md:rounded-b-xl">
               <button
                 onClick={() => setShowVisitModal(false)}
-                className="flex-1 py-3 bg-subtle text-ink rounded-lg hover:bg-line transition-colors font-medium"
+                className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors font-medium"
               >
                 Fermer
               </button>
@@ -1699,7 +1699,7 @@ export default function ProjectDetail() {
                   setShowVisitModal(false);
                   setShowCommentModal(true);
                 }}
-                className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 font-medium"
               >
                 <MessageSquare size={18} />
                 <span>Commenter</span>

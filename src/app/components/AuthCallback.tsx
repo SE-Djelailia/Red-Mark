@@ -107,7 +107,7 @@ export default function AuthCallback() {
         {phase === "waiting" ? (
           <>
             <div
-              className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-600 mx-auto"
+              className="animate-spin rounded-full h-10 w-10 border-b-2 border-ink mx-auto"
               role="status"
               aria-label="Connexion en cours"
             />
@@ -122,7 +122,7 @@ export default function AuthCallback() {
             {detail && <p className="text-xs text-faint mb-6 break-words">{detail}</p>}
             <button
               onClick={() => navigate("/", { replace: true })}
-              className="w-full py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors"
+              className="w-full py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors"
             >
               Retour à la connexion
             </button>

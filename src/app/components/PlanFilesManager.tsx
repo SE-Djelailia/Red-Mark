@@ -159,7 +159,7 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="inline-flex items-center gap-2 px-4 h-11 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 text-sm font-medium min-h-[44px]"
+            className="inline-flex items-center gap-2 px-4 h-11 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 disabled:opacity-50 text-sm font-medium min-h-[44px]"
           >
             <Upload size={16} />
             {uploading ? "Téléversement…" : "Ajouter un PDF"}
@@ -175,11 +175,11 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
       </div>
 
       {loading ? (
-        <div className="bg-white rounded-xl border border-line p-6 text-center text-muted text-sm">
+        <div className="bg-surface rounded-[4px] border border-line p-6 text-center text-muted text-sm">
           Chargement…
         </div>
       ) : planFiles.length === 0 ? (
-        <div className="bg-white rounded-xl border border-line p-8 text-center">
+        <div className="bg-surface rounded-[4px] border border-line p-8 text-center">
           <FileText size={36} className="mx-auto text-faint mb-2" />
           <div className="text-sm text-body mb-1">Aucun fichier de plans</div>
           <div className="text-xs text-faint">
@@ -191,7 +191,7 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
           {planFiles.map((planFile) => (
             <div
               key={planFile.id}
-              className="bg-white rounded-xl border border-line p-4 flex items-center gap-3 hover:border-brand-600 hover:shadow-md transition-all"
+              className="bg-surface rounded-[4px] border border-line p-4 flex items-center gap-3 hover:border-brand-600 hover:shadow-md transition-all"
             >
               <button
                 onClick={() =>
@@ -201,7 +201,7 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
                 }
                 className="flex-1 flex items-center gap-3 text-left min-w-0"
               >
-                <div className="w-12 h-12 rounded-lg bg-brand-600/10 text-brand-600 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-[4px] bg-subtle text-ink flex items-center justify-center flex-shrink-0">
                   <FileText size={22} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -218,7 +218,7 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
               {canManage && (
                 <button
                   onClick={() => setDeleteTarget(planFile)}
-                  className="w-11 h-11 flex items-center justify-center text-faint hover:text-brand-600 hover:bg-red-50 rounded-lg"
+                  className="w-11 h-11 flex items-center justify-center text-faint hover:text-brand-600 hover:bg-surface rounded-[4px]"
                   aria-label="Supprimer le plan"
                 >
                   <Trash2 size={18} />

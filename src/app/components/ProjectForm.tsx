@@ -111,7 +111,7 @@ export default function ProjectForm({ project, onCancel, onSaved }: Props) {
     <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={onCancel}>
       <div className="min-h-screen px-4 py-4 sm:py-8 pb-20 flex items-center justify-center safe-area-bottom">
         <div
-          className="bg-surface rounded-2xl max-w-md w-full p-5 sm:p-6 my-4"
+          className="bg-surface rounded-[4px] max-w-md w-full p-5 sm:p-6 my-4"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between mb-6">
@@ -273,14 +273,14 @@ export default function ProjectForm({ project, onCancel, onSaved }: Props) {
                 type="button"
                 onClick={onCancel}
                 disabled={isSaving}
-                className="flex-1 px-4 py-3 border border-line-strong text-body rounded-lg hover:bg-subtle active:bg-subtle transition-colors min-h-[48px] disabled:opacity-50"
+                className="flex-1 px-4 py-3 border border-line-strong text-body rounded-[4px] hover:bg-subtle active:bg-subtle transition-colors min-h-[48px] disabled:opacity-50"
               >
                 Annuler
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors flex items-center justify-center gap-2 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors flex items-center justify-center gap-2 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>

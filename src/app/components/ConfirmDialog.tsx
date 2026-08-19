@@ -32,7 +32,7 @@ export default function ConfirmDialog({
       onClick={onCancel}
     >
       <div
-        className="bg-surface rounded-xl max-w-sm w-full p-6 border border-line shadow-sm"
+        className="bg-surface rounded-[4px] max-w-sm w-full p-6 border border-line shadow-sm"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -55,13 +55,13 @@ export default function ConfirmDialog({
         <div className="flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 py-3 bg-surface border border-line text-ink rounded-lg hover:bg-subtle transition-colors font-medium min-h-[44px]"
+            className="flex-1 py-3 bg-surface border border-line text-ink rounded-[4px] hover:bg-subtle transition-colors font-medium min-h-[44px]"
           >
             {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
-            className={`flex-1 py-3 rounded-lg font-medium min-h-[44px] text-white transition-colors ${
+            className={`flex-1 py-3 rounded-[4px] font-medium min-h-[44px] text-white transition-colors ${
               destructive ? "bg-brand-600 hover:bg-brand-700" : "bg-ink hover:bg-body"
             }`}
           >

@@ -18,7 +18,7 @@ export function LoadingSpinner({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
 
 export function ProjectCardSkeleton() {
   return (
-    <div className="bg-white rounded-xl border border-line p-5 animate-pulse">
+    <div className="bg-surface rounded-[4px] border border-line p-5 animate-pulse">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
@@ -45,7 +45,7 @@ export function ProjectCardSkeleton() {
 
 export function VisitCardSkeleton() {
   return (
-    <div className="bg-white rounded-xl border border-line p-5 animate-pulse">
+    <div className="bg-surface rounded-[4px] border border-line p-5 animate-pulse">
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <div className="h-4 bg-subtle rounded w-32 mb-2" />
@@ -59,9 +59,9 @@ export function VisitCardSkeleton() {
       </div>
       <div className="h-12 bg-subtle rounded mb-3" />
       <div className="flex gap-2">
-        <div className="w-20 h-20 bg-subtle rounded-lg" />
-        <div className="w-20 h-20 bg-subtle rounded-lg" />
-        <div className="w-20 h-20 bg-subtle rounded-lg" />
+        <div className="w-20 h-20 bg-subtle rounded-[4px]" />
+        <div className="w-20 h-20 bg-subtle rounded-[4px]" />
+        <div className="w-20 h-20 bg-subtle rounded-[4px]" />
       </div>
     </div>
   );
@@ -71,7 +71,7 @@ export function PhotoGridSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="aspect-square bg-subtle rounded-lg animate-pulse" />
+        <div key={i} className="aspect-square bg-subtle rounded-[4px] animate-pulse" />
       ))}
     </div>
   );
@@ -79,7 +79,7 @@ export function PhotoGridSkeleton({ count = 6 }: { count?: number }) {
 
 export function CommentSkeleton() {
   return (
-    <div className="bg-white rounded-xl border border-line p-5 animate-pulse">
+    <div className="bg-surface rounded-[4px] border border-line p-5 animate-pulse">
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-subtle" />

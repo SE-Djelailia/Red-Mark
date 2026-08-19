@@ -190,7 +190,7 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
   const remaining = Math.max(0, MAX_RECORDING_SECONDS - elapsed);
 
   return (
-    <div className={bare ? "space-y-3" : "bg-surface rounded-xl border border-line p-4 space-y-3"}>
+    <div className={bare ? "space-y-3" : "bg-surface rounded-[4px] border border-line p-4 space-y-3"}>
       {/* One large target instead of a small header button. On site this is
           reached with gloves on, often without looking at the screen — so it
           spans the card and stays in the same place whether idle or live. */}
@@ -198,13 +198,13 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
         <button
           onClick={start}
           disabled={!!capabilityError || uploading}
-          className="w-full h-14 flex items-center justify-center gap-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 active:bg-brand-800 disabled:opacity-50 transition-colors font-medium"
+          className="w-full h-14 flex items-center justify-center gap-2.5 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 disabled:opacity-50 transition-colors font-medium"
         >
           <Mic size={20} />
           <span>{uploading ? "Téléversement…" : "Enregistrer une note"}</span>
         </button>
       ) : (
-        <div className="w-full h-14 flex items-center gap-3 pl-4 pr-2 bg-brand-50 border border-brand-100 rounded-xl">
+        <div className="w-full h-14 flex items-center gap-3 pl-4 pr-2 bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px]">
           <span
             className="w-2.5 h-2.5 rounded-full bg-open flex-shrink-0 animate-pulse"
             aria-hidden="true"
@@ -219,7 +219,7 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
           )}
           <button
             onClick={stop}
-            className="ml-auto h-11 px-5 flex items-center gap-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium"
+            className="ml-auto h-11 px-5 flex items-center gap-2 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 font-medium"
           >
             <Square size={14} fill="currentColor" />
             Arrêter
@@ -228,9 +228,9 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
       )}
 
       {capabilityError && (
-        <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+        <div className="flex items-start gap-2 bg-subtle border border-line-strong rounded-[4px] p-3">
           <AlertCircle size={16} className="text-warn flex-shrink-0 mt-0.5" />
-          <div className="text-xs text-amber-800">{capabilityError}</div>
+          <div className="text-xs text-ink">{capabilityError}</div>
         </div>
       )}
 
@@ -243,7 +243,7 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
               <ListRow key={note.id} className="flex items-center gap-3">
                 <button
                   onClick={() => togglePlay(note)}
-                  className="w-11 h-11 rounded-full bg-brand-600 text-white flex items-center justify-center flex-shrink-0 hover:bg-brand-700 transition-colors"
+                  className="w-11 h-11 rounded-[4px] bg-ink text-white flex items-center justify-center flex-shrink-0 hover:bg-ink/85 transition-colors"
                   aria-label={playingId === note.id ? "Pause" : "Lire"}
                 >
                   {playingId === note.id ? <Pause size={18} /> : <Play size={18} />}

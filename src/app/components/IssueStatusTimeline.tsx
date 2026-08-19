@@ -39,7 +39,7 @@ export default function IssueStatusTimeline({ issueId }: { issueId: string }) {
   const ordered = [...events].reverse();
 
   return (
-    <div className="bg-surface rounded-xl border border-line p-5">
+    <div className="bg-surface rounded-[4px] border border-line p-5">
       <h2 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
         <History size={18} className="text-muted" />
         Historique des états

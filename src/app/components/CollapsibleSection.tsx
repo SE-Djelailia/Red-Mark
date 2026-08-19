@@ -16,7 +16,7 @@ export default function CollapsibleSection({ title, icon, defaultOpen = false, c
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="bg-surface rounded-xl border border-line overflow-hidden">
+    <div className="bg-surface rounded-[4px] border border-line overflow-hidden">
       <button
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between px-4 py-3 min-h-[44px] text-left"

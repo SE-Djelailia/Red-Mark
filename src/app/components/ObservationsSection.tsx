@@ -158,7 +158,7 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
   };
 
   const form = (
-    <div className="border border-line rounded-lg p-3 space-y-3 bg-canvas">
+    <div className="border border-line rounded-[4px] p-3 space-y-3 bg-canvas">
       <div>
         <label className={labelClassName}>Observation *</label>
         <textarea
@@ -202,7 +202,7 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
           type="button"
           onClick={() => setEditing(null)}
           disabled={saving}
-          className="px-4 min-h-11 rounded-lg border border-line-strong text-body text-sm font-medium hover:bg-subtle transition-colors disabled:opacity-50"
+          className="px-4 min-h-11 rounded-[4px] border border-line-strong text-body text-sm font-medium hover:bg-subtle transition-colors disabled:opacity-50"
         >
           Annuler
         </button>
@@ -210,7 +210,7 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="px-4 min-h-11 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors disabled:opacity-50"
+          className="px-4 min-h-11 rounded-[4px] bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors disabled:opacity-50"
         >
           {saving ? "Enregistrement…" : "Enregistrer"}
         </button>
@@ -219,7 +219,7 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
   );
 
   return (
-    <div className="bg-surface rounded-xl border border-line p-4">
+    <div className="bg-surface rounded-[4px] border border-line p-4">
       <div className="flex items-center justify-between mb-3 gap-3">
         <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
           <ClipboardList size={18} className="text-muted" />
@@ -228,7 +228,7 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
         {canEdit && editing !== "new" && (
           <button
             onClick={openNew}
-            className="py-2.5 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px] flex-shrink-0"
+            className="py-2.5 px-4 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px] flex-shrink-0"
           >
             <Plus size={16} />
             <span>Ajouter</span>
@@ -260,7 +260,7 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
               ) : (
                 <div
                   key={o.id}
-                  className="flex items-start gap-2 py-2 px-2 rounded-lg hover:bg-subtle transition-colors"
+                  className="flex items-start gap-2 py-2 px-2 rounded-[4px] hover:bg-subtle transition-colors"
                 >
                   {/* Numbered to match the report: continuous 1.n across
                       the whole visit, regardless of location grouping. */}
@@ -291,7 +291,7 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
                         disabled={i === 0 || movingId !== null}
                         aria-label="Monter"
                         title="Monter"
-                        className="w-9 h-9 flex items-center justify-center rounded-lg text-muted hover:bg-line disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="w-9 h-9 flex items-center justify-center rounded-[4px] text-muted hover:bg-line disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronUp size={16} />
                       </button>
@@ -300,7 +300,7 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
                         disabled={i === observations.length - 1 || movingId !== null}
                         aria-label="Descendre"
                         title="Descendre"
-                        className="w-9 h-9 flex items-center justify-center rounded-lg text-muted hover:bg-line disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="w-9 h-9 flex items-center justify-center rounded-[4px] text-muted hover:bg-line disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronDown size={16} />
                       </button>
@@ -308,7 +308,7 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
                         onClick={() => openEdit(o)}
                         aria-label="Modifier"
                         title="Modifier"
-                        className="w-9 h-9 flex items-center justify-center rounded-lg text-muted hover:bg-line transition-colors"
+                        className="w-9 h-9 flex items-center justify-center rounded-[4px] text-muted hover:bg-line transition-colors"
                       >
                         <Pencil size={15} />
                       </button>
@@ -316,7 +316,7 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
                         onClick={() => setDeleteTarget(o)}
                         aria-label="Supprimer"
                         title="Supprimer"
-                        className="w-9 h-9 flex items-center justify-center rounded-lg text-muted hover:bg-brand-50 hover:text-brand-strong transition-colors"
+                        className="w-9 h-9 flex items-center justify-center rounded-[4px] text-muted hover:bg-subtle hover:text-ink transition-colors"
                       >
                         <Trash2 size={15} />
                       </button>

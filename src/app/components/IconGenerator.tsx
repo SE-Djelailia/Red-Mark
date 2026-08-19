@@ -66,7 +66,7 @@ export default function IconGenerator() {
   return (
     <div className="min-h-screen bg-canvas py-12 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="bg-surface rounded-[4px] shadow-lg p-8">
           <h1 className="text-3xl font-bold text-ink mb-2">Générateur d'Icônes RedMark</h1>
           <p className="text-body mb-8">
             Cliquez sur le bouton ci-dessous pour télécharger toutes les icônes nécessaires pour
@@ -89,20 +89,20 @@ export default function IconGenerator() {
           <button
             onClick={downloadAllIcons}
             disabled={generating}
-            className="w-full bg-brand-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-brand-700 transition-colors disabled:bg-line-strong disabled:cursor-not-allowed"
+            className="w-full bg-brand-600 text-white py-4 px-6 rounded-[4px] font-semibold text-lg hover:bg-brand-700 transition-colors disabled:bg-line-strong disabled:cursor-not-allowed"
           >
             {generating ? "⏳ Génération en cours..." : "📥 Télécharger Toutes les Icônes"}
           </button>
 
           {/* Instructions */}
-          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h2 className="font-semibold text-blue-900 mb-3">📋 Instructions:</h2>
-            <ol className="space-y-2 text-blue-800 text-sm">
+          <div className="mt-8 bg-subtle border border-line-strong rounded-[4px] p-6">
+            <h2 className="font-semibold text-ink mb-3">📋 Instructions:</h2>
+            <ol className="space-y-2 text-ink text-sm">
               <li>1. Cliquez sur "Télécharger Toutes les Icônes"</li>
               <li>2. 8 fichiers PNG seront téléchargés dans votre dossier Téléchargements</li>
               <li>
                 3. Déplacez ces 8 fichiers vers le dossier{" "}
-                <code className="bg-blue-100 px-2 py-1 rounded">/public/icons/</code> de votre
+                <code className="bg-subtle px-2 py-1 rounded">/public/icons/</code> de votre
                 projet
               </li>
               <li>4. Rafraîchissez l'application RedMark</li>

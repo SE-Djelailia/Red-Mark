@@ -593,13 +593,13 @@ export default function VisitDetail() {
           <div className="flex gap-3 justify-center">
             <button
               onClick={goBack}
-              className="px-4 h-11 bg-subtle text-ink rounded-lg hover:bg-line text-sm font-medium min-h-[44px]"
+              className="px-4 h-11 bg-subtle text-ink rounded-[4px] hover:bg-line text-sm font-medium min-h-[44px]"
             >
               Retour
             </button>
             <button
               onClick={() => fetchData()}
-              className="px-4 h-11 bg-brand-600 text-white rounded-lg hover:bg-brand-700 text-sm font-medium min-h-[44px]"
+              className="px-4 h-11 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 text-sm font-medium min-h-[44px]"
             >
               Réessayer
             </button>
@@ -629,7 +629,7 @@ export default function VisitDetail() {
                 share control here. */}
             <button
               onClick={() => navigate(`/app/projects/${projectId}/report?visit=${visitId}`)}
-              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-lg transition-colors"
+              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-[4px] transition-colors"
               title="Générer le rapport"
               aria-label="Générer le rapport"
             >
@@ -648,7 +648,7 @@ export default function VisitDetail() {
             phantom "Zone non spécifiée" field removed from the visits list
             — attendees was never a real column) and Photos dropped (the
             Photos section below already shows the count). */}
-        <div className="bg-surface rounded-xl border border-line px-4 py-3">
+        <div className="bg-surface rounded-[4px] border border-line px-4 py-3">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
             <div className="flex items-center gap-1.5">
               <Tag size={14} className="text-faint flex-shrink-0" />
@@ -718,7 +718,7 @@ export default function VisitDetail() {
                   onChange={(e) => setEditedNotes(e.target.value)}
                   placeholder="Ajouter des notes..."
                   rows={6}
-                  className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-line-strong rounded-[4px] focus:outline-none focus:ring-2 focus:ring-ink focus:border-transparent resize-none"
                   autoFocus
                 />
                 <div className="flex gap-3">
@@ -727,13 +727,13 @@ export default function VisitDetail() {
                       setIsEditingNotes(false);
                       setEditedNotes(visit?.notes || "");
                     }}
-                    className="flex-1 py-2.5 bg-subtle text-ink rounded-lg hover:bg-line-strong transition-colors font-medium min-h-[44px]"
+                    className="flex-1 py-2.5 bg-subtle text-ink rounded-[4px] hover:bg-line-strong transition-colors font-medium min-h-[44px]"
                   >
                     Annuler
                   </button>
                   <button
                     onClick={handleSaveNotes}
-                    className="flex-1 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                    className="flex-1 py-2.5 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                   >
                     Sauvegarder
                   </button>
@@ -755,7 +755,7 @@ export default function VisitDetail() {
                         setIsEditingNotes(true);
                         setEditedNotes(visit?.notes || "");
                       }}
-                      className="py-2.5 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
+                      className="py-2.5 px-4 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
                     >
                       <Edit size={16} />
                       <span>{visit?.notes?.trim() ? "Modifier les notes" : "Ajouter des notes"}</span>
@@ -802,7 +802,7 @@ export default function VisitDetail() {
           )}
 
           {/* Photos Grid — stays always visible, this is core content */}
-          <div className="bg-surface rounded-xl border border-line p-4">
+          <div className="bg-surface rounded-[4px] border border-line p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
                 <Camera size={18} className="text-muted" />
@@ -814,7 +814,7 @@ export default function VisitDetail() {
                     setIsSelectionMode(!isSelectionMode);
                     setSelectedPhotoIds([]);
                   }}
-                  className="py-2 px-3 bg-subtle text-ink rounded-lg hover:bg-line transition-colors text-sm font-medium min-h-[44px]"
+                  className="py-2 px-3 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors text-sm font-medium min-h-[44px]"
                 >
                   {isSelectionMode ? "Annuler" : "Sélectionner"}
                 </button>
@@ -850,9 +850,9 @@ export default function VisitDetail() {
                           <div className="flex gap-2 flex-wrap">
                             <button
                               onClick={() => setSelectedTagFilter(null)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              className={`px-3 py-1.5 rounded-[4px] text-xs font-medium transition-colors ${
                                 selectedTagFilter === null
-                                  ? "bg-brand-600 text-white"
+                                  ? "bg-ink text-white"
                                   : "bg-subtle text-body hover:bg-line"
                               }`}
                             >
@@ -864,9 +864,9 @@ export default function VisitDetail() {
                                 onClick={() =>
                                   setSelectedTagFilter(tag === selectedTagFilter ? null : tag)
                                 }
-                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                className={`px-3 py-1.5 rounded-[4px] text-xs font-medium transition-colors ${
                                   selectedTagFilter === tag
-                                    ? "bg-brand-600 text-white"
+                                    ? "bg-ink text-white"
                                     : "bg-subtle text-body hover:bg-line"
                                 }`}
                               >
@@ -887,10 +887,10 @@ export default function VisitDetail() {
                           <div className="flex gap-2 flex-wrap">
                             <button
                               onClick={() => setSelectedLocationFilter(null)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              className={`px-3 py-1.5 rounded-[4px] text-xs font-medium transition-colors ${
                                 selectedLocationFilter === null
-                                  ? "bg-blue-600 text-white"
-                                  : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                                  ? "bg-ink text-white"
+                                  : "bg-subtle text-body hover:bg-subtle"
                               }`}
                             >
                               Toutes
@@ -903,10 +903,10 @@ export default function VisitDetail() {
                                     location === selectedLocationFilter ? null : location,
                                   )
                                 }
-                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                className={`px-3 py-1.5 rounded-[4px] text-xs font-medium transition-colors ${
                                   selectedLocationFilter === location
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                                    ? "bg-ink text-white"
+                                    : "bg-subtle text-body hover:bg-subtle"
                                 }`}
                               >
                                 {location}
@@ -922,7 +922,7 @@ export default function VisitDetail() {
               })()}
 
             {isSelectionMode && selectedPhotoIds.length > 0 && (
-              <div className="mb-3 flex items-center justify-between bg-blue-50 border border-blue-200 p-3 rounded-lg">
+              <div className="mb-3 flex items-center justify-between bg-subtle border border-line-strong p-3 rounded-[4px]">
                 <span className="text-sm text-ink font-medium">
                   {selectedPhotoIds.length} photo{selectedPhotoIds.length !== 1 ? "s" : ""}{" "}
                   sélectionnée{selectedPhotoIds.length !== 1 ? "s" : ""}
@@ -944,7 +944,7 @@ export default function VisitDetail() {
                             })),
                         )
                       }
-                      className="py-2 px-3 bg-subtle hover:bg-line text-ink rounded-lg transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
+                      className="py-2 px-3 bg-subtle hover:bg-line text-ink rounded-[4px] transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
                     >
                       <MapPin size={16} />
                       Modifier le local
@@ -953,7 +953,7 @@ export default function VisitDetail() {
                   {projectRole.canCreateIssues && (
                     <button
                       onClick={handleCreateIssueFromPhotos}
-                      className="py-2 px-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
+                      className="py-2 px-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
                     >
                       <AlertCircle size={16} />
                       Créer déficience
@@ -961,7 +961,7 @@ export default function VisitDetail() {
                   )}
                   <button
                     onClick={() => setShowDeletePhotosConfirm(true)}
-                    className="py-2 px-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
+                    className="py-2 px-3 bg-surface border border-ink text-ink rounded-[4px] hover:bg-subtle transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
                   >
                     <Trash2 size={16} />
                     Supprimer
@@ -993,7 +993,7 @@ export default function VisitDetail() {
                   return (
                     <div
                       key={photo.id}
-                      className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-subtle ${isSelected ? "ring-2 ring-brand-600" : ""}`}
+                      className={`relative aspect-square rounded-[4px] overflow-hidden cursor-pointer group bg-subtle ${isSelected ? "ring-2 ring-ink" : ""}`}
                       onClick={(e) => handlePhotoClick(photo.id, e)}
                     >
                       <SecureImage
@@ -1010,7 +1010,7 @@ export default function VisitDetail() {
                       {/* Location badge - top priority */}
                       {resolvePhotoZone(photo, locationsById) && (
                         <div className="absolute top-2 left-2 max-w-[calc(100%-1rem)]">
-                          <div className="px-2 py-1 bg-blue-600 text-white rounded text-xs font-bold flex items-center gap-1 shadow-lg">
+                          <div className="px-2 py-1 bg-ink text-white rounded text-xs font-bold flex items-center gap-1 shadow-lg">
                             <MapPin size={12} className="flex-shrink-0" />
                             <span className="truncate">
                               {resolvePhotoZone(photo, locationsById)}
@@ -1041,7 +1041,7 @@ export default function VisitDetail() {
                       )}
                       {isSelectionMode && canManagePhoto(projectRole, photo.user_id) && (
                         <div
-                          className={`absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all ${isSelected ? "bg-brand-600 border-brand-600" : "bg-surface/90 border-line-strong"}`}
+                          className={`absolute top-2 left-2 w-7 h-7 rounded-[2px] flex items-center justify-center border-2 transition-all ${isSelected ? "bg-ink border-ink" : "bg-surface/90 border-line-strong"}`}
                         >
                           {isSelected && (
                             <svg
@@ -1081,7 +1081,7 @@ export default function VisitDetail() {
               fields as before (title, description, priority, status, linked
               photos, assignee), just condensed. */}
           {locationsInVisit.length > 0 && (
-            <div className="bg-surface rounded-xl border border-line p-4">
+            <div className="bg-surface rounded-[4px] border border-line p-4">
               <h2 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
                 <MapPin size={18} className="text-muted" />
                 Emplacements documentés
@@ -1114,7 +1114,7 @@ export default function VisitDetail() {
             </div>
           )}
 
-          <div className="bg-surface rounded-xl border border-line p-4">
+          <div className="bg-surface rounded-[4px] border border-line p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
                 <AlertCircle size={18} className="text-muted" />
@@ -1123,7 +1123,7 @@ export default function VisitDetail() {
               {projectRole.canCreateIssues && (
                 <button
                   onClick={handleCreateIssue}
-                  className="py-2.5 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
+                  className="py-2.5 px-4 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
                 >
                   <Edit size={16} />
                   <span>Ajouter une déficience</span>
@@ -1143,7 +1143,7 @@ export default function VisitDetail() {
                     onClick={() =>
                       navigate(`/app/projects/${projectId}/visits/${visitId}/issues/${issue.id}`)
                     }
-                    className="flex items-center gap-2 px-3 py-2 bg-canvas rounded-lg cursor-pointer hover:bg-subtle transition-colors min-h-[44px]"
+                    className="flex items-center gap-2 px-3 py-2 bg-canvas rounded-[4px] cursor-pointer hover:bg-subtle transition-colors min-h-[44px]"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -1220,12 +1220,12 @@ export default function VisitDetail() {
 
           <div className="space-y-3">
           {/* Quick Actions */}
-          <div className="bg-surface rounded-xl border border-line p-4">
+          <div className="bg-surface rounded-[4px] border border-line p-4">
             <h2 className="text-sm font-semibold text-ink mb-3">Actions rapides</h2>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => navigate(`/app/projects/${projectId}/report?visit=${visitId}`)}
-                className="py-3 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+                className="py-3 px-4 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 min-h-[48px]"
               >
                 <FileText size={18} />
                 <span className="text-sm font-medium">Générer rapport</span>
@@ -1233,7 +1233,7 @@ export default function VisitDetail() {
               {projectRole.canUploadPhotos && (
                 <button
                   onClick={() => navigate(`/app/projects/${projectId}/visits/${visitId}/add-photos`)}
-                  className="py-3 px-4 bg-subtle text-ink rounded-lg hover:bg-line transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+                  className="py-3 px-4 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors flex items-center justify-center gap-2 min-h-[48px]"
                 >
                   <Camera size={18} />
                   <span className="text-sm font-medium">Ajouter photos</span>
@@ -1278,7 +1278,7 @@ export default function VisitDetail() {
                     e.stopPropagation();
                     setEditingPhotos([selectedPhoto]);
                   }}
-                  className="px-4 py-2 bg-surface/10 hover:bg-surface/20 rounded-lg flex items-center gap-2 text-white transition-colors font-medium"
+                  className="px-4 py-2 bg-surface/10 hover:bg-surface/20 rounded-[4px] flex items-center gap-2 text-white transition-colors font-medium"
                   title="Modifier"
                 >
                   <MapPin size={18} />
@@ -1290,7 +1290,7 @@ export default function VisitDetail() {
                   e.stopPropagation();
                   handleOpenAnnotator(selectedPhoto);
                 }}
-                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 rounded-lg flex items-center gap-2 text-white transition-colors font-medium"
+                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 rounded-[4px] flex items-center gap-2 text-white transition-colors font-medium"
                 title="Annoter"
               >
                 <Pencil size={18} />
@@ -1306,14 +1306,14 @@ export default function VisitDetail() {
             <SecureImage
               storagePath={selectedPhoto.storage_path}
               alt="Full size"
-              className="w-full h-auto rounded-lg"
+              className="w-full h-auto rounded-[4px]"
               onClick={(e) => e.stopPropagation()}
             />
 
             {/* Location badge in fullscreen */}
             {resolvePhotoZone(selectedPhoto, locationsById) && (
               <div className="absolute top-4 left-4 max-w-[calc(100%-2rem)]">
-                <div className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 shadow-xl">
+                <div className="px-4 py-2 bg-ink text-white rounded-[4px] text-sm font-bold flex items-center gap-2 shadow-xl">
                   <MapPin size={18} className="flex-shrink-0" />
                   <span className="truncate">
                     {resolvePhotoZone(selectedPhoto, locationsById)}
@@ -1328,7 +1328,7 @@ export default function VisitDetail() {
                 {selectedPhoto.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="px-3 py-1.5 bg-surface/90 text-ink rounded-lg text-sm font-medium"
+                    className="px-3 py-1.5 bg-surface/90 text-ink rounded-[4px] text-sm font-medium"
                   >
                     {tag}
                   </span>
@@ -1349,7 +1349,7 @@ export default function VisitDetail() {
           onClick={() => setShowIssueModal(false)}
         >
           <div
-            className="relative max-w-2xl w-full bg-surface rounded-lg p-6 max-h-[90vh] overflow-y-auto"
+            className="relative max-w-2xl w-full bg-surface rounded-[4px] p-6 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button

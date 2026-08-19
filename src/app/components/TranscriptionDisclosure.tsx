@@ -50,7 +50,7 @@ export default function TranscriptionDisclosure({ open, onCancel, onConfirm }: P
       onClick={onCancel}
     >
       <div
-        className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl"
+        className="bg-surface rounded-t-2xl sm:rounded-[4px] w-full sm:max-w-md shadow-xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -58,7 +58,7 @@ export default function TranscriptionDisclosure({ open, onCancel, onConfirm }: P
       >
         <div className="p-5 space-y-4">
           <div className="flex items-start gap-3">
-            <span className="w-9 h-9 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center flex-shrink-0">
+            <span className="w-9 h-9 rounded-[4px] bg-subtle text-ink flex items-center justify-center flex-shrink-0">
               <Info size={18} />
             </span>
             <div className="min-w-0">
@@ -92,13 +92,13 @@ export default function TranscriptionDisclosure({ open, onCancel, onConfirm }: P
           <div className="flex gap-3">
             <button
               onClick={onCancel}
-              className="flex-1 py-3 bg-surface border border-line text-ink rounded-lg hover:bg-subtle font-medium min-h-[48px]"
+              className="flex-1 py-3 bg-surface border border-line text-ink rounded-[4px] hover:bg-subtle font-medium min-h-[48px]"
             >
               Annuler
             </button>
             <button
               onClick={confirm}
-              className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium min-h-[48px]"
+              className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 font-medium min-h-[48px]"
             >
               Continuer
             </button>

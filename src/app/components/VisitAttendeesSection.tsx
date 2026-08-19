@@ -162,7 +162,7 @@ export default function VisitAttendeesSection({ visitId, attendees, canEdit, onC
             setDraft(EMPTY);
           }}
           disabled={saving}
-          className="flex items-center gap-1 px-3 py-2 text-sm text-body hover:bg-subtle rounded-lg disabled:opacity-50 min-h-[44px]"
+          className="flex items-center gap-1 px-3 py-2 text-sm text-body hover:bg-subtle rounded-[4px] disabled:opacity-50 min-h-[44px]"
         >
           <X size={16} />
           Annuler
@@ -170,7 +170,7 @@ export default function VisitAttendeesSection({ visitId, attendees, canEdit, onC
         <button
           onClick={() => void submit()}
           disabled={saving || !draft.name.trim()}
-          className="flex items-center gap-1 px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 min-h-[44px]"
+          className="flex items-center gap-1 px-4 py-2 text-sm bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 disabled:opacity-50 min-h-[44px]"
         >
           <Check size={16} />
           {saving ? "Enregistrement…" : "Enregistrer"}
@@ -234,7 +234,7 @@ export default function VisitAttendeesSection({ visitId, attendees, canEdit, onC
       {canEdit && editing === null && (
         <button
           onClick={startAdd}
-          className="w-full py-3 min-h-11 flex items-center justify-center gap-2 bg-surface border border-line rounded-xl text-sm font-medium text-ink hover:border-brand-600 hover:text-brand-600 transition-colors"
+          className="w-full py-3 min-h-11 flex items-center justify-center gap-2 bg-surface border border-line rounded-[4px] text-sm font-medium text-ink hover:border-brand-600 hover:text-brand-600 transition-colors"
         >
           <Plus size={16} />
           Ajouter un participant

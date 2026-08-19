@@ -395,7 +395,7 @@ export default function PhotoUploadPage() {
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6 flex-1">
         {!projectRole.loading && !projectRole.canUploadPhotos ? (
-          <div className="bg-white rounded-xl p-8 border border-line text-center">
+          <div className="bg-surface rounded-[4px] p-8 border border-line text-center">
             <p className="text-base text-ink font-medium mb-2">
               Vous n'avez pas la permission d'ajouter des photos à ce projet.
             </p>
@@ -407,7 +407,7 @@ export default function PhotoUploadPage() {
         <>
         {/* Upload Area */}
         {photosToUpload.length === 0 ? (
-          <div className="bg-white rounded-xl p-8 border-2 border-dashed border-line-strong hover:border-brand-600 transition-colors">
+          <div className="bg-surface rounded-[4px] p-8 border-2 border-dashed border-line-strong hover:border-ink transition-colors">
             <div className="flex flex-col items-center justify-center gap-4">
               <div className="w-20 h-20 rounded-full bg-subtle flex items-center justify-center">
                 <Camera size={40} className="text-body" />
@@ -429,7 +429,7 @@ export default function PhotoUploadPage() {
                     input.onchange = (e: any) => handleFileSelect(e.target.files);
                     input.click();
                   }}
-                  className="w-full sm:w-auto px-6 py-3 bg-subtle text-ink rounded-lg hover:bg-line active:bg-line-strong transition-colors text-base font-medium flex items-center justify-center gap-2 min-h-[48px]"
+                  className="w-full sm:w-auto px-6 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line active:bg-line-strong transition-colors text-base font-medium flex items-center justify-center gap-2 min-h-[48px]"
                 >
                   <Camera size={20} />
                   <span>Galerie</span>
@@ -445,7 +445,7 @@ export default function PhotoUploadPage() {
                     input.onchange = (e: any) => handleFileSelect(e.target.files);
                     input.click();
                   }}
-                  className="w-full sm:w-auto px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors text-base font-medium flex items-center justify-center gap-2 min-h-[48px]"
+                  className="w-full sm:w-auto px-6 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors text-base font-medium flex items-center justify-center gap-2 min-h-[48px]"
                 >
                   <Camera size={20} />
                   <span>Caméra</span>
@@ -456,7 +456,7 @@ export default function PhotoUploadPage() {
         ) : (
           <>
             {/* Photo Count and Add More */}
-            <div className="bg-white rounded-xl p-4 flex items-center justify-between">
+            <div className="bg-surface rounded-[4px] p-4 flex items-center justify-between">
               <h3 className="text-base font-semibold text-ink">
                 {photosToUpload.length} photo{photosToUpload.length !== 1 ? "s" : ""} •{" "}
                 {selectedPhotoIndices.length} sélectionnée
@@ -472,7 +472,7 @@ export default function PhotoUploadPage() {
                   input.onchange = (e: any) => handleAddMorePhotos(e.target.files);
                   input.click();
                 }}
-                className="px-4 py-2 bg-subtle text-body rounded-lg hover:bg-line active:bg-line-strong transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
+                className="px-4 py-2 bg-subtle text-body rounded-[4px] hover:bg-line active:bg-line-strong transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
               >
                 <Plus size={18} />
                 <span className="hidden sm:inline">Ajouter photos</span>
@@ -481,7 +481,7 @@ export default function PhotoUploadPage() {
             </div>
 
             {/* Photo Grid */}
-            <div className="bg-white rounded-xl p-4">
+            <div className="bg-surface rounded-[4px] p-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {photosToUpload.map((file, index) => {
                   const isSelected = selectedPhotoIndices.includes(index);
@@ -496,9 +496,9 @@ export default function PhotoUploadPage() {
                           setSelectedPhotoIndices([...selectedPhotoIndices, index]);
                         }
                       }}
-                      className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all group ${
+                      className={`relative aspect-square rounded-[4px] overflow-hidden cursor-pointer border-2 transition-all group ${
                         isSelected
-                          ? "border-brand-600 ring-2 ring-brand-600/30"
+                          ? "border-ink ring-2 ring-ink/20"
                           : "border-line hover:border-line-strong active:border-line-strong"
                       }`}
                     >
@@ -512,7 +512,7 @@ export default function PhotoUploadPage() {
                       <div
                         className={`absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
                           isSelected
-                            ? "bg-brand-600 border-brand-600"
+                            ? "bg-ink border-ink"
                             : "bg-white/90 border-line-strong"
                         }`}
                       >
@@ -526,14 +526,14 @@ export default function PhotoUploadPage() {
                           e.stopPropagation();
                           handleRemovePhoto(index);
                         }}
-                        className="absolute top-2 right-2 w-11 h-11 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 active:bg-red-700 transition-colors"
+                        className="absolute top-2 right-2 w-11 h-11 bg-ink/80 text-white rounded-[4px] flex items-center justify-center hover:bg-ink transition-colors"
                         aria-label="Supprimer la photo"
                       >
                         <X size={16} />
                       </button>
 
                       {/* Photo number */}
-                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-md font-medium">
+                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-[4px] font-medium">
                         #{index + 1}
                       </div>
 
@@ -543,7 +543,7 @@ export default function PhotoUploadPage() {
                         if (!label) return null;
                         return (
                           <div className="absolute top-10 left-2 max-w-[calc(100%-1rem)]">
-                            <div className="px-2 py-1 bg-blue-600 text-white rounded text-xs font-bold flex items-center gap-1 shadow-lg">
+                            <div className="px-2 py-1 bg-ink text-white rounded text-xs font-bold flex items-center gap-1 shadow-lg">
                               <MapPin size={12} className="flex-shrink-0" />
                               <span className="truncate">{label}</span>
                             </div>
@@ -581,14 +581,14 @@ export default function PhotoUploadPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedPhotoIndices(photosToUpload.map((_, i) => i))}
-                  className="px-4 py-2 bg-subtle text-body rounded-lg hover:bg-line active:bg-line-strong transition-colors text-sm font-medium min-h-[44px]"
+                  className="px-4 py-2 bg-subtle text-body rounded-[4px] hover:bg-line active:bg-line-strong transition-colors text-sm font-medium min-h-[44px]"
                 >
                   Tout sélectionner
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedPhotoIndices([])}
-                  className="px-4 py-2 bg-subtle text-body rounded-lg hover:bg-line active:bg-line-strong transition-colors text-sm font-medium min-h-[44px]"
+                  className="px-4 py-2 bg-subtle text-body rounded-[4px] hover:bg-line active:bg-line-strong transition-colors text-sm font-medium min-h-[44px]"
                 >
                   Désélectionner
                 </button>
@@ -597,7 +597,7 @@ export default function PhotoUploadPage() {
 
             {/* Tag & Location Input Section */}
             {selectedPhotoIndices.length > 0 && (
-              <div className="bg-white rounded-xl p-4 sm:p-5">
+              <div className="bg-surface rounded-[4px] p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-4">
                   <label className="block text-base font-semibold text-ink">
                     {selectedPhotoIndices.length} photo
@@ -608,7 +608,7 @@ export default function PhotoUploadPage() {
                     <button
                       type="button"
                       onClick={() => setShowLocationModal(true)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
+                      className="px-4 py-2 bg-ink text-white rounded-[4px] hover:bg-ink transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
                     >
                       <MapPin size={18} />
                       <span className="hidden sm:inline">Assigner localisation</span>
@@ -631,13 +631,13 @@ export default function PhotoUploadPage() {
                       }
                     }}
                     placeholder="Taper un tag et appuyer sur Entrée..."
-                    className="flex-1 px-4 py-3 text-base border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent min-h-[48px]"
+                    className="flex-1 px-4 py-3 text-base border border-line-strong rounded-[4px] focus:outline-none focus:ring-2 focus:ring-ink focus:border-transparent min-h-[48px]"
                   />
                   <button
                     type="button"
                     onClick={() => handleAddTag(currentTag)}
                     disabled={!currentTag.trim()}
-                    className="px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium min-h-[48px]"
+                    className="px-6 py-3 bg-surface border border-ink text-ink rounded-[4px] hover:bg-subtle transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium min-h-[48px]"
                   >
                     <Plus size={20} />
                     <span>Ajouter</span>
@@ -654,7 +654,7 @@ export default function PhotoUploadPage() {
                           key={tag}
                           type="button"
                           onClick={() => handleAddTag(tag)}
-                          className="px-4 py-2 bg-white border border-line-strong text-body rounded-lg hover:bg-subtle hover:border-brand-600 active:bg-subtle transition-colors text-sm font-medium min-h-[44px]"
+                          className="px-4 py-2 bg-surface border border-line-strong text-body rounded-[4px] hover:bg-subtle hover:border-ink active:bg-subtle transition-colors text-sm font-medium min-h-[44px]"
                         >
                           + {tag}
                         </button>
@@ -671,7 +671,7 @@ export default function PhotoUploadPage() {
                       {getSelectedPhotosTags().map((tag, index) => (
                         <div
                           key={index}
-                          className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium min-h-[44px]"
+                          className="flex items-center gap-2 px-4 py-2 bg-ink text-white rounded-[4px] text-sm font-medium min-h-[44px]"
                         >
                           <span>{tag}</span>
                           <button
@@ -691,19 +691,19 @@ export default function PhotoUploadPage() {
             )}
 
             {/* Action Buttons */}
-            <div className="bg-white rounded-xl p-4 sm:p-5">
+            <div className="bg-surface rounded-[4px] p-4 sm:p-5">
               <div className="flex gap-3">
                 <button
                   onClick={goBack}
                   disabled={isUploading}
-                  className="flex-1 py-3 bg-subtle text-ink rounded-lg hover:bg-line-strong active:bg-line-strong transition-colors font-semibold text-base min-h-[48px] disabled:opacity-50"
+                  className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line-strong active:bg-line-strong transition-colors font-semibold text-base min-h-[48px] disabled:opacity-50"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={isUploading || photosToUpload.length === 0}
-                  className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors font-semibold text-base min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors font-semibold text-base min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isUploading ? (
                     <>
@@ -734,7 +734,7 @@ export default function PhotoUploadPage() {
           onClick={() => setShowLocationModal(false)}
         >
           <div
-            className="bg-white rounded-xl max-w-md w-full shadow-2xl"
+            className="bg-surface rounded-[4px] max-w-md w-full shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -745,7 +745,7 @@ export default function PhotoUploadPage() {
               </div>
               <button
                 onClick={() => setShowLocationModal(false)}
-                className="p-1.5 hover:bg-subtle rounded-lg transition-colors"
+                className="p-1.5 hover:bg-subtle rounded-[4px] transition-colors"
               >
                 <X size={20} className="text-body" />
               </button>
@@ -753,8 +753,8 @@ export default function PhotoUploadPage() {
 
             {/* Content */}
             <div className="p-5">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                <p className="text-sm text-blue-800">
+              <div className="bg-subtle border border-line-strong rounded-[4px] p-3 mb-4">
+                <p className="text-sm text-ink">
                   <strong>
                     {selectedPhotoIndices.length} photo{selectedPhotoIndices.length > 1 ? "s" : ""}{" "}
                     sélectionnée{selectedPhotoIndices.length > 1 ? "s" : ""}
@@ -782,10 +782,10 @@ export default function PhotoUploadPage() {
                       value={locationSearch}
                       onChange={(e) => setLocationSearch(e.target.value)}
                       placeholder="Rechercher un local…"
-                      className="w-full pl-10 pr-4 py-3 text-base border-2 border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"
+                      className="w-full pl-10 pr-4 py-3 text-base border-2 border-line-strong rounded-[4px] focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink"
                     />
                   </div>
-                  <div className="max-h-64 overflow-y-auto border border-line rounded-lg divide-y divide-line">
+                  <div className="max-h-64 overflow-y-auto border border-line rounded-[4px] divide-y divide-line">
                     {filteredLocations.length === 0 ? (
                       <p className="text-sm text-muted px-4 py-3">
                         Aucun local ne correspond à cette recherche.
@@ -798,7 +798,7 @@ export default function PhotoUploadPage() {
                           aria-pressed={tempLocationId === l.id}
                           className={`w-full text-left px-4 py-3 min-h-[44px] flex items-center justify-between gap-2 transition-colors ${
                             tempLocationId === l.id
-                              ? "bg-brand-50 text-brand-strong font-medium"
+                              ? "bg-subtle text-ink font-medium"
                               : "hover:bg-subtle text-ink"
                           }`}
                         >
@@ -821,7 +821,7 @@ export default function PhotoUploadPage() {
                   use.
                 */
                 <div className="space-y-3">
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <div className="bg-subtle border border-line-strong rounded-[4px] p-3">
                     <p className="text-sm text-warn">
                       Aucun local n'a été importé pour ce projet. Vous pouvez saisir un
                       emplacement manuellement — ou importer la liste des locaux depuis
@@ -838,7 +838,7 @@ export default function PhotoUploadPage() {
                       value={tempFreeText}
                       onChange={(e) => setTempFreeText(e.target.value)}
                       placeholder="Ex : Niveau 2 — corridor est"
-                      className="w-full px-4 py-3 text-base border-2 border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"
+                      className="w-full px-4 py-3 text-base border-2 border-line-strong rounded-[4px] focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink"
                     />
                   </div>
                 </div>
@@ -848,13 +848,13 @@ export default function PhotoUploadPage() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setShowLocationModal(false)}
-                  className="flex-1 px-4 py-3 border border-line-strong rounded-lg text-body font-medium hover:bg-subtle transition-colors"
+                  className="flex-1 px-4 py-3 border border-line-strong rounded-[4px] text-body font-medium hover:bg-subtle transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleAssignLocation}
-                  className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-[4px] font-medium hover:bg-brand-700 transition-colors flex items-center justify-center gap-2"
                 >
                   <Check size={18} />
                   Assigner

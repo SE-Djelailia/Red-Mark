@@ -232,7 +232,7 @@ export default function SetPassword() {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mx-auto" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ink mx-auto" />
           <p className="mt-4 text-muted">Vérification du lien…</p>
         </div>
       </div>
@@ -242,7 +242,7 @@ export default function SetPassword() {
   if (phase === "invalid") {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
-        <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-6 text-center">
+        <div className="w-full max-w-md rounded-[4px] border border-line bg-surface p-6 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-open/10">
             <AlertTriangle className="h-6 w-6 text-open" aria-hidden="true" />
           </div>
@@ -263,10 +263,10 @@ export default function SetPassword() {
     const roleOk = normalizeRole(profileRole).length > 0;
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
-        <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-6">
+        <div className="w-full max-w-md rounded-[4px] border border-line bg-surface p-6">
           <div className="text-center mb-6">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50">
-              <UserRound className="h-6 w-6 text-brand-600" aria-hidden="true" />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[4px] bg-subtle">
+              <UserRound className="h-6 w-6 text-ink" aria-hidden="true" />
             </div>
             <h1 className="text-lg font-semibold text-ink">Confirmez votre identité</h1>
             <p className="mt-2 text-sm text-muted">
@@ -316,9 +316,9 @@ export default function SetPassword() {
   if (phase === "done") {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
-        <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-6 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50">
-            <Check className="h-6 w-6 text-brand-600" aria-hidden="true" />
+        <div className="w-full max-w-md rounded-[4px] border border-line bg-surface p-6 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[4px] bg-subtle">
+            <Check className="h-6 w-6 text-ink" aria-hidden="true" />
           </div>
           <h1 className="text-lg font-semibold text-ink">Mot de passe défini</h1>
           <p className="mt-2 text-sm text-muted">Ouverture de RedMark…</p>
@@ -329,10 +329,10 @@ export default function SetPassword() {
 
   return (
     <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-6">
+      <div className="w-full max-w-md rounded-[4px] border border-line bg-surface p-6">
         <div className="text-center mb-6">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50">
-            <KeyRound className="h-6 w-6 text-brand-600" aria-hidden="true" />
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[4px] bg-subtle">
+            <KeyRound className="h-6 w-6 text-ink" aria-hidden="true" />
           </div>
           <h1 className="text-lg font-semibold text-ink">Choisissez votre mot de passe</h1>
           <p className="mt-2 text-sm text-muted">

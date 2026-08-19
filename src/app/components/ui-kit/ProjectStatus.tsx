@@ -19,8 +19,8 @@ type Status = ProjectStatus;
 // meaning "currently relevant" get a subtle brand tint; the rest stay grey.
 const STATUS_STYLE: Record<Status, string> = {
   planning: "bg-subtle text-body",
-  "in-progress": "bg-brand-50 text-brand-strong",
-  active: "bg-brand-50 text-brand-strong",
+  "in-progress": "bg-subtle text-ink",
+  active: "bg-subtle text-ink",
   "on-hold": "bg-subtle text-muted",
   completed: "bg-subtle text-muted",
   archived: "bg-subtle text-muted",

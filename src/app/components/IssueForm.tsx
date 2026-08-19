@@ -316,9 +316,9 @@ export default function IssueForm({
               key={p.value}
               type="button"
               onClick={() => setPriority(p.value)}
-              className={`py-2.5 px-3 rounded-lg border-2 transition-all flex items-center gap-2 justify-center min-h-[44px] ${
+              className={`py-2.5 px-3 rounded-[4px] border-2 transition-all flex items-center gap-2 justify-center min-h-[44px] ${
                 priority === p.value
-                  ? "border-brand-600 bg-brand-600/10"
+                  ? "border-line-strong border-l-2 border-l-brand-600 bg-surface"
                   : "border-line hover:border-line-strong"
               }`}
             >
@@ -343,11 +343,11 @@ export default function IssueForm({
                 type="button"
                 onClick={() => setStatus(opt.value)}
                 aria-pressed={status === opt.value}
-                className={`py-2.5 px-3 rounded-lg border-2 transition-all text-sm min-h-[44px] ${
+                className={`py-2.5 px-3 rounded-[4px] border-2 transition-all text-sm min-h-[44px] ${
                   status === opt.value
                     ? opt.value === TERMINAL_ISSUE_STATUS
                       ? "border-resolved bg-resolved/10 text-resolved"
-                      : "border-brand-600 bg-brand-50 text-brand-strong"
+                      : "border-line-strong border-l-2 border-l-brand-600 bg-surface text-ink"
                     : "border-line hover:border-line-strong"
                 }`}
               >
@@ -405,9 +405,9 @@ export default function IssueForm({
           <button
             type="button"
             onClick={selectMemberMode}
-            className={`flex-1 py-2 px-3 rounded-lg border-2 transition-all flex items-center justify-center gap-2 text-sm min-h-[40px] ${
+            className={`flex-1 py-2 px-3 rounded-[4px] border-2 transition-all flex items-center justify-center gap-2 text-sm min-h-[40px] ${
               assigneeMode === "member"
-                ? "border-brand-600 bg-brand-600/10"
+                ? "border-line-strong border-l-2 border-l-brand-600 bg-surface"
                 : "border-line hover:border-line-strong"
             }`}
           >
@@ -417,9 +417,9 @@ export default function IssueForm({
           <button
             type="button"
             onClick={selectExternalMode}
-            className={`flex-1 py-2 px-3 rounded-lg border-2 transition-all flex items-center justify-center gap-2 text-sm min-h-[40px] ${
+            className={`flex-1 py-2 px-3 rounded-[4px] border-2 transition-all flex items-center justify-center gap-2 text-sm min-h-[40px] ${
               assigneeMode === "external"
-                ? "border-brand-600 bg-brand-600/10"
+                ? "border-line-strong border-l-2 border-l-brand-600 bg-surface"
                 : "border-line hover:border-line-strong"
             }`}
           >
@@ -464,7 +464,7 @@ export default function IssueForm({
       {/* Location — read-only */}
       <div>
         <label className={labelClassName}>Emplacement</label>
-        <div className="w-full px-4 py-3 bg-canvas border border-line rounded-lg text-sm text-body">
+        <div className="w-full px-4 py-3 bg-canvas border border-line rounded-[4px] text-sm text-body">
           {loadingLocation
             ? "Chargement…"
             : location
@@ -488,12 +488,12 @@ export default function IssueForm({
               }
             }}
             placeholder="Ajouter une étiquette"
-            className="flex-1 px-4 py-2.5 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent text-sm"
+            className="flex-1 px-4 py-2.5 border border-line-strong rounded-[4px] focus:outline-none focus:ring-2 focus:ring-ink focus:border-transparent text-sm"
           />
           <button
             type="button"
             onClick={addTag}
-            className="px-4 py-2.5 bg-subtle hover:bg-line rounded-lg text-sm font-medium min-h-[44px]"
+            className="px-4 py-2.5 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium min-h-[44px]"
           >
             Ajouter
           </button>
@@ -524,7 +524,7 @@ export default function IssueForm({
             {visiblePhotos.map((photo) => (
               <div
                 key={photo.id}
-                className="relative aspect-square rounded-lg overflow-hidden border border-line"
+                className="relative aspect-square rounded-[4px] overflow-hidden border border-line"
               >
                 <SecureImage
                   storagePath={photo.storagePath}
@@ -545,7 +545,7 @@ export default function IssueForm({
             {newPhotoFiles.map((file, index) => (
               <div
                 key={index}
-                className="relative aspect-square rounded-lg overflow-hidden border border-line"
+                className="relative aspect-square rounded-[4px] overflow-hidden border border-line"
               >
                 <img
                   src={URL.createObjectURL(file)}
@@ -573,7 +573,7 @@ export default function IssueForm({
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="flex-1 py-3 bg-subtle text-ink rounded-lg hover:bg-line disabled:opacity-50 font-medium min-h-[44px]"
+          className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line disabled:opacity-50 font-medium min-h-[44px]"
         >
           Annuler
         </button>
@@ -581,7 +581,7 @@ export default function IssueForm({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 font-medium min-h-[44px]"
+          className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 disabled:opacity-50 font-medium min-h-[44px]"
         >
           {saving ? (isEdit ? "Enregistrement…" : "Création…") : isEdit ? "Enregistrer" : "Créer"}
         </button>

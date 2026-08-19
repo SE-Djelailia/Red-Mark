@@ -90,7 +90,7 @@ export default function IssueDetail() {
           {canEditIssue(projectRole, issue?.createdBy) && (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="w-10 h-10 flex items-center justify-center text-muted hover:text-brand-600 hover:bg-subtle rounded-lg transition-colors"
+              className="w-10 h-10 flex items-center justify-center text-muted hover:text-brand-600 hover:bg-subtle rounded-[4px] transition-colors"
               title="Supprimer"
             >
               <Trash2 size={18} />
@@ -102,19 +102,19 @@ export default function IssueDetail() {
       {/* Content */}
       <div className="px-4 sm:px-6 py-5 max-w-2xl mx-auto space-y-6">
         {isLoadingIssue && (
-          <div className="bg-surface rounded-xl border border-line p-4 text-sm text-muted text-center">
+          <div className="bg-surface rounded-[4px] border border-line p-4 text-sm text-muted text-center">
             Chargement de la déficience...
           </div>
         )}
 
         {loadError && (
-          <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 text-sm text-brand-strong">
+          <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] p-4 text-sm text-brand-strong">
             {loadError}
           </div>
         )}
 
         {saveError && (
-          <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 text-sm text-brand-strong flex items-center justify-between gap-3">
+          <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] p-4 text-sm text-brand-strong flex items-center justify-between gap-3">
             <span>{saveError}</span>
             <button
               onClick={() => setSaveError(null)}

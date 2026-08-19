@@ -120,7 +120,7 @@ export default function PlatformAdmin() {
   if (phase === "checking") {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-brand-600" aria-hidden="true" />
+        <Loader2 className="h-8 w-8 animate-spin text-ink" aria-hidden="true" />
       </div>
     );
   }
@@ -139,7 +139,7 @@ export default function PlatformAdmin() {
           </p>
           <Link
             to="/"
-            className="mt-6 inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
+            className="mt-6 inline-flex items-center justify-center rounded-[4px] bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
           >
             Se connecter
           </Link>
@@ -158,7 +158,7 @@ export default function PlatformAdmin() {
           <p className="mt-2 text-sm text-muted">Cette adresse ne correspond à aucune page.</p>
           <Link
             to="/app/dashboard"
-            className="mt-6 inline-flex items-center justify-center rounded-lg border border-line px-4 py-2.5 text-sm font-medium text-ink hover:bg-subtle"
+            className="mt-6 inline-flex items-center justify-center rounded-[4px] border border-line px-4 py-2.5 text-sm font-medium text-ink hover:bg-subtle"
           >
             Retour à l'application
           </Link>
@@ -171,8 +171,8 @@ export default function PlatformAdmin() {
     <div className="min-h-screen bg-canvas">
       <header className="border-b border-line bg-surface">
         <div className="mx-auto max-w-4xl px-4 py-4 flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50">
-            <ShieldCheck className="h-5 w-5 text-brand-600" aria-hidden="true" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-[4px] bg-subtle">
+            <ShieldCheck className="h-5 w-5 text-ink" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-base font-semibold text-ink">Administration de la plateforme</h1>
@@ -181,7 +181,7 @@ export default function PlatformAdmin() {
           <button
             type="button"
             onClick={() => void load()}
-            className="rounded-lg border border-line p-2 text-muted hover:bg-subtle"
+            className="rounded-[4px] border border-line p-2 text-muted hover:bg-subtle"
             aria-label="Rafraîchir"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
@@ -192,7 +192,7 @@ export default function PlatformAdmin() {
       <main className="mx-auto max-w-4xl px-4 py-6 space-y-6">
         {/* States the boundary on the screen itself, so nobody using it has to
             guess why there is no way in to a firm's work. */}
-        <div className="rounded-xl border border-line bg-surface p-4">
+        <div className="rounded-[4px] border border-line bg-surface p-4">
           <p className="text-sm text-body">
             Vous pouvez créer des firmes et désigner leur premier administrateur. Vous n'avez accès
             à <strong>aucune donnée</strong> des firmes — ni projets, ni visites, ni photos, ni
@@ -235,7 +235,7 @@ export default function PlatformAdmin() {
         )}
 
         {orgs.length === 0 ? (
-          <p className="rounded-xl border border-line bg-surface p-6 text-center text-sm text-muted">
+          <p className="rounded-[4px] border border-line bg-surface p-6 text-center text-sm text-muted">
             Aucune firme pour l'instant.
           </p>
         ) : (
@@ -339,7 +339,7 @@ function FirmRow({
   }
 
   return (
-    <li className="rounded-xl border border-line bg-surface p-4">
+    <li className="rounded-[4px] border border-line bg-surface p-4">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-subtle">
           <Building2 className="h-4 w-4 text-muted" aria-hidden="true" />
@@ -389,7 +389,7 @@ function FirmRow({
                   type="button"
                   onClick={cancelEdit}
                   disabled={saving}
-                  className="rounded-lg border border-line px-4 py-2.5 text-sm font-medium text-ink hover:bg-subtle disabled:opacity-50"
+                  className="rounded-[4px] border border-line px-4 py-2.5 text-sm font-medium text-ink hover:bg-subtle disabled:opacity-50"
                 >
                   Annuler
                 </button>
@@ -432,7 +432,7 @@ function FirmRow({
                             void reissue(admin.userId, admin.name || admin.email || "")
                           }
                           disabled={busyAdmin === admin.userId}
-                          className="text-xs font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
+                          className="text-xs font-medium text-body hover:text-ink disabled:opacity-50"
                         >
                           {busyAdmin === admin.userId ? "…" : "Renvoyer le lien"}
                         </button>
@@ -445,7 +445,7 @@ function FirmRow({
               <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="mt-3 text-xs font-medium text-brand-600 hover:text-brand-700"
+                className="mt-3 text-xs font-medium text-body hover:text-ink"
               >
                 Modifier
               </button>
@@ -501,7 +501,7 @@ function CreateFirmForm({
   }
 
   return (
-    <form onSubmit={submit} className="rounded-xl border border-line bg-surface p-4 space-y-4">
+    <form onSubmit={submit} className="rounded-[4px] border border-line bg-surface p-4 space-y-4">
       <div>
         <label className={labelClassName} htmlFor="firm-name">
           Nom de la firme

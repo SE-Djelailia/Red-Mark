@@ -46,14 +46,14 @@ export default function RemoveMemberDialog({
       onClick={busy ? undefined : onCancel}
     >
       <div
-        className="bg-surface rounded-xl max-w-md w-full p-6 border border-line shadow-sm max-h-[90vh] overflow-y-auto"
+        className="bg-surface rounded-[4px] max-w-md w-full p-6 border border-line shadow-sm max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="remove-member-title"
       >
         <div className="flex items-start gap-3 mb-4">
-          <div className="h-10 w-10 rounded-lg bg-open/10 flex items-center justify-center flex-shrink-0">
+          <div className="h-10 w-10 rounded-[4px] bg-open/10 flex items-center justify-center flex-shrink-0">
             <AlertTriangle size={20} className="text-open" aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -71,7 +71,7 @@ export default function RemoveMemberDialog({
         </div>
 
         {!loading && count > 0 && (
-          <ul className="mb-4 rounded-lg border border-line bg-subtle divide-y divide-line max-h-56 overflow-y-auto">
+          <ul className="mb-4 rounded-[4px] border border-line bg-subtle divide-y divide-line max-h-56 overflow-y-auto">
             {projects.map((p) => (
               <li key={p.id} className="px-3 py-2 text-sm text-ink truncate">
                 {p.name}

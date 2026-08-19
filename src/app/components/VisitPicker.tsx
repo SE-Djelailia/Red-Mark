@@ -52,7 +52,7 @@ export default function VisitPicker({ open, projectId, onSelect, onClose }: Prop
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[85vh] flex flex-col shadow-xl"
+        className="bg-surface rounded-t-2xl sm:rounded-[4px] w-full sm:max-w-md max-h-[85vh] flex flex-col shadow-xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -63,7 +63,7 @@ export default function VisitPicker({ open, projectId, onSelect, onClose }: Prop
           </h2>
           <button
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center text-faint hover:text-ink rounded-lg flex-shrink-0"
+            className="w-9 h-9 flex items-center justify-center text-faint hover:text-ink rounded-[4px] flex-shrink-0"
             aria-label="Fermer"
           >
             <X size={20} />
@@ -83,12 +83,12 @@ export default function VisitPicker({ open, projectId, onSelect, onClose }: Prop
               Chargement…
             </div>
           ) : loadError ? (
-            <div className="text-sm text-red-600 text-center py-6">{loadError}</div>
+            <div className="text-sm text-brand-strong text-center py-6">{loadError}</div>
           ) : (
             <div className="space-y-4">
               <button
                 onClick={() => setShowNewVisitForm(true)}
-                className="w-full inline-flex items-center justify-center gap-2 py-3 border-2 border-dashed border-line-strong rounded-lg text-sm font-medium text-ink hover:border-brand-600 hover:text-brand-600 min-h-[44px]"
+                className="w-full inline-flex items-center justify-center gap-2 py-3 border-2 border-dashed border-line-strong rounded-[4px] text-sm font-medium text-ink hover:border-brand-600 hover:text-brand-600 min-h-[44px]"
               >
                 <Plus size={16} />
                 Nouvelle visite
@@ -104,7 +104,7 @@ export default function VisitPicker({ open, projectId, onSelect, onClose }: Prop
                     <button
                       key={visit.id}
                       onClick={() => onSelect(visit)}
-                      className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-line hover:border-brand-600 hover:bg-subtle min-h-[44px] text-left"
+                      className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-[4px] border border-line hover:border-brand-600 hover:bg-subtle min-h-[44px] text-left"
                     >
                       <div className="min-w-0">
                         <div className="text-sm text-ink font-medium truncate">
@@ -117,7 +117,7 @@ export default function VisitPicker({ open, projectId, onSelect, onClose }: Prop
                         <div className="text-xs text-muted truncate">{visit.authorName}</div>
                       </div>
                       {visit.phase && (
-                        <span className="px-2 py-1 bg-brand-600/10 text-brand-600 rounded-md text-xs font-medium flex-shrink-0">
+                        <span className="px-2 py-1 border border-line-strong text-body rounded-[4px] rm-label flex-shrink-0">
                           {visit.phase}
                         </span>
                       )}

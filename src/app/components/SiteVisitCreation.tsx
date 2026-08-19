@@ -32,7 +32,7 @@ export default function SiteVisitCreation() {
 
       {!projectRole.loading && !projectRole.canCreateIssues ? (
         <div className="px-4 py-6 max-w-2xl mx-auto">
-          <div className="bg-white rounded-xl p-8 border border-line text-center">
+          <div className="bg-surface rounded-[4px] p-8 border border-line text-center">
             <p className="text-base text-ink font-medium mb-2">
               Vous n'avez pas la permission de créer une visite sur ce projet.
             </p>

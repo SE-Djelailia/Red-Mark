@@ -310,12 +310,12 @@ export default function CommentThread({
         className={`${isReply ? "ml-8 mt-2" : ""}`}
       >
         <div
-          className={`bg-canvas rounded-lg p-4 transition-all ${
-            isHighlighted ? "ring-2 ring-brand-600 shadow-lg" : ""
+          className={`bg-canvas rounded-[4px] p-4 transition-all ${
+            isHighlighted ? "ring-2 ring-ink shadow-lg" : ""
           }`}
         >
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-medium flex-shrink-0">
+            <div className="w-8 h-8 rounded-[2px] bg-ink text-white flex items-center justify-center text-xs font-medium flex-shrink-0">
               {comment.author
                 .split(" ")
                 .map((n) => n[0])
@@ -339,14 +339,14 @@ export default function CommentThread({
                     value={editingCommentText}
                     onChange={(e) => setEditingCommentText(e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent resize-none"
+                    className="w-full px-4 py-3 border border-line-strong rounded-[4px] focus:outline-none focus:ring-2 focus:ring-ink focus:border-transparent resize-none"
                     autoFocus
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={handleSaveComment}
                       disabled={isSubmitting}
-                      className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Sauvegarder
                     </button>
@@ -355,7 +355,7 @@ export default function CommentThread({
                         setEditingCommentId(null);
                         setEditingCommentText("");
                       }}
-                      className="px-4 py-2 bg-subtle text-ink rounded-lg hover:bg-line-strong transition-colors font-medium text-sm"
+                      className="px-4 py-2 bg-subtle text-ink rounded-[4px] hover:bg-line-strong transition-colors font-medium text-sm"
                     >
                       Annuler
                     </button>
@@ -415,7 +415,7 @@ export default function CommentThread({
       {topLevelComments.map((comment) => renderComment(comment))}
 
       {/* Add Comment Form */}
-      <div className="bg-canvas rounded-lg p-4 space-y-3">
+      <div className="bg-canvas rounded-[4px] p-4 space-y-3">
         {replyingToId && (
           <div className="flex items-center gap-2 text-sm text-body">
             <Reply size={16} />
@@ -439,12 +439,12 @@ export default function CommentThread({
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Écrivez un commentaire... (utilisez @ pour mentionner quelqu'un)"
             rows={3}
-            className="w-full px-4 py-3 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent resize-none"
+            className="w-full px-4 py-3 border border-line-strong rounded-[4px] focus:outline-none focus:ring-2 focus:ring-ink focus:border-transparent resize-none"
           />
 
           {/* Mention Autocomplete */}
           {showMentionSuggestions && (
-            <div className="absolute bottom-full left-0 mb-2 w-64 bg-white border border-line rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+            <div className="absolute bottom-full left-0 mb-2 w-64 bg-surface border border-line rounded-[4px] shadow-lg z-10 max-h-48 overflow-y-auto">
               {mentionSuggestions.map((user) => (
                 <button
                   key={user.id}
@@ -459,13 +459,13 @@ export default function CommentThread({
           )}
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-brand-strong">{error}</p>}
 
         <div className="flex gap-3">
           <button
             onClick={handleAddComment}
             disabled={!commentText.trim() || isSubmitting}
-            className="flex-1 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+            className="flex-1 py-2.5 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
           >
             {isSubmitting ? "Envoi..." : replyingToId ? "Répondre" : "Publier"}
           </button>

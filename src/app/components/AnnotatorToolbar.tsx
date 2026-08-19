@@ -72,8 +72,8 @@ export const MENU_TOOLS: ToolDef[] = [
 ];
 
 const ICON_BUTTON =
-  "w-11 h-11 flex items-center justify-center rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
-const ACTIVE = "bg-brand-50 text-brand-600";
+  "w-11 h-11 flex items-center justify-center rounded-[4px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
+const ACTIVE = "bg-subtle text-ink";
 const INACTIVE = "text-body hover:bg-subtle";
 
 /** Closes a popover on outside pointerdown or Escape. */
@@ -189,7 +189,7 @@ export default function AnnotatorToolbar({
           and the 8px it frees is what keeps Enregistrer on a 360px screen. */}
       <button
         onClick={onClose}
-        className="w-9 h-11 flex items-center justify-center rounded-lg text-muted hover:bg-subtle transition-colors flex-shrink-0"
+        className="w-9 h-11 flex items-center justify-center rounded-[4px] text-muted hover:bg-subtle transition-colors flex-shrink-0"
         title="Fermer"
         aria-label="Fermer"
       >
@@ -214,7 +214,7 @@ export default function AnnotatorToolbar({
         {toolsOpen && (
           <div
             role="menu"
-            className="absolute left-0 top-full mt-1 z-20 bg-surface border border-line rounded-xl shadow-lg p-1 w-52"
+            className="absolute left-0 top-full mt-1 z-20 bg-surface border border-line rounded-[4px] shadow-lg p-1 w-52"
           >
             {MENU_TOOLS.map(({ tool, icon: Icon, label }) => (
               <button
@@ -224,8 +224,8 @@ export default function AnnotatorToolbar({
                   onToolChange(tool);
                   setToolsOpen(false);
                 }}
-                className={`w-full min-h-11 px-3 flex items-center gap-3 rounded-lg text-sm text-left transition-colors ${
-                  activeTool === tool ? "bg-brand-50 text-brand-strong" : "text-body hover:bg-subtle"
+                className={`w-full min-h-11 px-3 flex items-center gap-3 rounded-[4px] text-sm text-left transition-colors ${
+                  activeTool === tool ? "bg-subtle text-ink" : "text-body hover:bg-subtle"
                 }`}
               >
                 <Icon size={17} className="flex-shrink-0" />
@@ -257,7 +257,7 @@ export default function AnnotatorToolbar({
         {colorsOpen && (
           <div
             role="menu"
-            className="absolute left-0 top-full mt-1 z-20 bg-surface border border-line rounded-xl shadow-lg p-2 flex items-center gap-2"
+            className="absolute left-0 top-full mt-1 z-20 bg-surface border border-line rounded-[4px] shadow-lg p-2 flex items-center gap-2"
           >
             {MARKUP_COLORS.map((c) => swatch(c.value, c.label, "w-9 h-9"))}
           </div>
@@ -283,7 +283,7 @@ export default function AnnotatorToolbar({
           {moreOpen && (
             <div
               role="menu"
-              className="absolute right-0 top-full mt-1 z-20 bg-surface border border-line rounded-xl shadow-lg p-1 w-60"
+              className="absolute right-0 top-full mt-1 z-20 bg-surface border border-line rounded-[4px] shadow-lg p-1 w-60"
             >
               {[
                 {
@@ -305,7 +305,7 @@ export default function AnnotatorToolbar({
                     onClick();
                     setMoreOpen(false);
                   }}
-                  className="w-full min-h-11 px-3 flex items-center gap-3 rounded-lg text-sm text-left text-body hover:bg-subtle transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  className="w-full min-h-11 px-3 flex items-center gap-3 rounded-[4px] text-sm text-left text-body hover:bg-subtle transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                 >
                   <Icon size={17} className="flex-shrink-0" />
                   <span className="flex-1">{label}</span>
@@ -350,7 +350,7 @@ export default function AnnotatorToolbar({
           disabled={saveDisabled}
           title="Enregistrer"
           aria-label="Enregistrer"
-          className="ml-1 h-11 px-3 sm:px-4 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:opacity-50 flex items-center gap-2 flex-shrink-0"
+          className="ml-1 h-11 px-3 sm:px-4 rounded-[4px] bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:opacity-50 flex items-center gap-2 flex-shrink-0"
         >
           <Check size={16} />
           <span className="hidden sm:inline">{isSaving ? "Enregistrement…" : "Enregistrer"}</span>

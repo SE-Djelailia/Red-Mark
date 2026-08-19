@@ -87,7 +87,7 @@ export default function OfflineIndicator() {
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 w-[calc(100vw-1.5rem)] max-w-md">
       <div className="flex justify-center">
         {showFailed ? (
-          <div className="bg-red-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm">
+          <div className="bg-brand-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm">
             <AlertTriangle size={16} className="flex-shrink-0" />
             <span>
               {counts.failed} en échec
@@ -103,12 +103,12 @@ export default function OfflineIndicator() {
             </button>
           </div>
         ) : isOnline ? (
-          <div className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm">
+          <div className="bg-ink text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm">
             <Upload size={16} className="animate-pulse" />
             <span>Synchronisation de {counts.syncing} élément(s)...</span>
           </div>
         ) : (
-          <div className="bg-orange-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm">
+          <div className="bg-ink text-white px-4 py-2 rounded-[4px] shadow-lg flex items-center gap-2 text-sm">
             <WifiOff size={16} />
             <span>Mode hors ligne</span>
             {counts.total > 0 && <span className="ml-1">• {counts.total} en attente</span>}

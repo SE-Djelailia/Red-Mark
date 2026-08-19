@@ -225,7 +225,7 @@ export default function PhotoMetadataEditor({
       onClick={onCancel}
     >
       <div
-        className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[85vh] flex flex-col shadow-xl"
+        className="bg-surface rounded-t-2xl sm:rounded-[4px] w-full sm:max-w-md max-h-[85vh] flex flex-col shadow-xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -237,7 +237,7 @@ export default function PhotoMetadataEditor({
           </h3>
           <button
             onClick={onCancel}
-            className="w-9 h-9 flex items-center justify-center text-faint hover:text-ink rounded-lg"
+            className="w-9 h-9 flex items-center justify-center text-faint hover:text-ink rounded-[4px]"
             aria-label="Fermer"
           >
             <X size={20} />
@@ -272,13 +272,13 @@ export default function PhotoMetadataEditor({
                     className={`${inputClassName} pl-10`}
                   />
                 </div>
-                <div className="max-h-52 overflow-y-auto border border-line rounded-lg divide-y divide-line">
+                <div className="max-h-52 overflow-y-auto border border-line rounded-[4px] divide-y divide-line">
                   <button
                     onClick={() => pickLocation("")}
                     aria-pressed={locationTouched && !locationId}
                     className={`w-full text-left px-4 py-3 min-h-[44px] transition-colors ${
                       locationTouched && !locationId
-                        ? "bg-brand-50 text-brand-strong font-medium"
+                        ? "bg-subtle text-ink font-medium"
                         : "hover:bg-subtle text-muted"
                     }`}
                   >
@@ -296,7 +296,7 @@ export default function PhotoMetadataEditor({
                         aria-pressed={locationId === l.id}
                         className={`w-full text-left px-4 py-3 min-h-[44px] flex items-center justify-between gap-2 transition-colors ${
                           locationId === l.id
-                            ? "bg-brand-50 text-brand-strong font-medium"
+                            ? "bg-subtle text-ink font-medium"
                             : "hover:bg-subtle text-ink"
                         }`}
                       >
@@ -359,7 +359,7 @@ export default function PhotoMetadataEditor({
               />
               <button
                 onClick={addTag}
-                className="px-3 bg-subtle hover:bg-line rounded-lg text-ink min-h-[44px] flex items-center justify-center flex-shrink-0"
+                className="px-3 bg-subtle hover:bg-line rounded-[4px] text-ink min-h-[44px] flex items-center justify-center flex-shrink-0"
                 aria-label="Ajouter l'étiquette"
               >
                 <Plus size={18} />
@@ -396,14 +396,14 @@ export default function PhotoMetadataEditor({
           <button
             onClick={onCancel}
             disabled={saving}
-            className="flex-1 py-3 border border-line-strong rounded-lg text-body font-medium hover:bg-subtle transition-colors min-h-[44px] disabled:opacity-50"
+            className="flex-1 py-3 border border-line-strong rounded-[4px] text-body font-medium hover:bg-subtle transition-colors min-h-[44px] disabled:opacity-50"
           >
             Annuler
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-3 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors min-h-[44px] disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] font-medium hover:bg-brand-700 transition-colors min-h-[44px] disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <Check size={18} />
             {saving ? "Enregistrement…" : "Enregistrer"}

@@ -132,14 +132,14 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
   return (
     <div className="fixed inset-0 bg-black/50 z-[60] flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[85vh] flex flex-col shadow-xl"
+        className="bg-surface rounded-t-2xl sm:rounded-[4px] w-full sm:max-w-md max-h-[85vh] flex flex-col shadow-xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
         <div className="flex items-start justify-between px-5 py-4 border-b border-line">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-lg bg-brand-600/10 text-brand-600 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-[4px] bg-subtle text-ink flex items-center justify-center flex-shrink-0">
               <MapPin size={18} />
             </div>
             <div className="min-w-0">
@@ -154,7 +154,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center text-faint hover:text-ink rounded-lg flex-shrink-0"
+            className="w-9 h-9 flex items-center justify-center text-faint hover:text-ink rounded-[4px] flex-shrink-0"
             aria-label="Fermer"
           >
             <X size={20} />
@@ -169,7 +169,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
             {loadingIssues ? (
               <div className="text-sm text-muted">Chargement…</div>
             ) : issuesLoadError ? (
-              <div className="text-sm text-red-600 flex items-center gap-2">
+              <div className="text-sm text-brand-strong flex items-center gap-2">
                 Impossible de charger les déficiences.
                 <button
                   onClick={() => location && loadIssues(location.id)}
@@ -186,7 +186,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
                   <button
                     key={issue.id}
                     onClick={() => navigate(`/app/projects/${projectId}/issues/${issue.id}`)}
-                    className="w-full text-left px-3 py-2.5 rounded-lg border border-line hover:border-brand-600 hover:bg-subtle min-h-[44px]"
+                    className="w-full text-left px-3 py-2.5 rounded-[4px] border border-line hover:border-brand-600 hover:bg-subtle min-h-[44px]"
                   >
                     <div className="text-sm text-ink font-medium truncate">{issue.title}</div>
                     <div className="text-xs text-muted">
@@ -205,7 +205,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
           ) : !showCreateForm ? (
             <button
               onClick={() => setShowCreateForm(true)}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 border-2 border-dashed border-line-strong rounded-lg text-sm font-medium text-ink hover:border-brand-600 hover:text-brand-600 min-h-[44px]"
+              className="w-full inline-flex items-center justify-center gap-2 py-3 border-2 border-dashed border-line-strong rounded-[4px] text-sm font-medium text-ink hover:border-brand-600 hover:text-brand-600 min-h-[44px]"
             >
               <Plus size={16} />
               Créer une déficience
@@ -218,7 +218,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
+                  className="w-full px-4 py-3 bg-canvas border border-line rounded-[4px] focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/15"
                   autoFocus
                 />
               </div>
@@ -228,7 +228,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  className="w-full px-4 py-3 bg-canvas border border-line rounded-lg focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
+                  className="w-full px-4 py-3 bg-canvas border border-line rounded-[4px] focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/15"
                 />
               </div>
               <div>
@@ -238,9 +238,9 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
                     <button
                       key={p.value}
                       onClick={() => setPriority(p.value)}
-                      className={`py-2.5 px-3 rounded-lg border-2 transition-all flex items-center gap-2 justify-center ${
+                      className={`py-2.5 px-3 rounded-[4px] border-2 transition-all flex items-center gap-2 justify-center ${
                         priority === p.value
-                          ? "border-brand-600 bg-brand-600/10"
+                          ? "border-line-strong border-l-2 border-l-brand-600 bg-surface"
                           : "border-line hover:border-line-strong"
                       }`}
                     >
@@ -256,7 +256,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
                 {photos.length > 0 && (
                   <div className="grid grid-cols-4 gap-2 mt-3">
                     {photos.map((file, index) => (
-                      <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-line">
+                      <div key={index} className="relative aspect-square rounded-[4px] overflow-hidden border border-line">
                         <img
                           src={URL.createObjectURL(file)}
                           alt={`Photo ${index + 1}`}
@@ -286,14 +286,14 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
                 <button
                   onClick={() => setShowCreateForm(false)}
                   disabled={creating}
-                  className="flex-1 py-3 bg-subtle text-ink rounded-lg hover:bg-line disabled:opacity-50 font-medium min-h-[44px]"
+                  className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line disabled:opacity-50 font-medium min-h-[44px]"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleCreate}
                   disabled={creating}
-                  className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 font-medium min-h-[44px]"
+                  className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 disabled:opacity-50 font-medium min-h-[44px]"
                 >
                   {creating ? "Création…" : "Créer"}
                 </button>

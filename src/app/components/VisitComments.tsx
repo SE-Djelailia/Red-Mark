@@ -62,9 +62,9 @@ function CommentCard({
 
   return (
     <div className={`${isReply ? "ml-12 mt-3" : "mb-4"}`}>
-      <div className="bg-canvas rounded-lg p-4">
+      <div className="bg-canvas rounded-[4px] p-4">
         <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-medium flex-shrink-0">
+          <div className="w-8 h-8 rounded-[2px] bg-ink text-white flex items-center justify-center text-xs font-medium flex-shrink-0">
             {comment.author
               ? comment.author
                   .split(" ")
@@ -118,7 +118,7 @@ function CommentCard({
                   </button>
                   <button
                     onClick={() => onDelete(comment.id)}
-                    className="p-1 text-faint hover:text-red-600 transition-colors"
+                    className="p-1 text-faint hover:text-brand-strong transition-colors"
                     title="Supprimer"
                   >
                     <Trash2 size={14} />
@@ -132,7 +132,7 @@ function CommentCard({
                 <textarea
                   value={editingCommentText}
                   onChange={(e) => onEditingTextChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-line-strong rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent text-sm"
+                  className="w-full px-3 py-2 border border-line-strong rounded-[4px] resize-none focus:outline-none focus:ring-2 focus:ring-ink focus:border-transparent text-sm"
                   rows={3}
                   autoFocus
                 />
@@ -140,13 +140,13 @@ function CommentCard({
                   <button
                     onClick={onSaveEdit}
                     disabled={isSubmitting}
-                    className="px-3 py-1.5 bg-brand-600 text-white rounded-lg text-xs hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-1.5 bg-brand-600 text-white rounded-[4px] text-xs hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Enregistrer
                   </button>
                   <button
                     onClick={onCancelEdit}
-                    className="px-3 py-1.5 bg-subtle text-body rounded-lg text-xs hover:bg-line-strong transition-colors"
+                    className="px-3 py-1.5 bg-subtle text-body rounded-[4px] text-xs hover:bg-line-strong transition-colors"
                   >
                     Annuler
                   </button>
@@ -469,9 +469,9 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
       </div>
 
       {/* New Comment Input */}
-      <div className="bg-white border border-line rounded-lg p-4">
+      <div className="bg-surface border border-line rounded-[4px] p-4">
         {replyingTo && (
-          <div className="flex items-center gap-2 mb-2 text-xs text-body bg-blue-50 px-3 py-2 rounded">
+          <div className="flex items-center gap-2 mb-2 text-xs text-body bg-subtle px-3 py-2 rounded">
             <Reply size={14} />
             <span>Répondre à {comments.find((c) => c.id === replyingTo)?.author}</span>
             <button
@@ -488,20 +488,20 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
             value={newCommentText}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Ajouter un commentaire... (Utilisez @ pour mentionner)"
-            className="w-full px-4 py-3 border border-line-strong rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+            className="w-full px-4 py-3 border border-line-strong rounded-[4px] resize-none focus:outline-none focus:ring-2 focus:ring-ink focus:border-transparent"
             rows={3}
           />
 
           {/* Mention Suggestions */}
           {showMentionSuggestions && filteredTeamMembers.length > 0 && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-line rounded-lg shadow-lg max-h-48 overflow-y-auto z-10">
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-surface border border-line rounded-[4px] shadow-lg max-h-48 overflow-y-auto z-10">
               {filteredTeamMembers.map((member) => (
                 <button
                   key={member.id}
                   onClick={() => handleMention(member.name)}
                   className="w-full px-4 py-2 text-left hover:bg-subtle transition-colors flex items-center gap-2"
                 >
-                  <div className="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-medium">
+                  <div className="w-6 h-6 rounded-[2px] bg-ink text-white flex items-center justify-center text-xs font-medium">
                     {member.name
                       .split(" ")
                       .map((n) => n[0])
@@ -517,7 +517,7 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
           )}
         </div>
 
-        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-2 text-sm text-brand-strong">{error}</p>}
 
         <div className="flex items-center justify-between mt-3">
           <button
@@ -531,7 +531,7 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
           <button
             onClick={handleSubmitComment}
             disabled={!newCommentText.trim() || isSubmitting}
-            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-h-[40px]"
+            className="px-4 py-2 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-h-[40px]"
           >
             <Send size={16} />
             <span>{isSubmitting ? "Envoi..." : "Publier"}</span>

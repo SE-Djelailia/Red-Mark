@@ -105,7 +105,7 @@ export default function FirmGate({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mx-auto" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ink mx-auto" />
           <p className="mt-4 text-muted">
             {phase === "joining" ? "Adhésion à votre firme…" : "Vérification…"}
           </p>
@@ -118,12 +118,12 @@ export default function FirmGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-6 text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50">
+      <div className="w-full max-w-md rounded-[4px] border border-line bg-surface p-6 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[4px] bg-subtle">
           {isUnverified ? (
-            <MailCheck className="h-6 w-6 text-brand-600" aria-hidden="true" />
+            <MailCheck className="h-6 w-6 text-ink" aria-hidden="true" />
           ) : (
-            <Building2 className="h-6 w-6 text-brand-600" aria-hidden="true" />
+            <Building2 className="h-6 w-6 text-ink" aria-hidden="true" />
           )}
         </div>
 
@@ -148,7 +148,7 @@ export default function FirmGate({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => void run()}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
+            className="inline-flex items-center justify-center gap-2 rounded-[4px] bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Réessayer
@@ -156,7 +156,7 @@ export default function FirmGate({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => void supabase.auth.signOut()}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-line px-4 py-2.5 text-sm font-medium text-ink hover:bg-canvas"
+            className="inline-flex items-center justify-center gap-2 rounded-[4px] border border-line px-4 py-2.5 text-sm font-medium text-ink hover:bg-canvas"
           >
             <LogOut className="h-4 w-4" aria-hidden="true" />
             Se déconnecter

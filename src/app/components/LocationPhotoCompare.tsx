@@ -161,7 +161,7 @@ export default function LocationPhotoCompare({
           (selecting ? (
             <button
               onClick={exitSelecting}
-              className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-lg text-sm font-medium text-ink min-h-[40px]"
+              className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
             >
               <X size={14} />
               Annuler
@@ -169,7 +169,7 @@ export default function LocationPhotoCompare({
           ) : (
             <button
               onClick={() => setSelecting(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-lg text-sm font-medium text-ink min-h-[40px]"
+              className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
             >
               <GitCompareArrows size={14} />
               Comparer
@@ -178,7 +178,7 @@ export default function LocationPhotoCompare({
       </div>
 
       {selecting && (
-        <div className="mb-3 px-3 py-2 rounded-lg bg-brand-50 border border-brand-100 text-brand-strong text-xs">
+        <div className="mb-3 px-3 py-2 rounded-[4px] bg-surface border border-line border-l-2 border-l-brand-600 text-brand-strong text-xs">
           {picked.length === 0
             ? "Touchez deux photos à comparer."
             : picked.length === 1
@@ -207,8 +207,8 @@ export default function LocationPhotoCompare({
                     key={photo.id}
                     onClick={() => (selecting ? toggle(photo.id) : onOpenPhoto(photo))}
                     aria-pressed={selecting ? isPicked : undefined}
-                    className={`relative aspect-square rounded-lg overflow-hidden bg-subtle transition-all ${
-                      isPicked ? "ring-2 ring-brand-600 ring-offset-1" : ""
+                    className={`relative aspect-square rounded-[4px] overflow-hidden bg-subtle transition-all ${
+                      isPicked ? "ring-2 ring-ink ring-offset-1" : ""
                     }`}
                   >
                     {photo.url ? (
@@ -225,7 +225,7 @@ export default function LocationPhotoCompare({
                       </div>
                     )}
                     {isPicked && (
-                      <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-brand-600 text-white flex items-center justify-center text-[10px] font-semibold">
+                      <span className="absolute top-1 right-1 w-5 h-5 rounded-[2px] bg-ink text-white flex items-center justify-center text-[10px] font-semibold">
                         {idx + 1}
                       </span>
                     )}
@@ -266,10 +266,10 @@ export default function LocationPhotoCompare({
               {pair.map((p, i) => (
                 <figure
                   key={p.id}
-                  className="flex-1 min-h-0 flex flex-col bg-white/5 rounded-lg overflow-hidden"
+                  className="flex-1 min-h-0 flex flex-col bg-white/5 rounded-[4px] overflow-hidden"
                 >
                   <figcaption className="px-3 py-2 flex items-center gap-2 flex-shrink-0">
-                    <span className="w-5 h-5 rounded-full bg-brand-600 text-white flex items-center justify-center text-[10px] font-semibold flex-shrink-0">
+                    <span className="w-5 h-5 rounded-[2px] bg-ink text-white flex items-center justify-center text-[10px] font-semibold flex-shrink-0">
                       {i + 1}
                     </span>
                     <span className="text-white text-sm font-medium truncate">{labelFor(p)}</span>
@@ -298,7 +298,7 @@ export default function LocationPhotoCompare({
           <div className="px-4 py-3 flex-shrink-0 flex gap-2">
             <button
               onClick={() => setPicked([])}
-              className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium min-h-[44px] transition-colors"
+              className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-[4px] text-sm font-medium min-h-[44px] transition-colors"
             >
               Choisir d'autres photos
             </button>
@@ -307,7 +307,7 @@ export default function LocationPhotoCompare({
                 setPicked([]);
                 setSelecting(false);
               }}
-              className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium min-h-[44px] transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-[4px] text-sm font-medium min-h-[44px] transition-colors flex items-center justify-center gap-2"
             >
               <Check size={16} />
               Terminer

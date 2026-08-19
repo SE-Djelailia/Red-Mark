@@ -54,7 +54,7 @@ export default function FloatingActions({ menu = [] }: Props) {
                   className="flex items-center gap-2 pl-4 pr-2 py-2 bg-surface border border-line rounded-full shadow-sm hover:border-brand-600 transition-colors text-sm font-medium text-ink whitespace-nowrap"
                 >
                   <span>{item.label}</span>
-                  <span className="w-8 h-8 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center flex-shrink-0">
+                  <span className="w-8 h-8 rounded-[4px] bg-subtle text-ink flex items-center justify-center flex-shrink-0">
                     <Icon size={16} />
                   </span>
                 </button>

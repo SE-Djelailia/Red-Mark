@@ -262,7 +262,7 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
             </div>
 
             {showPhaseDropdown && (
-              <div className="absolute z-10 w-full mt-2 bg-surface border border-line rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              <div className="absolute z-10 w-full mt-2 bg-surface border border-line rounded-[4px] shadow-lg max-h-60 overflow-y-auto">
                 {filteredPhases.length > 0 ? (
                   <div>
                     {filteredPhases.map((p) => (
@@ -285,8 +285,8 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
                     className="w-full px-4 py-3 text-left hover:bg-subtle transition-colors border-t border-line bg-subtle"
                   >
                     <div className="flex items-center gap-2">
-                      <Plus size={16} className="text-brand-600" />
-                      <span className="text-sm text-brand-600 font-medium">
+                      <Plus size={16} className="text-ink" />
+                      <span className="text-sm text-ink font-medium">
                         Créer "{phaseInput}"
                       </span>
                     </div>
@@ -389,7 +389,7 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
               {weatherPhotos.map((file, index) => (
                 <div
                   key={index}
-                  className="relative aspect-square rounded-lg overflow-hidden border border-line"
+                  className="relative aspect-square rounded-[4px] overflow-hidden border border-line"
                 >
                   <img
                     src={URL.createObjectURL(file)}
@@ -417,14 +417,14 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="flex-1 py-3 bg-surface border border-line-strong text-ink rounded-lg hover:bg-subtle disabled:opacity-50 font-medium min-h-[48px]"
+            className="flex-1 py-3 bg-surface border border-line-strong text-ink rounded-[4px] hover:bg-subtle disabled:opacity-50 font-medium min-h-[48px]"
           >
             Annuler
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[48px] font-medium"
+            className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[48px] font-medium"
           >
             {isSubmitting && <ButtonLoader />}
             <span>{isSubmitting ? "Enregistrement..." : "Enregistrer la visite"}</span>

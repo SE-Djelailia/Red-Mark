@@ -521,7 +521,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     : null;
 
   const iconButton =
-    "w-10 h-10 flex items-center justify-center rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
+    "w-10 h-10 flex items-center justify-center rounded-[4px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
 
   const handleColorChange = (value: string) => {
     setColor(value);
@@ -586,14 +586,14 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
               </button>
               <button
                 onClick={cancelPrepare}
-                className="h-10 px-3 rounded-lg text-sm font-medium text-body hover:bg-subtle transition-colors"
+                className="h-10 px-3 rounded-[4px] text-sm font-medium text-body hover:bg-subtle transition-colors"
               >
                 Annuler
               </button>
               <button
                 onClick={applyPrepareStep}
                 disabled={isApplying}
-                className="h-10 px-4 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors disabled:opacity-50"
+                className="h-10 px-4 rounded-[4px] bg-ink text-white text-sm font-medium hover:bg-ink/85 transition-colors disabled:opacity-50"
               >
                 {isApplying ? "…" : "Appliquer"}
               </button>
@@ -619,7 +619,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
                   );
                   setEraseTargetId(null);
                 }}
-                className="ml-auto h-8 px-2.5 rounded-lg text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors flex items-center gap-1.5 flex-shrink-0"
+                className="ml-auto h-8 px-2.5 rounded-[4px] text-xs font-medium text-white bg-ink hover:bg-ink/85 transition-colors flex items-center gap-1.5 flex-shrink-0"
               >
                 <Trash2 size={13} />
                 Supprimer
@@ -665,7 +665,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
             {selectedTextId && (
               <button
                 onClick={deleteSelectedText}
-                className="ml-auto h-8 px-2.5 rounded-lg text-xs font-medium text-brand-strong hover:bg-brand-50 transition-colors flex items-center gap-1.5"
+                className="ml-auto h-8 px-2.5 rounded-[4px] text-xs font-medium text-body hover:bg-subtle transition-colors flex items-center gap-1.5"
               >
                 <Trash2 size={13} />
                 Supprimer le texte
@@ -721,7 +721,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
             {/* Inline text entry, placed where the user tapped. */}
             {textPrompt && (
               <div
-                className="absolute z-10 bg-surface border border-line rounded-lg shadow-lg p-2 flex items-center gap-2"
+                className="absolute z-10 bg-surface border border-line rounded-[4px] shadow-lg p-2 flex items-center gap-2"
                 style={{
                   left: `${(textPrompt.point.x / (canvasRef.current?.width || 1)) * 100}%`,
                   top: `${(textPrompt.point.y / (canvasRef.current?.height || 1)) * 100}%`,
@@ -736,11 +736,11 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
                     if (e.key === "Escape") setTextPrompt(null);
                   }}
                   placeholder="Texte…"
-                  className="h-9 px-2 text-sm bg-surface text-ink border border-line rounded-md focus:outline-none focus:border-brand-600 w-40"
+                  className="h-9 px-2 text-sm bg-surface text-ink border border-line rounded-[4px] focus:outline-none focus:border-ink w-40"
                 />
                 <button
                   onClick={commitText}
-                  className="h-9 px-3 rounded-md bg-brand-600 text-white text-sm font-medium"
+                  className="h-9 px-3 rounded-[4px] bg-ink text-white text-sm font-medium"
                 >
                   OK
                 </button>
@@ -791,11 +791,11 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
               if (e.key === "Escape") setDimensionPrompt(null);
             }}
             placeholder="ex. 15 cm"
-            className="flex-1 min-w-0 h-11 px-2 text-sm bg-surface text-ink border border-line rounded-md focus:outline-none focus:border-brand-600"
+            className="flex-1 min-w-0 h-11 px-2 text-sm bg-surface text-ink border border-line rounded-[4px] focus:outline-none focus:border-ink"
           />
           <button
             onClick={commitDimensionLabel}
-            className="h-11 px-4 rounded-md bg-brand-600 text-white text-sm font-medium flex-shrink-0"
+            className="h-11 px-4 rounded-[4px] bg-ink text-white text-sm font-medium flex-shrink-0"
           >
             OK
           </button>

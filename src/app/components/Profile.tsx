@@ -136,7 +136,7 @@ export default function Profile() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ink mx-auto mb-4"></div>
           <p className="text-muted">Chargement du profil...</p>
         </div>
       </div>
@@ -159,7 +159,7 @@ export default function Profile() {
           thing that changes with width is the column's own gutters. */}
       <div className="px-4 sm:px-6 py-5 max-w-2xl mx-auto space-y-6">
         <Card className="p-4 sm:p-5 flex items-center gap-4">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-brand-600 text-white flex items-center justify-center text-xl font-semibold flex-shrink-0">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-[4px] bg-ink text-white flex items-center justify-center text-xl font-semibold flex-shrink-0">
             {userName
               .split(" ")
               .map((n) => n[0])
@@ -187,7 +187,7 @@ export default function Profile() {
                 <button
                   onClick={() => setIsEditing(false)}
                   disabled={isSaving}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-body hover:bg-subtle rounded-lg transition-colors disabled:opacity-50 min-h-[36px]"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-body hover:bg-subtle rounded-[4px] transition-colors disabled:opacity-50 min-h-[36px]"
                 >
                   <X size={16} />
                   Annuler
@@ -195,7 +195,7 @@ export default function Profile() {
                 <button
                   onClick={handleSaveProfile}
                   disabled={isSaving}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 min-h-[36px]"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-surface border border-ink text-ink rounded-[4px] hover:bg-subtle transition-colors disabled:opacity-50 min-h-[36px]"
                 >
                   <Check size={16} />
                   {isSaving ? "Enregistrement…" : "Enregistrer"}
@@ -204,7 +204,7 @@ export default function Profile() {
             ) : (
               <button
                 onClick={startEditing}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm text-brand-600 hover:bg-brand-50 rounded-lg transition-colors min-h-[36px]"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-body hover:bg-subtle rounded-[4px] transition-colors min-h-[36px]"
               >
                 <Pencil size={16} />
                 Modifier
@@ -349,7 +349,7 @@ export default function Profile() {
         <Section title="Compte">
           <button
             onClick={() => setShowLogoutConfirm(true)}
-            className="w-full bg-surface rounded-xl border border-open/30 p-4 min-h-11 flex items-center justify-center gap-3 text-open hover:bg-open/5 transition-colors"
+            className="w-full bg-surface rounded-[4px] border border-open/30 p-4 min-h-11 flex items-center justify-center gap-3 text-open hover:bg-open/5 transition-colors"
           >
             <LogOut size={20} />
             <span>Se déconnecter</span>
@@ -367,7 +367,7 @@ export default function Profile() {
         >
           <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
             <div
-              className="bg-white rounded-xl max-w-sm w-full"
+              className="bg-surface rounded-[4px] max-w-sm w-full"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Content */}
@@ -379,13 +379,13 @@ export default function Profile() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowLogoutConfirm(false)}
-                    className="flex-1 py-3 bg-surface border border-line text-ink rounded-lg hover:bg-subtle font-medium min-h-[48px]"
+                    className="flex-1 py-3 bg-surface border border-line text-ink rounded-[4px] hover:bg-subtle font-medium min-h-[48px]"
                   >
                     Annuler
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium min-h-[48px]"
+                    className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 font-medium min-h-[48px]"
                   >
                     Déconnexion
                   </button>

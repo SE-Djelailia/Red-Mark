@@ -134,7 +134,7 @@ export default function DataExport({ onClose }: DataExportProps) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={onClose}>
       <div className="min-h-screen px-4 flex items-center justify-center py-8 pb-20 safe-area-bottom">
-        <div className="bg-white rounded-xl max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-surface rounded-[4px] max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div className="p-6 border-b border-line flex items-center justify-between">
             <div>
@@ -143,7 +143,7 @@ export default function DataExport({ onClose }: DataExportProps) {
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-subtle rounded-lg transition-colors"
+              className="p-2 hover:bg-subtle rounded-[4px] transition-colors"
             >
               <X size={24} className="text-body" />
             </button>
@@ -159,9 +159,9 @@ export default function DataExport({ onClose }: DataExportProps) {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setExportType("json")}
-                  className={`px-4 py-3 rounded-lg border-2 transition-colors ${
+                  className={`px-4 py-3 rounded-[4px] border-2 transition-colors ${
                     exportType === "json"
-                      ? "border-brand-600 bg-red-50"
+                      ? "border-line-strong border-l-2 border-l-brand-600 bg-surface"
                       : "border-line-strong hover:border-line-strong"
                   }`}
                 >
@@ -171,9 +171,9 @@ export default function DataExport({ onClose }: DataExportProps) {
                 </button>
                 <button
                   onClick={() => setExportType("csv")}
-                  className={`px-4 py-3 rounded-lg border-2 transition-colors ${
+                  className={`px-4 py-3 rounded-[4px] border-2 transition-colors ${
                     exportType === "csv"
-                      ? "border-brand-600 bg-red-50"
+                      ? "border-line-strong border-l-2 border-l-brand-600 bg-surface"
                       : "border-line-strong hover:border-line-strong"
                   }`}
                 >
@@ -190,25 +190,25 @@ export default function DataExport({ onClose }: DataExportProps) {
                 Options d'exportation
               </label>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-canvas rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-canvas rounded-[4px]">
                   <div className="flex items-center gap-3">
-                    <CheckCircle size={18} className="text-green-600" />
+                    <CheckCircle size={18} className="text-body" />
                     <div>
                       <div className="text-sm text-ink">Projets et visites</div>
                       <div className="text-xs text-muted">Toujours inclus</div>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-canvas rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-canvas rounded-[4px]">
                   <div className="flex items-center gap-3">
-                    <CheckCircle size={18} className="text-green-600" />
+                    <CheckCircle size={18} className="text-body" />
                     <div>
                       <div className="text-sm text-ink">Métadonnées des photos</div>
                       <div className="text-xs text-muted">Tags, localisation, descriptions</div>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-canvas rounded-lg opacity-50">
+                <div className="flex items-center justify-between p-3 bg-canvas rounded-[4px] opacity-50">
                   <div className="flex items-center gap-3">
                     <Image size={18} className="text-faint" />
                     <div>
@@ -222,9 +222,9 @@ export default function DataExport({ onClose }: DataExportProps) {
             </div>
 
             {/* Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <h4 className="text-sm font-medium text-blue-900 mb-2">À propos de l'export</h4>
-              <ul className="text-xs text-blue-800 space-y-1">
+            <div className="bg-subtle border border-line-strong rounded-[4px] p-4 mb-6">
+              <h4 className="text-sm font-medium text-ink mb-2">À propos de l'export</h4>
+              <ul className="text-xs text-ink space-y-1">
                 <li>• Format JSON: données structurées, prêtes pour sauvegarde ou migration</li>
                 <li>• Format CSV: compatible Excel, idéal pour analyses et rapports</li>
                 <li>• Les photos restent accessibles dans votre compte Supabase</li>
@@ -235,7 +235,7 @@ export default function DataExport({ onClose }: DataExportProps) {
             <button
               onClick={handleExport}
               disabled={exporting}
-              className={`w-full py-4 rounded-lg transition-colors font-medium flex items-center justify-center gap-2 ${
+              className={`w-full py-4 rounded-[4px] transition-colors font-medium flex items-center justify-center gap-2 ${
                 exporting
                   ? "bg-line text-muted cursor-not-allowed"
                   : "bg-brand-600 text-white hover:bg-brand-700"

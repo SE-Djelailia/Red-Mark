@@ -57,10 +57,10 @@ export default function RecoveryLinkDialog({
       aria-modal="true"
       aria-labelledby="recovery-link-title"
     >
-      <div className="bg-surface rounded-xl max-w-lg w-full p-6 border border-line shadow-sm max-h-[90vh] overflow-y-auto">
+      <div className="bg-surface rounded-[4px] max-w-lg w-full p-6 border border-line shadow-sm max-h-[90vh] overflow-y-auto">
         <div className="flex items-start gap-3 mb-4">
-          <div className="h-10 w-10 rounded-lg bg-brand-50 flex items-center justify-center flex-shrink-0">
-            <KeyRound size={20} className="text-brand-600" aria-hidden="true" />
+          <div className="h-10 w-10 rounded-[4px] bg-subtle flex items-center justify-center flex-shrink-0">
+            <KeyRound size={20} className="text-ink" aria-hidden="true" />
           </div>
           <div className="min-w-0">
             <h2 id="recovery-link-title" className="text-base font-semibold text-ink">
@@ -80,7 +80,7 @@ export default function RecoveryLinkDialog({
             Supabase's email-OTP lifetime (one hour by default), so a link
             copied now and emailed this evening will already be dead when it
             is opened. If that happens, re-issue it from the roster. */}
-        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 mb-3">
+        <div className="flex items-start gap-2 rounded-[4px] border border-line-strong bg-subtle px-3 py-2.5 mb-3">
           <AlertTriangle size={16} className="text-warn flex-shrink-0 mt-0.5" aria-hidden="true" />
           <p className="text-xs text-warn">
             Aucun courriel n'a été envoyé. Ce lien ne sera plus affiché — copiez-le maintenant, et
@@ -89,7 +89,7 @@ export default function RecoveryLinkDialog({
           </p>
         </div>
 
-        <div className="rounded-lg border border-line bg-subtle p-3 mb-4">
+        <div className="rounded-[4px] border border-line bg-subtle p-3 mb-4">
           <p className="text-xs text-muted font-mono break-all select-all leading-relaxed">
             {link}
           </p>

@@ -379,7 +379,7 @@ export default function ReportGenerator() {
 
       <div className="px-4 py-6 max-w-2xl mx-auto space-y-6">
         {/* Visit selector */}
-        <div className="bg-white rounded-xl border border-line p-5">
+        <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center gap-2 mb-3">
             <Calendar size={18} className="text-brand-600" />
             <label className="text-sm font-semibold text-ink">Visite de chantier</label>
@@ -390,7 +390,7 @@ export default function ReportGenerator() {
             <select
               value={selectedVisitId}
               onChange={(e) => setSelectedVisitId(e.target.value)}
-              className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
+              className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
             >
               {visits.map((visit) => (
                 <option key={visit.id} value={visit.id}>
@@ -403,7 +403,7 @@ export default function ReportGenerator() {
         </div>
 
         {/* Report metadata not yet captured elsewhere in the app */}
-        <div className="bg-white rounded-xl border border-line p-5">
+        <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center gap-2 mb-4">
             <Hash size={18} className="text-brand-600" />
             <label className="text-sm font-semibold text-ink">Informations du rapport</label>
@@ -421,7 +421,7 @@ export default function ReportGenerator() {
                   value={report?.reportNumber || ""}
                   readOnly
                   aria-readonly="true"
-                  className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-sm text-muted cursor-default"
+                  className="w-full px-3 py-2 bg-subtle border border-line rounded-[4px] text-sm text-muted cursor-default"
                   placeholder="Attribué automatiquement"
                 />
               </div>
@@ -431,7 +431,7 @@ export default function ReportGenerator() {
                   type="text"
                   value={manual.pageCount}
                   onChange={(e) => updateManual("pageCount", e.target.value)}
-                  className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
+                  className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
                   placeholder="À déterminer"
                 />
               </div>
@@ -444,14 +444,14 @@ export default function ReportGenerator() {
                   type="text"
                   value={manual.transmittedBy}
                   onChange={(e) => updateManual("transmittedBy", e.target.value)}
-                  className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
+                  className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
                   placeholder="Courriel"
                 />
               </div>
               <div>
                 <label className="block text-xs text-body mb-1">Heure de visite</label>
                 {visitTimeRange ? (
-                  <div className="w-full px-3 py-2 bg-subtle border border-line rounded-lg text-sm text-body">
+                  <div className="w-full px-3 py-2 bg-subtle border border-line rounded-[4px] text-sm text-body">
                     {visitTimeRange}
                     <span className="text-faint"> (de la visite)</span>
                   </div>
@@ -460,7 +460,7 @@ export default function ReportGenerator() {
                     type="text"
                     value={manual.time}
                     onChange={(e) => updateManual("time", e.target.value)}
-                    className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
+                    className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
                     placeholder="9h00 - 10h00"
                   />
                 )}
@@ -473,7 +473,7 @@ export default function ReportGenerator() {
                 type="text"
                 value={manual.subject}
                 onChange={(e) => updateManual("subject", e.target.value)}
-                className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:border-brand-600"
+                className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
                 placeholder="Visite de chantier / constatations."
               />
             </div>
@@ -507,7 +507,7 @@ export default function ReportGenerator() {
                           label: e.target.value,
                         })
                       }
-                      className="w-24 px-2 py-1.5 bg-canvas border border-line rounded text-sm focus:outline-none focus:border-brand-600"
+                      className="w-24 px-2 py-1.5 bg-canvas border border-line rounded text-sm focus:outline-none focus:border-ink"
                       placeholder="JLPa"
                     />
                     <input
@@ -518,14 +518,14 @@ export default function ReportGenerator() {
                           number: e.target.value,
                         })
                       }
-                      className="flex-1 px-2 py-1.5 bg-canvas border border-line rounded text-sm focus:outline-none focus:border-brand-600"
+                      className="flex-1 px-2 py-1.5 bg-canvas border border-line rounded text-sm focus:outline-none focus:border-ink"
                       placeholder="Numéro"
                     />
                     {manual.dossierNumbers.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeListEntry("dossierNumbers", index)}
-                        className="p-1.5 text-faint hover:text-red-600"
+                        className="p-1.5 text-faint hover:text-brand-strong"
                       >
                         <X size={16} />
                       </button>
@@ -544,7 +544,7 @@ export default function ReportGenerator() {
             them. Weather-evidence photos never appear here (see
             selectableReportPhotos), and the generator re-filters anyway. */}
         {!loading && visits.length > 0 && (
-          <div className="bg-white rounded-xl border border-line p-5">
+          <div className="bg-surface rounded-[4px] border border-line p-5">
             <h3 className="text-sm text-ink font-semibold mb-1">Photos du rapport</h3>
             <p className="text-xs text-muted mb-3">
               Choisissez une visite, cochez ses photos, puis changez de visite — la sélection est
@@ -556,7 +556,7 @@ export default function ReportGenerator() {
             <select
               value={photoVisitId}
               onChange={(e) => setPhotoVisitId(e.target.value)}
-              className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm mb-3 min-h-[44px] focus:outline-none focus:border-brand-600"
+              className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm mb-3 min-h-[44px] focus:outline-none focus:border-ink"
             >
               {visits.map((v) => (
                 <option key={v.id} value={v.id}>
@@ -568,7 +568,7 @@ export default function ReportGenerator() {
             </select>
 
             {/* Running summary across every visit contributing photos. */}
-            <div className="bg-canvas border border-line rounded-lg px-3 py-2.5 mb-3">
+            <div className="bg-canvas border border-line rounded-[4px] px-3 py-2.5 mb-3">
               <div className="text-sm text-ink font-medium">
                 {selectedPhotos.length} photo{selectedPhotos.length === 1 ? "" : "s"} sélectionnée
                 {selectedPhotos.length === 1 ? "" : "s"}
@@ -607,7 +607,7 @@ export default function ReportGenerator() {
             {loadingPhotos ? (
               <div className="text-sm text-muted">Chargement des photos…</div>
             ) : photosLoadError ? (
-              <div className="text-sm text-red-600 flex items-center gap-2">
+              <div className="text-sm text-brand-strong flex items-center gap-2">
                 Impossible de charger les photos.
                 <button onClick={loadPhotos} className="underline font-medium">
                   Réessayer
@@ -652,7 +652,7 @@ export default function ReportGenerator() {
                         type="button"
                         onClick={() => togglePhoto(photo)}
                         aria-pressed={checked}
-                        className={`relative aspect-square rounded-lg overflow-hidden bg-subtle transition-all ${
+                        className={`relative aspect-square rounded-[4px] overflow-hidden bg-subtle transition-all ${
                           checked ? "ring-2 ring-brand-600" : "hover:opacity-90"
                         }`}
                       >
@@ -685,7 +685,7 @@ export default function ReportGenerator() {
 
         {/* Visit summary preview */}
         {!loading && selectedVisit && (
-          <div className="bg-white rounded-xl border border-line p-5">
+          <div className="bg-surface rounded-[4px] border border-line p-5">
             <h3 className="text-sm text-ink mb-2 font-semibold">Visite sélectionnée :</h3>
             <p className="text-sm text-body">
               {formatDateLong(selectedVisit.visit_date)}
@@ -701,7 +701,7 @@ export default function ReportGenerator() {
           <button
             onClick={() => void handleGenerateReport()}
             disabled={generating || loading || !selectedVisitId}
-            className={`w-full py-4 rounded-xl flex items-center justify-center gap-3 transition-all ${
+            className={`w-full py-4 rounded-[4px] flex items-center justify-center gap-3 transition-all ${
               generating ? "bg-line-strong cursor-not-allowed" : "bg-brand-600 hover:bg-brand-700 active:scale-[0.98]"
             } text-white disabled:opacity-50 shadow-md`}
           >
@@ -719,7 +719,7 @@ export default function ReportGenerator() {
           </button>
         ) : (
           <div className="space-y-3">
-            <div className="bg-surface border border-line rounded-xl p-4 flex items-center gap-3">
+            <div className="bg-surface border border-line rounded-[4px] p-4 flex items-center gap-3">
               <CheckCircle size={22} className="text-resolved flex-shrink-0" />
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-ink">Rapport {report.reportNumber}</div>
@@ -732,7 +732,7 @@ export default function ReportGenerator() {
             <button
               onClick={() => void handleDownloadAgain()}
               disabled={generating}
-              className="w-full py-4 bg-ink text-white rounded-xl flex items-center justify-center gap-3 hover:bg-body active:scale-[0.98] transition-all shadow-md disabled:opacity-50"
+              className="w-full py-4 bg-ink text-white rounded-[4px] flex items-center justify-center gap-3 hover:bg-body active:scale-[0.98] transition-all shadow-md disabled:opacity-50"
             >
               {generating ? (
                 <>
@@ -751,7 +751,7 @@ export default function ReportGenerator() {
             <button
               onClick={handleNewReport}
               disabled={generating}
-              className="w-full py-3 bg-surface border border-line text-ink rounded-xl flex items-center justify-center gap-2 hover:border-brand-600 hover:text-brand-600 transition-colors disabled:opacity-50 min-h-[48px]"
+              className="w-full py-3 bg-surface border border-line text-ink rounded-[4px] flex items-center justify-center gap-2 hover:border-brand-600 hover:text-brand-600 transition-colors disabled:opacity-50 min-h-[48px]"
             >
               <Plus size={18} />
               <span className="text-sm font-medium">Nouveau rapport</span>

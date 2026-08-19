@@ -411,13 +411,13 @@ export default function LocationDetail() {
           <div className="flex gap-3 justify-center">
             <button
               onClick={goBack}
-              className="px-4 h-11 bg-subtle text-ink rounded-lg hover:bg-line text-sm font-medium min-h-[44px]"
+              className="px-4 h-11 bg-subtle text-ink rounded-[4px] hover:bg-line text-sm font-medium min-h-[44px]"
             >
               Retour
             </button>
             <button
               onClick={() => loadLocation()}
-              className="px-4 h-11 bg-brand-600 text-white rounded-lg hover:bg-brand-700 text-sm font-medium min-h-[44px]"
+              className="px-4 h-11 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 text-sm font-medium min-h-[44px]"
             >
               Réessayer
             </button>
@@ -456,7 +456,7 @@ export default function LocationDetail() {
         <>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-ink font-medium truncate">{issue.title}</span>
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-700 flex-shrink-0">
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-subtle text-brand-strong flex-shrink-0">
               Ouverte
             </span>
           </div>
@@ -479,7 +479,7 @@ export default function LocationDetail() {
           <>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm text-ink font-medium truncate">{issue.title}</span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-700 flex-shrink-0">
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-subtle text-body flex-shrink-0">
                 Vérifiée
               </span>
             </div>
@@ -534,7 +534,7 @@ export default function LocationDetail() {
       onClick,
       render: () => (
         <div
-          className={`bg-canvas rounded-2xl rounded-tl-sm px-3 py-2 inline-block max-w-full ${
+          className={`bg-canvas rounded-[4px] rounded-tl-sm px-3 py-2 inline-block max-w-full ${
             onClick ? "hover:bg-subtle transition-colors" : ""
           }`}
         >
@@ -576,11 +576,11 @@ export default function LocationDetail() {
   }
 
   const TIMELINE_ICON: Record<TimelineEntry["kind"], { icon: typeof AlertCircle; color: string }> = {
-    "issue-logged": { icon: AlertCircle, color: "text-red-600 bg-red-50" },
-    "issue-resolved": { icon: CheckCircle2, color: "text-green-600 bg-green-50" },
-    photo: { icon: ImageIcon, color: "text-blue-600 bg-blue-50" },
+    "issue-logged": { icon: AlertCircle, color: "text-brand-strong bg-surface" },
+    "issue-resolved": { icon: CheckCircle2, color: "text-body bg-subtle" },
+    photo: { icon: ImageIcon, color: "text-body bg-subtle" },
     comment: { icon: MessageSquare, color: "text-body bg-subtle" },
-    visit: { icon: Calendar, color: "text-purple-600 bg-purple-50" },
+    visit: { icon: Calendar, color: "text-body bg-subtle" },
   };
 
   return (
@@ -597,11 +597,11 @@ export default function LocationDetail() {
       </div>
 
       <div className="px-4 pt-4 max-w-2xl mx-auto">
-        <div className="inline-flex rounded-lg border border-line-strong overflow-hidden">
+        <div className="inline-flex rounded-[4px] border border-line-strong overflow-hidden">
           <button
             onClick={() => setView("overview")}
             className={`px-4 py-2 text-sm font-medium min-h-[40px] transition-colors ${
-              view === "overview" ? "bg-brand-600 text-white" : "bg-surface text-body hover:bg-subtle"
+              view === "overview" ? "bg-ink text-white" : "bg-surface text-body hover:bg-subtle"
             }`}
           >
             Aperçu
@@ -609,7 +609,7 @@ export default function LocationDetail() {
           <button
             onClick={() => setView("activity")}
             className={`px-4 py-2 text-sm font-medium min-h-[40px] transition-colors ${
-              view === "activity" ? "bg-brand-600 text-white" : "bg-surface text-body hover:bg-subtle"
+              view === "activity" ? "bg-ink text-white" : "bg-surface text-body hover:bg-subtle"
             }`}
           >
             Activité
@@ -619,7 +619,7 @@ export default function LocationDetail() {
 
       {view === "activity" ? (
         <div className="px-4 py-6 max-w-2xl mx-auto">
-          <div className="bg-surface rounded-xl border border-line p-5">
+          <div className="bg-surface rounded-[4px] border border-line p-5">
             <h2 className="text-sm font-semibold text-ink mb-3">
               Historique ({loadingActivity ? "…" : timeline.length})
             </h2>
@@ -663,7 +663,7 @@ export default function LocationDetail() {
                                 {entry.thumbnailUrl ? (
                                   <button
                                     onClick={entry.onClick}
-                                    className="w-8 h-8 rounded-lg overflow-hidden border-2 border-white shadow-sm bg-subtle"
+                                    className="w-8 h-8 rounded-[4px] overflow-hidden border-2 border-white shadow-sm bg-subtle"
                                   >
                                     <img
                                       src={entry.thumbnailUrl}
@@ -682,7 +682,7 @@ export default function LocationDetail() {
 
                               <Tag
                                 onClick={entry.onClick}
-                                className={`flex-1 min-w-0 flex items-start justify-between gap-3 rounded-lg text-left ${
+                                className={`flex-1 min-w-0 flex items-start justify-between gap-3 rounded-[4px] text-left ${
                                   entry.onClick && !isComment
                                     ? "hover:bg-subtle -mx-1 px-1 py-0.5 cursor-pointer"
                                     : ""
@@ -710,7 +710,7 @@ export default function LocationDetail() {
       ) : (
       <div className="px-4 py-6 max-w-2xl mx-auto space-y-6">
         {/* Metadata card */}
-        <div className="bg-surface rounded-xl border border-line p-5 space-y-2 text-sm">
+        <div className="bg-surface rounded-[4px] border border-line p-5 space-y-2 text-sm">
           <div className="flex items-center gap-3">
             {(() => {
               const TypeIcon = LOCATION_TYPE_ICONS[location.type];
@@ -735,13 +735,13 @@ export default function LocationDetail() {
 
         {/* Parent/child locations — only shown when there's something to show */}
         {(parentLocation || childLocations.length > 0) && (
-          <div className="bg-surface rounded-xl border border-line p-5 space-y-3">
+          <div className="bg-surface rounded-[4px] border border-line p-5 space-y-3">
             {parentLocation && (
               <div>
                 <div className="text-xs text-muted mb-1.5">Emplacement parent</div>
                 <button
                   onClick={() => navigate(`/app/projects/${projectId}/locations/${parentLocation.id}`)}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-line hover:border-brand-600 hover:bg-subtle min-h-[44px] text-left"
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-[4px] border border-line border-l-2 border-l-transparent hover:border-l-brand-600 hover:bg-subtle min-h-[44px] text-left"
                 >
                   <span className="text-sm text-ink font-medium truncate">
                     {parentLocation.locationNumber}
@@ -761,7 +761,7 @@ export default function LocationDetail() {
                     <button
                       key={child.id}
                       onClick={() => navigate(`/app/projects/${projectId}/locations/${child.id}`)}
-                      className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-line hover:border-brand-600 hover:bg-subtle min-h-[44px] text-left"
+                      className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-[4px] border border-line border-l-2 border-l-transparent hover:border-l-brand-600 hover:bg-subtle min-h-[44px] text-left"
                     >
                       <span className="text-sm text-ink font-medium truncate">
                         {child.locationNumber}
@@ -777,7 +777,7 @@ export default function LocationDetail() {
         )}
 
         {/* Issues section */}
-        <div className="bg-surface rounded-xl border border-line p-5">
+        <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
               <AlertCircle size={18} className="text-muted" />
@@ -786,7 +786,7 @@ export default function LocationDetail() {
             {projectRole.canCreateIssues && (
               <button
                 onClick={startAddIssue}
-                className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-lg text-sm font-medium text-ink min-h-[40px]"
+                className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
               >
                 <Plus size={14} />
                 Ajouter
@@ -796,7 +796,7 @@ export default function LocationDetail() {
           {loadingIssues ? (
             <div className="text-sm text-muted">Chargement…</div>
           ) : issuesLoadError ? (
-            <div className="text-sm text-red-600 flex items-center gap-2">
+            <div className="text-sm text-brand-strong flex items-center gap-2">
               Impossible de charger les déficiences.
               <button onClick={loadIssues} className="underline font-medium">
                 Réessayer
@@ -810,7 +810,7 @@ export default function LocationDetail() {
                 <button
                   key={issue.id}
                   onClick={() => navigate(`/app/projects/${projectId}/issues/${issue.id}`)}
-                  className="w-full text-left px-3 py-2.5 rounded-lg border border-line hover:border-brand-600 hover:bg-subtle min-h-[44px]"
+                  className="w-full text-left px-3 py-2.5 rounded-[4px] border border-line border-l-2 border-l-transparent hover:border-l-brand-600 hover:bg-subtle min-h-[44px]"
                 >
                   <div className="text-sm text-ink font-medium truncate">{issue.title}</div>
                   <div className="text-xs text-muted">
@@ -824,7 +824,7 @@ export default function LocationDetail() {
 
         {/* Visits at this location — derived, not stored. Sits above Photos
             because "when was this looked at" frames everything below it. */}
-        <div className="bg-surface rounded-xl border border-line p-5">
+        <div className="bg-surface rounded-[4px] border border-line p-5">
           <h2 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
             <Calendar size={18} className="text-muted" />
             Visites à cet emplacement
@@ -867,7 +867,7 @@ export default function LocationDetail() {
         </div>
 
         {/* Photos section */}
-        <div className="bg-surface rounded-xl border border-line p-5">
+        <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
               <ImageIcon size={18} className="text-muted" />
@@ -876,7 +876,7 @@ export default function LocationDetail() {
             {projectRole.canUploadPhotos && (
               <button
                 onClick={startAddPhotos}
-                className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-lg text-sm font-medium text-ink min-h-[40px]"
+                className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
               >
                 <Camera size={14} />
                 Ajouter
@@ -886,7 +886,7 @@ export default function LocationDetail() {
           {loadingPhotos ? (
             <div className="text-sm text-muted">Chargement…</div>
           ) : photosLoadError ? (
-            <div className="text-sm text-red-600 flex items-center gap-2">
+            <div className="text-sm text-brand-strong flex items-center gap-2">
               Impossible de charger les photos.
               <button onClick={loadPhotos} className="underline font-medium">
                 Réessayer
@@ -907,7 +907,7 @@ export default function LocationDetail() {
         {/* Reports section — the history of which issued reports covered this
             local. Read-only: reports are produced from a visit, not from here.
             The .docx itself isn't stored, so there is nothing to download. */}
-        <div className="bg-surface rounded-xl border border-line p-5">
+        <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
               <FileText size={18} className="text-muted" />
@@ -917,7 +917,7 @@ export default function LocationDetail() {
           {loadingReports ? (
             <div className="text-sm text-muted">Chargement…</div>
           ) : reportsLoadError ? (
-            <div className="text-sm text-red-600 flex items-center gap-2">
+            <div className="text-sm text-brand-strong flex items-center gap-2">
               Impossible de charger les rapports.
               <button onClick={loadReports} className="underline font-medium">
                 Réessayer
@@ -930,7 +930,7 @@ export default function LocationDetail() {
               {reports.map((report) => (
                 <div
                   key={report.id}
-                  className="px-3 py-2.5 rounded-lg border border-line min-h-[44px] flex items-center gap-2"
+                  className="px-3 py-2.5 rounded-[4px] border border-line min-h-[44px] flex items-center gap-2"
                 >
                   <span className="text-sm text-ink font-medium tabular-nums">
                     {report.reportNumber}
@@ -968,7 +968,7 @@ export default function LocationDetail() {
                     },
                   ])
                 }
-                className="px-4 py-2 bg-surface/10 hover:bg-surface/20 rounded-lg flex items-center gap-2 text-white transition-colors font-medium min-h-[44px]"
+                className="px-4 py-2 bg-surface/10 hover:bg-surface/20 rounded-[4px] flex items-center gap-2 text-white transition-colors font-medium min-h-[44px]"
               >
                 <MapPin size={18} />
                 Modifier
@@ -989,7 +989,7 @@ export default function LocationDetail() {
             <img
               src={lightboxPhoto.url}
               alt=""
-              className="max-w-full max-h-full object-contain rounded-lg"
+              className="max-w-full max-h-full object-contain rounded-[4px]"
             />
           </div>
         </div>
@@ -1045,7 +1045,7 @@ export default function LocationDetail() {
           onClick={closePendingAction}
         >
           <div
-            className="relative max-w-2xl w-full bg-surface rounded-lg p-6 max-h-[90vh] overflow-y-auto"
+            className="relative max-w-2xl w-full bg-surface rounded-[4px] p-6 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -1078,7 +1078,7 @@ export default function LocationDetail() {
           onClick={closePendingAction}
         >
           <div
-            className="relative max-w-2xl w-full bg-surface rounded-lg p-6 max-h-[90vh] overflow-y-auto"
+            className="relative max-w-2xl w-full bg-surface rounded-[4px] p-6 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -1097,7 +1097,7 @@ export default function LocationDetail() {
                 {newPhotoFiles.map((file, index) => (
                   <div
                     key={index}
-                    className="relative aspect-square rounded-lg overflow-hidden border border-line"
+                    className="relative aspect-square rounded-[4px] overflow-hidden border border-line"
                   >
                     <img
                       src={URL.createObjectURL(file)}
@@ -1123,14 +1123,14 @@ export default function LocationDetail() {
               <button
                 onClick={closePendingAction}
                 disabled={uploadingPhotos}
-                className="flex-1 py-3 bg-subtle text-ink rounded-lg hover:bg-line-strong transition-colors font-medium disabled:opacity-50 min-h-[48px]"
+                className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line-strong transition-colors font-medium disabled:opacity-50 min-h-[48px]"
               >
                 Annuler
               </button>
               <button
                 onClick={handleSavePhotos}
                 disabled={uploadingPhotos || newPhotoFiles.length === 0}
-                className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 min-h-[48px]"
+                className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 min-h-[48px]"
               >
                 {uploadingPhotos ? "Envoi…" : "Enregistrer"}
               </button>

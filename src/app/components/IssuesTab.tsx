@@ -179,7 +179,7 @@ export default function IssuesTab({
   }
 
   const selectClass =
-    "w-full px-3 py-2.5 bg-surface border border-line-strong rounded-lg text-sm min-h-[44px]";
+    "w-full px-3 py-2.5 bg-surface border border-line-strong rounded-[4px] text-sm min-h-[44px]";
 
   return (
     <div className="space-y-4">
@@ -194,9 +194,9 @@ export default function IssuesTab({
         <button
           onClick={() => setOverdueOnly((v) => !v)}
           aria-pressed={overdueOnly}
-          className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg border text-sm font-medium min-h-[44px] transition-colors ${
+          className={`w-full flex items-center gap-2 px-4 py-3 rounded-[4px] border text-sm font-medium min-h-[44px] transition-colors ${
             overdueOnly
-              ? "border-brand-600 bg-brand-50 text-brand-strong"
+              ? "border-line-strong border-l-2 border-l-brand-600 bg-surface text-ink"
               : "border-line bg-surface text-body hover:border-line-strong"
           }`}
         >
@@ -219,9 +219,9 @@ export default function IssuesTab({
                 key={s}
                 onClick={() => toggleStatus(s)}
                 aria-pressed={on}
-                className={`px-3 py-2 rounded-lg border text-sm min-h-[40px] transition-colors ${
+                className={`px-3 py-2 rounded-[4px] border text-sm min-h-[40px] transition-colors ${
                   on
-                    ? "border-brand-600 bg-brand-50 text-brand-strong font-medium"
+                    ? "border-line-strong border-l-2 border-l-brand-600 bg-surface text-ink font-medium"
                     : "border-line bg-surface text-muted hover:border-line-strong"
                 }`}
               >
@@ -244,7 +244,7 @@ export default function IssuesTab({
           <select
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as SortKey)}
-            className="px-3 py-2 bg-surface border border-line rounded-lg text-sm min-h-[40px]"
+            className="px-3 py-2 bg-surface border border-line rounded-[4px] text-sm min-h-[40px]"
             aria-label="Trier"
           >
             {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
@@ -264,7 +264,7 @@ export default function IssuesTab({
         </div>
 
         {showFilters && (
-          <div className="grid gap-3 sm:grid-cols-3 p-4 bg-subtle rounded-lg border border-line">
+          <div className="grid gap-3 sm:grid-cols-3 p-4 bg-subtle rounded-[4px] border border-line">
             <select
               value={disciplineFilter}
               onChange={(e) => setDisciplineFilter(e.target.value)}
@@ -327,7 +327,7 @@ export default function IssuesTab({
           <div className="text-xs text-muted">
             {filtered.length} / {issues.length} déficience{issues.length !== 1 ? "s" : ""}
           </div>
-          <div className="bg-surface rounded-xl border border-line overflow-hidden">
+          <div className="bg-surface rounded-[4px] border border-line overflow-hidden">
             {filtered.map((issue) => {
               const locationLabel = resolveLocationLabel(issue);
               const age = ageInDays(issue.createdAt ?? issue.createdDate, now);

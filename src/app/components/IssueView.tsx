@@ -120,7 +120,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
 
   if (editing) {
     return (
-      <div className="bg-surface rounded-xl border border-line p-5">
+      <div className="bg-surface rounded-[4px] border border-line p-5">
         <IssueForm
           projectId={projectId}
           visitId={issue.visitId}
@@ -139,13 +139,13 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-surface rounded-xl border border-line p-5">
+      <div className="bg-surface rounded-[4px] border border-line p-5">
         <div className="flex items-start justify-between gap-3 mb-3">
           <h1 className="text-lg font-semibold text-ink">{issue.title}</h1>
           {canEditIssue(projectRole, issue.createdBy) && (
             <button
               onClick={() => setEditing(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-lg text-sm font-medium text-ink min-h-[40px] flex-shrink-0"
+              className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium text-ink min-h-[40px] flex-shrink-0"
             >
               <Edit size={14} />
               Modifier
@@ -157,12 +157,12 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
           <PriorityBadge priority={issue.priority} />
           <StatusBadge status={issue.status} />
           {overdue && (
-            <span className="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-md border border-brand-100 bg-brand-50 text-brand-strong text-[11px] font-medium">
+            <span className="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[4px] border border-brand-100 bg-brand-50 text-brand-strong text-[11px] font-medium">
               En retard
             </span>
           )}
           {issue.discipline && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-line text-xs font-medium text-muted">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] border border-line text-xs font-medium text-muted">
               {issue.discipline}
             </span>
           )}
@@ -212,7 +212,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
 
       {/* Photos */}
       {issue.photos.length > 0 && (
-        <div className="bg-surface rounded-xl border border-line p-5">
+        <div className="bg-surface rounded-[4px] border border-line p-5">
           <h2 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
             <Camera size={18} className="text-muted" />
             Photos ({issue.photos.length})
@@ -221,7 +221,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
             {issue.photos.map((photo) => (
               <div
                 key={photo.id}
-                className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group bg-subtle"
+                className="relative aspect-square rounded-[4px] overflow-hidden cursor-pointer group bg-subtle"
                 onClick={() => setSelectedPhoto(photo)}
               >
                 <SecureImage
@@ -248,7 +248,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
       />
 
       {/* Comments */}
-      <div className="bg-surface rounded-xl border border-line p-5">
+      <div className="bg-surface rounded-[4px] border border-line p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
             <MessageSquare size={18} className="text-muted" />
@@ -282,14 +282,14 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
             <SecureImage
               storagePath={selectedPhoto.storagePath}
               alt="Photo de la déficience"
-              className="w-full h-auto rounded-lg"
+              className="w-full h-auto rounded-[4px]"
               onClick={(e) => e.stopPropagation()}
             />
             <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
               {canAnnotate && (
                 <button
                   onClick={() => setShowAnnotator(true)}
-                  className="flex-1 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-brand-800 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+                  className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
                 >
                   <Pencil size={18} />
                   <span>Annoter</span>
@@ -307,7 +307,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
                       },
                     ])
                   }
-                  className="flex-1 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+                  className="flex-1 py-3 bg-white/10 text-white rounded-[4px] hover:bg-white/20 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
                 >
                   <MapPin size={18} />
                   <span>Modifier</span>

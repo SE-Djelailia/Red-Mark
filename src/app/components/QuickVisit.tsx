@@ -57,7 +57,7 @@ export default function QuickVisit() {
 
         {!projectRole.loading && !projectRole.canCreateIssues ? (
           <div className="px-4 py-6 max-w-2xl mx-auto">
-            <div className="bg-surface rounded-xl p-8 border border-line text-center">
+            <div className="bg-surface rounded-[4px] p-8 border border-line text-center">
               <p className="text-base text-ink font-medium mb-2">
                 Vous n'avez pas la permission de créer une visite sur ce projet.
               </p>
@@ -121,9 +121,9 @@ export default function QuickVisit() {
             <button
               key={project.id}
               onClick={() => setSelectedProjectId(project.id)}
-              className="w-full flex items-center gap-3 bg-surface rounded-xl border border-line p-4 hover:border-brand-600 hover:shadow-md transition-all text-left"
+              className="w-full flex items-center gap-3 bg-surface rounded-[4px] border border-line p-4 hover:border-brand-600 hover:shadow-md transition-all text-left"
             >
-              <div className="w-10 h-10 rounded-lg bg-brand-600/10 text-brand-600 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-[4px] bg-subtle text-ink flex items-center justify-center flex-shrink-0">
                 <Building2 size={18} />
               </div>
               <div className="flex-1 min-w-0">

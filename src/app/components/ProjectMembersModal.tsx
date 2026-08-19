@@ -258,9 +258,9 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
   const getRoleBadgeColor = (role: ProjectRole) => {
     switch (role) {
       case "owner":
-        return "bg-purple-100 text-purple-700";
+        return "bg-subtle text-body";
       case "editor":
-        return "bg-blue-100 text-blue-700";
+        return "bg-subtle text-body";
       default:
         return "bg-subtle text-body";
     }
@@ -283,11 +283,11 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
       onClick={onClose}
     >
       <div
-        className="relative max-w-2xl w-full bg-white rounded-lg max-h-[90vh] overflow-y-auto"
+        className="relative max-w-2xl w-full bg-surface rounded-[4px] max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-line px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-surface border-b border-line px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-ink">Membres du projet</h2>
             <p className="text-sm text-muted mt-1">
@@ -307,7 +307,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
           {canManage && !showInviteForm && (
             <button
               onClick={() => setShowInviteForm(true)}
-              className="w-full py-3 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 font-medium"
+              className="w-full py-3 px-4 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 font-medium"
             >
               <UserPlus size={20} />
               Inviter un membre
@@ -316,7 +316,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
 
           {/* Invite form */}
           {canManage && showInviteForm && (
-            <div className="bg-canvas rounded-lg p-4 space-y-4">
+            <div className="bg-canvas rounded-[4px] p-4 space-y-4">
               <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
                 <UserPlus size={16} />
                 Ajouter un membre de votre firme
@@ -339,7 +339,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                       const picked = addableFirmPeople.find((p) => p.id === e.target.value);
                       if (picked) setInviteEmail(picked.email);
                     }}
-                    className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-line-strong rounded-[4px] focus:outline-none focus:ring-2 focus:ring-ink focus:border-transparent"
                   >
                     <option value="">Choisir une personne…</option>
                     {addableFirmPeople.map((p) => (
@@ -362,7 +362,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                   onChange={(e) => setInviteEmail(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleInvite()}
                   placeholder="mc.bouchard@jlp.ca"
-                  className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-line-strong rounded-[4px] focus:outline-none focus:ring-2 focus:ring-ink focus:border-transparent"
                 />
               </div>
               <div>
@@ -370,7 +370,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                 <select
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value as "editor" | "commenter")}
-                  className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-line-strong rounded-[4px] focus:outline-none focus:ring-2 focus:ring-ink focus:border-transparent"
                 >
                   <option value="editor">Éditeur — peut créer et modifier</option>
                   <option value="commenter">Commentateur — peut commenter seulement</option>
@@ -382,14 +382,14 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                     setShowInviteForm(false);
                     setInviteEmail("");
                   }}
-                  className="flex-1 py-2 bg-subtle text-ink rounded-lg hover:bg-line-strong transition-colors font-medium"
+                  className="flex-1 py-2 bg-subtle text-ink rounded-[4px] hover:bg-line-strong transition-colors font-medium"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleInvite}
                   disabled={inviting}
-                  className="flex-1 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-2 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {inviting ? (
                     <>
@@ -420,10 +420,10 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
               members.map((member) => (
                 <div
                   key={member.id}
-                  className="bg-canvas rounded-lg p-4 flex items-start justify-between gap-3"
+                  className="bg-canvas rounded-[4px] p-4 flex items-start justify-between gap-3"
                 >
                   <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-brand-600 text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
+                    <div className="w-10 h-10 rounded-[4px] bg-ink text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
                       {(member.name || "?")[0].toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -453,7 +453,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                           onChange={(e) =>
                             handleUpdateRole(member.id, e.target.value as ProjectRole)
                           }
-                          className="text-xs px-2 py-1 border border-line-strong rounded bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+                          className="text-xs px-2 py-1 border border-line-strong rounded bg-surface focus:outline-none focus:ring-2 focus:ring-ink"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <option value="editor">Éditeur</option>
@@ -461,7 +461,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                         </select>
                         <button
                           onClick={() => setRemoveTarget({ id: member.id, name: member.name })}
-                          className="w-11 h-11 flex items-center justify-center bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                          className="w-11 h-11 flex items-center justify-center bg-surface text-brand-strong rounded-[4px] hover:bg-subtle transition-colors"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -479,9 +479,9 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
             )}
           </div>
 
-          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <h4 className="text-sm font-semibold text-blue-900 mb-2">À propos des rôles</h4>
-            <ul className="text-xs text-blue-800 space-y-1">
+          <div className="bg-subtle rounded-[4px] p-4 border border-line-strong">
+            <h4 className="text-sm font-semibold text-ink mb-2">À propos des rôles</h4>
+            <ul className="text-xs text-ink space-y-1">
               <li>
                 <strong>Propriétaire :</strong> Contrôle total du projet et des membres
               </li>

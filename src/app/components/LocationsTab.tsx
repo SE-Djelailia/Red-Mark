@@ -86,7 +86,7 @@ export default function LocationsTab({
           <select
             value={levelFilter}
             onChange={(e) => setLevelFilter(e.target.value)}
-            className="w-full sm:w-56 px-4 py-3 bg-surface border border-line rounded-lg text-sm min-h-[48px]"
+            className="w-full sm:w-56 px-4 py-3 bg-surface border border-line rounded-[4px] text-sm min-h-[48px]"
           >
             <option value="">Tous les niveaux</option>
             {levels.map((l) => (
@@ -118,9 +118,9 @@ export default function LocationsTab({
               <button
                 key={loc.id}
                 onClick={() => navigate(`/app/projects/${projectId}/locations/${loc.id}`)}
-                className="w-full flex items-center gap-3 bg-surface rounded-xl border border-line p-4 hover:border-brand-600 transition-all text-left"
+                className="w-full flex items-center gap-3 bg-surface rounded-[4px] border border-line p-4 hover:border-brand-600 transition-all text-left"
               >
-                <div className="w-10 h-10 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-[4px] bg-subtle text-ink flex items-center justify-center flex-shrink-0">
                   <TypeIcon size={18} />
                 </div>
                 <div className="flex-1 min-w-0">

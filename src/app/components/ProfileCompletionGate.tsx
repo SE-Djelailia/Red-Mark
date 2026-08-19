@@ -111,9 +111,9 @@ export default function ProfileCompletionGate({ children }: { children: React.Re
 
   return (
     <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-6">
+      <div className="w-full max-w-md rounded-[4px] border border-line bg-surface p-6">
         <div className="text-center mb-6">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[4px] bg-subtle">
             <UserRound className="h-6 w-6 text-brand-600" aria-hidden="true" />
           </div>
           <h1 className="text-lg font-semibold text-ink">Complétez votre profil</h1>

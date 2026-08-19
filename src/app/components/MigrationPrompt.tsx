@@ -51,12 +51,12 @@ export default function MigrationPrompt() {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+      <div className="bg-surface rounded-[4px] shadow-2xl max-w-md w-full p-6">
         {migrationComplete ? (
           // Success state
           <div className="text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle size={32} className="text-green-600" />
+            <div className="w-16 h-16 bg-subtle rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle size={32} className="text-body" />
             </div>
             <h2 className="text-xl font-semibold text-ink mb-2">Migration réussie ! 🎉</h2>
             <p className="text-body text-sm">
@@ -69,8 +69,8 @@ export default function MigrationPrompt() {
           <>
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Database size={24} className="text-blue-600" />
+                <div className="w-12 h-12 bg-subtle rounded-[4px] flex items-center justify-center">
+                  <Database size={24} className="text-body" />
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-ink">Migration vers Supabase</h2>
@@ -87,10 +87,10 @@ export default function MigrationPrompt() {
               )}
             </div>
 
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 rounded-r">
+            <div className="bg-subtle border-l-4 border-ink p-4 mb-4 rounded-r">
               <div className="flex gap-2">
-                <AlertCircle size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-900">
+                <AlertCircle size={16} className="text-body flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-ink">
                   <p className="font-medium mb-1">Pourquoi migrer ?</p>
                   <ul className="space-y-1 text-xs">
                     <li>
@@ -114,7 +114,7 @@ export default function MigrationPrompt() {
               <button
                 onClick={handleMigrate}
                 disabled={migrating}
-                className="w-full py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 active:bg-[#A00400] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+                className="w-full py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
               >
                 {migrating ? (
                   <>
@@ -132,7 +132,7 @@ export default function MigrationPrompt() {
               {!migrating && (
                 <button
                   onClick={handleSkip}
-                  className="w-full py-3 bg-subtle text-body rounded-lg hover:bg-line transition-colors font-medium"
+                  className="w-full py-3 bg-subtle text-body rounded-[4px] hover:bg-line transition-colors font-medium"
                 >
                   Plus tard
                 </button>
