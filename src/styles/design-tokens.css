@@ -95,6 +95,13 @@
   --color-brand-50: #fef2f1; /* tinted ground — badges only */
   --color-brand-100: #f9dcd9; /* tinted rule — badges only */
 
+  /* ---- ICONOGRAPHY ----
+   * See @layer components -> .lucide for the rules these feed. Stroke is
+   * 1.5 at every size: lucide's default 2 is heavier than this UI's type
+   * and reads as a consumer app, not a drawing. */
+  --icon-stroke: 1.5;
+  --icon-stroke-heavy: 2; /* 32px+ display marks only */
+
   /* ---- Semantic ----
    * Deliberately austere. Green appears ONLY on a resolved/verified
    * state — the one place the eye must distinguish "done" from "red
@@ -240,6 +247,70 @@
   .rm-figures {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
+  }
+
+  /**
+   * THE ICON SYSTEM.
+   *
+   * Every lucide icon ships with `class="lucide"`, and its cap/join/weight
+   * arrive as SVG *presentation attributes*. Presentation attributes sit at
+   * the very bottom of the cascade — below even author stylesheets — so a
+   * single class rule here overrides them for all 365 icon usages without
+   * touching one call site.
+   *
+   * WHY SQUARE. Lucide defaults to round caps and joins. That is the
+   * consumer-software idiom; this system is a drawing. Logo.tsx already
+   * makes the argument in geometry: the mark is drawn as polygons rather
+   * than stroked lines specifically so its ends are true flat cuts. Icons
+   * inherit that — butt caps, mitered joins — so an icon terminates like a
+   * pen lifted off paper, square to the stroke, matching the 4px corner
+   * ceiling and the 2px leading rule.
+   *
+   * WHY 1.5. Lucide's default 2 at 16px is ~12.5% of the icon box, which
+   * next to this UI's 400/500 text weight reads bold. 1.5 optically matches
+   * the type and the 1px hairline rules.
+   *
+   * COLOR is deliberately absent: lucide already defaults stroke to
+   * `currentColor`, so an icon inherits its parent's text colour and the red
+   * budget is governed by the same rules as text. Red is never set here.
+   */
+  .lucide {
+    /* Caps and joins are absolute: there is no case in this system for a
+     * rounded terminal, so these are not left to the call site. */
+    stroke-linecap: butt;
+    stroke-linejoin: miter;
+    /* Lucide's geometry is drawn for round joins; without a miter limit a
+     * few acute corners (chevrons, arrows) would spike. 4 clips those back
+     * to a bevel while leaving right angles truly square. */
+    stroke-miterlimit: 4;
+    /* The default weight. A class rule outranks lucide's `strokeWidth`
+     * prop (emitted as a presentation attribute, which sits below author
+     * styles in the cascade), so a call site that varies weight ON PURPOSE
+     * would be silently flattened. Those few sites re-assert themselves
+     * with .lucide-weight below rather than relying on the prop. */
+    stroke-width: var(--icon-stroke);
+  }
+
+  /**
+   * Escape hatch for the handful of icons whose stroke weight carries
+   * meaning — BottomNav's active/inactive nav icons, and checkmarks that go
+   * heavier to hold up against a filled ground.
+   *
+   * Set `--icon-stroke` inline alongside it:
+   *   <Icon className="lucide-weight" style={{ "--icon-stroke": 2.25 }} />
+   *
+   * A custom property rather than `attr()`: typed attr() is Chrome-133+ only
+   * and would silently fall back to the default on mobile Safari, which is
+   * this app's primary field target.
+   */
+  .lucide-weight {
+    stroke-width: var(--icon-stroke);
+  }
+
+  /* Display sizes carry the heavier stroke: at 32px+ a 1.5 stroke on a 24
+   * viewBox scales down optically and the mark goes weedy. */
+  .lucide-display {
+    stroke-width: var(--icon-stroke-heavy);
   }
 
   /**

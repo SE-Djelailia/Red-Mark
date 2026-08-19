@@ -516,7 +516,7 @@ export default function PhotoUploadPage() {
                             : "bg-white/90 border-line-strong"
                         }`}
                       >
-                        {isSelected && <Check size={18} className="text-white" strokeWidth={3} />}
+                        {isSelected && <Check size={18} className="text-white lucide-weight" style={{ "--icon-stroke": 2.5 } as React.CSSProperties} />}
                       </div>
 
                       {/* Remove button */}

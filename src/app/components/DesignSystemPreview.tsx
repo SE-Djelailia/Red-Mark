@@ -1,5 +1,31 @@
 import { useState } from "react";
-import { MapPin, Camera, Plus, ChevronRight, Clock } from "lucide-react";
+import {
+  MapPin,
+  Camera,
+  Plus,
+  ChevronRight,
+  Clock,
+  AlertCircle,
+  Check,
+  CircleAlert,
+  Search,
+  Trash2,
+  Pencil,
+  Download,
+  Upload,
+  Calendar,
+  FileText,
+  Building2,
+  Bell,
+  Settings,
+  X,
+  ArrowRight,
+  ChevronDown,
+  Filter,
+  Image,
+  Mic,
+} from "lucide-react";
+import { ICON_SIZE, iconRed } from "../../lib/icons";
 import { LogoLockup } from "./ui-kit/Logo";
 
 /**
@@ -26,7 +52,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 }
 
 export default function DesignSystemPreview() {
-  const [tab, setTab] = useState<"specimen" | "screen">("specimen");
+  const [tab, setTab] = useState<"specimen" | "icons" | "screen">("specimen");
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -61,7 +87,7 @@ export default function DesignSystemPreview() {
 
         {/* Tabs — the active one takes a red rule, not a red fill. */}
         <div className="max-w-3xl mx-auto px-6 flex gap-6">
-          {(["specimen", "screen"] as const).map((t) => (
+          {(["specimen", "icons", "screen"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -71,14 +97,14 @@ export default function DesignSystemPreview() {
                   : "border-transparent text-muted hover:text-ink"
               }`}
             >
-              {t === "specimen" ? "Éléments" : "Écran type"}
+              {t === "specimen" ? "Éléments" : t === "icons" ? "Icônes" : "Écran type"}
             </button>
           ))}
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-10 space-y-10">
-        {tab === "specimen" ? <Specimen /> : <ExampleScreen />}
+        {tab === "specimen" ? <Specimen /> : tab === "icons" ? <IconSpecimen /> : <ExampleScreen />}
       </main>
     </div>
   );
@@ -328,5 +354,184 @@ function ExampleScreen() {
         </button>
       </div>
     </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ICON SPECIMEN — the restyled lucide base
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Renders the SAME icon twice: once as lucide ships it (round caps, stroke 2)
+ * and once under our rule. The pair is the whole argument — the difference is
+ * quiet at 16px and obvious at 40px, which is exactly why it has to be set
+ * globally rather than judged per icon.
+ *
+ * The "before" side opts OUT by overriding the presentation attributes with
+ * inline style, which outranks the class rule. Nothing else in the app does
+ * this; it exists so the comparison is honest.
+ */
+function CapCompare({ size }: { size: number }) {
+  const before = { strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+  const icons = [Plus, X, Check, ChevronRight, ArrowRight] as const;
+  return (
+    <div className="grid grid-cols-2 gap-px bg-line border border-line rounded-[4px] overflow-hidden">
+      {(["Lucide par défaut", "RedMark"] as const).map((heading, col) => (
+        <div key={heading} className="bg-surface p-4">
+          <p className="rm-label mb-3">{heading}</p>
+          <div className="flex items-center gap-4 text-ink">
+            {icons.map((Ico, i) => (
+              <Ico key={i} size={size} style={col === 0 ? before : undefined} />
+            ))}
+          </div>
+          <p className="text-2xs text-muted mt-3 rm-figures">
+            {col === 0 ? "trait 2 · bouts ronds" : "trait 1.5 · bouts carrés"}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function IconCell({ icon: Ico, name, size }: { icon: typeof Plus; name: string; size: number }) {
+  return (
+    <div className="flex flex-col items-center gap-2 py-3">
+      <Ico size={size} className="text-ink" />
+      <span className="text-2xs text-muted text-center leading-tight">{name}</span>
+    </div>
+  );
+}
+
+function IconSpecimen() {
+  const set: [typeof Plus, string][] = [
+    [Camera, "Camera"],
+    [Image, "Image"],
+    [MapPin, "MapPin"],
+    [Calendar, "Calendar"],
+    [Clock, "Clock"],
+    [FileText, "FileText"],
+    [Building2, "Building2"],
+    [Search, "Search"],
+    [Filter, "Filter"],
+    [Bell, "Bell"],
+    [Settings, "Settings"],
+    [Pencil, "Pencil"],
+    [Trash2, "Trash2"],
+    [Download, "Download"],
+    [Upload, "Upload"],
+    [Mic, "Mic"],
+    [Plus, "Plus"],
+    [Check, "Check"],
+    [X, "X"],
+    [ChevronRight, "ChevronRight"],
+    [ChevronDown, "ChevronDown"],
+    [ArrowRight, "ArrowRight"],
+  ];
+
+  return (
+    <>
+      <Section label="La règle">
+        <div className="space-y-3 text-sm text-body">
+          <p>
+            Une seule règle CSS sur <code className="text-ink">.lucide</code> retraite les 365
+            icônes de l'app — aucun site d'appel modifié. Le trait passe de 2 à 1.5, et les bouts
+            ronds deviennent carrés.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-4 rm-hairline">
+            {[
+              ["Trait", "1.5"],
+              ["Bouts", "carrés"],
+              ["Jonctions", "onglet"],
+              ["Couleur", "currentColor"],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <p className="rm-label">{k}</p>
+                <p className="text-sm text-ink font-medium mt-1">{v}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      <Section label="Avant / après — 40 px">
+        <CapCompare size={40} />
+        <p className="text-xs text-muted mt-3">
+          À 40 px l'écart saute aux yeux : le bout rond arrondit la fin du trait, le bout carré la
+          coupe net — comme la plume levée de la feuille. C'est la même logique que le logo, dont
+          les barres sont dessinées en polygones précisément pour obtenir des coupes franches.
+        </p>
+      </Section>
+
+      <Section label="Avant / après — 16 px (taille réelle)">
+        <CapCompare size={16} />
+        <p className="text-xs text-muted mt-3">
+          À la taille d'usage, l'écart est ténu mais cumulatif : c'est le trait plus fin qui porte
+          l'essentiel, en alignant l'icône sur le poids du texte et sur les filets de 1 px.
+        </p>
+      </Section>
+
+      <Section label="Échelle">
+        <div className="border border-line rounded-[4px] bg-surface divide-y divide-line">
+          {(
+            [
+              ["xs", ICON_SIZE.xs, "métadonnée dense, dans une pastille"],
+              ["sm", ICON_SIZE.sm, "en ligne avec le texte · défaut"],
+              ["md", ICON_SIZE.md, "boutons, navigation, en-têtes"],
+              ["lg", ICON_SIZE.lg, "titres de page, états vides"],
+            ] as const
+          ).map(([token, px, use]) => (
+            <div key={token} className="flex items-center gap-4 px-4 py-3">
+              <div className="w-8 flex justify-center text-ink">
+                <MapPin size={px} />
+              </div>
+              <span className="rm-label w-8">{token}</span>
+              <span className="text-sm text-ink rm-figures w-10">{px} px</span>
+              <span className="text-sm text-muted">{use}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-muted mt-3">
+          Quatre pas, tous multiples de 4. L'audit avant ce système a relevé 21 tailles distinctes,
+          dont 13, 15, 17, 19, 21 et 34 — des valeurs qui ne s'alignent sur rien.
+        </p>
+      </Section>
+
+      <Section label="Jeu de base — encre">
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-1 border border-line rounded-[4px] bg-surface p-2">
+          {set.map(([Ico, name]) => (
+            <IconCell key={name} icon={Ico} name={name} size={ICON_SIZE.md} />
+          ))}
+        </div>
+        <p className="text-xs text-muted mt-3">
+          Toutes en <code className="text-ink">currentColor</code> : une icône hérite de la couleur
+          de son texte. Aucune n'est rouge par elle-même.
+        </p>
+      </Section>
+
+      <Section label="Le budget rouge">
+        <div className="border border-line rounded-[4px] bg-surface divide-y divide-line">
+          {(
+            [
+              [CircleAlert, "deficiency", "Déficience ouverte, ou son compte"],
+              [AlertCircle, "alert", "Erreur réelle, ou action destructive"],
+              [MapPin, "active", "Élément de navigation actif"],
+            ] as const
+          ).map(([Ico, reason, why]) => (
+            <div key={reason} className="flex items-center gap-4 px-4 py-3">
+              <div className="w-8 flex justify-center">
+                <Ico size={ICON_SIZE.md} className={iconRed(reason)} />
+              </div>
+              <span className="rm-label w-24">{reason}</span>
+              <span className="text-sm text-muted">{why}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-muted mt-3">
+          Trois raisons, et rien d'autre. Si aucune ne s'applique, l'icône est à l'encre — même
+          quand elle « semble importante ». C'est le même test que pour les aplats : deux rouges
+          visibles en même temps, c'est qu'il y en a un de trop.
+        </p>
+      </Section>
+    </>
   );
 }

@@ -48,7 +48,11 @@ export default function BottomNav() {
               {active && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-brand-600" />
               )}
-              <Icon size={22} strokeWidth={active ? 2.25 : 1.75} />
+              <Icon
+                size={22}
+                className="lucide-weight"
+                style={{ "--icon-stroke": active ? 2 : 1.5 } as React.CSSProperties}
+              />
             </button>
           );
         })}

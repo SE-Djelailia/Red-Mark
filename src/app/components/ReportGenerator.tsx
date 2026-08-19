@@ -672,7 +672,7 @@ export default function ReportGenerator() {
                           }`}
                           aria-hidden="true"
                         >
-                          {checked && <Check size={14} strokeWidth={3} />}
+                          {checked && <Check size={14} className="lucide-weight" style={{ "--icon-stroke": 2.5 } as React.CSSProperties} />}
                         </span>
                       </button>
                     );
