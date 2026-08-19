@@ -17,6 +17,7 @@ import FloatingActions from "./FloatingActions";
 import { inputClassName } from "./ui-kit/Input";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
 import { ProjectStatusBadge } from "./ui-kit/ProjectStatus";
+import { XSpinnerBlock } from "./ui-kit/XSpinner";
 
 const STATUS_FILTERS: { value: Project["status"] | "all"; label: string }[] = [
   { value: "all", label: "Tous" },
@@ -116,7 +117,7 @@ export default function ProjectList() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-ink mx-auto mb-4"></div>
+          <XSpinnerBlock size={40} className="mb-4" />
           <p className="text-body">Chargement...</p>
         </div>
       </div>

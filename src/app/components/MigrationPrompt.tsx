@@ -4,6 +4,7 @@ import { migrateLocalDataToSupabase, needsMigration } from "../../lib/migrationT
 import { useSupabaseAuth } from "../../contexts/SupabaseAuthContext";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { toast } from "sonner";
+import XSpinner from "./ui-kit/XSpinner";
 
 export default function MigrationPrompt() {
   const { user } = useSupabaseAuth();
@@ -118,7 +119,7 @@ export default function MigrationPrompt() {
               >
                 {migrating ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <XSpinner size={20} tone="current" label={null} />
                     Migration en cours...
                   </>
                 ) : (

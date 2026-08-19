@@ -6,6 +6,7 @@ import CropOverlay from "./CropOverlay";
 import AnnotatorToolbar from "./AnnotatorToolbar";
 import { getPhotoSignedUrl } from "../../lib/supabaseApi";
 import { usePrepareImage, FULL_CROP, type CropRect } from "../../hooks/usePrepareImage";
+import XSpinner from "./ui-kit/XSpinner";
 import {
   DEFAULT_COLOR,
   annotationBounds,
@@ -681,7 +682,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
           <p className="text-white/80 text-sm">{loadError}</p>
         ) : !preparedUrl ? (
           <div className="flex items-center gap-3 text-white">
-            <div className="w-7 h-7 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <XSpinner size={24} tone="current" label={null} />
             <span className="text-sm">Chargement de l'image…</span>
           </div>
         ) : (

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router";
-import { Search, AlertCircle, Loader2, MapPin } from "lucide-react";
+import { Search, AlertCircle, MapPin } from "lucide-react";
 import { getAllUserIssues, type Issue } from "../../lib/issuesApi";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/useAuth";
@@ -11,6 +11,7 @@ import { inputClassName } from "./ui-kit/Input";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
 import { ISSUE_STATUS_OPTIONS, TERMINAL_ISSUE_STATUS } from "../../lib/issueStatus";
 import { MarkX } from "./ui-kit/RedMarkIcons";
+import XSpinner from "./ui-kit/XSpinner";
 
 type IssueWithProject = Issue & { projectName: string };
 
@@ -138,7 +139,7 @@ export default function IssueManagement() {
       <div className="px-4 sm:px-6 pb-6 space-y-3 max-w-2xl mx-auto">
         {loading ? (
           <div className="flex items-center justify-center py-16 gap-3 text-muted">
-            <Loader2 size={24} className="animate-spin" />
+            <XSpinner size={24} label={null} />
             <span>Chargement des déficiences...</span>
           </div>
         ) : error ? (

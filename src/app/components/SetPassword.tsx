@@ -7,6 +7,7 @@ import Button from "./ui-kit/Button";
 import { inputClassName, labelClassName } from "./ui-kit/Input";
 import RolePicker from "./ui-kit/RolePicker";
 import { normalizeName, normalizeRole } from "../../lib/roles";
+import { XSpinnerBlock } from "./ui-kit/XSpinner";
 
 /**
  * The recipient's side of an invitation or an admin-provisioned account:
@@ -232,7 +233,7 @@ export default function SetPassword() {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ink mx-auto" />
+          <XSpinnerBlock size={48} />
           <p className="mt-4 text-muted">Vérification du lien…</p>
         </div>
       </div>

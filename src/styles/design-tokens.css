@@ -95,6 +95,34 @@
   --color-brand-50: #fef2f1; /* tinted ground — badges only */
   --color-brand-100: #f9dcd9; /* tinted rule — badges only */
 
+  /* ═════════════════════════════════════════════════════════════════
+   * MOTION
+   *
+   * The aesthetic is a precise instrument, not a toy. Motion here exists
+   * to show causality — this became that — and never to entertain. Three
+   * rules follow from it:
+   *
+   *   NOTHING OVERSHOOTS. No spring, no bounce, no back-easing. A drawn
+   *   line does not wobble when it lands, and an overshoot implies a
+   *   physical mass this interface does not have.
+   *
+   *   SHORT. 150ms for a state change on something already on screen,
+   *   200ms for something entering. Past ~250ms motion stops reading as
+   *   response and starts reading as delay.
+   *
+   *   EASE-OUT, ALWAYS. Fast at the start, settling at the end: the
+   *   result arrives immediately and the motion is just the tail of it.
+   *   ease-in would delay the information, which is backwards.
+   * ═════════════════════════════════════════════════════════════════ */
+
+  /* The house curve. A slightly sharper ease-out than the CSS keyword —
+   * decisive at the start, fully settled by the end, zero overshoot. */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+
+  --duration-fast: 120ms; /* hover, focus — must feel instant */
+  --duration-base: 160ms; /* state changes on visible elements */
+  --duration-enter: 220ms; /* sheets, modals, lightbox arriving */
+
   /* ---- ICONOGRAPHY ----
    * See @layer components -> .lucide for the rules these feed. Stroke is
    * 1.5 at every size: lucide's default 2 is heavier than this UI's type
@@ -314,6 +342,73 @@
   }
 
   /**
+   * THE X LOADER — the pen making, then lifting, the mark.
+   *
+   * Two strokes drawn with stroke-dasharray/dashoffset: the dash equals the
+   * path length, so the offset sweeps the line on from one end and off from
+   * the other. The second bar is delayed by a third of the cycle, so the X
+   * builds the way a hand draws it — one diagonal, then the other — rather
+   * than both appearing at once.
+   *
+   * `--x-len` is set inline by the component from the real path length, so
+   * the animation does not depend on a hardcoded guess about the geometry.
+   */
+  @keyframes rm-draw {
+    /* On, from the start of the path. */
+    0% {
+      stroke-dashoffset: var(--x-len);
+    }
+    35%,
+    55% {
+      stroke-dashoffset: 0;
+    }
+    /* Off, continuing in the SAME direction — a negative offset walks the
+     * dash past the end rather than retracing it. That is the difference
+     * between a pen lifting and a pen rewinding. */
+    90%,
+    100% {
+      stroke-dashoffset: calc(var(--x-len) * -1);
+    }
+  }
+
+  .rm-x-bar {
+    stroke-dasharray: var(--x-len) var(--x-len);
+    animation: rm-draw 1600ms var(--ease-out) infinite;
+  }
+
+  .rm-x-bar-b {
+    animation-delay: 240ms;
+  }
+
+  /**
+   * MOTION UTILITIES. Named so intent is legible at the call site and the
+   * duration/curve stay consistent instead of being retyped per component.
+   */
+  .rm-enter {
+    animation: rm-enter var(--duration-enter) var(--ease-out) both;
+  }
+
+  @keyframes rm-enter {
+    from {
+      opacity: 0;
+      /* 4px — one grid unit. Enough to read as arrival, far too little to
+       * read as travel. A sheet that slides a long way says "I came from
+       * somewhere"; this says "I am here now". */
+      transform: translateY(4px);
+    }
+  }
+
+  .rm-fade {
+    animation: rm-fade var(--duration-enter) var(--ease-out) both;
+  }
+
+  @keyframes rm-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /**
    * The hairline grid. A 1px ink rule at the top of a band, used to
    * separate title-block regions the way a drawing's borders do.
    */
@@ -341,5 +436,37 @@
   h4 {
     color: var(--color-ink);
     letter-spacing: var(--tracking-heading);
+  }
+}
+
+/**
+ * REDUCED MOTION.
+ *
+ * Not a blanket `animation: none` — that would leave the X loader invisible
+ * (its bars sit at a dashoffset that hides them) and remove the only signal
+ * that the app is working. Instead: entrances resolve instantly, and the
+ * loader falls back to a slow opacity pulse on a fully-drawn mark, which
+ * conveys "busy" without any positional or drawing motion.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .rm-enter,
+  .rm-fade {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+
+  .rm-x-bar,
+  .rm-x-bar-b {
+    /* Fully drawn, then a gentle fade in place. */
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    animation: rm-pulse 1800ms ease-in-out infinite;
+    animation-delay: 0ms;
+  }
+
+  @keyframes rm-pulse {
+    50% {
+      opacity: 0.35;
+    }
   }
 }

@@ -3,6 +3,7 @@ import { Building2, LogOut, MailCheck, RefreshCw } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import { supabase } from "../../lib/supabase";
 import { claimInvitation, type ClaimStatus } from "../../lib/organizationApi";
+import { XSpinnerBlock } from "./ui-kit/XSpinner";
 
 /**
  * Stands between login and the app for a user who belongs to no firm.
@@ -105,7 +106,7 @@ export default function FirmGate({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ink mx-auto" />
+          <XSpinnerBlock size={48} />
           <p className="mt-4 text-muted">
             {phase === "joining" ? "Adhésion à votre firme…" : "Vérification…"}
           </p>

@@ -30,6 +30,7 @@ import { useSmartBack } from "../../hooks/useSmartBack";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
 import { useAuth } from "../../contexts/useAuth";
 import SecureImage from "./SecureImage";
+import XSpinner from "./ui-kit/XSpinner";
 
 const EMPTY_MANUAL_FIELDS: ReportManualFields = {
   noteNumber: "",
@@ -707,7 +708,7 @@ export default function ReportGenerator() {
           >
             {generating ? (
               <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <XSpinner size={20} tone="current" label={null} />
                 <span>Génération du rapport...</span>
               </>
             ) : (
@@ -736,7 +737,7 @@ export default function ReportGenerator() {
             >
               {generating ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <XSpinner size={20} tone="current" label={null} />
                   <span>Téléchargement...</span>
                 </>
               ) : (

@@ -13,6 +13,7 @@ import { useProjectRole } from "../../hooks/useProjectRole";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { useSmartBack } from "../../hooks/useSmartBack";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
+import XSpinner from "./ui-kit/XSpinner";
 
 
 // Per-photo pending location assignment, keyed by index in photosToUpload.
@@ -707,7 +708,7 @@ export default function PhotoUploadPage() {
                 >
                   {isUploading ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <XSpinner size={20} tone="current" label={null} />
                       <span>Upload...</span>
                     </>
                   ) : (

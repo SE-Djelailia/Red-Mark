@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { LogoLockup } from "./ui-kit/Logo";
 import { supabase } from "../../lib/supabase";
+import { XSpinnerBlock } from "./ui-kit/XSpinner";
 
 /**
  * Landing page for the Microsoft (Azure) OAuth return.
@@ -106,11 +107,7 @@ export default function AuthCallback() {
 
         {phase === "waiting" ? (
           <>
-            <div
-              className="animate-spin rounded-full h-10 w-10 border-b-2 border-ink mx-auto"
-              role="status"
-              aria-label="Connexion en cours"
-            />
+            <XSpinnerBlock size={40} label="Connexion en cours" />
             <p className="mt-4 text-muted text-sm">Connexion en cours…</p>
           </>
         ) : (

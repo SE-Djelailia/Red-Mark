@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Mic, Square, Trash2, Play, Pause, AlertCircle, FileText, Loader2 } from "lucide-react";
+import {
+  Mic,
+  Square,
+  Trash2,
+  Play,
+  Pause,
+  AlertCircle,
+  FileText,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   deleteVoiceNote,
@@ -14,6 +22,7 @@ import ConfirmDialog from "./ConfirmDialog";
 import TranscriptionDisclosure, { transcriptionDisclosureAccepted } from "./TranscriptionDisclosure";
 import { Card, ListRow, ListRows } from "./ui-kit/Card";
 import { formatRelativeDate } from "../../lib/dateUtils";
+import XSpinner from "./ui-kit/XSpinner";
 import {
   useAudioRecorder,
   formatElapsed,
@@ -260,7 +269,7 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
                       states. Nothing here happens without a tap. */}
                   {note.transcription_status === "processing" ? (
                     <div className="flex items-center gap-1.5 text-xs text-muted mt-1">
-                      <Loader2 size={12} className="animate-spin flex-shrink-0" />
+                      <XSpinner size={12} label={null} />
                       Transcription en cours…
                     </div>
                   ) : note.transcription_status === "done" && note.transcription ? (

@@ -1,5 +1,11 @@
 import { useRef, useState } from "react";
-import { X, Upload, Download, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import {
+  X,
+  Upload,
+  Download,
+  AlertTriangle,
+  CheckCircle2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { getLevels, getLocations } from "../../lib/locationsApi";
@@ -11,6 +17,7 @@ import {
 import { buildImportPlan, type ImportPlan } from "../../lib/locationImportPlanner";
 import { executeImportPlan, type ExecuteResult } from "../../lib/locationImportExecutor";
 import { LOCATION_TYPE_LABELS } from "../../lib/locationTypes";
+import XSpinner from "./ui-kit/XSpinner";
 
 interface Props {
   projectId: string;
@@ -143,7 +150,7 @@ export default function LocationsImportModal({ projectId, onClose, onImported }:
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 size={20} className="animate-spin" />
+                      <XSpinner size={20} label={null} />
                       Analyse en cours…
                     </>
                   ) : (
@@ -250,7 +257,7 @@ export default function LocationsImportModal({ projectId, onClose, onImported }:
                     disabled={isCommitting}
                     className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    {isCommitting && <Loader2 size={20} className="animate-spin" />}
+                    {isCommitting && <XSpinner size={20} label={null} />}
                     Confirmer l'importation
                   </button>
                 </div>

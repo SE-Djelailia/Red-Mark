@@ -1,17 +1,11 @@
 // Loading skeleton components for better UX
+import XSpinner from "./ui-kit/XSpinner";
 
 export function LoadingSpinner({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const sizeClasses = {
-    sm: "w-4 h-4 border-2",
-    md: "w-8 h-8 border-2",
-    lg: "w-12 h-12 border-3",
-  };
-
+  const px = { sm: 16, md: 32, lg: 48 }[size];
   return (
     <div className="flex items-center justify-center">
-      <div
-        className={`${sizeClasses[size]} border-line border-t-brand-600 rounded-full animate-spin`}
-      />
+      <XSpinner size={px} />
     </div>
   );
 }
@@ -116,8 +110,8 @@ export function InlineLoader({ message }: { message?: string }) {
   );
 }
 
+// Sits inside a filled (usually red) primary button, so the mark must read
+// white-on-red rather than red-on-red.
 export function ButtonLoader() {
-  return (
-    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-  );
+  return <XSpinner size={16} tone="current" label={null} />;
 }

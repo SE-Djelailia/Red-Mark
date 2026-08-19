@@ -31,6 +31,7 @@ import FirmProjectAccess from "./FirmProjectAccess";
 import { getMemberProjects, type FirmProject } from "../../lib/firmProjectsApi";
 import RecoveryLinkDialog from "./RecoveryLinkDialog";
 import RemoveMemberDialog from "./RemoveMemberDialog";
+import { XSpinnerBlock } from "./ui-kit/XSpinner";
 
 /**
  * Firm administration.
@@ -404,7 +405,7 @@ export default function FirmAdmin() {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-ink mx-auto" />
+          <XSpinnerBlock size={40} />
           <p className="mt-4 text-muted">Chargement…</p>
         </div>
       </div>

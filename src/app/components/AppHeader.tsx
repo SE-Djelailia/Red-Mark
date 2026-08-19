@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useAuth } from "../../contexts/useAuth";
 import { usePageHeaderValue } from "../../contexts/PageHeaderContext";
 import NotificationBell from "./NotificationBell";
@@ -34,7 +34,24 @@ export default function AppHeader() {
     <header className="bg-surface border-b border-line sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3 h-14">
-          <LogoLockup size={21} className="flex-shrink-0" />
+          {/* Home link. A real <Link>, not a click handler on a div: it is
+              keyboard-focusable, announces as a link, and supports
+              cmd/middle-click to open in a new tab — all of which a
+              navigate() onClick silently loses.
+
+              The hover affordance is deliberately almost nothing. The logo
+              is already the loudest element in the chrome (it carries the
+              only red in the header), so a hover treatment on top would be
+              noise. Opacity to 80% is enough to confirm the target is live;
+              the focus ring does the real work for keyboard users, and it
+              is ink, never red. */}
+          <Link
+            to="/app/projects"
+            aria-label="RedMark — accueil"
+            className="flex-shrink-0 rounded-[2px] transition-opacity duration-(--duration-fast) ease-out hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          >
+            <LogoLockup size={21} />
+          </Link>
 
           <div className="ml-auto flex items-center gap-1">
             <NotificationBell userId={user.id} />

@@ -23,6 +23,7 @@ import AppHeader from "./AppHeader";
 import ErrorBoundary from "./ErrorBoundary";
 import FirmGate from "./FirmGate";
 import ProfileCompletionGate from "./ProfileCompletionGate";
+import { XSpinnerBlock } from "./ui-kit/XSpinner";
 
 export default function Layout() {
   const { user, loading } = useAuth();
@@ -108,7 +109,7 @@ export default function Layout() {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mx-auto"></div>
+          <XSpinnerBlock size={48} />
           <p className="mt-4 text-muted">Chargement...</p>
         </div>
       </div>

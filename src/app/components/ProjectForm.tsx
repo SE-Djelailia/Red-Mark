@@ -12,6 +12,7 @@ import {
   normalizeProjectStatus,
 } from "./ui-kit/ProjectStatus";
 import type { ProjectStatus } from "../../lib/supabase";
+import XSpinner from "./ui-kit/XSpinner";
 
 interface Props {
   // When present, the form edits this project; when absent, it creates a
@@ -284,7 +285,7 @@ export default function ProjectForm({ project, onCancel, onSaved }: Props) {
               >
                 {isSaving ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <XSpinner size={16} tone="current" label={null} />
                     <span>Enregistrement...</span>
                   </>
                 ) : (

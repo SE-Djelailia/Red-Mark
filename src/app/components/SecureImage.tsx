@@ -1,6 +1,7 @@
 import { usePhotoUrl } from "../../hooks/usePhotoUrl";
 
 import { IconPhoto } from "./ui-kit/RedMarkIcons";
+import XSpinner from "./ui-kit/XSpinner";
 
 interface SecureImageProps {
   storagePath: string | null | undefined;
@@ -31,7 +32,7 @@ export default function SecureImage({
         aria-label="Chargement de l'image"
       >
         <div className="flex flex-col items-center gap-2">
-          <div className="w-8 h-8 border-3 border-line border-t-muted rounded-full animate-spin" />
+          <XSpinner size={24} tone="current" label={null} className="text-faint" />
           <span className="text-xs text-muted">Chargement...</span>
         </div>
       </div>

@@ -1,10 +1,18 @@
 import { useState } from "react";
-import { X, Download, CheckCircle, FileText, Image, Database, Loader } from "lucide-react";
+import {
+  X,
+  Download,
+  CheckCircle,
+  FileText,
+  Image,
+  Database,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
 import { getProjects, getSiteVisits, getPhotos, getIssues } from "../../lib/supabaseApi";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { useFirm } from "../../hooks/useFirm";
+import XSpinner from "./ui-kit/XSpinner";
 
 interface DataExportProps {
   onClose: () => void;
@@ -243,7 +251,7 @@ export default function DataExport({ onClose }: DataExportProps) {
             >
               {exporting ? (
                 <>
-                  <Loader size={20} className="animate-spin" />
+                  <XSpinner size={20} tone="current" label={null} />
                   Exportation en cours...
                 </>
               ) : (

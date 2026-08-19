@@ -25,6 +25,7 @@ import { normalizeName, normalizeRole } from "../../lib/roles";
 import { inputClassName } from "./ui-kit/Input";
 import { Card, Section } from "./ui-kit/Card";
 import { StatGrid, StatTile } from "./ui-kit/StatTile";
+import { XSpinnerBlock } from "./ui-kit/XSpinner";
 
 // Left behind by settings that were removed as non-functional stubs: the
 // Notifications and Report-Templates sections entirely, plus the general
@@ -136,7 +137,7 @@ export default function Profile() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ink mx-auto mb-4"></div>
+          <XSpinnerBlock size={48} className="mb-4" />
           <p className="text-muted">Chargement du profil...</p>
         </div>
       </div>

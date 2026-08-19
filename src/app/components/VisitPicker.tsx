@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { X, Plus, Loader2 } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { getSiteVisitsPage } from "../../lib/supabaseApi";
 import { parseLocalDate } from "../../lib/dateUtils";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import VisitForm from "./VisitForm";
 import type { SiteVisit } from "../../lib/supabase";
+import XSpinner from "./ui-kit/XSpinner";
 
 const RECENT_VISITS_LIMIT = 20;
 
@@ -79,7 +80,7 @@ export default function VisitPicker({ open, projectId, onSelect, onClose }: Prop
             />
           ) : loading ? (
             <div className="flex items-center justify-center py-10 gap-2 text-muted text-sm">
-              <Loader2 size={20} className="animate-spin" />
+              <XSpinner size={20} label={null} />
               Chargement…
             </div>
           ) : loadError ? (

@@ -1,11 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
-import { X, UserPlus, Shield, Trash2, Loader2, Mail } from "lucide-react";
+import {
+  X,
+  UserPlus,
+  Shield,
+  Trash2,
+  Mail,
+} from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { toast } from "sonner";
 import { useProjectRole } from "../../hooks/useProjectRole";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import ConfirmDialog from "./ConfirmDialog";
 import type { Insert } from "../../lib/supabase";
+import XSpinner from "./ui-kit/XSpinner";
 
 type ProjectRole = "owner" | "editor" | "commenter";
 
@@ -393,7 +400,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                 >
                   {inviting ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" /> Envoi…
+                      <XSpinner size={16} tone="current" label={null} /> Envoi…
                     </>
                   ) : (
                     "Ajouter au projet"
@@ -408,7 +415,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
             <h3 className="text-sm font-semibold text-ink">Membres actuels</h3>
             {loading ? (
               <div className="flex items-center justify-center py-8 gap-2 text-muted">
-                <Loader2 size={20} className="animate-spin" />
+                <XSpinner size={20} label={null} />
                 <span>Chargement…</span>
               </div>
             ) : members.length === 0 ? (

@@ -36,6 +36,7 @@ import {
   IconLocation,
   IconVisit,
 } from "./ui-kit/RedMarkIcons";
+import XSpinner from "./ui-kit/XSpinner";
 import { LogoLockup } from "./ui-kit/Logo";
 
 /**
@@ -633,6 +634,38 @@ function IconSpecimen() {
           méritent un dessin propre : ils veulent dire ici quelque chose de précis qu'un glyphe
           générique dilue. Tout le reste — recherche, réglages, téléversement — veut dire partout la
           même chose, et la version lucide retraitée vaut mieux qu'un redessin.
+        </p>
+      </Section>
+
+      <Section label="Le chargeur — la marque en train de se faire">
+        <div className="border border-line rounded-[4px] bg-surface p-6">
+          <div className="flex items-end gap-10">
+            {[16, 24, 40, 64].map((px) => (
+              <div key={px} className="flex flex-col items-center gap-3">
+                <XSpinner size={px} label={null} />
+                <span className="text-2xs text-muted rm-figures">{px}</span>
+              </div>
+            ))}
+            <div className="flex flex-col items-center gap-3">
+              <div className="bg-brand-600 rounded-[4px] p-3">
+                <XSpinner size={24} tone="current" label={null} className="text-white" />
+              </div>
+              <span className="text-2xs text-muted">sur bouton</span>
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-muted mt-3">
+          Les deux barres se tracent puis se lèvent, décalées d'un tiers de cycle : le X se
+          construit comme une main le dessine, une diagonale puis l'autre. Le décalage
+          <code className="text-ink"> stroke-dashoffset </code> continue dans le même sens en
+          sortie — un stylo qui se lève, pas un tracé qui rembobine. Rouge parce que c'est la
+          marque, et parce qu'un chargeur est seul à l'écran : rien ne lui dispute l'attention.
+        </p>
+        <p className="text-xs text-muted mt-2">
+          <span className="rm-label">Mouvement réduit</span> — avec
+          <code className="text-ink"> prefers-reduced-motion </code>, le X reste entièrement tracé
+          et pulse doucement en opacité. Pas de <code className="text-ink">animation: none</code> :
+          les barres seraient invisibles, et le seul signal d'activité disparaîtrait.
         </p>
       </Section>
 

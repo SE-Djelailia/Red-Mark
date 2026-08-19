@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Building2, Loader2, Plus, RefreshCw, ShieldCheck, X } from "lucide-react";
+import {
+  Building2,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
@@ -16,6 +22,7 @@ import Button from "./ui-kit/Button";
 import { inputClassName, labelClassName } from "./ui-kit/Input";
 import RolePicker from "./ui-kit/RolePicker";
 import RecoveryLinkDialog from "./RecoveryLinkDialog";
+import XSpinner from "./ui-kit/XSpinner";
 
 /**
  * The platform-operator surface — administering FIRMS, never their contents.
@@ -120,7 +127,7 @@ export default function PlatformAdmin() {
   if (phase === "checking") {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-ink" aria-hidden="true" />
+        <XSpinner size={32} label={null} />
       </div>
     );
   }
