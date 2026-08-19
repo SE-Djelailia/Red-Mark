@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { Calendar, User, MapPin, Tag, MessageSquare, Edit, Pencil } from "lucide-react";
+import {
+  Calendar,
+  Edit,
+  MapPin,
+  MessageSquare,
+  Pencil,
+  Tag,
+  User,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { getCommentsForIssue } from "../../lib/commentsApi";
 import { getProjectTeammates, type Comment, type Teammate } from "../../lib/commentsApi";
@@ -276,9 +285,10 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
           <div className="relative max-w-4xl w-full">
             <button
               onClick={() => setSelectedPhoto(null)}
-              className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors z-10"
+              aria-label="Fermer la photo"
+              className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-[4px] flex items-center justify-center text-white transition-colors z-10"
             >
-              ✕
+              <X size={16} />
             </button>
             <SecureImage
               storagePath={selectedPhoto.storagePath}

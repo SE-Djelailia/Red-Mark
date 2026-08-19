@@ -1,20 +1,21 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import {
+  AlertCircle,
   ArrowLeft,
   Camera,
-  Tag,
-  MapPin,
-  FileText,
-  Edit,
-  Trash2,
-  Cloud,
-  Thermometer,
-  AlertCircle,
-  Pencil,
-  LayoutGrid,
-  Mic,
   ChevronRight,
+  Cloud,
+  Edit,
+  FileText,
+  LayoutGrid,
+  MapPin,
+  Mic,
+  Pencil,
+  Tag,
+  Thermometer,
+  Trash2,
+  X,
 } from "lucide-react";
 import { getLocations, type Location } from "../../lib/locationsApi";
 import type { LocationExtras, Photo as ApiPhoto } from "../../lib/supabase";
@@ -1299,9 +1300,10 @@ export default function VisitDetail() {
               </button>
               <button
                 onClick={() => setSelectedPhoto(null)}
-                className="w-10 h-10 bg-surface/10 hover:bg-surface/20 rounded-full flex items-center justify-center text-white transition-colors"
+                aria-label="Fermer la photo"
+                className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-[4px] flex items-center justify-center text-white transition-colors"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
             <SecureImage
@@ -1355,9 +1357,10 @@ export default function VisitDetail() {
           >
             <button
               onClick={() => setShowIssueModal(false)}
-              className="absolute top-4 right-4 w-10 h-10 bg-subtle hover:bg-line-strong rounded-full flex items-center justify-center text-body transition-colors z-10"
+              aria-label="Fermer"
+              className="absolute top-4 right-4 w-10 h-10 bg-subtle hover:bg-line-strong rounded-[4px] flex items-center justify-center text-body transition-colors z-10"
             >
-              ✕
+              <X size={16} />
             </button>
             <h2 className="text-xl font-semibold text-ink mb-6">
               {editingIssue ? "Modifier la déficience" : "Nouvelle déficience"}

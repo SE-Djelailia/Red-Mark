@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Database, Upload, X, CheckCircle, AlertCircle } from "lucide-react";
+import { AlertCircle, Check, CheckCircle, Database, Upload, X } from "lucide-react";
 import { migrateLocalDataToSupabase, needsMigration } from "../../lib/migrationToSupabase";
 import { useSupabaseAuth } from "../../contexts/SupabaseAuthContext";
 import { useModalOpen } from "../../hooks/useModalOpen";
@@ -56,10 +56,10 @@ export default function MigrationPrompt() {
         {migrationComplete ? (
           // Success state
           <div className="text-center">
-            <div className="w-16 h-16 bg-subtle rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-subtle rounded-[4px] flex items-center justify-center mx-auto mb-4">
               <CheckCircle size={32} className="text-body" />
             </div>
-            <h2 className="text-xl font-semibold text-ink mb-2">Migration réussie ! 🎉</h2>
+            <h2 className="text-xl font-semibold text-ink mb-2">Migration réussie</h2>
             <p className="text-body text-sm">
               Toutes vos données ont été transférées vers Supabase. Elles sont maintenant sécurisées
               dans le cloud !
@@ -94,17 +94,25 @@ export default function MigrationPrompt() {
                 <div className="text-sm text-ink">
                   <p className="font-medium mb-1">Pourquoi migrer ?</p>
                   <ul className="space-y-1 text-xs">
-                    <li>
-                      ✅ Vos données seront <strong>sauvegardées dans le cloud</strong>
+                    <li className="flex items-start gap-1.5">
+                      <Check size={12} className="text-ink mt-0.5 flex-shrink-0" />
+                      <span>
+                        Vos données seront <strong>sauvegardées dans le cloud</strong>
+                      </span>
                     </li>
-                    <li>
-                      ✅ <strong>Accessibles de n'importe quel appareil</strong>
+                    <li className="flex items-start gap-1.5">
+                      <Check size={12} className="text-ink mt-0.5 flex-shrink-0" />
+                      <strong>Accessibles de n'importe quel appareil</strong>
                     </li>
-                    <li>
-                      ✅ <strong>Protégées contre la perte</strong> (cache vidé, etc.)
+                    <li className="flex items-start gap-1.5">
+                      <Check size={12} className="text-ink mt-0.5 flex-shrink-0" />
+                      <span>
+                        <strong>Protégées contre la perte</strong> (cache vidé, etc.)
+                      </span>
                     </li>
-                    <li>
-                      ✅ <strong>Synchronisation automatique</strong>
+                    <li className="flex items-start gap-1.5">
+                      <Check size={12} className="text-ink mt-0.5 flex-shrink-0" />
+                      <strong>Synchronisation automatique</strong>
                     </li>
                   </ul>
                 </div>

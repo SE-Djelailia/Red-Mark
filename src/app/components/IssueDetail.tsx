@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, X } from "lucide-react";
 import { getIssue, deleteIssue, getIssueErrorMessage, type Issue } from "../../lib/issuesApi";
 import { useProjectRole, canEditIssue } from "../../hooks/useProjectRole";
 import { useSmartBack } from "../../hooks/useSmartBack";
@@ -118,9 +118,10 @@ export default function IssueDetail() {
             <span>{saveError}</span>
             <button
               onClick={() => setSaveError(null)}
+              aria-label="Masquer l'erreur"
               className="text-brand-strong hover:text-brand-800 font-medium flex-shrink-0"
             >
-              ✕
+              <X size={16} />
             </button>
           </div>
         )}

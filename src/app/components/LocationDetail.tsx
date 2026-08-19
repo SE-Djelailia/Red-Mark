@@ -1050,9 +1050,10 @@ export default function LocationDetail() {
           >
             <button
               onClick={closePendingAction}
-              className="absolute top-4 right-4 w-10 h-10 bg-subtle hover:bg-line-strong rounded-full flex items-center justify-center text-body transition-colors z-10"
+              aria-label="Fermer"
+              className="absolute top-4 right-4 w-10 h-10 bg-subtle hover:bg-line-strong rounded-[4px] flex items-center justify-center text-body transition-colors z-10"
             >
-              ✕
+              <X size={16} />
             </button>
             <h2 className="text-xl font-semibold text-ink mb-6">Nouvelle déficience</h2>
             <IssueForm
@@ -1083,9 +1084,10 @@ export default function LocationDetail() {
           >
             <button
               onClick={closePendingAction}
-              className="absolute top-4 right-4 w-10 h-10 bg-subtle hover:bg-line-strong rounded-full flex items-center justify-center text-body transition-colors z-10"
+              aria-label="Fermer"
+              className="absolute top-4 right-4 w-10 h-10 bg-subtle hover:bg-line-strong rounded-[4px] flex items-center justify-center text-body transition-colors z-10"
             >
-              ✕
+              <X size={16} />
             </button>
             <h2 className="text-xl font-semibold text-ink mb-6">Ajouter des photos</h2>
             <PhotoCaptureButtons

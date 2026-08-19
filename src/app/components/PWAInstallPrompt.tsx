@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Download, X, Smartphone } from "lucide-react";
+import { Check, Download, Smartphone, X } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -100,19 +100,19 @@ export default function PWAInstallPrompt() {
             <div className="p-4 space-y-3">
               <ul className="space-y-2 text-sm text-faint">
                 <li className="flex items-start gap-2">
-                  <span className="text-brand-600 mt-0.5">✓</span>
+                  <Check size={16} className="text-ink mt-0.5 flex-shrink-0" />
                   <span>Fonctionne hors ligne sur les chantiers</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-brand-600 mt-0.5">✓</span>
+                  <Check size={16} className="text-ink mt-0.5 flex-shrink-0" />
                   <span>Accès instantané comme une app native</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-brand-600 mt-0.5">✓</span>
+                  <Check size={16} className="text-ink mt-0.5 flex-shrink-0" />
                   <span>Notifications en temps réel</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-brand-600 mt-0.5">✓</span>
+                  <Check size={16} className="text-ink mt-0.5 flex-shrink-0" />
                   <span>Économise l'espace de stockage</span>
                 </li>
               </ul>
