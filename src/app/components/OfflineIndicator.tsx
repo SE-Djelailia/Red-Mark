@@ -98,7 +98,7 @@ export default function OfflineIndicator() {
               disabled={retrying}
               className="ml-1 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 hover:bg-white/30 disabled:opacity-60 font-medium min-h-[32px]"
             >
-              <RotateCw size={13} className={retrying ? "animate-spin" : undefined} />
+              <RotateCw size={12} className={retrying ? "animate-spin" : undefined} />
               Réessayer
             </button>
           </div>

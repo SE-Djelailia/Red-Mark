@@ -210,14 +210,14 @@ export default function VisitAttendeesSection({ visitId, attendees, canEdit, onC
                           className="w-11 h-11 flex items-center justify-center text-faint hover:text-ink"
                           aria-label={`Modifier ${a.name}`}
                         >
-                          <Pencil size={14} />
+                          <Pencil size={16} />
                         </button>
                         <button
                           onClick={() => setDeleteIndex(index)}
                           className="w-11 h-11 flex items-center justify-center text-faint hover:text-brand-600"
                           aria-label={`Retirer ${a.name}`}
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     )}

@@ -124,7 +124,7 @@ export default function LocationsImportModal({ projectId, onClose, onImported }:
                   onClick={downloadLocationImportTemplate}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors text-sm font-medium min-h-[44px]"
                 >
-                  <Download size={18} />
+                  <Download size={20} />
                   Télécharger le modèle
                 </button>
 
@@ -143,12 +143,12 @@ export default function LocationsImportModal({ projectId, onClose, onImported }:
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 size={18} className="animate-spin" />
+                      <Loader2 size={20} className="animate-spin" />
                       Analyse en cours…
                     </>
                   ) : (
                     <>
-                      <Upload size={18} />
+                      <Upload size={16} />
                       Choisir un fichier Excel
                     </>
                   )}
@@ -250,7 +250,7 @@ export default function LocationsImportModal({ projectId, onClose, onImported }:
                     disabled={isCommitting}
                     className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    {isCommitting && <Loader2 size={18} className="animate-spin" />}
+                    {isCommitting && <Loader2 size={20} className="animate-spin" />}
                     Confirmer l'importation
                   </button>
                 </div>

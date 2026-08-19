@@ -180,7 +180,7 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
         </div>
       ) : planFiles.length === 0 ? (
         <div className="bg-surface rounded-[4px] border border-line p-8 text-center">
-          <FileText size={36} className="mx-auto text-faint mb-2" />
+          <FileText size={32} className="mx-auto text-faint mb-2" />
           <div className="text-sm text-body mb-1">Aucun fichier de plans</div>
           <div className="text-xs text-faint">
             Téléversez un PDF (jusqu'à 200 pages, 50 Mo max pour le moment) pour commencer
@@ -202,7 +202,7 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
                 className="flex-1 flex items-center gap-3 text-left min-w-0"
               >
                 <div className="w-12 h-12 rounded-[4px] bg-subtle text-ink flex items-center justify-center flex-shrink-0">
-                  <FileText size={22} />
+                  <FileText size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm text-ink font-medium truncate">{planFile.name}</div>
@@ -213,7 +213,7 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
                       : ""}
                   </div>
                 </div>
-                <ChevronRight size={18} className="text-faint flex-shrink-0" />
+                <ChevronRight size={16} className="text-faint flex-shrink-0" />
               </button>
               {canManage && (
                 <button
@@ -221,7 +221,7 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
                   className="w-11 h-11 flex items-center justify-center text-faint hover:text-brand-600 hover:bg-surface rounded-[4px]"
                   aria-label="Supprimer le plan"
                 >
-                  <Trash2 size={18} />
+                  <Trash2 size={20} />
                 </button>
               )}
             </div>

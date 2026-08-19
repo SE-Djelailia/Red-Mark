@@ -64,7 +64,7 @@ export default function FloorPlanUploadModal({
               className="w-10 h-10 flex items-center justify-center hover:bg-subtle rounded-full transition-colors"
               aria-label="Fermer"
             >
-              <X size={22} />
+              <X size={24} />
             </button>
           </div>
 

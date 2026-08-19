@@ -192,7 +192,7 @@ export default function Login() {
                   onClick={() => goTo("signin")}
                   className="text-sm text-body hover:text-ink inline-flex items-center gap-1.5"
                 >
-                  <ArrowLeft size={14} aria-hidden="true" />
+                  <ArrowLeft size={16} aria-hidden="true" />
                   Retour à la connexion
                 </button>
               </div>

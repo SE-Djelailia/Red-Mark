@@ -97,7 +97,7 @@ export default function IssueManagement() {
 
         <div className="space-y-3">
           <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
             <input
               type="text"
               value={searchQuery}

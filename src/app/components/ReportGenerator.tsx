@@ -372,7 +372,7 @@ export default function ReportGenerator() {
           onClick={goBack}
           className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={20} />
           <span>Retour</span>
         </button>
       </div>
@@ -381,7 +381,7 @@ export default function ReportGenerator() {
         {/* Visit selector */}
         <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Calendar size={18} className="text-brand-600" />
+            <Calendar size={16} className="text-brand-600" />
             <label className="text-sm font-semibold text-ink">Visite de chantier</label>
           </div>
           {!loading && visits.length === 0 ? (
@@ -405,7 +405,7 @@ export default function ReportGenerator() {
         {/* Report metadata not yet captured elsewhere in the app */}
         <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Hash size={18} className="text-brand-600" />
+            <Hash size={16} className="text-brand-600" />
             <label className="text-sm font-semibold text-ink">Informations du rapport</label>
           </div>
 
@@ -492,7 +492,7 @@ export default function ReportGenerator() {
                   onClick={() => addListEntry("dossierNumbers", { label: "", number: "" })}
                   className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-800"
                 >
-                  <Plus size={14} />
+                  <Plus size={16} />
                   Ajouter
                 </button>
               </div>
@@ -672,7 +672,7 @@ export default function ReportGenerator() {
                           }`}
                           aria-hidden="true"
                         >
-                          {checked && <Check size={14} className="lucide-weight" style={{ "--icon-stroke": 2.5 } as React.CSSProperties} />}
+                          {checked && <Check size={12} className="lucide-weight" style={{ "--icon-stroke": 2.5 } as React.CSSProperties} />}
                         </span>
                       </button>
                     );
@@ -712,7 +712,7 @@ export default function ReportGenerator() {
               </>
             ) : (
               <>
-                <FileText size={22} />
+                <FileText size={20} />
                 <span>Générer le rapport Word</span>
               </>
             )}
@@ -720,7 +720,7 @@ export default function ReportGenerator() {
         ) : (
           <div className="space-y-3">
             <div className="bg-surface border border-line rounded-[4px] p-4 flex items-center gap-3">
-              <CheckCircle size={22} className="text-resolved flex-shrink-0" />
+              <CheckCircle size={20} className="text-resolved flex-shrink-0" />
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-ink">Rapport {report.reportNumber}</div>
                 <div className="text-xs text-muted">
@@ -741,7 +741,7 @@ export default function ReportGenerator() {
                 </>
               ) : (
                 <>
-                  <Send size={22} />
+                  <Send size={20} />
                   <span>Télécharger à nouveau</span>
                 </>
               )}
@@ -753,7 +753,7 @@ export default function ReportGenerator() {
               disabled={generating}
               className="w-full py-3 bg-surface border border-line text-ink rounded-[4px] flex items-center justify-center gap-2 hover:border-brand-600 hover:text-brand-600 transition-colors disabled:opacity-50 min-h-[48px]"
             >
-              <Plus size={18} />
+              <Plus size={20} />
               <span className="text-sm font-medium">Nouveau rapport</span>
             </button>
           </div>

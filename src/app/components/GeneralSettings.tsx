@@ -77,7 +77,7 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
             {/* Storage Management */}
             <div className="mb-6">
               <h3 className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
-                <HardDrive size={18} className="text-ink" />
+                <HardDrive size={16} className="text-ink" />
                 Gestion du stockage
               </h3>
               <div className="bg-canvas rounded-[4px] p-4 mb-3">
@@ -100,7 +100,7 @@ export default function GeneralSettings({ onClose }: GeneralSettingsProps) {
                 onClick={() => setShowClearConfirm(true)}
                 className="w-full px-4 py-3 bg-surface border border-line-strong rounded-[4px] hover:bg-subtle transition-colors flex items-center justify-center gap-2 text-body min-h-[48px]"
               >
-                <Trash2 size={18} />
+                <Trash2 size={20} />
                 Vider le cache local
               </button>
             </div>

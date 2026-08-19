@@ -147,7 +147,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
               onClick={() => setEditing(true)}
               className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium text-ink min-h-[40px] flex-shrink-0"
             >
-              <Edit size={14} />
+              <Edit size={16} />
               Modifier
             </button>
           )}
@@ -172,32 +172,32 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
 
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2 text-body">
-            <Calendar size={14} className="text-faint flex-shrink-0" />
+            <Calendar size={12} className="text-faint flex-shrink-0" />
             Créée le {issue.createdDate}
             {age !== null && age > 0 && <span className="text-muted">· {age} j</span>}
           </div>
           {issue.dueDate && (
             <div className="flex items-center gap-2 text-body">
-              <Calendar size={14} className="text-faint flex-shrink-0" />
+              <Calendar size={12} className="text-faint flex-shrink-0" />
               Échéance : {issue.dueDate}
             </div>
           )}
           {assigneeDisplay && (
             <div className="flex items-center gap-2 text-body">
-              <User size={14} className="text-faint flex-shrink-0" />
+              <User size={12} className="text-faint flex-shrink-0" />
               Assigné à {assigneeDisplay}
             </div>
           )}
           {location && (
             <div className="flex items-center gap-2 text-body">
-              <MapPin size={14} className="text-faint flex-shrink-0" />
+              <MapPin size={12} className="text-faint flex-shrink-0" />
               {location.locationNumber}
               {location.name ? ` — ${location.name}` : ""}
             </div>
           )}
           {issue.tags.length > 0 && (
             <div className="flex items-start gap-2 text-body">
-              <Tag size={14} className="text-faint flex-shrink-0 mt-0.5" />
+              <Tag size={12} className="text-faint flex-shrink-0 mt-0.5" />
               <div className="flex flex-wrap gap-1.5">
                 {issue.tags.map((t) => (
                   <span key={t} className="px-2 py-0.5 bg-subtle rounded-full text-xs">
@@ -214,7 +214,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
       {issue.photos.length > 0 && (
         <div className="bg-surface rounded-[4px] border border-line p-5">
           <h2 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
-            <Camera size={18} className="text-muted" />
+            <Camera size={16} className="text-muted" />
             Photos ({issue.photos.length})
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -251,7 +251,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
       <div className="bg-surface rounded-[4px] border border-line p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
-            <MessageSquare size={18} className="text-muted" />
+            <MessageSquare size={16} className="text-muted" />
             Commentaires ({comments.length})
           </h2>
         </div>
@@ -291,7 +291,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
                   onClick={() => setShowAnnotator(true)}
                   className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
                 >
-                  <Pencil size={18} />
+                  <Pencil size={20} />
                   <span>Annoter</span>
                 </button>
               )}
@@ -309,7 +309,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
                   }
                   className="flex-1 py-3 bg-white/10 text-white rounded-[4px] hover:bg-white/20 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
                 >
-                  <MapPin size={18} />
+                  <MapPin size={16} />
                   <span>Modifier</span>
                 </button>
               )}

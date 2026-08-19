@@ -619,7 +619,7 @@ export default function VisitDetail() {
             onClick={goBack}
             className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={20} />
             <span>Retour</span>
           </button>
 
@@ -633,7 +633,7 @@ export default function VisitDetail() {
               title="Générer le rapport"
               aria-label="Générer le rapport"
             >
-              <FileText size={18} />
+              <FileText size={20} />
             </button>
           </div>
         </div>
@@ -651,18 +651,18 @@ export default function VisitDetail() {
         <div className="bg-surface rounded-[4px] border border-line px-4 py-3">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
             <div className="flex items-center gap-1.5">
-              <Tag size={14} className="text-faint flex-shrink-0" />
+              <Tag size={12} className="text-faint flex-shrink-0" />
               <span className="font-medium text-ink">{visit?.phase}</span>
             </div>
             {visit?.weather && (
               <div className="flex items-center gap-1.5">
-                <Cloud size={14} className="text-faint flex-shrink-0" />
+                <Cloud size={12} className="text-faint flex-shrink-0" />
                 <span className="text-ink">{visit.weather}</span>
               </div>
             )}
             {visit?.temperature && (
               <div className="flex items-center gap-1.5">
-                <Thermometer size={14} className="text-faint flex-shrink-0" />
+                <Thermometer size={12} className="text-faint flex-shrink-0" />
                 <span className="text-ink">{visit.temperature}</span>
               </div>
             )}
@@ -682,7 +682,7 @@ export default function VisitDetail() {
                 }}
                 className="flex items-center gap-1.5 text-brand-strong hover:text-brand-800 disabled:opacity-50 ml-auto"
               >
-                <Camera size={14} className="flex-shrink-0" />
+                <Camera size={12} className="flex-shrink-0" />
                 <span className="text-xs font-medium">
                   {uploadingWeatherPhoto ? "Envoi…" : "Preuve météo"}
                 </span>
@@ -805,7 +805,7 @@ export default function VisitDetail() {
           <div className="bg-surface rounded-[4px] border border-line p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
-                <Camera size={18} className="text-muted" />
+                <Camera size={16} className="text-muted" />
                 Photos ({visit?.photos.length})
               </h2>
               {visit && visit.photos.length > 0 && projectRole.canCreateIssues && (
@@ -844,7 +844,7 @@ export default function VisitDetail() {
                       {allTags.length > 0 && (
                         <div>
                           <label className="text-xs font-medium text-body mb-2 flex items-center gap-1">
-                            <Tag size={14} />
+                            <Tag size={12} />
                             Filtrer par tag
                           </label>
                           <div className="flex gap-2 flex-wrap">
@@ -881,7 +881,7 @@ export default function VisitDetail() {
                       {allLocations.length > 0 && (
                         <div>
                           <label className="text-xs font-medium text-body mb-2 flex items-center gap-1">
-                            <MapPin size={14} />
+                            <MapPin size={12} />
                             Filtrer par localisation
                           </label>
                           <div className="flex gap-2 flex-wrap">
@@ -1083,7 +1083,7 @@ export default function VisitDetail() {
           {locationsInVisit.length > 0 && (
             <div className="bg-surface rounded-[4px] border border-line p-4">
               <h2 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
-                <MapPin size={18} className="text-muted" />
+                <MapPin size={16} className="text-muted" />
                 Emplacements documentés
                 <span className="text-muted font-normal">({locationsInVisit.length})</span>
               </h2>
@@ -1117,7 +1117,7 @@ export default function VisitDetail() {
           <div className="bg-surface rounded-[4px] border border-line p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
-                <AlertCircle size={18} className="text-muted" />
+                <AlertCircle size={16} className="text-muted" />
                 Déficiences ({issues.length})
               </h2>
               {projectRole.canCreateIssues && (
@@ -1200,7 +1200,7 @@ export default function VisitDetail() {
                         className="w-11 h-11 flex items-center justify-center text-faint hover:text-ink flex-shrink-0"
                         title="Modifier"
                       >
-                        <Edit size={14} />
+                        <Edit size={16} />
                       </button>
                     )}
                   </div>
@@ -1227,7 +1227,7 @@ export default function VisitDetail() {
                 onClick={() => navigate(`/app/projects/${projectId}/report?visit=${visitId}`)}
                 className="py-3 px-4 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 min-h-[48px]"
               >
-                <FileText size={18} />
+                <FileText size={20} />
                 <span className="text-sm font-medium">Générer rapport</span>
               </button>
               {projectRole.canUploadPhotos && (
@@ -1235,7 +1235,7 @@ export default function VisitDetail() {
                   onClick={() => navigate(`/app/projects/${projectId}/visits/${visitId}/add-photos`)}
                   className="py-3 px-4 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors flex items-center justify-center gap-2 min-h-[48px]"
                 >
-                  <Camera size={18} />
+                  <Camera size={20} />
                   <span className="text-sm font-medium">Ajouter photos</span>
                 </button>
               )}
@@ -1281,7 +1281,7 @@ export default function VisitDetail() {
                   className="px-4 py-2 bg-surface/10 hover:bg-surface/20 rounded-[4px] flex items-center gap-2 text-white transition-colors font-medium"
                   title="Modifier"
                 >
-                  <MapPin size={18} />
+                  <MapPin size={16} />
                   Modifier
                 </button>
               )}
@@ -1293,7 +1293,7 @@ export default function VisitDetail() {
                 className="px-4 py-2 bg-brand-600 hover:bg-brand-700 rounded-[4px] flex items-center gap-2 text-white transition-colors font-medium"
                 title="Annoter"
               >
-                <Pencil size={18} />
+                <Pencil size={16} />
                 Annoter
               </button>
               <button
@@ -1314,7 +1314,7 @@ export default function VisitDetail() {
             {resolvePhotoZone(selectedPhoto, locationsById) && (
               <div className="absolute top-4 left-4 max-w-[calc(100%-2rem)]">
                 <div className="px-4 py-2 bg-ink text-white rounded-[4px] text-sm font-bold flex items-center gap-2 shadow-xl">
-                  <MapPin size={18} className="flex-shrink-0" />
+                  <MapPin size={16} className="flex-shrink-0" />
                   <span className="truncate">
                     {resolvePhotoZone(selectedPhoto, locationsById)}
                   </span>

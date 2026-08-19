@@ -384,7 +384,7 @@ export default function PhotoUploadPage() {
           </button>
           <h1 className="text-base sm:text-lg font-semibold text-ink">Ajouter des photos</h1>
           <div className="flex items-center gap-1.5 text-xs">
-            <Navigation size={14} className={gpsCoords ? "text-resolved" : "text-faint"} />
+            <Navigation size={12} className={gpsCoords ? "text-resolved" : "text-faint"} />
             <span className={gpsCoords ? "text-resolved" : "text-faint"}>
               {gpsCoords ? "GPS" : "Pas de GPS"}
             </span>
@@ -474,7 +474,7 @@ export default function PhotoUploadPage() {
                 }}
                 className="px-4 py-2 bg-subtle text-body rounded-[4px] hover:bg-line active:bg-line-strong transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
               >
-                <Plus size={18} />
+                <Plus size={16} />
                 <span className="hidden sm:inline">Ajouter photos</span>
                 <span className="sm:hidden">Ajouter</span>
               </button>
@@ -516,7 +516,7 @@ export default function PhotoUploadPage() {
                             : "bg-white/90 border-line-strong"
                         }`}
                       >
-                        {isSelected && <Check size={18} className="text-white lucide-weight" style={{ "--icon-stroke": 2.5 } as React.CSSProperties} />}
+                        {isSelected && <Check size={16} className="text-white lucide-weight" style={{ "--icon-stroke": 2.5 } as React.CSSProperties} />}
                       </div>
 
                       {/* Remove button */}
@@ -610,7 +610,7 @@ export default function PhotoUploadPage() {
                       onClick={() => setShowLocationModal(true)}
                       className="px-4 py-2 bg-ink text-white rounded-[4px] hover:bg-ink transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
                     >
-                      <MapPin size={18} />
+                      <MapPin size={20} />
                       <span className="hidden sm:inline">Assigner localisation</span>
                       <span className="sm:hidden">Localisation</span>
                     </button>
@@ -856,7 +856,7 @@ export default function PhotoUploadPage() {
                   onClick={handleAssignLocation}
                   className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-[4px] font-medium hover:bg-brand-700 transition-colors flex items-center justify-center gap-2"
                 >
-                  <Check size={18} />
+                  <Check size={20} />
                   Assigner
                 </button>
               </div>

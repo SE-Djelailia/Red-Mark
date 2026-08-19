@@ -547,7 +547,7 @@ export default function PlanFileViewer() {
           className="w-11 h-11 flex items-center justify-center hover:bg-white/10 rounded-[4px]"
           aria-label="Retour"
         >
-          <ArrowLeft size={22} />
+          <ArrowLeft size={24} />
         </button>
         <div className="flex-1 min-w-0">
           <div className="text-sm truncate">{planFile?.name || "Plan"}</div>
@@ -668,7 +668,7 @@ export default function PlanFileViewer() {
                         locationHasOpenIssue[pin.locationId] ? "bg-brand-600" : "bg-ink"
                       }`}
                     >
-                      <MapPin size={13} className="text-white" fill="currentColor" />
+                      <MapPin size={12} className="text-white" fill="currentColor" />
                     </span>
                   </button>
                 ))}
@@ -684,14 +684,14 @@ export default function PlanFileViewer() {
           className="w-12 h-12 bg-surface rounded-full shadow-lg flex items-center justify-center text-ink hover:bg-subtle"
           aria-label="Zoom avant"
         >
-          <Plus size={22} />
+          <Plus size={24} />
         </button>
         <button
           onClick={zoomOut}
           className="w-12 h-12 bg-surface rounded-full shadow-lg flex items-center justify-center text-ink hover:bg-subtle"
           aria-label="Zoom arrière"
         >
-          <Minus size={22} />
+          <Minus size={24} />
         </button>
         <button
           onClick={resetView}
@@ -717,7 +717,7 @@ export default function PlanFileViewer() {
             className="w-11 h-11 flex items-center justify-center rounded-[4px] text-ink hover:bg-subtle disabled:opacity-30 disabled:hover:bg-transparent"
             aria-label="Page précédente"
           >
-            <ChevronLeft size={22} />
+            <ChevronLeft size={24} />
           </button>
           <div className="flex items-center gap-2 text-sm text-body">
             <input
@@ -738,7 +738,7 @@ export default function PlanFileViewer() {
             className="w-11 h-11 flex items-center justify-center rounded-[4px] text-ink hover:bg-subtle disabled:opacity-30 disabled:hover:bg-transparent"
             aria-label="Page suivante"
           >
-            <ChevronRight size={22} />
+            <ChevronRight size={24} />
           </button>
         </div>
       )}

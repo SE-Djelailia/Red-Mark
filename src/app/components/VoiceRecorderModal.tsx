@@ -111,7 +111,7 @@ export default function VoiceRecorderModal({ open, visitId, onClose, onSaved }: 
                   recording ? "bg-ink hover:bg-ink/90" : "bg-brand-600 hover:bg-brand-700"
                 }`}
               >
-                {recording ? <Square size={30} fill="currentColor" /> : <Mic size={34} />}
+                {recording ? <Square size={32} fill="currentColor" /> : <Mic size={32} />}
               </button>
 
               <button

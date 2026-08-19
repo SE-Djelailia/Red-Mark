@@ -156,7 +156,7 @@ export default function AnnotatorToolbar({
       aria-pressed={activeTool === tool}
       className={`${ICON_BUTTON} ${activeTool === tool ? ACTIVE : INACTIVE}`}
     >
-      <Icon size={19} />
+      <Icon size={20} />
     </button>
   );
 
@@ -208,8 +208,8 @@ export default function AnnotatorToolbar({
           aria-haspopup="menu"
           className={`${ICON_BUTTON} relative ${activeMenuTool ? ACTIVE : INACTIVE}`}
         >
-          <MenuIcon size={19} />
-          <ChevronDown size={10} className="absolute bottom-0.5 right-0.5" />
+          <MenuIcon size={20} />
+          <ChevronDown size={12} className="absolute bottom-0.5 right-0.5" />
         </button>
         {toolsOpen && (
           <div
@@ -228,7 +228,7 @@ export default function AnnotatorToolbar({
                   activeTool === tool ? "bg-subtle text-ink" : "text-body hover:bg-subtle"
                 }`}
               >
-                <Icon size={17} className="flex-shrink-0" />
+                <Icon size={16} className="flex-shrink-0" />
                 {label}
               </button>
             ))}
@@ -278,7 +278,7 @@ export default function AnnotatorToolbar({
             aria-haspopup="menu"
             className={`${ICON_BUTTON} ${INACTIVE}`}
           >
-            <MoreHorizontal size={19} />
+            <MoreHorizontal size={20} />
           </button>
           {moreOpen && (
             <div
@@ -307,7 +307,7 @@ export default function AnnotatorToolbar({
                   }}
                   className="w-full min-h-11 px-3 flex items-center gap-3 rounded-[4px] text-sm text-left text-body hover:bg-subtle transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                 >
-                  <Icon size={17} className="flex-shrink-0" />
+                  <Icon size={16} className="flex-shrink-0" />
                   <span className="flex-1">{label}</span>
                   {hint && <span className="text-[10px] text-muted">{hint}</span>}
                 </button>
@@ -327,13 +327,13 @@ export default function AnnotatorToolbar({
             }
             className={`${ICON_BUTTON} ${INACTIVE}`}
           >
-            <Crop size={18} />
+            <Crop size={16} />
           </button>
           <button onClick={onUndo} disabled={!canUndo} title="Annuler" className={`${ICON_BUTTON} ${INACTIVE}`}>
-            <Undo2 size={18} />
+            <Undo2 size={20} />
           </button>
           <button onClick={onRedo} disabled={!canRedo} title="Rétablir" className={`${ICON_BUTTON} ${INACTIVE}`}>
-            <Redo2 size={18} />
+            <Redo2 size={20} />
           </button>
           <button
             onClick={onClear}
@@ -341,7 +341,7 @@ export default function AnnotatorToolbar({
             title="Tout effacer"
             className={`${ICON_BUTTON} ${INACTIVE}`}
           >
-            <Trash2 size={18} />
+            <Trash2 size={20} />
           </button>
         </div>
 

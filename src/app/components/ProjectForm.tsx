@@ -289,7 +289,7 @@ export default function ProjectForm({ project, onCancel, onSaved }: Props) {
                   </>
                 ) : (
                   <>
-                    <Check size={18} />
+                    <Check size={16} />
                     {isEdit ? "Enregistrer" : "Créer"}
                   </>
                 )}

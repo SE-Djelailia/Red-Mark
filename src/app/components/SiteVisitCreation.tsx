@@ -25,7 +25,7 @@ export default function SiteVisitCreation() {
           onClick={goBack}
           className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={20} />
           <span>Retour</span>
         </button>
       </div>

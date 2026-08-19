@@ -59,7 +59,7 @@ export default function TranscriptionDisclosure({ open, onCancel, onConfirm }: P
         <div className="p-5 space-y-4">
           <div className="flex items-start gap-3">
             <span className="w-9 h-9 rounded-[4px] bg-subtle text-ink flex items-center justify-center flex-shrink-0">
-              <Info size={18} />
+              <Info size={16} />
             </span>
             <div className="min-w-0">
               <h2

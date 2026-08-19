@@ -222,7 +222,7 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
     <div className="bg-surface rounded-[4px] border border-line p-4">
       <div className="flex items-center justify-between mb-3 gap-3">
         <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
-          <ClipboardList size={18} className="text-muted" />
+          <ClipboardList size={16} className="text-muted" />
           Observations ({observations.length})
         </h2>
         {canEdit && editing !== "new" && (
@@ -310,7 +310,7 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
                         title="Modifier"
                         className="w-9 h-9 flex items-center justify-center rounded-[4px] text-muted hover:bg-line transition-colors"
                       >
-                        <Pencil size={15} />
+                        <Pencil size={16} />
                       </button>
                       <button
                         onClick={() => setDeleteTarget(o)}
@@ -318,7 +318,7 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
                         title="Supprimer"
                         className="w-9 h-9 flex items-center justify-center rounded-[4px] text-muted hover:bg-subtle hover:text-ink transition-colors"
                       >
-                        <Trash2 size={15} />
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   )}

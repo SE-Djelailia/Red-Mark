@@ -440,7 +440,7 @@ export default function FirmAdmin() {
         {/* Firm header */}
         <Card className="p-4 flex items-center gap-4">
           <div className="h-12 w-12 rounded-[4px] bg-subtle flex items-center justify-center flex-shrink-0">
-            <Building2 size={22} className="text-ink" aria-hidden="true" />
+            <Building2 size={20} className="text-ink" aria-hidden="true" />
           </div>
           <div className="min-w-0">
             <h1 className="text-base font-semibold text-ink truncate">{firm?.name}</h1>
@@ -492,7 +492,7 @@ export default function FirmAdmin() {
                         onClick={() => void handleRecoveryLink(member)}
                         title="Pour un compte créé par un administrateur et jamais utilisé"
                       >
-                        <KeyRound size={15} aria-hidden="true" />
+                        <KeyRound size={16} aria-hidden="true" />
                         Lien de connexion
                       </Button>
                     )}
@@ -504,7 +504,7 @@ export default function FirmAdmin() {
                         disabled={busy}
                         onClick={() => void handleRole(member, "admin")}
                       >
-                        <ShieldCheck size={15} aria-hidden="true" />
+                        <ShieldCheck size={16} aria-hidden="true" />
                         Promouvoir
                       </Button>
                     ) : (
@@ -515,7 +515,7 @@ export default function FirmAdmin() {
                         title={demoteBlocked ?? undefined}
                         onClick={() => void handleRole(member, "member")}
                       >
-                        <ShieldOff size={15} aria-hidden="true" />
+                        <ShieldOff size={16} aria-hidden="true" />
                         Rétrograder
                       </Button>
                     )}
@@ -527,7 +527,7 @@ export default function FirmAdmin() {
                       title={removeBlocked ?? undefined}
                       onClick={() => startRemoval(member)}
                     >
-                      <Trash2 size={15} aria-hidden="true" />
+                      <Trash2 size={16} aria-hidden="true" />
                       Retirer
                     </Button>
                   </div>
@@ -548,12 +548,12 @@ export default function FirmAdmin() {
             >
               {showInvite ? (
                 <>
-                  <X size={13} aria-hidden="true" />
+                  <X size={12} aria-hidden="true" />
                   Fermer
                 </>
               ) : (
                 <>
-                  <UserPlus size={13} aria-hidden="true" />
+                  <UserPlus size={12} aria-hidden="true" />
                   Ajouter quelqu'un
                 </>
               )}
@@ -578,7 +578,7 @@ export default function FirmAdmin() {
             <Card>
               {invitations.length === 0 ? (
                 <div className="px-4 py-6 text-center">
-                  <Mail size={28} className="mx-auto mb-2 text-faint" aria-hidden="true" />
+                  <Mail size={32} className="mx-auto mb-2 text-faint" aria-hidden="true" />
                   <p className="text-sm text-muted">Aucune invitation en attente.</p>
                 </div>
               ) : (

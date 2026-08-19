@@ -50,7 +50,7 @@ export default function QuickVisit() {
             onClick={() => setSelectedProjectId(null)}
             className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={20} />
             <span>Retour</span>
           </button>
         </div>
@@ -88,12 +88,12 @@ export default function QuickVisit() {
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={20} />
           <span>Retour</span>
         </button>
 
         <div className="relative">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
           <input
             type="text"
             value={search}
@@ -124,7 +124,7 @@ export default function QuickVisit() {
               className="w-full flex items-center gap-3 bg-surface rounded-[4px] border border-line p-4 hover:border-brand-600 hover:shadow-md transition-all text-left"
             >
               <div className="w-10 h-10 rounded-[4px] bg-subtle text-ink flex items-center justify-center flex-shrink-0">
-                <Building2 size={18} />
+                <Building2 size={20} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-ink truncate">{project.name}</div>

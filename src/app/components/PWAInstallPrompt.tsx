@@ -129,7 +129,7 @@ export default function PWAInstallPrompt() {
                   onClick={handleInstall}
                   className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium flex items-center justify-center gap-2 min-h-[44px]"
                 >
-                  <Download size={18} />
+                  <Download size={20} />
                   <span>Installer</span>
                 </button>
               </div>

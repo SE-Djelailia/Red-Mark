@@ -142,7 +142,7 @@ function ProjectRow({
         className="w-full px-4 py-3 min-h-11 flex items-center justify-between gap-3 text-left hover:bg-subtle transition-colors"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <FolderOpen size={18} className="text-muted flex-shrink-0" aria-hidden="true" />
+          <FolderOpen size={20} className="text-muted flex-shrink-0" aria-hidden="true" />
           <div className="min-w-0">
             <div className="text-sm text-ink truncate">{project.name}</div>
             <div className="text-xs text-muted">
@@ -153,9 +153,9 @@ function ProjectRow({
           </div>
         </div>
         {expanded ? (
-          <ChevronDown size={18} className="text-faint flex-shrink-0" aria-hidden="true" />
+          <ChevronDown size={16} className="text-faint flex-shrink-0" aria-hidden="true" />
         ) : (
-          <ChevronRight size={18} className="text-faint flex-shrink-0" aria-hidden="true" />
+          <ChevronRight size={16} className="text-faint flex-shrink-0" aria-hidden="true" />
         )}
       </button>
 
@@ -204,7 +204,7 @@ function ProjectRow({
           {!loading && !adding && assignable.length > 0 && (
             <div className="px-4 py-3">
               <Button variant="ghost" size="sm" onClick={() => setAdding(true)}>
-                <UserPlus size={15} aria-hidden="true" />
+                <UserPlus size={16} aria-hidden="true" />
                 Ajouter un membre
               </Button>
             </div>

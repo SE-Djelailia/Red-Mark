@@ -19,7 +19,7 @@
  *   md 20  buttons, nav, section headers
  *   lg 24  page headers, empty states
  *
- * Display sizes (32/40/48+) are not on this scale. They are illustration, not
+ * Display sizes are not on this scale. They are illustration, not
  * iconography; pair them with `.lucide-display` for the heavier stroke.
  */
 export const ICON_SIZE = {
@@ -34,6 +34,22 @@ export type IconSize = (typeof ICON_SIZE)[IconSizeToken];
 
 /** The default when nothing else is stated. */
 export const ICON_SIZE_DEFAULT: IconSize = ICON_SIZE.sm;
+
+/**
+ * Display sizes — empty-state and hero glyphs, not iconography.
+ *
+ * Multiples of 8 so they stay on the grid at a coarser interval than the
+ * icon scale. Pair with `.lucide-display` so the stroke goes to 2: at these
+ * sizes a 1.5 stroke on a 24 viewBox scales down optically and goes weedy.
+ */
+export const ICON_DISPLAY_SIZE = {
+  sm: 32,
+  md: 40,
+  lg: 48,
+  xl: 64,
+} as const;
+
+export type IconDisplaySize = (typeof ICON_DISPLAY_SIZE)[keyof typeof ICON_DISPLAY_SIZE];
 
 /**
  * THE RED BUDGET, for icons.

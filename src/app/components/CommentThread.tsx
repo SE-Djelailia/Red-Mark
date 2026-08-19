@@ -372,7 +372,7 @@ export default function CommentThread({
                       className="flex items-center gap-1 px-2 py-1 text-xs text-body hover:text-brand-600 transition-colors"
                       title="Répondre"
                     >
-                      <Reply size={14} />
+                      <Reply size={16} />
                       <span>Répondre</span>
                     </button>
                     {comment.authorId === currentUser.id && (
@@ -382,14 +382,14 @@ export default function CommentThread({
                           className="p-1.5 text-faint hover:text-brand-600 transition-colors"
                           title="Modifier"
                         >
-                          <Edit size={14} />
+                          <Edit size={16} />
                         </button>
                         <button
                           onClick={() => setDeleteTargetId(comment.id)}
                           className="p-1.5 text-faint hover:text-brand-600 transition-colors"
                           title="Supprimer"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={16} />
                         </button>
                       </>
                     )}

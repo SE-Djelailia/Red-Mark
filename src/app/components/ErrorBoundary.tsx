@@ -88,7 +88,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     if (this.props.variant === "section") {
       return (
         <div className="bg-surface border border-line rounded-[4px] p-5 text-center">
-          <AlertTriangle size={28} className="mx-auto text-warn mb-2.5" aria-hidden="true" />
+          <AlertTriangle size={32} className="mx-auto text-warn mb-2.5" aria-hidden="true" />
           <p className="text-sm font-medium text-ink mb-1">
             Impossible d'afficher {this.props.label || "cette section"}
           </p>

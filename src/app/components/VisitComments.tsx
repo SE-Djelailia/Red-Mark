@@ -114,14 +114,14 @@ function CommentCard({
                     className="p-1 text-faint hover:text-brand-600 transition-colors"
                     title="Modifier"
                   >
-                    <Edit2 size={14} />
+                    <Edit2 size={16} />
                   </button>
                   <button
                     onClick={() => onDelete(comment.id)}
                     className="p-1 text-faint hover:text-brand-strong transition-colors"
                     title="Supprimer"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
               )}
@@ -472,13 +472,13 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
       <div className="bg-surface border border-line rounded-[4px] p-4">
         {replyingTo && (
           <div className="flex items-center gap-2 mb-2 text-xs text-body bg-subtle px-3 py-2 rounded">
-            <Reply size={14} />
+            <Reply size={12} />
             <span>Répondre à {comments.find((c) => c.id === replyingTo)?.author}</span>
             <button
               onClick={() => setReplyingTo(null)}
               className="ml-auto text-muted hover:text-brand-600"
             >
-              <X size={14} />
+              <X size={16} />
             </button>
           </div>
         )}

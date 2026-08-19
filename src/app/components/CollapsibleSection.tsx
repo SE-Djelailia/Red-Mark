@@ -26,9 +26,9 @@ export default function CollapsibleSection({ title, icon, defaultOpen = false, c
           {title}
         </span>
         {open ? (
-          <ChevronUp size={18} className="text-faint flex-shrink-0" />
+          <ChevronUp size={16} className="text-faint flex-shrink-0" />
         ) : (
-          <ChevronDown size={18} className="text-faint flex-shrink-0" />
+          <ChevronDown size={16} className="text-faint flex-shrink-0" />
         )}
       </button>
       {open && <div className="px-4 pb-4">{children}</div>}

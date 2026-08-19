@@ -858,7 +858,7 @@ export default function ProjectDetail() {
             className="w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 text-sm text-body hover:text-ink min-h-[44px]"
           >
             <span>Détails du projet</span>
-            {showProjectInfo ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            {showProjectInfo ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </button>
           {showProjectInfo && (
             /* Two columns from sm: these are short label/value pairs that
@@ -1124,7 +1124,7 @@ export default function ProjectDetail() {
                   {/* Search Bar */}
                   <div className="relative">
                     <Search
-                      size={18}
+                      size={16}
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-faint"
                     />
                     <input
@@ -1445,7 +1445,7 @@ export default function ProjectDetail() {
               onClick={() => setShowAnnotator(true)}
               className="flex-1 py-3 bg-white/15 text-white rounded-[4px] hover:bg-white/25 transition-colors flex items-center justify-center gap-2"
             >
-              <Pencil size={18} />
+              <Pencil size={20} />
               <span>Annoter</span>
             </button>
             {canEditPhotoMetadata(projectRole) && (
@@ -1453,7 +1453,7 @@ export default function ProjectDetail() {
                 onClick={() => setEditingPhotos([selectedPhoto])}
                 className="flex-1 py-3 bg-surface/10 text-white rounded-[4px] hover:bg-surface/20 transition-colors flex items-center justify-center gap-2"
               >
-                <MapPin size={18} />
+                <MapPin size={20} />
                 <span>Modifier</span>
               </button>
             )}
@@ -1466,14 +1466,14 @@ export default function ProjectDetail() {
           >
             {selectedPhoto.date && (
               <div className="flex items-center gap-3 text-sm">
-                <Calendar size={18} className="text-faint" />
+                <Calendar size={20} className="text-faint" />
                 <span>{parseLocalDate(selectedPhoto.date).toLocaleDateString("fr-CA")}</span>
               </div>
             )}
 
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Tag size={18} className="text-faint" />
+                <Tag size={16} className="text-faint" />
                 <span className="text-sm text-faint">Phase et étiquettes</span>
               </div>
               <div className="flex flex-wrap gap-2 ml-6">
@@ -1564,7 +1564,7 @@ export default function ProjectDetail() {
               {/* Date and Phase */}
               <div>
                 <div className="flex items-center gap-3 text-sm text-muted mb-2">
-                  <Calendar size={18} />
+                  <Calendar size={16} />
                   <span>
                     {parseLocalDate(selectedVisit.date).toLocaleDateString("fr-CA", {
                       weekday: "long",
@@ -1583,7 +1583,7 @@ export default function ProjectDetail() {
                       key={tag}
                       className="px-3 py-1.5 bg-subtle text-body rounded-[4px] text-sm flex items-center gap-1.5"
                     >
-                      <Tag size={14} />
+                      <Tag size={12} />
                       {tag}
                     </span>
                   ))}
@@ -1592,7 +1592,7 @@ export default function ProjectDetail() {
 
               {/* Location */}
               <div className="flex items-start gap-3">
-                <MapPin size={18} className="text-muted mt-0.5 flex-shrink-0" />
+                <MapPin size={16} className="text-muted mt-0.5 flex-shrink-0" />
                 <div>
                   <div className="text-xs text-muted mb-1">Emplacement</div>
                   <div className="text-sm text-ink font-medium">{selectedVisit.room}</div>
@@ -1601,7 +1601,7 @@ export default function ProjectDetail() {
 
               {/* Photo Count */}
               <div className="flex items-start gap-3">
-                <Camera size={18} className="text-muted mt-0.5" />
+                <Camera size={16} className="text-muted mt-0.5" />
                 <div>
                   <div className="text-xs text-muted mb-1">Photos capturées</div>
                   <div className="text-sm text-ink font-medium">
@@ -1613,7 +1613,7 @@ export default function ProjectDetail() {
               {/* Notes */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <FileText size={18} className="text-muted" />
+                  <FileText size={16} className="text-muted" />
                   <span className="text-xs text-muted">Notes de visite</span>
                 </div>
                 <p className="text-sm text-body leading-relaxed bg-canvas rounded-[4px] p-4">
@@ -1625,7 +1625,7 @@ export default function ProjectDetail() {
               {selectedVisit.photos.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <ImageIcon size={18} className="text-muted" />
+                    <ImageIcon size={16} className="text-muted" />
                     <span className="text-xs text-muted">Galerie photos</span>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1656,7 +1656,7 @@ export default function ProjectDetail() {
               {comments.filter((c) => c.visitId === selectedVisit.id).length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <MessageSquare size={18} className="text-muted" />
+                    <MessageSquare size={16} className="text-muted" />
                     <span className="text-xs text-muted">Commentaires liés</span>
                   </div>
                   <div className="space-y-3">
@@ -1701,7 +1701,7 @@ export default function ProjectDetail() {
                 }}
                 className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 font-medium"
               >
-                <MessageSquare size={18} />
+                <MessageSquare size={20} />
                 <span>Commenter</span>
               </button>
             </div>

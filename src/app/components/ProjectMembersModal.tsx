@@ -463,7 +463,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                           onClick={() => setRemoveTarget({ id: member.id, name: member.name })}
                           className="w-11 h-11 flex items-center justify-center bg-surface text-brand-strong rounded-[4px] hover:bg-subtle transition-colors"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={16} />
                         </button>
                       </>
                     )}

@@ -144,7 +144,7 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
           unreadCount > 0 ? `Notifications (${unreadCount} non lues)` : "Notifications"
         }
       >
-        <Bell size={19} />
+        <Bell size={20} />
         {/* The design system marks unread state with a small dot rather than
             a count bubble. The exact number is still announced to screen
             readers via aria-label, and shown in the panel's filter tabs. */}

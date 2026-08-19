@@ -320,7 +320,7 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
           <label className={labelClassName}>Météo</label>
           <div className="relative">
             <Cloud
-              size={18}
+              size={16}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-faint pointer-events-none"
             />
             <select
@@ -344,7 +344,7 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
             <label className="text-sm text-ink">Température</label>
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-ink flex items-center gap-1">
-                <Thermometer size={14} className="text-faint" />
+                <Thermometer size={12} className="text-faint" />
                 {temperature === null ? "Non spécifiée" : `${temperature}°C`}
               </span>
               {temperature !== null && (
@@ -403,7 +403,7 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
                     className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center"
                     aria-label="Retirer la photo"
                   >
-                    <X size={14} />
+                    <X size={16} />
                   </button>
                 </div>
               ))}

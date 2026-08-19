@@ -157,7 +157,7 @@ export default function ProjectList() {
           {/* Search Bar */}
           <div className="relative">
             <Search
-              size={18}
+              size={16}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-faint pointer-events-none"
             />
             <input
@@ -209,7 +209,7 @@ export default function ProjectList() {
                 }}
                 className="text-sm text-brand-strong hover:text-brand-800 flex items-center gap-1"
               >
-                <X size={14} />
+                <X size={16} />
                 Réinitialiser
               </button>
             </div>

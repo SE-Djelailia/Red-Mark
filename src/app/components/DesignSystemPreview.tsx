@@ -26,6 +26,16 @@ import {
   Mic,
 } from "lucide-react";
 import { ICON_SIZE, iconRed } from "../../lib/icons";
+import {
+  MarkX,
+  StateSignale,
+  StateACorriger,
+  StateCorrige,
+  StateVerifie,
+  IconPhoto,
+  IconLocation,
+  IconVisit,
+} from "./ui-kit/RedMarkIcons";
 import { LogoLockup } from "./ui-kit/Logo";
 
 /**
@@ -276,7 +286,7 @@ function ExampleScreen() {
               <p className="text-xs text-muted mt-0.5 rm-figures flex items-center gap-1.5">
                 14 août 2026 · 4 j
                 <span className="text-brand-strong font-medium inline-flex items-center gap-1">
-                  <Clock size={10} /> En retard
+                  <Clock size={12} /> En retard
                 </span>
               </p>
             </div>
@@ -336,7 +346,7 @@ function ExampleScreen() {
               key={i}
               className="aspect-square bg-subtle border border-line rounded-[4px] flex items-center justify-center"
             >
-              <Camera size={18} className="text-faint" />
+              <Camera size={16} className="text-faint" />
             </div>
           ))}
         </div>
@@ -530,6 +540,119 @@ function IconSpecimen() {
           Trois raisons, et rien d'autre. Si aucune ne s'applique, l'icône est à l'encre — même
           quand elle « semble importante ». C'est le même test que pour les aplats : deux rouges
           visibles en même temps, c'est qu'il y en a un de trop.
+        </p>
+      </Section>
+
+      <Section label="La marque — déficience">
+        <div className="border border-line rounded-[4px] bg-surface p-6">
+          <div className="flex items-end gap-8 text-ink">
+            {[ICON_SIZE.xs, ICON_SIZE.sm, ICON_SIZE.md, ICON_SIZE.lg, 40].map((px) => (
+              <div key={px} className="flex flex-col items-center gap-2">
+                <MarkX size={px} />
+                <span className="text-2xs text-muted rm-figures">{px}</span>
+              </div>
+            ))}
+            <div className="flex flex-col items-center gap-2">
+              <MarkX size={40} className={iconRed("deficiency")} />
+              <span className="text-2xs text-muted">rouge</span>
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-muted mt-3">
+          Le X du logo, redessiné en trait sur la grille 24 — pas le logo mis à l'échelle. Le logo
+          est en polygones pleins sur une boîte 0–100 : à 16 px il pèserait plus lourd que ses
+          voisines. Les bouts carrés de la règle .lucide donnent les mêmes coupes franches que les
+          polygones du logo. Rouge uniquement quand la déficience est ouverte.
+        </p>
+      </Section>
+
+      <Section label="Le cycle de vie — série">
+        <div className="grid grid-cols-4 border border-line rounded-[4px] bg-surface divide-x divide-line">
+          {(
+            [
+              [StateSignale, "signalé", "signalée, intacte"],
+              [StateACorriger, "à corriger", "assignée"],
+              [StateCorrige, "corrigé", "entrepreneur"],
+              [StateVerifie, "vérifié", "contresignée"],
+            ] as const
+          ).map(([Ico, label, note]) => (
+            <div key={label} className="flex flex-col items-center gap-2 py-5 px-2">
+              <Ico size={ICON_SIZE.lg} className="text-ink" />
+              <span className="rm-label text-center">{label}</span>
+              <span className="text-2xs text-muted text-center leading-tight">{note}</span>
+            </div>
+          ))}
+        </div>
+        {/* Same four at real size — the set has to survive 16px, where a
+            distinction carried by a single stroke either holds or collapses. */}
+        <div className="flex items-center gap-6 mt-4 px-4 py-3 border border-line rounded-[4px] bg-surface text-ink">
+          <span className="rm-label">16 px</span>
+          <StateSignale size={ICON_SIZE.sm} />
+          <StateACorriger size={ICON_SIZE.sm} />
+          <StateCorrige size={ICON_SIZE.sm} />
+          <StateVerifie size={ICON_SIZE.sm} />
+          <span className="rm-label ml-4">rouge — ouvert</span>
+          <StateSignale size={ICON_SIZE.sm} className={iconRed("deficiency")} />
+          <StateACorriger size={ICON_SIZE.sm} className={iconRed("deficiency")} />
+        </div>
+        <p className="text-xs text-muted mt-3">
+          Un cadre constant (14×14) porte la série ; seul l'intérieur change, et chaque état ajoute
+          un trait au précédent. « Plus avancé » se lit donc comme « plus annoté » — comme un plan
+          qui se couvre de corrections. Les deux premiers états sont ouverts, donc rouges ; corrigé
+          et vérifié sont à l'encre, jamais en vert.
+        </p>
+      </Section>
+
+      <Section label="Les noms propres — sur mesure vs lucide">
+        <div className="border border-line rounded-[4px] bg-surface divide-y divide-line">
+          {(
+            [
+              [IconPhoto, Camera, "photo", "la prise, pas l'appareil"],
+              [IconLocation, MapPin, "local", "un local sur plan, pas une épingle GPS"],
+              [IconVisit, Calendar, "visite", "un jour daté, pas un mois"],
+            ] as const
+          ).map(([Custom, Lucide, name, why]) => (
+            <div key={name} className="flex items-center gap-5 px-4 py-4">
+              <div className="flex items-center gap-3 w-24">
+                <Custom size={ICON_SIZE.lg} className="text-ink" />
+                <Custom size={ICON_SIZE.sm} className="text-ink" />
+              </div>
+              <div className="flex items-center gap-3 w-20 text-faint">
+                <Lucide size={ICON_SIZE.lg} />
+                <Lucide size={ICON_SIZE.sm} />
+              </div>
+              <div className="min-w-0">
+                <p className="rm-label">{name}</p>
+                <p className="text-sm text-muted mt-0.5">{why}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-muted mt-3">
+          À gauche le tracé sur mesure, à droite l'équivalent lucide en gris. Seuls ces trois noms
+          méritent un dessin propre : ils veulent dire ici quelque chose de précis qu'un glyphe
+          générique dilue. Tout le reste — recherche, réglages, téléversement — veut dire partout la
+          même chose, et la version lucide retraitée vaut mieux qu'un redessin.
+        </p>
+      </Section>
+
+      <Section label="Cohérence — sur mesure parmi les lucide">
+        <div className="flex flex-wrap items-center gap-5 px-4 py-5 border border-line rounded-[4px] bg-surface text-ink">
+          <Search size={ICON_SIZE.md} />
+          <IconPhoto size={ICON_SIZE.md} />
+          <Filter size={ICON_SIZE.md} />
+          <IconLocation size={ICON_SIZE.md} />
+          <Bell size={ICON_SIZE.md} />
+          <IconVisit size={ICON_SIZE.md} />
+          <Settings size={ICON_SIZE.md} />
+          <MarkX size={ICON_SIZE.md} />
+          <Download size={ICON_SIZE.md} />
+          <StateVerifie size={ICON_SIZE.md} />
+          <Pencil size={ICON_SIZE.md} />
+        </div>
+        <p className="text-xs text-muted mt-3">
+          Mélange délibéré : sur mesure et lucide en alternance, sans étiquette. Si le regard
+          accroche sur l'une d'elles, c'est qu'elle est à corriger — c'est le test de cette série.
         </p>
       </Section>
     </>

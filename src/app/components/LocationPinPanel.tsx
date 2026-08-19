@@ -140,7 +140,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
         <div className="flex items-start justify-between px-5 py-4 border-b border-line">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-[4px] bg-subtle text-ink flex items-center justify-center flex-shrink-0">
-              <MapPin size={18} />
+              <MapPin size={16} />
             </div>
             <div className="min-w-0">
               <div className="text-base font-medium text-ink truncate">
@@ -269,7 +269,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
                           className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center"
                           aria-label="Retirer la photo"
                         >
-                          <X size={14} />
+                          <X size={16} />
                         </button>
                       </div>
                     ))}

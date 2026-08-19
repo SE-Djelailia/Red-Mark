@@ -49,7 +49,7 @@ export default function BottomNav() {
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-brand-600" />
               )}
               <Icon
-                size={22}
+                size={20}
                 className="lucide-weight"
                 style={{ "--icon-stroke": active ? 2 : 1.5 } as React.CSSProperties}
               />

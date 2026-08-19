@@ -192,7 +192,7 @@ export default function DataExport({ onClose }: DataExportProps) {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-canvas rounded-[4px]">
                   <div className="flex items-center gap-3">
-                    <CheckCircle size={18} className="text-body" />
+                    <CheckCircle size={16} className="text-body" />
                     <div>
                       <div className="text-sm text-ink">Projets et visites</div>
                       <div className="text-xs text-muted">Toujours inclus</div>
@@ -201,7 +201,7 @@ export default function DataExport({ onClose }: DataExportProps) {
                 </div>
                 <div className="flex items-center justify-between p-3 bg-canvas rounded-[4px]">
                   <div className="flex items-center gap-3">
-                    <CheckCircle size={18} className="text-body" />
+                    <CheckCircle size={16} className="text-body" />
                     <div>
                       <div className="text-sm text-ink">Métadonnées des photos</div>
                       <div className="text-xs text-muted">Tags, localisation, descriptions</div>
@@ -210,7 +210,7 @@ export default function DataExport({ onClose }: DataExportProps) {
                 </div>
                 <div className="flex items-center justify-between p-3 bg-canvas rounded-[4px] opacity-50">
                   <div className="flex items-center gap-3">
-                    <Image size={18} className="text-faint" />
+                    <Image size={16} className="text-faint" />
                     <div>
                       <div className="text-sm text-body">Fichiers photos</div>
                       <div className="text-xs text-muted">Bientôt disponible</div>

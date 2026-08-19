@@ -221,7 +221,7 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
             onClick={stop}
             className="ml-auto h-11 px-5 flex items-center gap-2 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 font-medium"
           >
-            <Square size={14} fill="currentColor" />
+            <Square size={16} fill="currentColor" />
             Arrêter
           </button>
         </div>
@@ -246,7 +246,7 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
                   className="w-11 h-11 rounded-[4px] bg-ink text-white flex items-center justify-center flex-shrink-0 hover:bg-ink/85 transition-colors"
                   aria-label={playingId === note.id ? "Pause" : "Lire"}
                 >
-                  {playingId === note.id ? <Pause size={18} /> : <Play size={18} />}
+                  {playingId === note.id ? <Pause size={20} /> : <Play size={20} />}
                 </button>
 
                 <div className="flex-1 min-w-0">

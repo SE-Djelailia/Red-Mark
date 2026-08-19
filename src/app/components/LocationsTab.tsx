@@ -57,7 +57,7 @@ export default function LocationsTab({
   if (error) {
     return (
       <div className="text-center py-12">
-        <AlertCircle size={36} className="mx-auto text-brand-600 mb-3" />
+        <AlertCircle size={32} className="mx-auto text-brand-600 mb-3" />
         <p className="text-sm text-body mb-3">{error}</p>
         <button onClick={onRetry} className="text-sm text-brand-strong hover:text-brand-800 font-medium">
           Réessayer
@@ -72,7 +72,7 @@ export default function LocationsTab({
           they read as two unrelated bars once the column is wide. */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
           <input
             type="text"
             value={search}
@@ -121,7 +121,7 @@ export default function LocationsTab({
                 className="w-full flex items-center gap-3 bg-surface rounded-[4px] border border-line p-4 hover:border-brand-600 transition-all text-left"
               >
                 <div className="w-10 h-10 rounded-[4px] bg-subtle text-ink flex items-center justify-center flex-shrink-0">
-                  <TypeIcon size={18} />
+                  <TypeIcon size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-ink truncate">

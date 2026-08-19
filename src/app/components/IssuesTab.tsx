@@ -238,7 +238,7 @@ export default function IssuesTab({
             aria-expanded={showFilters}
             className="flex items-center gap-1.5 text-sm text-brand-strong hover:text-brand-800 font-medium min-h-[40px]"
           >
-            <SlidersHorizontal size={15} />
+            <SlidersHorizontal size={16} />
             Filtres
           </button>
           <select
@@ -354,7 +354,7 @@ export default function IssuesTab({
                       {overdue && (
                         <span className="flex items-center gap-1 flex-shrink-0 text-brand-strong font-medium">
                           <span>·</span>
-                          <Clock size={10} />
+                          <Clock size={12} />
                           En retard
                         </span>
                       )}
@@ -364,14 +364,14 @@ export default function IssuesTab({
                       {locationLabel && (
                         <span className="flex items-center gap-1 min-w-0">
                           <span>·</span>
-                          <MapPin size={10} className="flex-shrink-0" />
+                          <MapPin size={12} className="flex-shrink-0" />
                           <span className="truncate">{locationLabel}</span>
                         </span>
                       )}
                       {issue.photos.length > 0 && (
                         <span className="flex items-center gap-1 flex-shrink-0">
                           <span>·</span>
-                          <Camera size={10} />
+                          <Camera size={12} />
                           {issue.photos.length}
                         </span>
                       )}

@@ -84,7 +84,7 @@ export default function IssueDetail() {
             onClick={goBack}
             className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={20} />
             <span>Retour</span>
           </button>
           {canEditIssue(projectRole, issue?.createdBy) && (
@@ -93,7 +93,7 @@ export default function IssueDetail() {
               className="w-10 h-10 flex items-center justify-center text-muted hover:text-brand-600 hover:bg-subtle rounded-[4px] transition-colors"
               title="Supprimer"
             >
-              <Trash2 size={18} />
+              <Trash2 size={20} />
             </button>
           )}
         </div>

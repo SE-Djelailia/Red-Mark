@@ -362,7 +362,7 @@ export default function PhotoMetadataEditor({
                 className="px-3 bg-subtle hover:bg-line rounded-[4px] text-ink min-h-[44px] flex items-center justify-center flex-shrink-0"
                 aria-label="Ajouter l'étiquette"
               >
-                <Plus size={18} />
+                <Plus size={20} />
               </button>
             </div>
             {tags.length > 0 && (
@@ -405,7 +405,7 @@ export default function PhotoMetadataEditor({
             disabled={saving}
             className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] font-medium hover:bg-brand-700 transition-colors min-h-[44px] disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            <Check size={18} />
+            <Check size={20} />
             {saving ? "Enregistrement…" : "Enregistrer"}
           </button>
         </div>

@@ -75,7 +75,7 @@ export default function SearchView() {
     <div className="min-h-screen pb-20 bg-canvas">
       <div className="px-4 sm:px-6 lg:px-8 pt-5 max-w-6xl mx-auto">
         <div className="relative">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
           <input
             type="text"
             value={query}

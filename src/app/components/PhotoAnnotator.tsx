@@ -582,7 +582,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
                 title="Pivoter 90°"
                 className={`${iconButton} text-body hover:bg-subtle`}
               >
-                <RotateCw size={18} />
+                <RotateCw size={20} />
               </button>
               <button
                 onClick={cancelPrepare}
@@ -621,7 +621,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
                 }}
                 className="ml-auto h-8 px-2.5 rounded-[4px] text-xs font-medium text-white bg-ink hover:bg-ink/85 transition-colors flex items-center gap-1.5 flex-shrink-0"
               >
-                <Trash2 size={13} />
+                <Trash2 size={12} />
                 Supprimer
               </button>
             )}
@@ -667,7 +667,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
                 onClick={deleteSelectedText}
                 className="ml-auto h-8 px-2.5 rounded-[4px] text-xs font-medium text-body hover:bg-subtle transition-colors flex items-center gap-1.5"
               >
-                <Trash2 size={13} />
+                <Trash2 size={12} />
                 Supprimer le texte
               </button>
             )}

@@ -591,7 +591,7 @@ export default function LocationDetail() {
           onClick={goBack}
           className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={20} />
           <span>Retour</span>
         </button>
       </div>
@@ -675,7 +675,7 @@ export default function LocationDetail() {
                                   <div
                                     className={`w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-sm ${color}`}
                                   >
-                                    <Icon size={14} />
+                                    <Icon size={12} />
                                   </div>
                                 )}
                               </div>
@@ -780,7 +780,7 @@ export default function LocationDetail() {
         <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
-              <AlertCircle size={18} className="text-muted" />
+              <AlertCircle size={16} className="text-muted" />
               Déficiences ({loadingIssues ? "…" : issuesLoadError ? "?" : issues.length})
             </h2>
             {projectRole.canCreateIssues && (
@@ -788,7 +788,7 @@ export default function LocationDetail() {
                 onClick={startAddIssue}
                 className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
               >
-                <Plus size={14} />
+                <Plus size={16} />
                 Ajouter
               </button>
             )}
@@ -826,7 +826,7 @@ export default function LocationDetail() {
             because "when was this looked at" frames everything below it. */}
         <div className="bg-surface rounded-[4px] border border-line p-5">
           <h2 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
-            <Calendar size={18} className="text-muted" />
+            <Calendar size={16} className="text-muted" />
             Visites à cet emplacement
             {!loadingPhotos && !loadingIssues && visitsAtLocation.length > 0 && (
               <span className="text-muted font-normal">({visitsAtLocation.length})</span>
@@ -870,7 +870,7 @@ export default function LocationDetail() {
         <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
-              <ImageIcon size={18} className="text-muted" />
+              <ImageIcon size={16} className="text-muted" />
               Photos ({loadingPhotos ? "…" : photosLoadError ? "?" : photos.length})
             </h2>
             {projectRole.canUploadPhotos && (
@@ -878,7 +878,7 @@ export default function LocationDetail() {
                 onClick={startAddPhotos}
                 className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
               >
-                <Camera size={14} />
+                <Camera size={16} />
                 Ajouter
               </button>
             )}
@@ -910,7 +910,7 @@ export default function LocationDetail() {
         <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
-              <FileText size={18} className="text-muted" />
+              <FileText size={16} className="text-muted" />
               Rapports ({loadingReports ? "…" : reportsLoadError ? "?" : reports.length})
             </h2>
           </div>
@@ -970,7 +970,7 @@ export default function LocationDetail() {
                 }
                 className="px-4 py-2 bg-surface/10 hover:bg-surface/20 rounded-[4px] flex items-center gap-2 text-white transition-colors font-medium min-h-[44px]"
               >
-                <MapPin size={18} />
+                <MapPin size={16} />
                 Modifier
               </button>
             )}
@@ -1113,7 +1113,7 @@ export default function LocationDetail() {
                       className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center"
                       aria-label="Retirer la photo"
                     >
-                      <X size={14} />
+                      <X size={12} />
                     </button>
                   </div>
                 ))}

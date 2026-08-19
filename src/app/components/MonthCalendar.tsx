@@ -54,7 +54,7 @@ export default function MonthCalendar({
             className="w-9 h-9 flex items-center justify-center rounded-[4px] hover:bg-subtle text-muted"
             aria-label="Mois précédent"
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft size={20} />
           </button>
           <button
             onClick={() => onMonthChange(new Date())}
@@ -67,7 +67,7 @@ export default function MonthCalendar({
             className="w-9 h-9 flex items-center justify-center rounded-[4px] hover:bg-subtle text-muted"
             aria-label="Mois suivant"
           >
-            <ChevronRight size={18} />
+            <ChevronRight size={20} />
           </button>
         </div>
       </div>

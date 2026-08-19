@@ -136,7 +136,7 @@ export default function Dashboard() {
             otherwise read as "nothing outstanding" rather than a failure. */}
         {loadError && (
           <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] px-4 py-3 flex items-center gap-3">
-            <AlertCircle size={18} className="text-brand-600 flex-shrink-0" aria-hidden="true" />
+            <AlertCircle size={16} className="text-brand-600 flex-shrink-0" aria-hidden="true" />
             <p className="flex-1 text-sm text-ink">{loadError}</p>
             <button
               onClick={() => loadData(true)}

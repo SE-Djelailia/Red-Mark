@@ -411,7 +411,7 @@ export default function IssueForm({
                 : "border-line hover:border-line-strong"
             }`}
           >
-            <Users size={14} />
+            <Users size={12} />
             Membre du projet
           </button>
           <button
@@ -423,7 +423,7 @@ export default function IssueForm({
                 : "border-line hover:border-line-strong"
             }`}
           >
-            <User size={14} />
+            <User size={12} />
             Externe
           </button>
         </div>
@@ -538,7 +538,7 @@ export default function IssueForm({
                   className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center"
                   aria-label="Retirer la photo"
                 >
-                  <X size={14} />
+                  <X size={16} />
                 </button>
               </div>
             ))}
@@ -559,7 +559,7 @@ export default function IssueForm({
                   className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center"
                   aria-label="Retirer la photo"
                 >
-                  <X size={14} />
+                  <X size={16} />
                 </button>
               </div>
             ))}
