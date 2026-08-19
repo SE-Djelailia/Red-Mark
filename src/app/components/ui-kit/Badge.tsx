@@ -10,10 +10,8 @@
 // are deliberately neutral, so urgency reads as a colour gradient (red →
 // amber → grey → white) rather than four competing hues.
 import type { Issue } from "../../../lib/issuesApi";
-import {
-  ISSUE_STATUS_LABEL as STATUS_LABEL,
-  TERMINAL_ISSUE_STATUS,
-} from "../../../lib/issueStatus";
+import { ISSUE_STATUS_LABEL as STATUS_LABEL } from "../../../lib/issueStatus";
+import { StatusGlyph } from "./RedMarkIcons";
 
 type Priority = Issue["priority"];
 type Status = Issue["status"];
@@ -94,9 +92,9 @@ const STATUS_STYLE: Record<Status, string> = {
   verifie: "bg-surface border-line-strong text-muted",
 };
 
-// A small filled dot marks the states that carry the most weight —
-// "Critique" and "Vérifié". It does the colour-coding work for "Vérifié",
-// whose neutral chip would otherwise give no hint that it means closed.
+// A small filled dot marks "Critique". Status badges used to carry one too,
+// for "Vérifié"; they now take the lifecycle glyph instead, which marks all
+// four states rather than only the terminal one.
 function Dot({ className }: { className: string }) {
   return <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${className}`} aria-hidden="true" />;
 }
@@ -111,9 +109,14 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
 }
 
 export function StatusBadge({ status }: { status: Status }) {
+  // The lifecycle glyph replaces the old "Vérifié"-only dot. The dot could
+  // only mark ONE state, so the other three read as interchangeable grey
+  // chips distinguished by wording alone; the set carries the progression
+  // on every badge instead. 12px — the badge is 20px tall, and the glyph
+  // must not out-weigh the 11px label beside it.
   return (
     <span className={`${BASE} ${STATUS_STYLE[status]}`}>
-      {status === TERMINAL_ISSUE_STATUS && <Dot className="bg-resolved" />}
+      <StatusGlyph status={status} size={12} className="flex-shrink-0" />
       {STATUS_LABEL[status]}
     </span>
   );

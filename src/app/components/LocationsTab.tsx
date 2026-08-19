@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { Search, MapPin, AlertCircle } from "lucide-react";
+import { Search, AlertCircle } from "lucide-react";
 import type { Location, Level } from "../../lib/locationsApi";
 import { LOCATION_TYPE_LABELS, LOCATION_TYPE_ICONS } from "../../lib/locationTypes";
 import { inputClassName } from "./ui-kit/Input";
+import { IconLocation } from "./ui-kit/RedMarkIcons";
 
 interface Props {
   projectId: string;
@@ -100,7 +101,7 @@ export default function LocationsTab({
 
       {filtered.length === 0 ? (
         <div className="text-center py-12">
-          <MapPin size={48} className="mx-auto text-faint mb-4" />
+          <IconLocation size={48} className="mx-auto text-faint mb-4 lucide-display" />
           <p className="text-muted">
             {locations.length === 0
               ? "Aucun local importé pour ce projet."

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { X, MapPin, Plus, Camera as CameraIcon } from "lucide-react";
+import { X, Plus, Camera as CameraIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import { useAuth } from "../../contexts/useAuth";
@@ -10,6 +10,7 @@ import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
 import { STATUS_LABEL, PRIORITY_OPTIONS } from "./ui-kit/Badge";
 import { DEFAULT_ISSUE_STATUS } from "../../lib/issueStatus";
+import { IconLocation } from "./ui-kit/RedMarkIcons";
 
 // Same 3-choice priority set as IssueForm (the canonical spec deliberately
 // excludes "critical") — this lite variant must not be able to create data
@@ -140,7 +141,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
         <div className="flex items-start justify-between px-5 py-4 border-b border-line">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-[4px] bg-subtle text-ink flex items-center justify-center flex-shrink-0">
-              <MapPin size={16} />
+              <IconLocation size={16} />
             </div>
             <div className="min-w-0">
               <div className="text-base font-medium text-ink truncate">

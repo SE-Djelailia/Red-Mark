@@ -60,6 +60,7 @@ import { PLANS_ENABLED } from "../../lib/featureFlags";
 import type { IssueStatus } from "../../lib/issueStatus";
 import IssuesTab from "./IssuesTab";
 import PhotoMetadataEditor, { type EditablePhoto } from "./PhotoMetadataEditor";
+import { IconPhoto, IconVisit } from "./ui-kit/RedMarkIcons";
 
 interface Issue {
   id: string;
@@ -1071,7 +1072,7 @@ export default function ProjectDetail() {
                   <VisitCardSkeleton />
                 ) : siteVisits.length === 0 ? (
                   <div className="text-center py-12">
-                    <Calendar size={48} className="mx-auto text-faint mb-4" />
+                    <IconVisit size={48} className="mx-auto text-faint mb-4 lucide-display" />
                     <p className="text-muted">Aucune visite ne correspond à ces filtres.</p>
                   </div>
                 ) : (
@@ -1108,7 +1109,7 @@ export default function ProjectDetail() {
               <PhotoGridSkeleton />
             ) : galleryPhotosLoadError ? (
               <div className="text-center py-12">
-                <Camera size={48} className="mx-auto text-faint mb-4" />
+                <IconPhoto size={48} className="mx-auto text-faint mb-4 lucide-display" />
                 <p className="text-muted mb-2">{galleryPhotosLoadError}</p>
                 <button
                   onClick={loadGalleryPhotos}
@@ -1214,7 +1215,7 @@ export default function ProjectDetail() {
                 {/* Photo Grid */}
                 {filteredPhotos.length === 0 ? (
                   <div className="text-center py-12">
-                    <Camera size={48} className="mx-auto text-faint mb-4" />
+                    <IconPhoto size={48} className="mx-auto text-faint mb-4 lucide-display" />
                     <p className="text-muted mb-2">Aucune photo trouvée</p>
                     {(photoSearchQuery || selectedPhotoTags.length > 0 || selectedPhotoPhase) && (
                       <button
@@ -1601,7 +1602,7 @@ export default function ProjectDetail() {
 
               {/* Photo Count */}
               <div className="flex items-start gap-3">
-                <Camera size={16} className="text-muted mt-0.5" />
+                <IconPhoto size={16} className="text-muted mt-0.5" />
                 <div>
                   <div className="text-xs text-muted mb-1">Photos capturées</div>
                   <div className="text-sm text-ink font-medium">

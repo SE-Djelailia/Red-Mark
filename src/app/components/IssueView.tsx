@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Calendar, User, MapPin, Tag, MessageSquare, Camera, Edit, Pencil } from "lucide-react";
+import { Calendar, User, MapPin, Tag, MessageSquare, Edit, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { getCommentsForIssue } from "../../lib/commentsApi";
 import { getProjectTeammates, type Comment, type Teammate } from "../../lib/commentsApi";
@@ -18,6 +18,7 @@ import { PriorityBadge, StatusBadge } from "./ui-kit/Badge";
 import IssueStatusTimeline from "./IssueStatusTimeline";
 import PhotoMetadataEditor, { type EditablePhoto } from "./PhotoMetadataEditor";
 import { ageInDays, isOverdue } from "../../lib/issueStatus";
+import { IconPhoto } from "./ui-kit/RedMarkIcons";
 
 interface Props {
   issue: Issue;
@@ -214,7 +215,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
       {issue.photos.length > 0 && (
         <div className="bg-surface rounded-[4px] border border-line p-5">
           <h2 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
-            <Camera size={16} className="text-muted" />
+            <IconPhoto size={16} className="text-muted" />
             Photos ({issue.photos.length})
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">

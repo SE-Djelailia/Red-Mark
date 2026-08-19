@@ -13,7 +13,6 @@ import {
   Calendar,
   CheckCircle2,
   FileText,
-  MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getLocation, getLevels, getLocations, type Location, type Level } from "../../lib/locationsApi";
@@ -43,6 +42,7 @@ import ErrorBoundary from "./ErrorBoundary";
 import { PRIORITY_LABEL, STATUS_LABEL } from "./ui-kit/Badge";
 import { TERMINAL_ISSUE_STATUS } from "../../lib/issueStatus";
 import PhotoMetadataEditor, { type EditablePhoto } from "./PhotoMetadataEditor";
+import { IconLocation, IconVisit, MarkX } from "./ui-kit/RedMarkIcons";
 
 // Timeline entries are grouped by day; this formats the group header
 // ("21 juillet 2026"). Uses parseLocalDate (not plain `new Date(...)`) to
@@ -780,7 +780,7 @@ export default function LocationDetail() {
         <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
-              <AlertCircle size={16} className="text-muted" />
+              <MarkX size={16} className="text-muted" />
               Déficiences ({loadingIssues ? "…" : issuesLoadError ? "?" : issues.length})
             </h2>
             {projectRole.canCreateIssues && (
@@ -826,7 +826,7 @@ export default function LocationDetail() {
             because "when was this looked at" frames everything below it. */}
         <div className="bg-surface rounded-[4px] border border-line p-5">
           <h2 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
-            <Calendar size={16} className="text-muted" />
+            <IconVisit size={16} className="text-muted" />
             Visites à cet emplacement
             {!loadingPhotos && !loadingIssues && visitsAtLocation.length > 0 && (
               <span className="text-muted font-normal">({visitsAtLocation.length})</span>
@@ -970,7 +970,7 @@ export default function LocationDetail() {
                 }
                 className="px-4 py-2 bg-surface/10 hover:bg-surface/20 rounded-[4px] flex items-center gap-2 text-white transition-colors font-medium min-h-[44px]"
               >
-                <MapPin size={16} />
+                <IconLocation size={16} />
                 Modifier
               </button>
             )}

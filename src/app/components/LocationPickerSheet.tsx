@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { X, Search, MapPin } from "lucide-react";
+import { X, Search } from "lucide-react";
 import { useModalOpen } from "../../hooks/useModalOpen";
 import type { Location } from "../../lib/locationsApi";
+import { IconLocation } from "./ui-kit/RedMarkIcons";
 
 interface Props {
   open: boolean;
@@ -80,7 +81,7 @@ export default function LocationPickerSheet({ open, locations, onSelect, onCance
                   className="w-full flex items-center gap-3 px-3 py-3 rounded-[4px] hover:bg-subtle text-left min-h-[44px]"
                 >
                   <div className="w-9 h-9 rounded-[4px] bg-subtle text-ink flex items-center justify-center flex-shrink-0">
-                    <MapPin size={16} />
+                    <IconLocation size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-ink truncate">

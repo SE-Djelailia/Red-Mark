@@ -23,6 +23,7 @@ import SecureImage from "./SecureImage";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
 import { inputClassName, labelClassName, textareaClassName } from "./ui-kit/Input";
 import { PRIORITY_OPTIONS } from "./ui-kit/Badge";
+import { StatusGlyph } from "./ui-kit/RedMarkIcons";
 
 interface Props {
   projectId: string;
@@ -351,6 +352,7 @@ export default function IssueForm({
                     : "border-line hover:border-line-strong"
                 }`}
               >
+                <StatusGlyph status={opt.value} size={16} className="inline-block mr-2 -mt-px flex-shrink-0" />
                 {opt.label}
               </button>
             ))}

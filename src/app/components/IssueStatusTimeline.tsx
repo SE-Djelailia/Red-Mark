@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { History } from "lucide-react";
 import { getIssueStatusEvents, type IssueStatusEvent } from "../../lib/issuesApi";
-import { ISSUE_STATUS_LABEL, TERMINAL_ISSUE_STATUS } from "../../lib/issueStatus";
+import { ISSUE_STATUS_LABEL, OUTSTANDING_ISSUE_STATUSES } from "../../lib/issueStatus";
 import { formatDateLong } from "../../lib/dateUtils";
+import { StatusGlyph } from "./ui-kit/RedMarkIcons";
 
 // The status history of one déficience, read from `issue_status_events`.
 //
@@ -54,11 +55,19 @@ export default function IssueStatusTimeline({ issueId }: { issueId: string }) {
           {ordered.map((ev, i) => (
             <li key={ev.id} className="flex gap-3">
               <div className="flex flex-col items-center flex-shrink-0">
-                <span
-                  className={`w-2 h-2 rounded-full mt-1.5 ${
-                    ev.toStatus === TERMINAL_ISSUE_STATUS ? "bg-resolved" : "bg-brand-600"
+                {/* The state ARRIVED AT, as its lifecycle glyph. The dot this
+                    replaces could only say "terminal or not"; the glyph names
+                    the actual state, so a row reads without cross-referencing
+                    the label beside it. Red only while the déficience is still
+                    outstanding — per the icon budget, corrigé/vérifié are ink. */}
+                <StatusGlyph
+                  status={ev.toStatus}
+                  size={16}
+                  className={`mt-0.5 ${
+                    (OUTSTANDING_ISSUE_STATUSES as readonly string[]).includes(ev.toStatus)
+                      ? "text-brand-600"
+                      : "text-muted"
                   }`}
-                  aria-hidden="true"
                 />
                 {i < ordered.length - 1 && <span className="w-px flex-1 bg-line mt-1" />}
               </div>

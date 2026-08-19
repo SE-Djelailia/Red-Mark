@@ -1,5 +1,6 @@
 import { usePhotoUrl } from "../../hooks/usePhotoUrl";
-import { Camera } from "lucide-react";
+
+import { IconPhoto } from "./ui-kit/RedMarkIcons";
 
 interface SecureImageProps {
   storagePath: string | null | undefined;
@@ -45,7 +46,7 @@ export default function SecureImage({
         aria-label="Erreur de chargement"
       >
         <div className="flex flex-col items-center gap-2 text-faint">
-          <Camera size={32} />
+          <IconPhoto size={32} className="lucide-display" />
           <span className="text-xs">Image indisponible</span>
         </div>
       </div>

@@ -60,6 +60,7 @@ import { PriorityBadge, StatusBadge } from "./ui-kit/Badge";
 import { Card, Section } from "./ui-kit/Card";
 import VoiceRecorderModal from "./VoiceRecorderModal";
 import VisitAttendeesSection from "./VisitAttendeesSection";
+import { IconPhoto, MarkX } from "./ui-kit/RedMarkIcons";
 
 interface Photo {
   id: string;
@@ -805,7 +806,7 @@ export default function VisitDetail() {
           <div className="bg-surface rounded-[4px] border border-line p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
-                <Camera size={16} className="text-muted" />
+                <IconPhoto size={16} className="text-muted" />
                 Photos ({visit?.photos.length})
               </h2>
               {visit && visit.photos.length > 0 && projectRole.canCreateIssues && (
@@ -955,7 +956,7 @@ export default function VisitDetail() {
                       onClick={handleCreateIssueFromPhotos}
                       className="py-2 px-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
                     >
-                      <AlertCircle size={16} />
+                      <MarkX size={16} />
                       Créer déficience
                     </button>
                   )}
@@ -1117,7 +1118,7 @@ export default function VisitDetail() {
           <div className="bg-surface rounded-[4px] border border-line p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
-                <AlertCircle size={16} className="text-muted" />
+                <MarkX size={16} className="text-muted" />
                 Déficiences ({issues.length})
               </h2>
               {projectRole.canCreateIssues && (

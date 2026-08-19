@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { AlertCircle, MapPin, Camera, Clock, SlidersHorizontal } from "lucide-react";
+import { MapPin, Camera, Clock, SlidersHorizontal } from "lucide-react";
 import { PriorityBadge, StatusBadge, PRIORITY_LABEL } from "./ui-kit/Badge";
 import { StatGrid, StatTile } from "./ui-kit/StatTile";
 import { parseLocalDate } from "../../lib/dateUtils";
 import { disciplineOptions } from "../../lib/disciplines";
+import { MarkX, StatusGlyph } from "./ui-kit/RedMarkIcons";
 import {
   ISSUE_STATUSES,
   ISSUE_STATUS_LABEL,
@@ -169,7 +170,7 @@ export default function IssuesTab({
   if (loadError) {
     return (
       <div className="text-center py-12">
-        <AlertCircle size={48} className="mx-auto text-faint mb-4" />
+        <MarkX size={48} className="mx-auto text-faint mb-4 lucide-display" />
         <p className="text-muted mb-2">{loadError}</p>
         <button onClick={onRetry} className="text-sm text-brand-strong hover:text-brand-800 font-medium">
           Réessayer
@@ -225,6 +226,7 @@ export default function IssuesTab({
                     : "border-line bg-surface text-muted hover:border-line-strong"
                 }`}
               >
+                <StatusGlyph status={s} size={12} className="inline-block mr-1.5 -mt-px flex-shrink-0" />
                 {ISSUE_STATUS_LABEL[s]}
                 <span className="ml-1.5 text-xs opacity-70">{counts.byStatus[s]}</span>
               </button>
@@ -310,7 +312,7 @@ export default function IssuesTab({
 
       {filtered.length === 0 ? (
         <div className="text-center py-8">
-          <MapPin size={40} className="mx-auto text-faint mb-3" />
+          <MarkX size={40} className="mx-auto text-faint mb-3 lucide-display" />
           <p className="text-muted text-sm mb-2">
             {issues.length === 0
               ? "Aucune déficience pour ce projet"

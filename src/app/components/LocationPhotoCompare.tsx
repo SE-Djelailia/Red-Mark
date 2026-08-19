@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { X, Check, GitCompareArrows, Camera } from "lucide-react";
+import { X, Check, GitCompareArrows } from "lucide-react";
 import { parseLocalDate } from "../../lib/dateUtils";
 import { useModalOpen } from "../../hooks/useModalOpen";
+import { IconPhoto } from "./ui-kit/RedMarkIcons";
 
 // Visual comparison of one location across visits.
 //
@@ -221,7 +222,7 @@ export default function LocationPhotoCompare({
                       // Signing failed for this batch — show the frame rather
                       // than a broken-image glyph.
                       <div className="w-full h-full flex items-center justify-center">
-                        <Camera size={20} className="text-faint" />
+                        <IconPhoto size={20} className="text-faint" />
                       </div>
                     )}
                     {isPicked && (

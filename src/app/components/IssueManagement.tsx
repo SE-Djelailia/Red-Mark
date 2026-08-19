@@ -10,6 +10,7 @@ import { StatGrid, StatTile } from "./ui-kit/StatTile";
 import { inputClassName } from "./ui-kit/Input";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
 import { ISSUE_STATUS_OPTIONS, TERMINAL_ISSUE_STATUS } from "../../lib/issueStatus";
+import { MarkX } from "./ui-kit/RedMarkIcons";
 
 type IssueWithProject = Issue & { projectName: string };
 
@@ -147,7 +148,7 @@ export default function IssueManagement() {
           </div>
         ) : filteredIssues.length === 0 ? (
           <div className="text-center py-12">
-            <AlertCircle size={48} className="mx-auto text-faint mb-4" />
+            <MarkX size={48} className="mx-auto text-faint mb-4 lucide-display" />
             <p className="text-body">Aucune déficience trouvée</p>
           </div>
         ) : (

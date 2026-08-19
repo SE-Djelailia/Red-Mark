@@ -222,3 +222,40 @@ export function IconVisit(props: RedMarkIconProps) {
     </Glyph>
   );
 }
+
+/* ── STATUS → GLYPH ───────────────────────────────────────────────────────
+   One map, so every surface that shows a déficience's state resolves the
+   same glyph. `Record<IssueStatus, …>` forces exhaustiveness: adding a
+   fifth state to the union without drawing it is a compile error, which is
+   the same guarantee ISSUE_STATUS_LABEL already gives for wording.
+─────────────────────────────────────────────────────────────────────────── */
+
+import type { IssueStatus } from "../../../lib/issueStatus";
+
+const STATUS_GLYPH: Record<IssueStatus, (p: RedMarkIconProps) => React.ReactElement> = {
+  signale: StateSignale,
+  a_corriger: StateACorriger,
+  corrige: StateCorrige,
+  verifie: StateVerifie,
+};
+
+/**
+ * The glyph for a status, as a COMPONENT rather than a component factory.
+ *
+ * Selecting the component inside a parent's render (`const G =
+ * statusGlyph(s)`) gives React a new element type on some renders, which can
+ * remount the subtree — react-hooks/static-components flags exactly this.
+ * Doing the lookup *inside* one stable component keeps the element type
+ * constant and the switch a plain prop change.
+ *
+ * `issues.status` is `IssueStatus | null` in the generated row type, and a
+ * null there means "legacy row not yet normalised" — semantically "signalé",
+ * the same default the DB itself applies.
+ */
+export function StatusGlyph({
+  status,
+  ...rest
+}: RedMarkIconProps & { status: IssueStatus | null | undefined }) {
+  const Glyph = STATUS_GLYPH[status ?? "signale"];
+  return <Glyph {...rest} />;
+}
