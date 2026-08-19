@@ -37,7 +37,7 @@ import {
   IconVisit,
 } from "./ui-kit/RedMarkIcons";
 import XSpinner from "./ui-kit/XSpinner";
-import { LogoLockup } from "./ui-kit/Logo";
+import { Logo, LogoLockup } from "./ui-kit/Logo";
 
 /**
  * Living specimen of "The Architect's Red Pen".
@@ -638,6 +638,39 @@ function IconSpecimen() {
       </Section>
 
       <Section label="Le chargeur — la marque en train de se faire">
+        {/* THE WEIGHT MATCH, verifiable by eye. Logo above, loader below, at
+            identical sizes — the two marks must be indistinguishable in
+            thickness and in extent when the animation is mid-stroke. */}
+        <div className="border border-line rounded-[4px] bg-surface p-6 mb-3">
+          <div className="flex items-end gap-10">
+            {[24, 40, 64].map((px) => (
+              <div key={px} className="flex flex-col items-center gap-3">
+                <Logo size={px} decorative />
+                <XSpinner size={px} label={null} />
+                <span className="text-2xs text-muted rm-figures">{px}</span>
+              </div>
+            ))}
+            <div className="flex flex-col gap-1.5 pb-1">
+              <p className="rm-label">Logo — polygones</p>
+              <p className="rm-label">Chargeur — traits</p>
+            </div>
+          </div>
+        </div>
+        {/* Superimposed: the loader drawn directly over a faint logo. Any
+            mismatch in weight or reach shows as a visible fringe. */}
+        <div className="border border-line rounded-[4px] bg-surface p-6 mb-3">
+          <div className="flex items-center gap-6">
+            <div className="relative w-16 h-16">
+              <Logo size={64} decorative className="absolute inset-0 opacity-20" />
+              <XSpinner size={64} label={null} className="absolute inset-0" />
+            </div>
+            <p className="text-xs text-muted max-w-sm">
+              Superposition : le chargeur tracé par-dessus le logo à 20 %. Quand les deux barres
+              sont pleinement tracées, elles doivent se recouvrir exactement — tout écart
+              d'épaisseur ou de portée apparaîtrait comme une frange.
+            </p>
+          </div>
+        </div>
         <div className="border border-line rounded-[4px] bg-surface p-6">
           <div className="flex items-end gap-10">
             {[16, 24, 40, 64].map((px) => (
@@ -655,6 +688,20 @@ function IconSpecimen() {
           </div>
         </div>
         <p className="text-xs text-muted mt-3">
+          <span className="rm-label">Épaisseur</span> — mesurée sur le polygone du logo, pas
+          choisie : la distance perpendiculaire entre ses deux longs côtés vaut 23,999 unités sur
+          sa boîte 0–100, soit 24 % — ce que son propre commentaire annonce. Sur la boîte 0–24 du
+          chargeur, la même fraction donne <code className="text-ink">stroke-width 5.76</code>. À
+          40 px les deux tracés font exactement 9,60 px.
+        </p>
+        <p className="text-xs text-muted mt-2">
+          <span className="rm-label">Portée</span> — l'épaisseur seule ne suffisait pas. Les barres
+          du logo vont de 4 à 96 (4 % de marge) ; des traits de 5,5→19,19 à cette épaisseur
+          n'auraient couvert que 2,96..21,04, soit une marque 18 % plus petite que le logo à côté.
+          Étendues à 3,3→21,21, leur bord extérieur tombe à 4,01 % — la même marque, pas une
+          version réduite.
+        </p>
+        <p className="text-xs text-muted mt-2">
           Les deux barres se tracent puis se lèvent, décalées d'un tiers de cycle : le X se
           construit comme une main le dessine, une diagonale puis l'autre. Le décalage
           <code className="text-ink"> stroke-dashoffset </code> continue dans le même sens en
