@@ -228,7 +228,7 @@ export default function PhotoUploadPage() {
 
     if (!user?.id) {
       toast.error("Session expirée. Veuillez vous reconnecter.");
-      navigate("/");
+      navigate("/login");
       return;
     }
 

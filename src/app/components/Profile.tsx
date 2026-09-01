@@ -125,6 +125,8 @@ export default function Profile() {
     try {
       await signOut();
       toast.success("Déconnexion réussie");
+      // Landing, not /login: signing out deliberately returns you to the
+      // public page rather than immediately presenting another password box.
       navigate("/");
     } catch (error) {
       console.error("Logout error:", error);

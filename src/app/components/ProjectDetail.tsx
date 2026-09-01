@@ -451,7 +451,7 @@ export default function ProjectDetail() {
     if (authLoading) return;
 
     if (!user) {
-      navigate("/");
+      navigate("/login");
       return;
     }
 

@@ -25,6 +25,7 @@ import FirmAdmin from "./components/FirmAdmin";
 import SetPassword from "./components/SetPassword";
 import AuthCallback from "./components/AuthCallback";
 import DesignSystemPreview from "./components/DesignSystemPreview";
+import Landing from "./components/landing/Landing";
 import PlatformAdmin from "./components/PlatformAdmin";
 
 // Root component that provides SupabaseAuthContext to all routes
@@ -51,7 +52,19 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     children: [
       {
+        // Public marketing page. The APP is untouched at /app/* — this only
+        // changes what an unauthenticated visitor to the bare domain sees.
+        // Previously "/" rendered Login directly, which meant red-mark.ca
+        // showed a password field to anyone who had merely heard the name.
         path: "/",
+        Component: Landing,
+      },
+      {
+        // The login form kept its own address so every "session expired"
+        // redirect still lands somewhere you can actually sign in. Sending
+        // those to "/" would now drop the user on marketing copy with no
+        // explanation of why they were logged out.
+        path: "/login",
         Component: Login,
       },
       {

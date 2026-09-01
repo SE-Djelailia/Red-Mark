@@ -117,7 +117,7 @@ export default function Layout() {
   }
 
   if (!user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   // Firm membership is checked BEFORE the app chrome renders. Every list in
