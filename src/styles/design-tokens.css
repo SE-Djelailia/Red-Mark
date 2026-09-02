@@ -409,6 +409,73 @@
   }
 
   /**
+   * THE DRAFTING SHEET — landing page only.
+   *
+   * A drawing sheet's grid, at the faintest weight that still reads as
+   * structure rather than noise. Two superimposed repeating-linear-gradients
+   * give a 32px minor grid; a second, heavier pass at 160px marks the major
+   * divisions the way a titled sheet does.
+   *
+   * `--color-line` at full strength would be a visible checkerboard, so the
+   * gradients use it at low alpha via color-mix. The grid must be FELT, not
+   * read — if you notice it as a pattern, it is too strong.
+   */
+  .rm-sheet {
+    background-image:
+      repeating-linear-gradient(
+        to right,
+        color-mix(in srgb, var(--color-line) 55%, transparent) 0 1px,
+        transparent 1px 32px
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--color-line) 55%, transparent) 0 1px,
+        transparent 1px 32px
+      );
+  }
+
+  /**
+   * Scroll-reveal. Sections start 12px low and transparent, and are released
+   * by an IntersectionObserver adding `data-shown`.
+   *
+   * 12px rather than the app's 4px: a page section travelling the same
+   * distance as a dropdown reads as a glitch. Still nowhere near far enough
+   * to be a "slide-in" — the eye reads arrival, not travel.
+   *
+   * The no-JS / observer-unsupported case is handled by the OBSERVER, which
+   * marks everything shown immediately if it cannot run. Never rely on CSS
+   * alone here: a failed observer would leave the whole page invisible.
+   */
+  .rm-reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity 520ms var(--ease-out),
+      transform 520ms var(--ease-out);
+  }
+
+  .rm-reveal[data-shown="true"] {
+    opacity: 1;
+    transform: none;
+  }
+
+  /**
+   * Hero entrance. Same curve, staggered by inline --rm-delay so the eyebrow,
+   * headline, sub and actions arrive in reading order rather than together.
+   */
+  .rm-rise {
+    animation: rm-rise 640ms var(--ease-out) both;
+    animation-delay: var(--rm-delay, 0ms);
+  }
+
+  @keyframes rm-rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+  }
+
+  /**
    * The hairline grid. A 1px ink rule at the top of a band, used to
    * separate title-block regions the way a drawing's borders do.
    */
@@ -450,9 +517,19 @@
  */
 @media (prefers-reduced-motion: reduce) {
   .rm-enter,
-  .rm-fade {
+  .rm-fade,
+  .rm-rise {
     animation-duration: 1ms;
     animation-delay: 0ms;
+  }
+
+  /* The reveal must LAND, not vanish: with motion reduced the element is
+   * simply already in place. Zeroing the transition (rather than the
+   * opacity) keeps the observer's contract intact. */
+  .rm-reveal {
+    opacity: 1;
+    transform: none;
+    transition-duration: 1ms;
   }
 
   .rm-x-bar,

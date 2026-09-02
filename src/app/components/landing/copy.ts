@@ -17,8 +17,8 @@ export interface Copy {
     ctaPrimary: string;
     ctaSecondary: string;
   };
-  mockups: { label: string; frames: { label: string; caption: string }[] };
-  benefits: { label: string; items: { title: string; body: string }[] };
+  mockups: { label: string; lead: string; frames: { label: string; caption: string }[] };
+  benefits: { label: string; lead: string; items: { title: string; body: string }[] };
   contact: {
     label: string;
     headline: string;
@@ -44,6 +44,7 @@ export const COPY: Record<Lang, Copy> = {
     },
     mockups: {
       label: "L'application",
+      lead: "Saisie sur place, pas de ressaisie au bureau.",
       frames: [
         { label: "Visite", caption: "Une visite, tout son contenu" },
         { label: "Déficience", caption: "Le cycle de vie d'une déficience" },
@@ -52,6 +53,7 @@ export const COPY: Record<Lang, Copy> = {
     },
     benefits: {
       label: "Ce que ça change",
+      lead: "Quatre choses qu'un carnet de notes et un téléphone ne font pas.",
       items: [
         {
           title: "Des rapports professionnels",
@@ -95,6 +97,7 @@ export const COPY: Record<Lang, Copy> = {
     },
     mockups: {
       label: "The application",
+      lead: "Captured on site, not re-entered at the office.",
       frames: [
         { label: "Visit", caption: "One visit, everything in it" },
         { label: "Deficiency", caption: "A deficiency's lifecycle" },
@@ -103,6 +106,7 @@ export const COPY: Record<Lang, Copy> = {
     },
     benefits: {
       label: "What changes",
+      lead: "Four things a notebook and a phone camera do not do.",
       items: [
         {
           title: "Professional reports",
