@@ -37,6 +37,24 @@ export function ProjectCardSkeleton() {
   );
 }
 
+/**
+ * One activity row on the dashboard: square glyph, two stacked text lines,
+ * a right-aligned timestamp. Mirrors the real ListRow so the swap to real
+ * data does not move anything.
+ */
+export function ActivityRowSkeleton() {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 min-h-11 animate-pulse">
+      <div className="w-5 h-5 rounded-[2px] bg-subtle flex-shrink-0" />
+      <div className="flex-1 min-w-0 space-y-1.5">
+        <div className="h-3 bg-subtle rounded-[2px] w-2/5" />
+        <div className="h-2.5 bg-subtle rounded-[2px] w-1/4" />
+      </div>
+      <div className="h-2.5 bg-subtle rounded-[2px] w-12 flex-shrink-0" />
+    </div>
+  );
+}
+
 export function VisitCardSkeleton() {
   return (
     <div className="bg-surface rounded-[4px] border border-line p-5 animate-pulse">

@@ -55,6 +55,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
 
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const { preparedUrl, isApplying, applyPrepare } = usePrepareImage(sourceUrl);
 
   const [mode, setMode] = useState<"annotate" | "prepare">("annotate");
@@ -117,7 +118,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [photo.storage_path]);
+  }, [photo.storage_path, reloadKey]);
 
   useEffect(() => {
     setImageLoaded(false);
@@ -679,7 +680,18 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
       {/* Canvas area */}
       <div className="flex-1 overflow-auto flex items-center justify-center p-3 sm:p-6">
         {loadError ? (
-          <p className="text-white/80 text-sm">{loadError}</p>
+          // Ruled treatment adapted to the dark canvas: red keeps its meaning
+          // as the leading rule, but the text is white — brand red on near
+          // black fails contrast.
+          <div className="bg-white/5 border border-white/15 border-l-2 border-l-brand-600 rounded-[4px] p-4 text-sm text-white/80 flex items-center justify-between gap-3 max-w-sm">
+            <span>{loadError}</span>
+            <button
+              onClick={() => setReloadKey((k) => k + 1)}
+              className="text-sm font-medium text-white hover:text-white/80 flex-shrink-0"
+            >
+              Réessayer
+            </button>
+          </div>
         ) : !preparedUrl ? (
           <div className="flex items-center gap-3 text-white">
             <XSpinner size={24} tone="current" label={null} />

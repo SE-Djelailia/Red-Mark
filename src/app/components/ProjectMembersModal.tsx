@@ -424,7 +424,8 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                 <p className="text-muted text-sm">Aucun membre pour l'instant</p>
               </div>
             ) : (
-              members.map((member) => (
+              <div className="rm-fade space-y-3">
+              {members.map((member) => (
                 <div
                   key={member.id}
                   className="bg-canvas rounded-[4px] p-4 flex items-start justify-between gap-3"
@@ -482,7 +483,8 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                     )}
                   </div>
                 </div>
-              ))
+              ))}
+              </div>
             )}
           </div>
 

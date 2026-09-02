@@ -46,6 +46,7 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
   const projectRole = useProjectRole(projectId);
   const [planFiles, setPlanFiles] = useState<PlanFile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<PlanFile | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -54,9 +55,13 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
   async function refresh() {
     try {
       setLoading(true);
+      setLoadError(null);
       const list = await getPlanFiles(projectId);
       setPlanFiles(list);
     } catch (e: any) {
+      // Also held in state, not only a toast: a toast is gone in seconds and
+      // leaves an empty list that reads as "no plans" rather than "failed".
+      setLoadError("Impossible de charger les plans.");
       toast.error("Impossible de charger les plans : " + e.message);
     } finally {
       setLoading(false);
@@ -178,6 +183,16 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
         <div className="bg-surface rounded-[4px] border border-line p-6 text-center text-muted text-sm">
           Chargement…
         </div>
+      ) : loadError ? (
+        <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] p-4 text-sm text-brand-strong flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button
+            onClick={() => void refresh()}
+            className="text-sm font-medium text-brand-strong hover:text-brand-800 flex-shrink-0"
+          >
+            Réessayer
+          </button>
+        </div>
       ) : planFiles.length === 0 ? (
         <div className="bg-surface rounded-[4px] border border-line p-8 text-center">
           <FileText size={32} className="mx-auto text-faint mb-2" />
@@ -187,7 +202,7 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
           </div>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="rm-fade space-y-2">
           {planFiles.map((planFile) => (
             <div
               key={planFile.id}

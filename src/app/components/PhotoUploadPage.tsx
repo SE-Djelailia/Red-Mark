@@ -40,6 +40,11 @@ export default function PhotoUploadPage() {
   const [photoLocations, setPhotoLocations] = useState<PhotoLocationMap>({});
   const [locations, setLocations] = useState<Location[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(true);
+  // A failed locations fetch used to fall through to setLocations([]), which
+  // renders the "this project has no locations" free-text fallback — telling
+  // the user their project is empty when in fact the request failed.
+  const [locationsError, setLocationsError] = useState(false);
+  const [locationsReloadKey, setLocationsReloadKey] = useState(0);
   const [selectedPhotoIndices, setSelectedPhotoIndices] = useState<number[]>([]);
   const [currentTag, setCurrentTag] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -58,13 +63,17 @@ export default function PhotoUploadPage() {
     if (!projectId) return;
     let cancelled = false;
     setLocationsLoading(true);
+    setLocationsError(false);
     getLocations(projectId)
       .then((locs) => {
         if (!cancelled) setLocations(locs);
       })
       .catch((e) => {
         console.error("Error loading locations for photo upload:", e);
-        if (!cancelled) setLocations([]);
+        if (!cancelled) {
+          setLocations([]);
+          setLocationsError(true);
+        }
       })
       .finally(() => {
         if (!cancelled) setLocationsLoading(false);
@@ -72,7 +81,7 @@ export default function PhotoUploadPage() {
     return () => {
       cancelled = true;
     };
-  }, [projectId]);
+  }, [projectId, locationsReloadKey]);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -767,6 +776,16 @@ export default function PhotoUploadPage() {
 
               {locationsLoading ? (
                 <p className="text-sm text-muted py-4">Chargement des locaux…</p>
+              ) : locationsError ? (
+                <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] p-4 text-sm text-brand-strong flex items-center justify-between gap-3">
+                  <span>Impossible de charger les locaux.</span>
+                  <button
+                    onClick={() => setLocationsReloadKey((k) => k + 1)}
+                    className="text-sm font-medium text-brand-strong hover:text-brand-800 flex-shrink-0"
+                  >
+                    Réessayer
+                  </button>
+                </div>
               ) : locations.length > 0 ? (
                 <div className="space-y-3">
                   <label className="block text-sm font-bold text-body flex items-center gap-2">

@@ -29,6 +29,7 @@ export default function VisitPicker({ open, projectId, onSelect, onClose }: Prop
   const [visits, setVisits] = useState<(SiteVisit & { authorName: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [showNewVisitForm, setShowNewVisitForm] = useState(false);
 
   useEffect(() => {
@@ -43,7 +44,7 @@ export default function VisitPicker({ open, projectId, onSelect, onClose }: Prop
         setLoadError("Impossible de charger les visites.");
       })
       .finally(() => setLoading(false));
-  }, [open, projectId]);
+  }, [open, projectId, reloadKey]);
 
   if (!open) return null;
 
@@ -84,7 +85,15 @@ export default function VisitPicker({ open, projectId, onSelect, onClose }: Prop
               Chargement…
             </div>
           ) : loadError ? (
-            <div className="text-sm text-brand-strong text-center py-6">{loadError}</div>
+            <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] p-4 text-sm text-brand-strong flex items-center justify-between gap-3">
+              <span>{loadError}</span>
+              <button
+                onClick={() => setReloadKey((k) => k + 1)}
+                className="text-sm font-medium text-brand-strong hover:text-brand-800 flex-shrink-0"
+              >
+                Réessayer
+              </button>
+            </div>
           ) : (
             <div className="space-y-4">
               <button

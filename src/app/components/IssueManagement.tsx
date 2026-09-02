@@ -153,7 +153,8 @@ export default function IssueManagement() {
             <p className="text-body">Aucune déficience trouvée</p>
           </div>
         ) : (
-          filteredIssues.map((issue) => {
+          <div className="rm-fade space-y-3">
+          {filteredIssues.map((issue) => {
             return (
               <div
                 key={issue.id}
@@ -190,7 +191,8 @@ export default function IssueManagement() {
                 </div>
               </div>
             );
-          })
+          })}
+          </div>
         )}
       </div>
     </div>

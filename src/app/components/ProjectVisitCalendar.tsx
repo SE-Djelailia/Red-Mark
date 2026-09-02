@@ -23,6 +23,9 @@ export default function ProjectVisitCalendar({ projectId, month, onMonthChange }
   const [openIssueVisitIds, setOpenIssueVisitIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Retry without restructuring the fetch: bumping this re-runs the effect,
+  // which already handles cancellation and its own loading/error resets.
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,7 +58,7 @@ export default function ProjectVisitCalendar({ projectId, month, onMonthChange }
     return () => {
       cancelled = true;
     };
-  }, [projectId, month]);
+  }, [projectId, month, reloadKey]);
 
   const pillsByDate: Record<string, CalendarPill[]> = {};
   for (const visit of visits) {
@@ -71,8 +74,14 @@ export default function ProjectVisitCalendar({ projectId, month, onMonthChange }
   return (
     <div>
       {loadError && (
-        <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] p-4 text-sm text-ink mb-3">
-          {loadError}
+        <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] p-4 text-sm text-ink mb-3 flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button
+            onClick={() => setReloadKey((k) => k + 1)}
+            className="text-sm font-medium text-brand-strong hover:text-brand-800 flex-shrink-0"
+          >
+            Réessayer
+          </button>
         </div>
       )}
       <MonthCalendar

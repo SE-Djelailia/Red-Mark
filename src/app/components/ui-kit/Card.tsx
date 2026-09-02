@@ -107,6 +107,12 @@ export function ListRow({
 }
 
 // Wraps a set of ListRows with the hairline dividers.
-export function ListRows({ children }: { children: ReactNode }) {
-  return <div className="divide-y divide-line">{children}</div>;
+export function ListRows({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={`divide-y divide-line ${className}`}>{children}</div>;
 }

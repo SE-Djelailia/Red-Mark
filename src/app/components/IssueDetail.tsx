@@ -25,6 +25,8 @@ export default function IssueDetail() {
   const [issue, setIssue] = useState<Issue | null>(null);
   const [isLoadingIssue, setIsLoadingIssue] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Retry re-runs the load effect, which already resets loading/error state.
+  const [reloadKey, setReloadKey] = useState(0);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -54,7 +56,7 @@ export default function IssueDetail() {
     return () => {
       cancelled = true;
     };
-  }, [issueId]);
+  }, [issueId, reloadKey]);
 
   const handleDeleteIssue = async () => {
     setShowDeleteConfirm(false);
@@ -108,8 +110,14 @@ export default function IssueDetail() {
         )}
 
         {loadError && (
-          <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] p-4 text-sm text-brand-strong">
-            {loadError}
+          <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] p-4 text-sm text-brand-strong flex items-center justify-between gap-3">
+            <span>{loadError}</span>
+            <button
+              onClick={() => setReloadKey((k) => k + 1)}
+              className="text-sm font-medium text-brand-strong hover:text-brand-800 flex-shrink-0"
+            >
+              Réessayer
+            </button>
           </div>
         )}
 

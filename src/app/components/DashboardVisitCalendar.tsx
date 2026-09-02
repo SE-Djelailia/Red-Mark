@@ -31,6 +31,9 @@ export default function DashboardVisitCalendar({ projectIds }: Props) {
   const [openIssueVisitIds, setOpenIssueVisitIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Retry without restructuring the fetch: bumping this re-runs the effect,
+  // which already handles cancellation and its own loading/error resets.
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,7 +69,7 @@ export default function DashboardVisitCalendar({ projectIds }: Props) {
     // projectIds is rebuilt each load in the parent; joining it keeps this
     // effect from re-firing on every render for an unchanged set.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectIds.join(","), month]);
+  }, [projectIds.join(","), month, reloadKey]);
 
   const openVisit = (visit: SiteVisit) =>
     navigate(`/app/projects/${visit.project_id}/visits/${visit.id}`);
@@ -100,8 +103,14 @@ export default function DashboardVisitCalendar({ projectIds }: Props) {
   return (
     <div>
       {loadError && (
-        <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] p-4 text-sm text-ink mb-3">
-          {loadError}
+        <div className="bg-surface border border-line border-l-2 border-l-brand-600 rounded-[4px] p-4 text-sm text-ink mb-3 flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button
+            onClick={() => setReloadKey((k) => k + 1)}
+            className="text-sm font-medium text-brand-strong hover:text-brand-800 flex-shrink-0"
+          >
+            Réessayer
+          </button>
         </div>
       )}
 
@@ -146,7 +155,7 @@ export default function DashboardVisitCalendar({ projectIds }: Props) {
         ) : byDay.length === 0 ? (
           <div className="py-8 text-center text-sm text-muted">Aucune visite ce mois-ci</div>
         ) : (
-          <div className="divide-y divide-line">
+          <div className="rm-fade divide-y divide-line">
             {byDay.map((group) => {
               const groupDate = parseLocalDate(group.date);
               const isToday = isSameDay(groupDate, today);

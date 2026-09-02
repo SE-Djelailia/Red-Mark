@@ -448,7 +448,8 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
             <p className="text-faint text-xs mt-1">Soyez le premier à commenter!</p>
           </div>
         ) : (
-          topLevelComments.map((comment) => (
+          <div className="rm-fade space-y-4">
+          {topLevelComments.map((comment) => (
             <CommentCard
               key={comment.id}
               comment={comment}
@@ -464,7 +465,8 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
               onDelete={setDeleteTargetId}
               onReply={(id) => setReplyingTo(id)}
             />
-          ))
+          ))}
+          </div>
         )}
       </div>
 

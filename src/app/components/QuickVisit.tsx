@@ -117,7 +117,8 @@ export default function QuickVisit() {
             </p>
           </div>
         ) : (
-          filteredProjects.map((project) => (
+          <div className="rm-fade space-y-2">
+          {filteredProjects.map((project) => (
             <button
               key={project.id}
               onClick={() => setSelectedProjectId(project.id)}
@@ -133,7 +134,8 @@ export default function QuickVisit() {
                 )}
               </div>
             </button>
-          ))
+          ))}
+          </div>
         )}
       </div>
     </div>

@@ -17,7 +17,7 @@ import FloatingActions from "./FloatingActions";
 import { inputClassName } from "./ui-kit/Input";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
 import { ProjectStatusBadge } from "./ui-kit/ProjectStatus";
-import { XSpinnerBlock } from "./ui-kit/XSpinner";
+import { ProjectCardSkeleton } from "./LoadingStates";
 
 const STATUS_FILTERS: { value: Project["status"] | "all"; label: string }[] = [
   { value: "all", label: "Tous" },
@@ -112,13 +112,24 @@ export default function ProjectList() {
   // render, and the auth-loading / signed-out branches return early.
   usePageHeader("Mes projets", "Gérez vos projets de construction");
 
-  // Show loading while auth is initializing
+  // Skeleton rather than a spinner: this list has a known row shape, so the
+  // page can appear immediately and fill in. A centred spinner on a blank
+  // screen tells the user nothing about what is coming and guarantees a
+  // reflow when it does.
+  //
+  // Three cards is deliberate — enough to establish the grid on desktop
+  // without implying a specific count the real data must then contradict.
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <XSpinnerBlock size={40} className="mb-4" />
-          <p className="text-body">Chargement...</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-24 sm:pb-28">
+        <div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          role="status"
+          aria-label="Chargement des projets"
+        >
+          <ProjectCardSkeleton />
+          <ProjectCardSkeleton />
+          <ProjectCardSkeleton />
         </div>
       </div>
     );

@@ -51,7 +51,7 @@ export default function IssueStatusTimeline({ issueId }: { issueId: string }) {
       ) : ordered.length === 0 ? (
         <p className="text-sm text-muted">Aucun changement d'état enregistré.</p>
       ) : (
-        <ol className="space-y-3">
+        <ol className="rm-fade space-y-3">
           {ordered.map((ev, i) => (
             <li key={ev.id} className="flex gap-3">
               <div className="flex flex-col items-center flex-shrink-0">

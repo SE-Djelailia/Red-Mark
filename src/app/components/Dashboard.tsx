@@ -20,6 +20,7 @@ import DashboardVisitCalendar from "./DashboardVisitCalendar";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
 import EmptyState from "./ui-kit/EmptyState";
 import { IconVisit } from "./ui-kit/RedMarkIcons";
+import { ActivityRowSkeleton } from "./LoadingStates";
 
 // "Mardi 24 mars · 3 projets actifs" — the spec's dateline under the title.
 function formatDateline(projectCount: number): string {
@@ -187,7 +188,14 @@ export default function Dashboard() {
         >
           <Card className="overflow-hidden">
             {loading ? (
-              <div className="py-6 text-center text-sm text-faint">Chargement...</div>
+              // Rows, not a "Chargement..." line: the shape of what is
+              // coming is known, so the panel can hold its final height and
+              // fill in rather than collapsing then expanding.
+              <div role="status" aria-label="Chargement de l'activité">
+                <ActivityRowSkeleton />
+                <ActivityRowSkeleton />
+                <ActivityRowSkeleton />
+              </div>
             ) : activity.length === 0 ? (
               <EmptyState
                 size="compact"
@@ -197,7 +205,7 @@ export default function Dashboard() {
                 action={{ label: "Voir les projets", onClick: () => void navigate("/app/projects") }}
               />
             ) : (
-              <ListRows>
+              <ListRows className="rm-fade">
                 {visibleActivity.map((entry) => (
                   <ListRow
                     key={entry.id}
