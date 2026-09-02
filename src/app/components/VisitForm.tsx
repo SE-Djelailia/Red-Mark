@@ -417,14 +417,14 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="flex-1 py-3 bg-surface border border-line-strong text-ink rounded-[4px] hover:bg-subtle disabled:opacity-50 font-medium min-h-[48px]"
+            className="flex-1 py-3 bg-surface border border-line-strong text-ink rounded-[4px] hover:bg-subtle disabled:opacity-40 disabled:cursor-not-allowed font-medium min-h-[48px]"
           >
             Annuler
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[48px] font-medium"
+            className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[48px] font-medium"
           >
             {isSubmitting && <ButtonLoader />}
             <span>{isSubmitting ? "Enregistrement..." : "Enregistrer la visite"}</span>

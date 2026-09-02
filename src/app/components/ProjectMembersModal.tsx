@@ -314,7 +314,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
           {canManage && !showInviteForm && (
             <button
               onClick={() => setShowInviteForm(true)}
-              className="w-full py-3 px-4 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 font-medium"
+              className="w-full py-3 px-4 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors flex items-center justify-center gap-2 font-medium"
             >
               <UserPlus size={20} />
               Inviter un membre
@@ -396,7 +396,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                 <button
                   onClick={handleInvite}
                   disabled={inviting}
-                  className="flex-1 py-2 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-2 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {inviting ? (
                     <>
@@ -468,7 +468,7 @@ export default function ProjectMembersModal({ projectId, onClose }: ProjectMembe
                         </select>
                         <button
                           onClick={() => setRemoveTarget({ id: member.id, name: member.name })}
-                          className="w-11 h-11 flex items-center justify-center bg-surface text-brand-strong rounded-[4px] hover:bg-subtle transition-colors"
+                          className="w-11 h-11 flex items-center justify-center bg-surface text-brand-strong rounded-[4px] hover:bg-subtle active:bg-line transition-colors"
                         >
                           <Trash2 size={16} />
                         </button>

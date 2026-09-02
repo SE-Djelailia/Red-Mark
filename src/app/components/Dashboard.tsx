@@ -18,6 +18,8 @@ import { StatGrid, StatTile } from "./ui-kit/StatTile";
 import ActivityIcon from "./ui-kit/ActivityIcon";
 import DashboardVisitCalendar from "./DashboardVisitCalendar";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
+import EmptyState from "./ui-kit/EmptyState";
+import { IconVisit } from "./ui-kit/RedMarkIcons";
 
 // "Mardi 24 mars · 3 projets actifs" — the spec's dateline under the title.
 function formatDateline(projectCount: number): string {
@@ -141,7 +143,7 @@ export default function Dashboard() {
             <button
               onClick={() => loadData(true)}
               disabled={refreshing}
-              className="text-sm font-medium text-brand-strong hover:underline disabled:opacity-50 flex-shrink-0"
+              className="text-sm font-medium text-brand-strong hover:underline disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
             >
               Réessayer
             </button>
@@ -187,7 +189,13 @@ export default function Dashboard() {
             {loading ? (
               <div className="py-6 text-center text-sm text-faint">Chargement...</div>
             ) : activity.length === 0 ? (
-              <div className="py-6 text-center text-sm text-muted">Aucune activité récente</div>
+              <EmptyState
+                size="compact"
+                icon={<IconVisit size={32} className="text-faint lucide-display" />}
+                label="Aucune activité"
+                message="Les visites, photos et déficiences récentes de vos projets apparaîtront ici."
+                action={{ label: "Voir les projets", onClick: () => void navigate("/app/projects") }}
+              />
             ) : (
               <ListRows>
                 {visibleActivity.map((entry) => (

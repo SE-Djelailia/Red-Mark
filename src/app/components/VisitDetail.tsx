@@ -62,6 +62,7 @@ import { Card, Section } from "./ui-kit/Card";
 import VoiceRecorderModal from "./VoiceRecorderModal";
 import VisitAttendeesSection from "./VisitAttendeesSection";
 import { IconPhoto, MarkX } from "./ui-kit/RedMarkIcons";
+import EmptyState from "./ui-kit/EmptyState";
 
 interface Photo {
   id: string;
@@ -595,13 +596,13 @@ export default function VisitDetail() {
           <div className="flex gap-3 justify-center">
             <button
               onClick={goBack}
-              className="px-4 h-11 bg-subtle text-ink rounded-[4px] hover:bg-line text-sm font-medium min-h-[44px]"
+              className="px-4 h-11 bg-subtle text-ink rounded-[4px] hover:bg-line active:bg-line-strong text-sm font-medium min-h-[44px]"
             >
               Retour
             </button>
             <button
               onClick={() => fetchData()}
-              className="px-4 h-11 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 text-sm font-medium min-h-[44px]"
+              className="px-4 h-11 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 text-sm font-medium min-h-[44px]"
             >
               Réessayer
             </button>
@@ -631,7 +632,7 @@ export default function VisitDetail() {
                 share control here. */}
             <button
               onClick={() => navigate(`/app/projects/${projectId}/report?visit=${visitId}`)}
-              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-[4px] transition-colors"
+              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle active:bg-line rounded-[4px] transition-colors"
               title="Générer le rapport"
               aria-label="Générer le rapport"
             >
@@ -682,7 +683,7 @@ export default function VisitDetail() {
                   };
                   input.click();
                 }}
-                className="flex items-center gap-1.5 text-brand-strong hover:text-brand-800 disabled:opacity-50 ml-auto"
+                className="flex items-center gap-1.5 text-brand-strong hover:text-brand-800 disabled:opacity-40 disabled:cursor-not-allowed ml-auto"
               >
                 <Camera size={12} className="flex-shrink-0" />
                 <span className="text-xs font-medium">
@@ -735,7 +736,7 @@ export default function VisitDetail() {
                   </button>
                   <button
                     onClick={handleSaveNotes}
-                    className="flex-1 py-2.5 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                    className="flex-1 py-2.5 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
                   >
                     Sauvegarder
                   </button>
@@ -757,7 +758,7 @@ export default function VisitDetail() {
                         setIsEditingNotes(true);
                         setEditedNotes(visit?.notes || "");
                       }}
-                      className="py-2.5 px-4 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
+                      className="py-2.5 px-4 bg-subtle text-ink rounded-[4px] hover:bg-line active:bg-line-strong transition-colors font-medium flex items-center gap-2 min-h-[44px]"
                     >
                       <Edit size={16} />
                       <span>{visit?.notes?.trim() ? "Modifier les notes" : "Ajouter des notes"}</span>
@@ -816,7 +817,7 @@ export default function VisitDetail() {
                     setIsSelectionMode(!isSelectionMode);
                     setSelectedPhotoIds([]);
                   }}
-                  className="py-2 px-3 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors text-sm font-medium min-h-[44px]"
+                  className="py-2 px-3 bg-subtle text-ink rounded-[4px] hover:bg-line active:bg-line-strong transition-colors text-sm font-medium min-h-[44px]"
                 >
                   {isSelectionMode ? "Annuler" : "Sélectionner"}
                 </button>
@@ -855,7 +856,7 @@ export default function VisitDetail() {
                               className={`px-3 py-1.5 rounded-[4px] text-xs font-medium transition-colors ${
                                 selectedTagFilter === null
                                   ? "bg-ink text-white"
-                                  : "bg-subtle text-body hover:bg-line"
+                                  : "bg-subtle text-body hover:bg-line active:bg-line-strong"
                               }`}
                             >
                               Tous
@@ -869,7 +870,7 @@ export default function VisitDetail() {
                                 className={`px-3 py-1.5 rounded-[4px] text-xs font-medium transition-colors ${
                                   selectedTagFilter === tag
                                     ? "bg-ink text-white"
-                                    : "bg-subtle text-body hover:bg-line"
+                                    : "bg-subtle text-body hover:bg-line active:bg-line-strong"
                                 }`}
                               >
                                 {tag}
@@ -946,7 +947,7 @@ export default function VisitDetail() {
                             })),
                         )
                       }
-                      className="py-2 px-3 bg-subtle hover:bg-line text-ink rounded-[4px] transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
+                      className="py-2 px-3 bg-subtle hover:bg-line active:bg-line-strong text-ink rounded-[4px] transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
                     >
                       <MapPin size={16} />
                       Modifier le local
@@ -955,7 +956,7 @@ export default function VisitDetail() {
                   {projectRole.canCreateIssues && (
                     <button
                       onClick={handleCreateIssueFromPhotos}
-                      className="py-2 px-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
+                      className="py-2 px-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
                     >
                       <MarkX size={16} />
                       Créer déficience
@@ -963,7 +964,7 @@ export default function VisitDetail() {
                   )}
                   <button
                     onClick={() => setShowDeletePhotosConfirm(true)}
-                    className="py-2 px-3 bg-surface border border-ink text-ink rounded-[4px] hover:bg-subtle transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
+                    className="py-2 px-3 bg-surface border border-ink text-ink rounded-[4px] hover:bg-subtle active:bg-line transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
                   >
                     <Trash2 size={16} />
                     Supprimer
@@ -1125,7 +1126,7 @@ export default function VisitDetail() {
               {projectRole.canCreateIssues && (
                 <button
                   onClick={handleCreateIssue}
-                  className="py-2.5 px-4 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors font-medium flex items-center gap-2 min-h-[44px]"
+                  className="py-2.5 px-4 bg-subtle text-ink rounded-[4px] hover:bg-line active:bg-line-strong transition-colors font-medium flex items-center gap-2 min-h-[44px]"
                 >
                   <Edit size={16} />
                   <span>Ajouter une déficience</span>
@@ -1134,9 +1135,12 @@ export default function VisitDetail() {
             </div>
 
             {issues.length === 0 ? (
-              <p className="text-sm text-muted text-center py-6">
-                Aucune déficience pour cette visite.
-              </p>
+              <EmptyState
+                size="compact"
+                icon={<MarkX size={32} className="text-faint lucide-display" />}
+                label="Aucune déficience"
+                message="Rien n'a été signalé lors de cette visite."
+              />
             ) : (
               <div className="space-y-1.5">
                 {issues.map((issue) => (
@@ -1227,7 +1231,7 @@ export default function VisitDetail() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => navigate(`/app/projects/${projectId}/report?visit=${visitId}`)}
-                className="py-3 px-4 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+                className="py-3 px-4 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors flex items-center justify-center gap-2 min-h-[48px]"
               >
                 <FileText size={20} />
                 <span className="text-sm font-medium">Générer rapport</span>
@@ -1235,7 +1239,7 @@ export default function VisitDetail() {
               {projectRole.canUploadPhotos && (
                 <button
                   onClick={() => navigate(`/app/projects/${projectId}/visits/${visitId}/add-photos`)}
-                  className="py-3 px-4 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+                  className="py-3 px-4 bg-subtle text-ink rounded-[4px] hover:bg-line active:bg-line-strong transition-colors flex items-center justify-center gap-2 min-h-[48px]"
                 >
                   <Camera size={20} />
                   <span className="text-sm font-medium">Ajouter photos</span>
@@ -1292,7 +1296,7 @@ export default function VisitDetail() {
                   e.stopPropagation();
                   handleOpenAnnotator(selectedPhoto);
                 }}
-                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 rounded-[4px] flex items-center gap-2 text-white transition-colors font-medium"
+                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 rounded-[4px] flex items-center gap-2 text-white transition-colors font-medium"
                 title="Annoter"
               >
                 <Pencil size={16} />

@@ -189,7 +189,7 @@ export default function AnnotatorToolbar({
           and the 8px it frees is what keeps Enregistrer on a 360px screen. */}
       <button
         onClick={onClose}
-        className="w-9 h-11 flex items-center justify-center rounded-[4px] text-muted hover:bg-subtle transition-colors flex-shrink-0"
+        className="w-9 h-11 flex items-center justify-center rounded-[4px] text-muted hover:bg-subtle active:bg-line transition-colors flex-shrink-0"
         title="Fermer"
         aria-label="Fermer"
       >
@@ -350,7 +350,7 @@ export default function AnnotatorToolbar({
           disabled={saveDisabled}
           title="Enregistrer"
           aria-label="Enregistrer"
-          className="ml-1 h-11 px-3 sm:px-4 rounded-[4px] bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:opacity-50 flex items-center gap-2 flex-shrink-0"
+          className="ml-1 h-11 px-3 sm:px-4 rounded-[4px] bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 flex-shrink-0"
         >
           <Check size={16} />
           <span className="hidden sm:inline">{isSaving ? "Enregistrement…" : "Enregistrer"}</span>

@@ -495,7 +495,7 @@ export default function IssueForm({
           <button
             type="button"
             onClick={addTag}
-            className="px-4 py-2.5 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium min-h-[44px]"
+            className="px-4 py-2.5 bg-subtle hover:bg-line active:bg-line-strong rounded-[4px] text-sm font-medium min-h-[44px]"
           >
             Ajouter
           </button>
@@ -575,7 +575,7 @@ export default function IssueForm({
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line disabled:opacity-50 font-medium min-h-[44px]"
+          className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line active:bg-line-strong disabled:opacity-40 disabled:cursor-not-allowed font-medium min-h-[44px]"
         >
           Annuler
         </button>
@@ -583,7 +583,7 @@ export default function IssueForm({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 disabled:opacity-50 font-medium min-h-[44px]"
+          className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 disabled:opacity-40 disabled:cursor-not-allowed font-medium min-h-[44px]"
         >
           {saving ? (isEdit ? "Enregistrement…" : "Création…") : isEdit ? "Enregistrer" : "Créer"}
         </button>

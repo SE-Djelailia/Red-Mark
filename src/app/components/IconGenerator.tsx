@@ -89,7 +89,7 @@ export default function IconGenerator() {
           <button
             onClick={downloadAllIcons}
             disabled={generating}
-            className="w-full bg-brand-600 text-white py-4 px-6 rounded-[4px] font-semibold text-lg hover:bg-brand-700 transition-colors disabled:bg-line-strong disabled:cursor-not-allowed"
+            className="w-full bg-brand-600 text-white py-4 px-6 rounded-[4px] font-semibold text-lg hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:bg-line-strong disabled:cursor-not-allowed"
           >
             {generating ? "⏳ Génération en cours..." : "📥 Télécharger Toutes les Icônes"}
           </button>

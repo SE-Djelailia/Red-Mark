@@ -149,7 +149,7 @@ export default function FirmGate({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => void run()}
-            className="inline-flex items-center justify-center gap-2 rounded-[4px] bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
+            className="inline-flex items-center justify-center gap-2 rounded-[4px] bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 active:bg-brand-800"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Réessayer

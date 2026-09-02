@@ -190,7 +190,7 @@ export default function Profile() {
                 <button
                   onClick={() => setIsEditing(false)}
                   disabled={isSaving}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-body hover:bg-subtle rounded-[4px] transition-colors disabled:opacity-50 min-h-[36px]"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-body hover:bg-subtle rounded-[4px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[36px]"
                 >
                   <X size={16} />
                   Annuler
@@ -198,7 +198,7 @@ export default function Profile() {
                 <button
                   onClick={handleSaveProfile}
                   disabled={isSaving}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-surface border border-ink text-ink rounded-[4px] hover:bg-subtle transition-colors disabled:opacity-50 min-h-[36px]"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-surface border border-ink text-ink rounded-[4px] hover:bg-subtle active:bg-line transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[36px]"
                 >
                   <Check size={16} />
                   {isSaving ? "Enregistrement…" : "Enregistrer"}
@@ -388,7 +388,7 @@ export default function Profile() {
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 font-medium min-h-[48px]"
+                    className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 font-medium min-h-[48px]"
                   >
                     Déconnexion
                   </button>

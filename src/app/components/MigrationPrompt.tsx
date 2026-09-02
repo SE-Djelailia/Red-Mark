@@ -123,7 +123,7 @@ export default function MigrationPrompt() {
               <button
                 onClick={handleMigrate}
                 disabled={migrating}
-                className="w-full py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+                className="w-full py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
               >
                 {migrating ? (
                   <>
@@ -141,7 +141,7 @@ export default function MigrationPrompt() {
               {!migrating && (
                 <button
                   onClick={handleSkip}
-                  className="w-full py-3 bg-subtle text-body rounded-[4px] hover:bg-line transition-colors font-medium"
+                  className="w-full py-3 bg-subtle text-body rounded-[4px] hover:bg-line active:bg-line-strong transition-colors font-medium"
                 >
                   Plus tard
                 </button>

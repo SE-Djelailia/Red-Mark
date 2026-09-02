@@ -121,7 +121,7 @@ export default function ProjectForm({ project, onCancel, onSaved }: Props) {
             </h2>
             <button
               onClick={onCancel}
-              className="w-10 h-10 flex items-center justify-center hover:bg-subtle rounded-full transition-colors flex-shrink-0"
+              className="w-10 h-10 flex items-center justify-center hover:bg-subtle active:bg-line rounded-full transition-colors flex-shrink-0"
               aria-label="Fermer"
             >
               <X size={24} />
@@ -274,14 +274,14 @@ export default function ProjectForm({ project, onCancel, onSaved }: Props) {
                 type="button"
                 onClick={onCancel}
                 disabled={isSaving}
-                className="flex-1 px-4 py-3 border border-line-strong text-body rounded-[4px] hover:bg-subtle active:bg-subtle transition-colors min-h-[48px] disabled:opacity-50"
+                className="flex-1 px-4 py-3 border border-line-strong text-body rounded-[4px] hover:bg-subtle active:bg-subtle transition-colors min-h-[48px] disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Annuler
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors flex items-center justify-center gap-2 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors flex items-center justify-center gap-2 min-h-[48px] disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>

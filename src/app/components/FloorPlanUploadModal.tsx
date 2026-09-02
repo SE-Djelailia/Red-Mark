@@ -61,7 +61,7 @@ export default function FloorPlanUploadModal({
             <h2 className="text-xl text-ink font-medium">Téléverser un plan</h2>
             <button
               onClick={onCancel}
-              className="w-10 h-10 flex items-center justify-center hover:bg-subtle rounded-full transition-colors"
+              className="w-10 h-10 flex items-center justify-center hover:bg-subtle active:bg-line rounded-full transition-colors"
               aria-label="Fermer"
             >
               <X size={24} />
@@ -120,7 +120,7 @@ export default function FloorPlanUploadModal({
           <div className="px-6 py-4 border-t border-line flex gap-3 bg-surface rounded-b-xl">
             <button
               onClick={onCancel}
-              className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors font-medium min-h-[48px]"
+              className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line active:bg-line-strong transition-colors font-medium min-h-[48px]"
             >
               Annuler
             </button>
@@ -134,7 +134,7 @@ export default function FloorPlanUploadModal({
                 })
               }
               disabled={!valid || saving}
-              className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium min-h-[48px] disabled:opacity-50 inline-flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors font-medium min-h-[48px] disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
             >
               <Upload size={16} />
               {saving ? "Téléversement…" : "Téléverser"}

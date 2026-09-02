@@ -704,7 +704,7 @@ export default function ReportGenerator() {
             disabled={generating || loading || !selectedVisitId}
             className={`w-full py-4 rounded-[4px] flex items-center justify-center gap-3 transition-all ${
               generating ? "bg-line-strong cursor-not-allowed" : "bg-brand-600 hover:bg-brand-700 active:scale-[0.98]"
-            } text-white disabled:opacity-50 shadow-md`}
+            } text-white disabled:opacity-40 shadow-md`}
           >
             {generating ? (
               <>
@@ -733,7 +733,7 @@ export default function ReportGenerator() {
             <button
               onClick={() => void handleDownloadAgain()}
               disabled={generating}
-              className="w-full py-4 bg-ink text-white rounded-[4px] flex items-center justify-center gap-3 hover:bg-body active:scale-[0.98] transition-all shadow-md disabled:opacity-50"
+              className="w-full py-4 bg-ink text-white rounded-[4px] flex items-center justify-center gap-3 hover:bg-body active:scale-[0.98] transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {generating ? (
                 <>
@@ -752,7 +752,7 @@ export default function ReportGenerator() {
             <button
               onClick={handleNewReport}
               disabled={generating}
-              className="w-full py-3 bg-surface border border-line text-ink rounded-[4px] flex items-center justify-center gap-2 hover:border-brand-600 hover:text-brand-600 transition-colors disabled:opacity-50 min-h-[48px]"
+              className="w-full py-3 bg-surface border border-line text-ink rounded-[4px] flex items-center justify-center gap-2 hover:border-brand-600 hover:text-brand-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[48px]"
             >
               <Plus size={20} />
               <span className="text-sm font-medium">Nouveau rapport</span>

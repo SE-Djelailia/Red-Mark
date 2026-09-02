@@ -346,7 +346,7 @@ export default function CommentThread({
                     <button
                       onClick={handleSaveComment}
                       disabled={isSubmitting}
-                      className="px-4 py-2 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Sauvegarder
                     </button>
@@ -465,7 +465,7 @@ export default function CommentThread({
           <button
             onClick={handleAddComment}
             disabled={!commentText.trim() || isSubmitting}
-            className="flex-1 py-2.5 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+            className="flex-1 py-2.5 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
           >
             {isSubmitting ? "Envoi..." : replyingToId ? "Répondre" : "Publier"}
           </button>

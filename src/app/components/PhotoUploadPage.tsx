@@ -378,7 +378,7 @@ export default function PhotoUploadPage() {
           <button
             onClick={goBack}
             disabled={isUploading}
-            className="flex items-center gap-2 text-muted hover:text-ink transition-colors disabled:opacity-50 min-h-[44px] text-sm font-medium"
+            className="flex items-center gap-2 text-muted hover:text-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] text-sm font-medium"
           >
             <ArrowLeft size={20} />
             <span>Retour</span>
@@ -638,7 +638,7 @@ export default function PhotoUploadPage() {
                     type="button"
                     onClick={() => handleAddTag(currentTag)}
                     disabled={!currentTag.trim()}
-                    className="px-6 py-3 bg-surface border border-ink text-ink rounded-[4px] hover:bg-subtle transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium min-h-[48px]"
+                    className="px-6 py-3 bg-surface border border-ink text-ink rounded-[4px] hover:bg-subtle active:bg-line transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed font-medium min-h-[48px]"
                   >
                     <Plus size={20} />
                     <span>Ajouter</span>
@@ -697,14 +697,14 @@ export default function PhotoUploadPage() {
                 <button
                   onClick={goBack}
                   disabled={isUploading}
-                  className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line-strong active:bg-line-strong transition-colors font-semibold text-base min-h-[48px] disabled:opacity-50"
+                  className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line-strong active:bg-line-strong transition-colors font-semibold text-base min-h-[48px] disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={isUploading || photosToUpload.length === 0}
-                  className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors font-semibold text-base min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors font-semibold text-base min-h-[48px] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isUploading ? (
                     <>
@@ -855,7 +855,7 @@ export default function PhotoUploadPage() {
                 </button>
                 <button
                   onClick={handleAssignLocation}
-                  className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-[4px] font-medium hover:bg-brand-700 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-[4px] font-medium hover:bg-brand-700 active:bg-brand-800 transition-colors flex items-center justify-center gap-2"
                 >
                   <Check size={20} />
                   Assigner

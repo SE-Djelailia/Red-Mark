@@ -162,7 +162,7 @@ export default function LocationPhotoCompare({
           (selecting ? (
             <button
               onClick={exitSelecting}
-              className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
+              className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line active:bg-line-strong rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
             >
               <X size={16} />
               Annuler
@@ -170,7 +170,7 @@ export default function LocationPhotoCompare({
           ) : (
             <button
               onClick={() => setSelecting(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
+              className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line active:bg-line-strong rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
             >
               <GitCompareArrows size={16} />
               Comparer
@@ -308,7 +308,7 @@ export default function LocationPhotoCompare({
                 setPicked([]);
                 setSelecting(false);
               }}
-              className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-[4px] text-sm font-medium min-h-[44px] transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-[4px] text-sm font-medium min-h-[44px] transition-colors flex items-center justify-center gap-2"
             >
               <Check size={16} />
               Terminer

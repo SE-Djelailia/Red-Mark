@@ -595,7 +595,7 @@ export default function PlanFileViewer() {
               <button
                 onClick={handleAssignPage}
                 disabled={!assignLevelId || assigning}
-                className="px-4 h-11 bg-ink text-white rounded-[4px] text-sm font-medium disabled:opacity-50 min-h-[44px]"
+                className="px-4 h-11 bg-ink text-white rounded-[4px] text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
               >
                 {assigning ? "Assignation…" : "Assigner"}
               </button>
@@ -681,21 +681,21 @@ export default function PlanFileViewer() {
       <div className="absolute right-4 bottom-28 flex flex-col gap-2">
         <button
           onClick={zoomIn}
-          className="w-12 h-12 bg-surface rounded-full shadow-lg flex items-center justify-center text-ink hover:bg-subtle"
+          className="w-12 h-12 bg-surface rounded-full shadow-lg flex items-center justify-center text-ink hover:bg-subtle active:bg-line"
           aria-label="Zoom avant"
         >
           <Plus size={24} />
         </button>
         <button
           onClick={zoomOut}
-          className="w-12 h-12 bg-surface rounded-full shadow-lg flex items-center justify-center text-ink hover:bg-subtle"
+          className="w-12 h-12 bg-surface rounded-full shadow-lg flex items-center justify-center text-ink hover:bg-subtle active:bg-line"
           aria-label="Zoom arrière"
         >
           <Minus size={24} />
         </button>
         <button
           onClick={resetView}
-          className="w-12 h-12 bg-surface rounded-full shadow-lg flex items-center justify-center text-ink hover:bg-subtle"
+          className="w-12 h-12 bg-surface rounded-full shadow-lg flex items-center justify-center text-ink hover:bg-subtle active:bg-line"
           aria-label="Réinitialiser"
         >
           <Maximize2 size={20} />
@@ -714,7 +714,7 @@ export default function PlanFileViewer() {
           <button
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage <= 1}
-            className="w-11 h-11 flex items-center justify-center rounded-[4px] text-ink hover:bg-subtle disabled:opacity-30 disabled:hover:bg-transparent"
+            className="w-11 h-11 flex items-center justify-center rounded-[4px] text-ink hover:bg-subtle active:bg-line disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             aria-label="Page précédente"
           >
             <ChevronLeft size={24} />
@@ -735,7 +735,7 @@ export default function PlanFileViewer() {
           <button
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage >= numPages}
-            className="w-11 h-11 flex items-center justify-center rounded-[4px] text-ink hover:bg-subtle disabled:opacity-30 disabled:hover:bg-transparent"
+            className="w-11 h-11 flex items-center justify-center rounded-[4px] text-ink hover:bg-subtle active:bg-line disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             aria-label="Page suivante"
           >
             <ChevronRight size={24} />

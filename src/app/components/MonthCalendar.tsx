@@ -51,7 +51,7 @@ export default function MonthCalendar({
         <div className="flex items-center gap-1">
           <button
             onClick={() => onMonthChange(addMonths(month, -1))}
-            className="w-9 h-9 flex items-center justify-center rounded-[4px] hover:bg-subtle text-muted"
+            className="w-9 h-9 flex items-center justify-center rounded-[4px] hover:bg-subtle active:bg-line text-muted"
             aria-label="Mois précédent"
           >
             <ChevronLeft size={20} />
@@ -64,7 +64,7 @@ export default function MonthCalendar({
           </button>
           <button
             onClick={() => onMonthChange(addMonths(month, 1))}
-            className="w-9 h-9 flex items-center justify-center rounded-[4px] hover:bg-subtle text-muted"
+            className="w-9 h-9 flex items-center justify-center rounded-[4px] hover:bg-subtle active:bg-line text-muted"
             aria-label="Mois suivant"
           >
             <ChevronRight size={20} />

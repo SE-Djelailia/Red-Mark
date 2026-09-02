@@ -151,7 +151,7 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
       {/* Bell Icon */}
       <button
         onClick={() => setShowPanel(!showPanel)}
-        className="relative w-9 h-9 flex items-center justify-center text-body hover:bg-subtle rounded-[4px] transition-colors"
+        className="relative w-9 h-9 flex items-center justify-center text-body hover:bg-subtle active:bg-line rounded-[4px] transition-colors"
         title="Notifications"
         aria-label={
           unreadCount > 0 ? `Notifications (${unreadCount} non lues)` : "Notifications"

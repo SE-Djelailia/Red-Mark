@@ -246,7 +246,7 @@ export default function DataExport({ onClose }: DataExportProps) {
               className={`w-full py-4 rounded-[4px] transition-colors font-medium flex items-center justify-center gap-2 ${
                 exporting
                   ? "bg-line text-muted cursor-not-allowed"
-                  : "bg-brand-600 text-white hover:bg-brand-700"
+                  : "bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800"
               }`}
             >
               {exporting ? (

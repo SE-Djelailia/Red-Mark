@@ -100,7 +100,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           </p>
           <button
             onClick={this.reset}
-            className="h-10 px-4 rounded-[4px] bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors min-h-[44px]"
+            className="h-10 px-4 rounded-[4px] bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 active:bg-brand-800 transition-colors min-h-[44px]"
           >
             Réessayer
           </button>
@@ -134,7 +134,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             </button>
             <button
               onClick={this.handleReload}
-              className="h-11 px-4 rounded-[4px] bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors min-h-[44px]"
+              className="h-11 px-4 rounded-[4px] bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 active:bg-brand-800 transition-colors min-h-[44px]"
             >
               Recharger
             </button>

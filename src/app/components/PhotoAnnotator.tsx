@@ -594,7 +594,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
               <button
                 onClick={applyPrepareStep}
                 disabled={isApplying}
-                className="h-10 px-4 rounded-[4px] bg-ink text-white text-sm font-medium hover:bg-ink/85 transition-colors disabled:opacity-50"
+                className="h-10 px-4 rounded-[4px] bg-ink text-white text-sm font-medium hover:bg-ink/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isApplying ? "…" : "Appliquer"}
               </button>

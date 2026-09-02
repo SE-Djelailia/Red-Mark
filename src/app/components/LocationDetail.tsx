@@ -42,7 +42,8 @@ import ErrorBoundary from "./ErrorBoundary";
 import { PRIORITY_LABEL, STATUS_LABEL } from "./ui-kit/Badge";
 import { TERMINAL_ISSUE_STATUS } from "../../lib/issueStatus";
 import PhotoMetadataEditor, { type EditablePhoto } from "./PhotoMetadataEditor";
-import { IconLocation, IconVisit, MarkX } from "./ui-kit/RedMarkIcons";
+import { IconLocation, IconPhoto, IconVisit, MarkX } from "./ui-kit/RedMarkIcons";
+import EmptyState from "./ui-kit/EmptyState";
 
 // Timeline entries are grouped by day; this formats the group header
 // ("21 juillet 2026"). Uses parseLocalDate (not plain `new Date(...)`) to
@@ -411,13 +412,13 @@ export default function LocationDetail() {
           <div className="flex gap-3 justify-center">
             <button
               onClick={goBack}
-              className="px-4 h-11 bg-subtle text-ink rounded-[4px] hover:bg-line text-sm font-medium min-h-[44px]"
+              className="px-4 h-11 bg-subtle text-ink rounded-[4px] hover:bg-line active:bg-line-strong text-sm font-medium min-h-[44px]"
             >
               Retour
             </button>
             <button
               onClick={() => loadLocation()}
-              className="px-4 h-11 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 text-sm font-medium min-h-[44px]"
+              className="px-4 h-11 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 text-sm font-medium min-h-[44px]"
             >
               Réessayer
             </button>
@@ -786,7 +787,7 @@ export default function LocationDetail() {
             {projectRole.canCreateIssues && (
               <button
                 onClick={startAddIssue}
-                className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
+                className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line active:bg-line-strong rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
               >
                 <Plus size={16} />
                 Ajouter
@@ -876,7 +877,7 @@ export default function LocationDetail() {
             {projectRole.canUploadPhotos && (
               <button
                 onClick={startAddPhotos}
-                className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
+                className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line active:bg-line-strong rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
               >
                 <Camera size={16} />
                 Ajouter
@@ -893,7 +894,12 @@ export default function LocationDetail() {
               </button>
             </div>
           ) : photos.length === 0 ? (
-            <div className="text-sm text-muted">Aucune photo à ce local pour le moment.</div>
+            <EmptyState
+              size="compact"
+              icon={<IconPhoto size={32} className="text-faint lucide-display" />}
+              label="Aucune photo"
+              message="Les photos prises à ce local apparaîtront ici, groupées par visite."
+            />
           ) : (
             <LocationPhotoCompare
               photos={photos}
@@ -1125,14 +1131,14 @@ export default function LocationDetail() {
               <button
                 onClick={closePendingAction}
                 disabled={uploadingPhotos}
-                className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line-strong transition-colors font-medium disabled:opacity-50 min-h-[48px]"
+                className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line-strong transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed min-h-[48px]"
               >
                 Annuler
               </button>
               <button
                 onClick={handleSavePhotos}
                 disabled={uploadingPhotos || newPhotoFiles.length === 0}
-                className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 min-h-[48px]"
+                className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed min-h-[48px]"
               >
                 {uploadingPhotos ? "Envoi…" : "Enregistrer"}
               </button>

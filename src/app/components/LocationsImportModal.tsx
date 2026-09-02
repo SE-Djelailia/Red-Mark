@@ -111,7 +111,7 @@ export default function LocationsImportModal({ projectId, onClose, onImported }:
             <h2 className="text-lg font-semibold text-ink">Importer les emplacements</h2>
             <button
               onClick={onClose}
-              className="w-9 h-9 flex items-center justify-center hover:bg-subtle rounded-[4px] transition-colors"
+              className="w-9 h-9 flex items-center justify-center hover:bg-subtle active:bg-line rounded-[4px] transition-colors"
             >
               <X size={20} />
             </button>
@@ -129,7 +129,7 @@ export default function LocationsImportModal({ projectId, onClose, onImported }:
                 <button
                   type="button"
                   onClick={downloadLocationImportTemplate}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors text-sm font-medium min-h-[44px]"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line active:bg-line-strong transition-colors text-sm font-medium min-h-[44px]"
                 >
                   <Download size={20} />
                   Télécharger le modèle
@@ -146,7 +146,7 @@ export default function LocationsImportModal({ projectId, onClose, onImported }:
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 disabled:opacity-50 transition-colors text-sm font-medium min-h-[44px]"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm font-medium min-h-[44px]"
                 >
                   {isLoading ? (
                     <>
@@ -247,7 +247,7 @@ export default function LocationsImportModal({ projectId, onClose, onImported }:
                     type="button"
                     onClick={handleStartOver}
                     disabled={isCommitting}
-                    className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors font-medium disabled:opacity-50"
+                    className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line active:bg-line-strong transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Annuler
                   </button>
@@ -255,7 +255,7 @@ export default function LocationsImportModal({ projectId, onClose, onImported }:
                     type="button"
                     onClick={handleConfirm}
                     disabled={isCommitting}
-                    className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isCommitting && <XSpinner size={20} label={null} />}
                     Confirmer l'importation
@@ -294,7 +294,7 @@ export default function LocationsImportModal({ projectId, onClose, onImported }:
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors font-medium"
+                  className="w-full py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors font-medium"
                 >
                   Fermer
                 </button>

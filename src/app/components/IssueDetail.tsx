@@ -90,7 +90,7 @@ export default function IssueDetail() {
           {canEditIssue(projectRole, issue?.createdBy) && (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="w-10 h-10 flex items-center justify-center text-muted hover:text-brand-600 hover:bg-subtle rounded-[4px] transition-colors"
+              className="w-10 h-10 flex items-center justify-center text-muted hover:text-brand-600 hover:bg-subtle active:bg-line rounded-[4px] transition-colors"
               title="Supprimer"
             >
               <Trash2 size={20} />

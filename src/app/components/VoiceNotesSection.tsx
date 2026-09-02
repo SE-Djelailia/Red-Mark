@@ -23,6 +23,7 @@ import TranscriptionDisclosure, { transcriptionDisclosureAccepted } from "./Tran
 import { Card, ListRow, ListRows } from "./ui-kit/Card";
 import { formatRelativeDate } from "../../lib/dateUtils";
 import XSpinner from "./ui-kit/XSpinner";
+import EmptyState from "./ui-kit/EmptyState";
 import {
   useAudioRecorder,
   formatElapsed,
@@ -207,7 +208,7 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
         <button
           onClick={start}
           disabled={!!capabilityError || uploading}
-          className="w-full h-14 flex items-center justify-center gap-2.5 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 disabled:opacity-50 transition-colors font-medium"
+          className="w-full h-14 flex items-center justify-center gap-2.5 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
         >
           <Mic size={20} />
           <span>{uploading ? "Téléversement…" : "Enregistrer une note"}</span>
@@ -228,7 +229,7 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
           )}
           <button
             onClick={stop}
-            className="ml-auto h-11 px-5 flex items-center gap-2 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 font-medium"
+            className="ml-auto h-11 px-5 flex items-center gap-2 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 font-medium"
           >
             <Square size={16} fill="currentColor" />
             Arrêter
@@ -244,7 +245,12 @@ export default function VoiceNotesSection({ visitId, bare = false }: Props) {
       )}
 
       {notes.length === 0 ? (
-        <p className="text-center text-xs text-faint py-2">Aucune note vocale pour cette visite</p>
+        <EmptyState
+          size="compact"
+          icon={<Mic size={32} className="text-faint lucide-display" />}
+          label="Aucune note vocale"
+          message="Enregistrez une note pour garder une observation dite plutôt qu'écrite."
+        />
       ) : (
         <Card className="overflow-hidden">
           <ListRows>

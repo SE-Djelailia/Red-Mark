@@ -140,7 +140,7 @@ function CommentCard({
                   <button
                     onClick={onSaveEdit}
                     disabled={isSubmitting}
-                    className="px-3 py-1.5 bg-brand-600 text-white rounded-[4px] text-xs hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-1.5 bg-brand-600 text-white rounded-[4px] text-xs hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Enregistrer
                   </button>
@@ -531,7 +531,7 @@ export default function VisitComments({ visitId, projectId, visitCreatedBy }: Vi
           <button
             onClick={handleSubmitComment}
             disabled={!newCommentText.trim() || isSubmitting}
-            className="px-4 py-2 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-h-[40px]"
+            className="px-4 py-2 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 min-h-[40px]"
           >
             <Send size={16} />
             <span>{isSubmitting ? "Envoi..." : "Publier"}</span>

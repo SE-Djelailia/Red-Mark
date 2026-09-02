@@ -61,6 +61,7 @@ import type { IssueStatus } from "../../lib/issueStatus";
 import IssuesTab from "./IssuesTab";
 import PhotoMetadataEditor, { type EditablePhoto } from "./PhotoMetadataEditor";
 import { IconPhoto, IconVisit } from "./ui-kit/RedMarkIcons";
+import EmptyState from "./ui-kit/EmptyState";
 
 interface Issue {
   id: string;
@@ -286,6 +287,12 @@ export default function ProjectDetail() {
   const [visitDateFrom, setVisitDateFrom] = useState("");
   const [visitDateTo, setVisitDateTo] = useState("");
   const [visitOpenIssuesOnly, setVisitOpenIssuesOnly] = useState(false);
+  // "Are the visit filters doing anything?" — the difference between "this
+  // project has no visits yet" and "no visit matches what you asked for".
+  // Derived rather than tracked so it cannot drift from the inputs.
+  const hasVisitFilters = Boolean(
+    visitPhaseFilter || visitDateFrom || visitDateTo || visitOpenIssuesOnly,
+  );
   const [visitPhasesInUse, setVisitPhasesInUse] = useState<string[]>([]);
   // Resolved lazily the first time the open-issues toggle is turned on, not
   // on every render — see toggleVisitOpenIssuesOnly below.
@@ -697,13 +704,13 @@ export default function ProjectDetail() {
           <div className="flex gap-3 justify-center">
             <button
               onClick={goBack}
-              className="px-4 h-11 bg-subtle text-ink rounded-[4px] hover:bg-line text-sm font-medium min-h-[44px]"
+              className="px-4 h-11 bg-subtle text-ink rounded-[4px] hover:bg-line active:bg-line-strong text-sm font-medium min-h-[44px]"
             >
               Retour
             </button>
             <button
               onClick={() => fetchData()}
-              className="px-4 h-11 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 text-sm font-medium min-h-[44px]"
+              className="px-4 h-11 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 text-sm font-medium min-h-[44px]"
             >
               Réessayer
             </button>
@@ -796,14 +803,14 @@ export default function ProjectDetail() {
                   setShowEditModal(true);
                 }
               }}
-              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-[4px] transition-colors"
+              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle active:bg-line rounded-[4px] transition-colors"
               title="Modifier le projet"
             >
               <Pencil size={20} />
             </button>
             <button
               onClick={() => setShowMembersModal(true)}
-              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-[4px] transition-colors"
+              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle active:bg-line rounded-[4px] transition-colors"
               title="Gérer les membres"
             >
               <Users size={20} />
@@ -811,7 +818,7 @@ export default function ProjectDetail() {
             {projectRole.canCreateIssues && (
               <button
                 onClick={() => setShowLocationsImportModal(true)}
-                className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-[4px] transition-colors"
+                className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle active:bg-line rounded-[4px] transition-colors"
                 title="Importer les emplacements"
               >
                 <Upload size={20} />
@@ -825,7 +832,7 @@ export default function ProjectDetail() {
               onClick={() => navigate(`/app/projects/${id}/report`)}
               title="Générer un rapport"
               aria-label="Générer un rapport"
-              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle rounded-[4px] transition-colors"
+              className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle active:bg-line rounded-[4px] transition-colors"
             >
               <FileText size={20} />
             </button>
@@ -1053,7 +1060,7 @@ export default function ProjectDetail() {
                   >
                     Déficiences ouvertes
                   </button>
-                  {(visitPhaseFilter || visitDateFrom || visitDateTo || visitOpenIssuesOnly) && (
+                  {hasVisitFilters && (
                     <button
                       onClick={() => {
                         setVisitPhaseFilter("");
@@ -1071,10 +1078,31 @@ export default function ProjectDetail() {
                 {isLoadingVisits ? (
                   <VisitCardSkeleton />
                 ) : siteVisits.length === 0 ? (
-                  <div className="text-center py-12">
-                    <IconVisit size={48} className="mx-auto text-faint mb-4 lucide-display" />
-                    <p className="text-muted">Aucune visite ne correspond à ces filtres.</p>
-                  </div>
+                  <EmptyState
+                    icon={<IconVisit size={40} className="text-faint lucide-display" />}
+                    label={hasVisitFilters ? "Aucun résultat" : "Aucune visite"}
+                    message={
+                      hasVisitFilters
+                        ? "Aucune visite ne correspond à ces filtres."
+                        : "Ce projet n'a pas encore de visite documentée."
+                    }
+                    action={
+                      hasVisitFilters
+                        ? {
+                            label: "Effacer les filtres",
+                            onClick: () => {
+                              setVisitPhaseFilter("");
+                              setVisitDateFrom("");
+                              setVisitDateTo("");
+                              setVisitOpenIssuesOnly(false);
+                            },
+                          }
+                        : {
+                            label: "Créer une visite",
+                            onClick: () => void navigate(`/app/projects/${id}/visit/new`),
+                          }
+                    }
+                  />
                 ) : (
                   <>
                     <div className="bg-surface rounded-[4px] border border-line overflow-hidden">
@@ -1090,7 +1118,7 @@ export default function ProjectDetail() {
                       <button
                         onClick={() => loadVisits(false)}
                         disabled={loadingMoreVisits}
-                        className="w-full py-3 bg-surface border border-line rounded-[4px] text-sm font-medium text-ink hover:border-ink hover:text-ink disabled:opacity-50 transition-colors min-h-[48px]"
+                        className="w-full py-3 bg-surface border border-line rounded-[4px] text-sm font-medium text-ink hover:border-ink hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[48px]"
                       >
                         {loadingMoreVisits ? "Chargement…" : "Charger plus de visites"}
                       </button>
@@ -1153,7 +1181,7 @@ export default function ProjectDetail() {
                             className={`px-3 py-1.5 rounded-[4px] text-sm font-medium transition-colors min-h-[36px] whitespace-nowrap flex-shrink-0 ${
                               selectedPhotoPhase === phase
                                 ? "bg-ink text-white"
-                                : "bg-subtle text-ink hover:bg-line"
+                                : "bg-subtle text-ink hover:bg-line active:bg-line-strong"
                             }`}
                           >
                             {phase}
@@ -1179,7 +1207,7 @@ export default function ProjectDetail() {
                               className={`px-3 py-1.5 rounded-[4px] text-sm font-medium transition-colors min-h-[36px] whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 ${
                                 selectedPhotoTags.includes(tag)
                                   ? "bg-ink text-white"
-                                  : "bg-subtle text-ink hover:bg-line"
+                                  : "bg-subtle text-ink hover:bg-line active:bg-line-strong"
                               }`}
                             >
                               <span>{tag}</span>
@@ -1365,7 +1393,7 @@ export default function ProjectDetail() {
                       setShowCommentModal(false);
                       setCommentText("");
                     }}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-subtle rounded-full transition-colors"
+                    className="w-10 h-10 flex items-center justify-center hover:bg-subtle active:bg-line rounded-full transition-colors"
                   >
                     <X size={24} />
                   </button>
@@ -1397,7 +1425,7 @@ export default function ProjectDetail() {
                       setCommentText("");
                       alert("Commentaire ajouté!");
                     }}
-                    className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 font-medium min-h-[48px]"
+                    className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 font-medium min-h-[48px]"
                   >
                     Publier
                   </button>
@@ -1554,7 +1582,7 @@ export default function ProjectDetail() {
               <h2 className="text-lg font-medium text-ink">Détails de la visite</h2>
               <button
                 onClick={() => setShowVisitModal(false)}
-                className="w-10 h-10 flex items-center justify-center hover:bg-subtle rounded-full transition-colors"
+                className="w-10 h-10 flex items-center justify-center hover:bg-subtle active:bg-line rounded-full transition-colors"
               >
                 <X size={24} />
               </button>
@@ -1691,7 +1719,7 @@ export default function ProjectDetail() {
             <div className="bg-surface border-t border-line px-6 py-4 flex gap-3 flex-shrink-0 safe-area-bottom md:rounded-b-xl">
               <button
                 onClick={() => setShowVisitModal(false)}
-                className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line transition-colors font-medium"
+                className="flex-1 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line active:bg-line-strong transition-colors font-medium"
               >
                 Fermer
               </button>
@@ -1700,7 +1728,7 @@ export default function ProjectDetail() {
                   setShowVisitModal(false);
                   setShowCommentModal(true);
                 }}
-                className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors flex items-center justify-center gap-2 font-medium"
               >
                 <MessageSquare size={20} />
                 <span>Commenter</span>

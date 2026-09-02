@@ -193,7 +193,7 @@ function ProjectRow({
                     onClick={() => void handleRemove(a.userId)}
                     disabled={busyUserId === a.userId}
                     aria-label={`Retirer l'accès de ce membre à ${project.name}`}
-                    className="p-2 rounded-[4px] text-muted hover:text-open hover:bg-open/5 disabled:opacity-50"
+                    className="p-2 rounded-[4px] text-muted hover:text-open hover:bg-open/5 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Trash2 size={16} aria-hidden="true" />
                   </button>

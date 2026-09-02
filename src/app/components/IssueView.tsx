@@ -155,7 +155,7 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
           {canEditIssue(projectRole, issue.createdBy) && (
             <button
               onClick={() => setEditing(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line rounded-[4px] text-sm font-medium text-ink min-h-[40px] flex-shrink-0"
+              className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line active:bg-line-strong rounded-[4px] text-sm font-medium text-ink min-h-[40px] flex-shrink-0"
             >
               <Edit size={16} />
               Modifier

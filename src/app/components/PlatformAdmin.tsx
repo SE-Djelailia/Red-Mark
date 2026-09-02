@@ -146,7 +146,7 @@ export default function PlatformAdmin() {
           </p>
           <Link
             to="/login"
-            className="mt-6 inline-flex items-center justify-center rounded-[4px] bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
+            className="mt-6 inline-flex items-center justify-center rounded-[4px] bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 active:bg-brand-800"
           >
             Se connecter
           </Link>
@@ -396,7 +396,7 @@ function FirmRow({
                   type="button"
                   onClick={cancelEdit}
                   disabled={saving}
-                  className="rounded-[4px] border border-line px-4 py-2.5 text-sm font-medium text-ink hover:bg-subtle disabled:opacity-50"
+                  className="rounded-[4px] border border-line px-4 py-2.5 text-sm font-medium text-ink hover:bg-subtle disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Annuler
                 </button>
@@ -439,7 +439,7 @@ function FirmRow({
                             void reissue(admin.userId, admin.name || admin.email || "")
                           }
                           disabled={busyAdmin === admin.userId}
-                          className="text-xs font-medium text-body hover:text-ink disabled:opacity-50"
+                          className="text-xs font-medium text-body hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           {busyAdmin === admin.userId ? "…" : "Renvoyer le lien"}
                         </button>

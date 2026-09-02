@@ -130,7 +130,7 @@ export default function ProjectList() {
         <p className="text-muted text-lg mb-4">Veuillez vous connecter</p>
         <button
           onClick={() => (window.location.href = "/")}
-          className="px-6 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors"
+          className="px-6 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors"
         >
           Aller à la connexion
         </button>
@@ -226,7 +226,7 @@ export default function ProjectList() {
           <p className="text-body mb-6">Commencez par créer votre premier projet</p>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-6 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 transition-colors inline-flex items-center gap-2"
+            className="px-6 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 transition-colors inline-flex items-center gap-2"
           >
             <Plus size={20} />
             Créer un projet

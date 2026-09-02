@@ -159,7 +159,7 @@ export default function PlanFilesManager({ projectId, visitId }: Props) {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="inline-flex items-center gap-2 px-4 h-11 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 disabled:opacity-50 text-sm font-medium min-h-[44px]"
+            className="inline-flex items-center gap-2 px-4 h-11 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium min-h-[44px]"
           >
             <Upload size={16} />
             {uploading ? "Téléversement…" : "Ajouter un PDF"}

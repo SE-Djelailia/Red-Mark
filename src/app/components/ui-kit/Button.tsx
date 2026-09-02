@@ -50,7 +50,7 @@ export default function Button({
 }: Props) {
   return (
     <button
-      className={`inline-flex items-center justify-center rounded-[4px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${VARIANT[variant]} ${SIZE[size]} ${fullWidth ? "w-full" : ""} ${className}`}
+      className={`inline-flex items-center justify-center rounded-[4px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${VARIANT[variant]} ${SIZE[size]} ${fullWidth ? "w-full" : ""} ${className}`}
       {...rest}
     >
       {children}

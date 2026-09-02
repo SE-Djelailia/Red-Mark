@@ -181,7 +181,7 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={loading || !email.trim()}
-                  className="w-full py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {loading ? "Envoi..." : "Envoyer le lien"}
                 </button>
@@ -220,7 +220,7 @@ export default function Login() {
           type="button"
           onClick={handleMicrosoftSignIn}
           disabled={oauthLoading || loading}
-          className="w-full py-3 bg-canvas border border-line rounded-[4px] text-ink font-medium hover:bg-subtle transition-colors flex items-center justify-center gap-3 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-canvas border border-line rounded-[4px] text-ink font-medium hover:bg-subtle transition-colors flex items-center justify-center gap-3 min-h-[48px] disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {/* Microsoft's four-square mark, inline so the strict CSP has no
               external host to block. */}
@@ -326,7 +326,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading || (isSignUp && (!name.trim() || !jobRole.trim()))}
-            className="w-full py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors mt-8 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {loading ? "Chargement..." : isSignUp ? "S'inscrire" : "Se connecter"}
           </button>

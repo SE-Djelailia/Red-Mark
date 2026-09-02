@@ -73,7 +73,7 @@ export default function VoiceRecorderModal({ open, visitId, onClose, onSaved }: 
             onClick={cancel}
             disabled={recording || uploading}
             aria-label="Fermer"
-            className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink disabled:opacity-30 rounded-[4px]"
+            className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed rounded-[4px]"
           >
             <X size={20} />
           </button>
@@ -107,8 +107,8 @@ export default function VoiceRecorderModal({ open, visitId, onClose, onSaved }: 
                 onClick={recording ? stop : start}
                 disabled={uploading}
                 aria-label={recording ? "Arrêter" : "Enregistrer"}
-                className={`w-24 h-24 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-50 ${
-                  recording ? "bg-ink hover:bg-ink/90" : "bg-brand-600 hover:bg-brand-700"
+                className={`w-24 h-24 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                  recording ? "bg-ink hover:bg-ink/90" : "bg-brand-600 hover:bg-brand-700 active:bg-brand-800"
                 }`}
               >
                 {recording ? <Square size={32} fill="currentColor" /> : <Mic size={32} />}
@@ -117,7 +117,7 @@ export default function VoiceRecorderModal({ open, visitId, onClose, onSaved }: 
               <button
                 onClick={recording ? stop : cancel}
                 disabled={uploading}
-                className="text-sm font-medium text-body hover:text-ink disabled:opacity-50 min-h-[44px] px-4"
+                className="text-sm font-medium text-body hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] px-4"
               >
                 {recording ? "Arrêter et enregistrer" : "Annuler"}
               </button>
