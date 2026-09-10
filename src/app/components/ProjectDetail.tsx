@@ -62,6 +62,9 @@ import IssuesTab from "./IssuesTab";
 import PhotoMetadataEditor, { type EditablePhoto } from "./PhotoMetadataEditor";
 import { IconPhoto, IconVisit } from "./ui-kit/RedMarkIcons";
 import EmptyState from "./ui-kit/EmptyState";
+import PunchListModal from "./PunchListModal";
+import { TERMINAL_ISSUE_STATUS } from "../../lib/issueStatus";
+import type { Project } from "../../lib/supabase";
 
 interface Issue {
   id: string;
@@ -290,6 +293,8 @@ export default function ProjectDetail() {
   // "Are the visit filters doing anything?" — the difference between "this
   // project has no visits yet" and "no visit matches what you asked for".
   // Derived rather than tracked so it cannot drift from the inputs.
+  const [showPunchList, setShowPunchList] = useState(false);
+
   const hasVisitFilters = Boolean(
     visitPhaseFilter || visitDateFrom || visitDateTo || visitOpenIssuesOnly,
   );
@@ -324,6 +329,17 @@ export default function ProjectDetail() {
   const [showPhotoFilters, setShowPhotoFilters] = useState(false);
 
   const [issues, setIssues] = useState<Issue[]>([]);
+  // Disciplines present on the project's OUTSTANDING déficiences — the only
+  // ones a "par discipline" punch list could usefully be cut by. Derived
+  // from the issues this tab already holds rather than fetched again.
+  const punchListDisciplines = useMemo(() => {
+    const set = new Set<string>();
+    for (const i of issues) {
+      if (i.status === TERMINAL_ISSUE_STATUS) continue;
+      if (i.discipline) set.add(i.discipline);
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, "fr-CA"));
+  }, [issues]);
 
   // Shared by the Locations tab and the Issues sub-tab's location filter —
   // loaded once, lazily, the first time either is actually visited (not on
@@ -1305,6 +1321,7 @@ export default function ProjectDetail() {
             onRetry={loadIssues}
             onOpenIssue={(issueId) => navigate(`/app/projects/${id}/issues/${issueId}`)}
             resolveLocationLabel={resolveLocationLabel}
+            onGeneratePunchList={project ? () => setShowPunchList(true) : undefined}
           />
         )}
 
@@ -1323,6 +1340,17 @@ export default function ProjectDetail() {
           />
         )}
       </div>
+
+      {project && (
+        <PunchListModal
+          open={showPunchList}
+          onClose={() => setShowPunchList(false)}
+          project={project as Project}
+          // Derived from the issues already loaded for this tab — the modal
+          // needs no fetch of its own.
+          disciplines={punchListDisciplines}
+        />
+      )}
 
       <FloatingActions menu={floatingMenu} />
 

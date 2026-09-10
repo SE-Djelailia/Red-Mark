@@ -1,5 +1,11 @@
 import { useMemo, useState } from "react";
-import { MapPin, Camera, Clock, SlidersHorizontal } from "lucide-react";
+import {
+  Camera,
+  Clock,
+  FileText,
+  MapPin,
+  SlidersHorizontal,
+} from "lucide-react";
 import { PriorityBadge, StatusBadge, PRIORITY_LABEL } from "./ui-kit/Badge";
 import { StatGrid, StatTile } from "./ui-kit/StatTile";
 import { parseLocalDate } from "../../lib/dateUtils";
@@ -61,6 +67,9 @@ interface Props {
   // parameters are contravariant, so a caller whose own Issue type has a
   // richer `photos` shape could not otherwise pass its existing helper.
   resolveLocationLabel: (issue: { locationId?: string | null }) => string | null;
+  /** Opens the punch-list generation options. Omitted when the caller has no
+   *  project to generate for, so the button simply does not render. */
+  onGeneratePunchList?: () => void;
 }
 
 export default function IssuesTab({
@@ -70,6 +79,7 @@ export default function IssuesTab({
   onRetry,
   onOpenIssue,
   resolveLocationLabel,
+  onGeneratePunchList,
 }: Props) {
   // Defaults to the three non-verified states: opening this tab should show
   // outstanding work, not a history of everything ever recorded. Verified
@@ -190,6 +200,16 @@ export default function IssuesTab({
         <StatTile label={ISSUE_STATUS_LABEL.corrige} value={counts.byStatus.corrige} />
         <StatTile label={ISSUE_STATUS_LABEL.verifie} value={counts.byStatus.verifie} />
       </StatGrid>
+
+      {onGeneratePunchList && (
+        <button
+          onClick={onGeneratePunchList}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[4px] border border-ink text-ink text-sm font-medium min-h-11 hover:bg-subtle active:bg-line transition-colors duration-(--duration-base) ease-out"
+        >
+          <FileText size={16} />
+          Générer une liste de déficiences
+        </button>
+      )}
 
       {counts.overdue > 0 && (
         <button

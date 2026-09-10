@@ -1,9 +1,7 @@
 // Generates the "Note de visite de chantier" .docx report from a single site visit's
 // real Supabase data (project, issues, photos), filled into the tagged firm template
 // at public/templates/note-visite-chantier.docx via docxtemplater.
-import PizZip from "pizzip";
-import Docxtemplater from "docxtemplater";
-import ImageModule from "docxtemplater-image-module-free";
+import { renderDocx, triggerDownload } from "./docxEngine";
 import type { Project, SiteVisit, Photo } from "./supabase";
 import { getPhotos, getPhotosSignedUrls } from "./supabaseApi";
 import { getObservationsByVisit, type Observation } from "./observationsApi";
@@ -223,79 +221,6 @@ export function formatVisitTimeRange(
   return start || end || "";
 }
 
-// The template's footers already carry real Word PAGE / NUMPAGES fields, but
-// Word renders the *cached* value stored in the file until something forces a
-// recalculation — so a generated report showed the template's stale numbers
-// (footer2 is saved as "2 / 2") rather than its own pagination. Setting
-// updateFields makes Word recalculate every field on open, which is what
-// actually makes the page numbers correct.
-function forceFieldUpdateOnOpen(zip: PizZip): void {
-  const path = "word/settings.xml";
-  const file = zip.file(path);
-  if (!file) return;
-
-  const xml = file.asText();
-  if (xml.includes("<w:updateFields")) return; // already set — keep idempotent
-
-  const patched = xml.replace(/(<w:settings\b[^>]*>)/, `$1<w:updateFields w:val="true"/>`);
-  if (patched !== xml) zip.file(path, patched);
-}
-
-// The template's placeholders were authored with a yellow highlight so the
-// person tagging the document could find them. docxtemplater preserves run
-// formatting when it substitutes text, so that highlight survived onto the
-// rendered values — most visibly on free-text placeholders, which came out
-// as whole blocks of yellow.
-//
-// The highlights have been stripped from the template file itself; this is
-// a safety net so re-saving the template from Word with highlights on
-// cannot reintroduce the bug. Body only — the footers' highlights are on
-// page-number fields and are left alone.
-function stripBodyHighlights(zip: PizZip): void {
-  const path = "word/document.xml";
-  const file = zip.file(path);
-  if (!file) return;
-
-  const xml = file.asText();
-  const stripped = xml.replace(/<w:highlight\s+w:val="yellow"\s*\/>/g, "");
-  if (stripped !== xml) zip.file(path, stripped);
-}
-
-async function fetchTemplate(): Promise<ArrayBuffer> {
-  const res = await fetch(TEMPLATE_URL);
-  if (!res.ok) {
-    throw new Error(`Could not load report template (${res.status})`);
-  }
-  return res.arrayBuffer();
-}
-
-async function getImage(url: string): Promise<ArrayBuffer> {
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Could not load photo for report: ${url}`);
-  }
-  return res.arrayBuffer();
-}
-
-async function getSize(imgBuffer: ArrayBuffer): Promise<[number, number]> {
-  const bitmap = await createImageBitmap(new Blob([imgBuffer]));
-  const ratio = Math.min(PHOTO_MAX_WIDTH_PX / bitmap.width, PHOTO_MAX_HEIGHT_PX / bitmap.height, 1);
-  const size: [number, number] = [Math.round(bitmap.width * ratio), Math.round(bitmap.height * ratio)];
-  bitmap.close();
-  return size;
-}
-
-function triggerDownload(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
 export async function generateSiteVisitReport(
   project: Project,
   visit: SiteVisit,
@@ -319,8 +244,7 @@ export async function generateSiteVisitReport(
   // don't silently lose their photo section.
   photoSelection?: ReportPhotoSelection,
 ): Promise<void> {
-  const [templateBuffer, ownPhotos, observations, locations] = await Promise.all([
-    fetchTemplate(),
+  const [ownPhotos, observations, locations] = await Promise.all([
     // Only needed for the no-selection fallback; skipped when the caller
     // supplies its own set.
     photoSelection ? Promise.resolve([] as Photo[]) : getPhotos(visit.id),
@@ -391,24 +315,12 @@ export async function generateSiteVisitReport(
     preparedByNameTitle,
   };
 
-  const zip = new PizZip(templateBuffer);
-  // Before rendering: the highlight lives in the placeholder's run
-  // properties, which docxtemplater carries over to the substituted value.
-  stripBodyHighlights(zip);
-  const imageModule = new ImageModule({ centered: false, getImage, getSize });
-  const doc = new Docxtemplater(zip, {
-    paragraphLoop: true,
-    linebreaks: true,
-    modules: [imageModule],
+  const blob = await renderDocx({
+    template: TEMPLATE_URL,
+    data,
+    photoMaxWidthPx: PHOTO_MAX_WIDTH_PX,
+    photoMaxHeightPx: PHOTO_MAX_HEIGHT_PX,
   });
-
-  await doc.renderAsync(data);
-  forceFieldUpdateOnOpen(doc.getZip());
-
-  const blob = doc.getZip().generate({
-    type: "blob",
-    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  }) as Blob;
 
   const fileName = `NoteVisite_${project.name.replace(/\s+/g, "_")}_${extractDateOnly(visit.visit_date)}.docx`;
   triggerDownload(blob, fileName);
