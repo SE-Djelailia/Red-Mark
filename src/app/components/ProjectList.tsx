@@ -281,10 +281,16 @@ export default function ProjectList() {
                 </div>
 
                 <div className="space-y-3 text-sm text-body">
-                  <div className="flex items-start gap-2">
-                    <MapPin size={16} className="mt-0.5 flex-shrink-0" />
-                    <span>{project.address}</span>
-                  </div>
+                  {/* Address is optional — a new-construction project may not
+                      have one yet. Guarded like client_name below, so a blank
+                      address omits the whole line rather than leaving an
+                      orphaned map pin next to empty space. */}
+                  {project.address && (
+                    <div className="flex items-start gap-2">
+                      <MapPin size={16} className="mt-0.5 flex-shrink-0" />
+                      <span>{project.address}</span>
+                    </div>
+                  )}
 
                   {project.client_name && (
                     <div className="flex items-center gap-2">

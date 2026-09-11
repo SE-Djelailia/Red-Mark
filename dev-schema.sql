@@ -141,6 +141,102 @@ END;
 $$;
 
 
+
+-- Stamps observation_photos.project_id FROM THE OBSERVATION, so the composite
+-- FKs below can force the observation and the photo to share a project.
+CREATE OR REPLACE FUNCTION "public"."set_observation_photo_project"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  SELECT o.project_id INTO NEW.project_id
+  FROM public.observations o
+  WHERE o.id = NEW.observation_id;
+
+  IF NEW.project_id IS NULL THEN
+    RAISE EXCEPTION 'Cannot resolve the owning project for observation %', NEW.observation_id;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
+-- Stamps site_visit_phases.project_id FROM THE VISIT, so the composite FKs
+-- below can force the visit and the phase to belong to the same project. A
+-- client-supplied value is overwritten, never trusted.
+CREATE OR REPLACE FUNCTION "public"."set_visit_phase_project"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  SELECT v.project_id INTO NEW.project_id
+  FROM public.site_visits v
+  WHERE v.id = NEW.visit_id;
+
+  IF NEW.project_id IS NULL THEN
+    RAISE EXCEPTION 'Cannot resolve the owning project for visit %', NEW.visit_id;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
+-- Derives phases.company_org_id FROM THE PROJECT'S FIRM (never from the
+-- company the caller named), so the composite FK below can only match when
+-- the company genuinely belongs to the project's firm. This is what makes a
+-- cross-firm phase->company link structurally impossible rather than merely
+-- denied.
+CREATE OR REPLACE FUNCTION "public"."set_phase_company_org"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  IF NEW.company_id IS NULL THEN
+    NEW.company_org_id := NULL;
+  ELSE
+    SELECT p.organization_id INTO NEW.company_org_id
+    FROM public.projects p
+    WHERE p.id = NEW.project_id;
+
+    IF NEW.company_org_id IS NULL THEN
+      RAISE EXCEPTION 'Cannot resolve the owning firm for project %', NEW.project_id;
+    END IF;
+  END IF;
+
+  IF TG_OP = 'INSERT' AND NEW.created_by IS NULL THEN
+    NEW.created_by := auth.uid();
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
+-- Stamps companies.organization_id from the creator's firm and records
+-- created_by. companies is keyed on the firm directly rather than through a
+-- project, so this is the only place the owning firm is derived.
+CREATE OR REPLACE FUNCTION "public"."set_company_organization"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  IF NEW.organization_id IS NULL THEN
+    NEW.organization_id := public.current_org_id();
+  END IF;
+  IF NEW.organization_id IS NULL THEN
+    RAISE EXCEPTION 'Cannot create a company: the current user belongs to no organization';
+  END IF;
+  IF NEW.created_by IS NULL THEN
+    NEW.created_by := auth.uid();
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+
 -- Derives project_members.organization_id FROM THE PROJECT, never from the
 -- caller — so the composite FKs below can make a cross-firm membership row
 -- structurally unrepresentable rather than merely denied.
@@ -694,6 +790,26 @@ SET default_tablespace = '';
 SET default_table_access_method = "heap";
 
 
+CREATE TABLE IF NOT EXISTS "public"."companies" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "contact_name" "text",
+    "address" "text",
+    "phone" "text",
+    "email" "text",
+    "trade" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "companies_name_not_blank" CHECK (("length"("btrim"("name")) > 0))
+);
+
+COMMENT ON TABLE "public"."companies" IS 'Firm-scoped contractor/company directory. Reused across projects and phases. Isolated by organization_id via current_org_id(), NOT via is_project_member().';
+
+COMMENT ON COLUMN "public"."companies"."trade" IS 'Advisory trade label only. The authoritative trade taxonomy is issues.discipline.';
+
+
 CREATE TABLE IF NOT EXISTS "public"."comment_mentions" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "comment_id" "uuid" NOT NULL,
@@ -753,8 +869,12 @@ CREATE TABLE IF NOT EXISTS "public"."issues" (
     "discipline" "text",
     "due_date" "date",
     "assigned_to_name" "text",
-    "status_changed_at" timestamp with time zone
+    "status_changed_at" timestamp with time zone,
+    "phase_id" "uuid"
 );
+
+
+COMMENT ON COLUMN "public"."issues"."phase_id" IS 'Optional contractual grouping for this deficiency, within the same project. Complements (never replaces) issues.discipline, which remains the trade taxonomy. No backfill: a free-text trade does not imply a phase.';
 
 
 CREATE TABLE IF NOT EXISTS "public"."kv_store_9fe75696" (
@@ -852,6 +972,21 @@ COMMENT ON COLUMN "public"."organization_invitations"."invited_role" IS
   'Optional pre-fill for the invitee''s job title (profiles.role). Free text: the UI offers a picklist, but firms invent titles and one that is not on the list must still be storable.';
 
 
+CREATE TABLE IF NOT EXISTS "public"."observation_photos" (
+    "observation_id" "uuid" NOT NULL,
+    "photo_id" "uuid" NOT NULL,
+    "project_id" "uuid" NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+COMMENT ON TABLE "public"."observation_photos" IS 'Cross-reference from a visit observation to the specific photos it cites. Many-to-many: an observation may cite several photos, a photo may be cited by several observations. Scoped to the project, not the visit, because the report screen deliberately allows borrowing photos from other visits.';
+
+COMMENT ON COLUMN "public"."observation_photos"."project_id" IS 'The project both parents share, stamped by trigger from the observation. Exists to support the composite FKs that make a cross-project citation structurally impossible. Never set by the client.';
+
+COMMENT ON COLUMN "public"."observation_photos"."sort_order" IS 'Editorial order in which the observation cites its photos. Not unique; ties broken by created_at.';
+
+
 CREATE TABLE IF NOT EXISTS "public"."observations" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "project_id" "uuid" NOT NULL,
@@ -864,6 +999,28 @@ CREATE TABLE IF NOT EXISTS "public"."observations" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"()
 );
+
+CREATE TABLE IF NOT EXISTS "public"."phases" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "project_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "description" "text",
+    "company_id" "uuid",
+    "company_org_id" "uuid",
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "phases_company_org_paired" CHECK (((("company_id" IS NULL) AND ("company_org_id" IS NULL)) OR (("company_id" IS NOT NULL) AND ("company_org_id" IS NOT NULL)))),
+    CONSTRAINT "phases_name_not_blank" CHECK (("length"("btrim"("name")) > 0))
+);
+
+COMMENT ON TABLE "public"."phases" IS 'Project-level contractual grouping, optionally executed by a company. Complements issues.discipline (trade taxonomy); phase_id is the contractual unit. Firm-scoped through project_id, not through an organization_id column.';
+
+COMMENT ON COLUMN "public"."phases"."company_org_id" IS 'Denormalised companies.organization_id, stamped by trigger. Exists only to support the composite FK that makes a cross-firm phase->company link structurally impossible. Never set by the client.';
+
+COMMENT ON COLUMN "public"."phases"."sort_order" IS 'Display order within the project. Not unique: ties broken by name.';
+
 
 CREATE TABLE IF NOT EXISTS "public"."photos" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
@@ -958,10 +1115,13 @@ CREATE TABLE IF NOT EXISTS "public"."projects" (
     "contractor_address" "text",
     "contractor_phone" "text",
     "contractor_email" "text",
+    "contractor_company_id" "uuid",
     "organization_id" "uuid" NOT NULL
 );
 
 COMMENT ON COLUMN "public"."projects"."organization_id" IS 'Owning firm. NULLABLE during migration only; NOT NULL from Stage 3.';
+
+COMMENT ON COLUMN "public"."projects"."contractor_company_id" IS 'Optional link to the firm-scoped companies directory. Coexists with the contractor_* text columns, which remain the source read by the report generators. No backfill performed in Stage 15.';
 
 
 CREATE TABLE IF NOT EXISTS "public"."report_locations" (
@@ -1034,6 +1194,18 @@ END $$;
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."site_visit_phases" (
+    "visit_id" "uuid" NOT NULL,
+    "phase_id" "uuid" NOT NULL,
+    "project_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+COMMENT ON TABLE "public"."site_visit_phases" IS 'Many-to-many link between site visits and project phases. Supersedes the single free-text site_visits.phase, which is retained read-only until the client migrates.';
+
+COMMENT ON COLUMN "public"."site_visit_phases"."project_id" IS 'Denormalised owning project, stamped by trigger from the visit. Exists only to support the composite FKs that make a cross-project visit/phase link structurally impossible. Never set by the client.';
+
+
 CREATE TABLE IF NOT EXISTS "public"."site_visits" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -1054,6 +1226,30 @@ CREATE TABLE IF NOT EXISTS "public"."site_visits" (
 COMMENT ON COLUMN "public"."site_visits"."attendees" IS 'Array of { name, organization, role, initials } — fills the report''s ASSISTAIENT table.';
 
 
+ALTER TABLE ONLY "public"."companies"
+    ADD CONSTRAINT "companies_pkey" PRIMARY KEY ("id");
+
+
+ALTER TABLE ONLY "public"."site_visit_phases"
+    ADD CONSTRAINT "site_visit_phases_pkey" PRIMARY KEY ("visit_id", "phase_id");
+
+
+ALTER TABLE ONLY "public"."phases"
+    ADD CONSTRAINT "phases_id_project_id_key" UNIQUE ("id", "project_id");
+
+
+ALTER TABLE ONLY "public"."site_visits"
+    ADD CONSTRAINT "site_visits_id_project_id_key" UNIQUE ("id", "project_id");
+
+
+ALTER TABLE ONLY "public"."phases"
+    ADD CONSTRAINT "phases_pkey" PRIMARY KEY ("id");
+
+
+ALTER TABLE ONLY "public"."companies"
+    ADD CONSTRAINT "companies_id_organization_id_key" UNIQUE ("id", "organization_id");
+
+
 ALTER TABLE ONLY "public"."comment_mentions"
     ADD CONSTRAINT "comment_mentions_pkey" PRIMARY KEY ("id");
 
@@ -1072,6 +1268,13 @@ ALTER TABLE ONLY "public"."comments"
 ALTER TABLE ONLY "public"."comments"
     ADD CONSTRAINT "comments_exactly_one_target_check" CHECK (("num_nonnulls"("photo_id", "issue_id", "visit_id") = 1));
 
+
+
+-- Composite so an issue can only reference a phase of its OWN project.
+-- SET NULL is scoped to phase_id alone: the unqualified form would also null
+-- project_id, which is NOT NULL, aborting the delete instead of unlinking.
+ALTER TABLE ONLY "public"."issues"
+    ADD CONSTRAINT "issues_phase_project_fkey" FOREIGN KEY ("phase_id", "project_id") REFERENCES "public"."phases"("id", "project_id") ON UPDATE CASCADE ON DELETE SET NULL ("phase_id");
 
 
 ALTER TABLE ONLY "public"."issues"
@@ -1163,6 +1366,18 @@ ALTER TABLE ONLY "public"."organization_invitations"
 ALTER TABLE ONLY "public"."organization_invitations"
     ADD CONSTRAINT "organization_invitations_token_key" UNIQUE ("token");
 
+
+
+ALTER TABLE ONLY "public"."observation_photos"
+    ADD CONSTRAINT "observation_photos_pkey" PRIMARY KEY ("observation_id", "photo_id");
+
+
+ALTER TABLE ONLY "public"."observations"
+    ADD CONSTRAINT "observations_id_project_id_key" UNIQUE ("id", "project_id");
+
+
+ALTER TABLE ONLY "public"."photos"
+    ADD CONSTRAINT "photos_id_project_id_key" UNIQUE ("id", "project_id");
 
 
 ALTER TABLE ONLY "public"."observations"
@@ -1279,6 +1494,27 @@ CREATE INDEX IF NOT EXISTS "report_visits_visit_idx" ON "public"."report_visits"
 CREATE INDEX IF NOT EXISTS "reports_project_seq_idx" ON "public"."reports" USING "btree" ("project_id", "report_seq" DESC);
 
 
+-- One company per name per firm, case- and whitespace-insensitive.
+CREATE UNIQUE INDEX IF NOT EXISTS "companies_org_name_key" ON "public"."companies" USING "btree" ("organization_id", "lower"("btrim"("name")));
+
+CREATE INDEX IF NOT EXISTS "idx_companies_org" ON "public"."companies" USING "btree" ("organization_id");
+
+CREATE INDEX IF NOT EXISTS "idx_projects_contractor_company" ON "public"."projects" USING "btree" ("contractor_company_id") WHERE ("contractor_company_id" IS NOT NULL);
+
+
+CREATE INDEX IF NOT EXISTS "idx_site_visit_phases_phase" ON "public"."site_visit_phases" USING "btree" ("phase_id");
+
+CREATE INDEX IF NOT EXISTS "idx_site_visit_phases_project" ON "public"."site_visit_phases" USING "btree" ("project_id");
+
+
+-- One phase name per project, case- and whitespace-insensitive.
+CREATE UNIQUE INDEX IF NOT EXISTS "phases_project_name_key" ON "public"."phases" USING "btree" ("project_id", "lower"("btrim"("name")));
+
+CREATE INDEX IF NOT EXISTS "idx_phases_project" ON "public"."phases" USING "btree" ("project_id", "sort_order");
+
+CREATE INDEX IF NOT EXISTS "idx_phases_company" ON "public"."phases" USING "btree" ("company_id") WHERE ("company_id" IS NOT NULL);
+
+
 CREATE INDEX "idx_comment_mentions_comment_id" ON "public"."comment_mentions" USING "btree" ("comment_id");
 
 
@@ -1305,6 +1541,11 @@ CREATE INDEX "idx_comments_user_id" ON "public"."comments" USING "btree" ("user_
 
 CREATE INDEX "idx_comments_visit_id" ON "public"."comments" USING "btree" ("visit_id");
 
+
+
+CREATE INDEX IF NOT EXISTS "idx_issues_phase" ON "public"."issues" USING "btree" ("phase_id") WHERE ("phase_id" IS NOT NULL);
+
+CREATE INDEX IF NOT EXISTS "idx_issues_project_phase" ON "public"."issues" USING "btree" ("project_id", "phase_id") WHERE ("phase_id" IS NOT NULL);
 
 
 CREATE INDEX "idx_issues_location_id" ON "public"."issues" USING "btree" ("location_id");
@@ -1368,6 +1609,14 @@ CREATE INDEX "idx_notifications_user_id" ON "public"."notifications" USING "btre
 
 
 CREATE INDEX "idx_observations_location_id" ON "public"."observations" USING "btree" ("location_id");
+
+CREATE INDEX IF NOT EXISTS "idx_observation_photos_photo" ON "public"."observation_photos" USING "btree" ("photo_id");
+
+CREATE INDEX IF NOT EXISTS "idx_observation_photos_project" ON "public"."observation_photos" USING "btree" ("project_id");
+
+-- The read the report performs: one observation's photos, in citation order.
+CREATE INDEX IF NOT EXISTS "idx_observation_photos_obs_order" ON "public"."observation_photos" USING "btree" ("observation_id", "sort_order");
+
 
 CREATE INDEX "idx_observations_project_id" ON "public"."observations" USING "btree" ("project_id");
 
@@ -1493,6 +1742,22 @@ CREATE INDEX "kv_store_9fe75696_key_idx" ON "public"."kv_store_9fe75696" USING "
 
 
 
+CREATE OR REPLACE TRIGGER "trg_observation_photos_set_project" BEFORE INSERT OR UPDATE OF "observation_id", "photo_id" ON "public"."observation_photos" FOR EACH ROW EXECUTE FUNCTION "public"."set_observation_photo_project"();
+
+
+CREATE OR REPLACE TRIGGER "trg_site_visit_phases_set_project" BEFORE INSERT OR UPDATE OF "visit_id", "phase_id" ON "public"."site_visit_phases" FOR EACH ROW EXECUTE FUNCTION "public"."set_visit_phase_project"();
+
+
+CREATE OR REPLACE TRIGGER "set_updated_at_phases" BEFORE UPDATE ON "public"."phases" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
+
+CREATE OR REPLACE TRIGGER "trg_phases_set_company_org" BEFORE INSERT OR UPDATE OF "company_id", "project_id" ON "public"."phases" FOR EACH ROW EXECUTE FUNCTION "public"."set_phase_company_org"();
+
+
+CREATE OR REPLACE TRIGGER "set_updated_at_companies" BEFORE UPDATE ON "public"."companies" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
+
+CREATE OR REPLACE TRIGGER "trg_companies_set_organization" BEFORE INSERT ON "public"."companies" FOR EACH ROW EXECUTE FUNCTION "public"."set_company_organization"();
+
+
 CREATE OR REPLACE TRIGGER "set_updated_at_issues" BEFORE UPDATE ON "public"."issues" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
 
 CREATE OR REPLACE TRIGGER "trg_issues_status_stamp" BEFORE INSERT OR UPDATE ON "public"."issues" FOR EACH ROW EXECUTE FUNCTION "public"."issues_status_stamp"();
@@ -1560,6 +1825,45 @@ ALTER TABLE ONLY "public"."reports"
 
 ALTER TABLE ONLY "public"."reports"
     ADD CONSTRAINT "reports_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
+
+
+ALTER TABLE ONLY "public"."site_visit_phases"
+    ADD CONSTRAINT "site_visit_phases_visit_id_fkey" FOREIGN KEY ("visit_id") REFERENCES "public"."site_visits"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."site_visit_phases"
+    ADD CONSTRAINT "site_visit_phases_phase_id_fkey" FOREIGN KEY ("phase_id") REFERENCES "public"."phases"("id") ON DELETE CASCADE;
+
+-- The cross-project guard: both ends must agree with the stamped project_id.
+ALTER TABLE ONLY "public"."site_visit_phases"
+    ADD CONSTRAINT "site_visit_phases_visit_project_fkey" FOREIGN KEY ("visit_id", "project_id") REFERENCES "public"."site_visits"("id", "project_id") ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."site_visit_phases"
+    ADD CONSTRAINT "site_visit_phases_phase_project_fkey" FOREIGN KEY ("phase_id", "project_id") REFERENCES "public"."phases"("id", "project_id") ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+ALTER TABLE ONLY "public"."phases"
+    ADD CONSTRAINT "phases_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."phases"
+    ADD CONSTRAINT "phases_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id") ON DELETE SET NULL;
+
+-- The cross-firm guard: (company_id, company_org_id) must be a real
+-- (id, organization_id) pair on companies.
+ALTER TABLE ONLY "public"."phases"
+    ADD CONSTRAINT "phases_company_org_fkey" FOREIGN KEY ("company_id", "company_org_id") REFERENCES "public"."companies"("id", "organization_id") ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."phases"
+    ADD CONSTRAINT "phases_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+ALTER TABLE ONLY "public"."companies"
+    ADD CONSTRAINT "companies_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."companies"
+    ADD CONSTRAINT "companies_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."projects"
+    ADD CONSTRAINT "projects_contractor_company_id_fkey" FOREIGN KEY ("contractor_company_id") REFERENCES "public"."companies"("id") ON DELETE SET NULL;
 
 
 ALTER TABLE ONLY "public"."comment_mentions"
@@ -1662,6 +1966,20 @@ ALTER TABLE ONLY "public"."locations"
 ALTER TABLE ONLY "public"."notifications"
     ADD CONSTRAINT "notifications_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+
+
+ALTER TABLE ONLY "public"."observation_photos"
+    ADD CONSTRAINT "observation_photos_observation_id_fkey" FOREIGN KEY ("observation_id") REFERENCES "public"."observations"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."observation_photos"
+    ADD CONSTRAINT "observation_photos_photo_id_fkey" FOREIGN KEY ("photo_id") REFERENCES "public"."photos"("id") ON DELETE CASCADE;
+
+-- The cross-project guard: both ends must agree with the stamped project_id.
+ALTER TABLE ONLY "public"."observation_photos"
+    ADD CONSTRAINT "observation_photos_observation_project_fkey" FOREIGN KEY ("observation_id", "project_id") REFERENCES "public"."observations"("id", "project_id") ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."observation_photos"
+    ADD CONSTRAINT "observation_photos_photo_project_fkey" FOREIGN KEY ("photo_id", "project_id") REFERENCES "public"."photos"("id", "project_id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 ALTER TABLE ONLY "public"."observations"
@@ -1833,6 +2151,55 @@ ALTER TABLE ONLY "public"."site_visits"
 
 
 
+
+
+-- Read mirrors "Members can view observations". Writes mirror the OBSERVATIONS
+-- policies (editor-only), not the photos ones: citing a photo edits the note.
+-- Writes check BOTH ends, so an editor cannot cite a photo they cannot see.
+CREATE POLICY "Members can view observation_photos" ON "public"."observation_photos" FOR SELECT USING ((EXISTS ( SELECT 1 FROM "public"."observations" "o" WHERE (("o"."id" = "observation_photos"."observation_id") AND "public"."is_project_member"("o"."project_id")))));
+
+CREATE POLICY "Editors can create observation_photos" ON "public"."observation_photos" FOR INSERT WITH CHECK (((EXISTS ( SELECT 1 FROM "public"."observations" "o" WHERE (("o"."id" = "observation_photos"."observation_id") AND "public"."has_project_role"("o"."project_id", ARRAY['owner'::"text", 'editor'::"text"])))) AND (EXISTS ( SELECT 1 FROM "public"."photos" "p" WHERE (("p"."id" = "observation_photos"."photo_id") AND "public"."is_project_member"("p"."project_id"))))));
+
+CREATE POLICY "Editors can update observation_photos" ON "public"."observation_photos" FOR UPDATE USING ((EXISTS ( SELECT 1 FROM "public"."observations" "o" WHERE (("o"."id" = "observation_photos"."observation_id") AND "public"."has_project_role"("o"."project_id", ARRAY['owner'::"text", 'editor'::"text"]))))) WITH CHECK (((EXISTS ( SELECT 1 FROM "public"."observations" "o" WHERE (("o"."id" = "observation_photos"."observation_id") AND "public"."has_project_role"("o"."project_id", ARRAY['owner'::"text", 'editor'::"text"])))) AND (EXISTS ( SELECT 1 FROM "public"."photos" "p" WHERE (("p"."id" = "observation_photos"."photo_id") AND "public"."is_project_member"("p"."project_id"))))));
+
+CREATE POLICY "Editors can delete observation_photos" ON "public"."observation_photos" FOR DELETE USING ((EXISTS ( SELECT 1 FROM "public"."observations" "o" WHERE (("o"."id" = "observation_photos"."observation_id") AND "public"."has_project_role"("o"."project_id", ARRAY['owner'::"text", 'editor'::"text"])))));
+
+
+-- Reaches the project through the site_visits parent, following the
+-- report_visits precedent. Writes check BOTH ends: the visit proves the caller
+-- may record against it, the phase proves they may see what they are attaching.
+CREATE POLICY "Members can view site_visit_phases" ON "public"."site_visit_phases" FOR SELECT USING ((EXISTS ( SELECT 1 FROM "public"."site_visits" "v" WHERE (("v"."id" = "site_visit_phases"."visit_id") AND "public"."is_project_member"("v"."project_id")))));
+
+CREATE POLICY "Members can create site_visit_phases" ON "public"."site_visit_phases" FOR INSERT WITH CHECK (((EXISTS ( SELECT 1 FROM "public"."site_visits" "v" WHERE (("v"."id" = "site_visit_phases"."visit_id") AND "public"."is_project_member"("v"."project_id")))) AND (EXISTS ( SELECT 1 FROM "public"."phases" "p" WHERE (("p"."id" = "site_visit_phases"."phase_id") AND "public"."is_project_member"("p"."project_id"))))));
+
+CREATE POLICY "Members can update site_visit_phases" ON "public"."site_visit_phases" FOR UPDATE USING ((EXISTS ( SELECT 1 FROM "public"."site_visits" "v" WHERE (("v"."id" = "site_visit_phases"."visit_id") AND "public"."is_project_member"("v"."project_id"))))) WITH CHECK (((EXISTS ( SELECT 1 FROM "public"."site_visits" "v" WHERE (("v"."id" = "site_visit_phases"."visit_id") AND "public"."is_project_member"("v"."project_id")))) AND (EXISTS ( SELECT 1 FROM "public"."phases" "p" WHERE (("p"."id" = "site_visit_phases"."phase_id") AND "public"."is_project_member"("p"."project_id"))))));
+
+CREATE POLICY "Members can delete site_visit_phases" ON "public"."site_visit_phases" FOR DELETE USING ((EXISTS ( SELECT 1 FROM "public"."site_visits" "v" WHERE (("v"."id" = "site_visit_phases"."visit_id") AND "public"."is_project_member"("v"."project_id")))));
+
+
+-- Read: any project member. Write: owners and editors, matching the
+-- has_project_role() pattern used by observations and reports.
+CREATE POLICY "Members can view phases" ON "public"."phases" FOR SELECT USING ("public"."is_project_member"("project_id"));
+
+CREATE POLICY "Editors can create phases" ON "public"."phases" FOR INSERT WITH CHECK ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
+
+CREATE POLICY "Editors can update phases" ON "public"."phases" FOR UPDATE USING ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"])) WITH CHECK ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
+
+CREATE POLICY "Editors can delete phases" ON "public"."phases" FOR DELETE USING ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
+
+
+-- companies is the one table isolated by current_org_id() directly rather
+-- than through is_project_member(): a contractor directory is firm-wide
+-- reference data. Every writing command carries WITH CHECK, since an RLS
+-- denial on UPDATE is a silent 0-row no-op and USING alone would permit
+-- re-homing a row into another firm.
+CREATE POLICY "Firm members can view companies" ON "public"."companies" FOR SELECT USING (("organization_id" = "public"."current_org_id"()));
+
+CREATE POLICY "Firm members can create companies" ON "public"."companies" FOR INSERT WITH CHECK (("organization_id" = "public"."current_org_id"()));
+
+CREATE POLICY "Firm members can update companies" ON "public"."companies" FOR UPDATE USING (("organization_id" = "public"."current_org_id"())) WITH CHECK (("organization_id" = "public"."current_org_id"()));
+
+CREATE POLICY "Firm admins can delete companies" ON "public"."companies" FOR DELETE USING ("public"."is_org_admin"("organization_id"));
 
 
 CREATE POLICY "Editors can delete reports" ON "public"."reports" FOR DELETE USING ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
@@ -2151,6 +2518,14 @@ CREATE POLICY "Users can view their own profile" ON "public"."profiles" FOR SELE
 
 
 
+ALTER TABLE "public"."observation_photos" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."site_visit_phases" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."phases" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."companies" ENABLE ROW LEVEL SECURITY;
+
 ALTER TABLE "public"."report_locations" ENABLE ROW LEVEL SECURITY;
 
 
@@ -2172,6 +2547,14 @@ REVOKE ALL ON TABLE "public"."issue_status_events" FROM PUBLIC;
 REVOKE ALL ON TABLE "public"."issue_status_events" FROM "anon";
 REVOKE ALL ON TABLE "public"."issue_status_events" FROM "authenticated";
 GRANT SELECT ON TABLE "public"."issue_status_events" TO "authenticated";
+GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE "public"."observation_photos" TO "authenticated";
+
+GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE "public"."site_visit_phases" TO "authenticated";
+
+GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE "public"."phases" TO "authenticated";
+
+GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE "public"."companies" TO "authenticated";
+
 GRANT ALL ON TABLE "public"."issue_status_events" TO "service_role";
 
 

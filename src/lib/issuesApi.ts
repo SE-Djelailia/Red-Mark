@@ -14,6 +14,12 @@ import {
   normalizeIssueStatus,
   type IssueStatus,
 } from "./issueStatus";
+import {
+  type IssuePriority,
+  toIssuePriority,
+  PRIORITY_STORED_VALUE,
+  DEFAULT_ISSUE_PRIORITY,
+} from "./issuePriority";
 
 export interface Issue {
   id: string;
@@ -21,7 +27,7 @@ export interface Issue {
   projectId: string;
   title: string;
   description: string;
-  priority: "low" | "medium" | "high" | "critical";
+  priority: IssuePriority;
   status: IssueStatus;
   // When the status last moved, maintained by the DB trigger (Stage 13).
   // Distinct from updated_at, which any edit bumps — this only advances on
@@ -138,7 +144,11 @@ function rowToIssueBase(row: any): Omit<Issue, "photos"> {
     projectId: row.project_id,
     title: row.title,
     description: row.description || "",
-    priority: row.priority,
+    // Collapsed onto the two-level scheme, never passed through: the column
+    // still holds low/medium/high/critical and unmapped values would break
+    // every Record<IssuePriority, …> lookup. See lib/issuePriority.ts for
+    // why the CHECK was deliberately left alone.
+    priority: toIssuePriority(row.priority),
     // Coerced rather than trusted: a row can reach here from a cached
     // response or an offline queue entry written under the old vocabulary,
     // and an unmapped value would break every Record<IssueStatus, …> lookup.
@@ -449,7 +459,9 @@ export async function createIssue(
         visit_id: issueData.visitId || null,
         title: issueData.title,
         description: issueData.description,
-        priority: issueData.priority,
+        // Mapped back to a value issues_priority_check accepts. Sending
+        // 'urgent' or 'normal' directly would violate the constraint.
+        priority: PRIORITY_STORED_VALUE[issueData.priority ?? DEFAULT_ISSUE_PRIORITY],
         // Normalized, never passed through. The DB CHECK now accepts only
         // the four lifecycle states, so a stale 'open' from any caller —
         // including a queued offline capture written before this release —
@@ -498,7 +510,8 @@ export async function updateIssue(
 
   if (updates.title !== undefined) payload.title = updates.title;
   if (updates.description !== undefined) payload.description = updates.description;
-  if (updates.priority !== undefined) payload.priority = updates.priority;
+  if (updates.priority !== undefined)
+    payload.priority = PRIORITY_STORED_VALUE[updates.priority];
   if (updates.status !== undefined) {
     // resolved_at and status_changed_at are NO LONGER written here: the
     // Stage 13 trigger maintains both, and it fires on a bare UPDATE too.

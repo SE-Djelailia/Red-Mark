@@ -61,7 +61,7 @@ export default function ProjectForm({ project, onCancel, onSaved }: Props) {
     e.preventDefault();
     if (isSaving) return;
 
-    if (!formData.name || !formData.address || !user) {
+    if (!formData.name || !user) {
       toast.error("Veuillez remplir les champs requis");
       return;
     }
@@ -70,7 +70,7 @@ export default function ProjectForm({ project, onCancel, onSaved }: Props) {
     // form but dropped on the way to the database.
     const fields = {
       name: formData.name,
-      address: formData.address,
+      address: formData.address || null,
       client_name: formData.client,
       // `|| null`, not `|| undefined`: these columns are nullable, and an
       // undefined value is DROPPED from the JSON payload rather than sent.
@@ -142,14 +142,13 @@ export default function ProjectForm({ project, onCancel, onSaved }: Props) {
             </div>
 
             <div>
-              <label className={labelClassName}>Adresse *</label>
+              <label className={labelClassName}>Adresse</label>
               <input
                 type="text"
                 value={formData.address}
                 onChange={(e) => set("address", e.target.value)}
                 className={inputClassName}
                 placeholder="123 Rue Saint-Catherine, Montréal"
-                required
               />
             </div>
 

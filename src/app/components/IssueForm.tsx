@@ -15,7 +15,8 @@ import {
   ISSUE_STATUS_OPTIONS,
   TERMINAL_ISSUE_STATUS,
 } from "../../lib/issueStatus";
-import { DISCIPLINES } from "../../lib/disciplines";
+import { DISCIPLINES, DEFAULT_DISCIPLINE } from "../../lib/disciplines";
+import { DEFAULT_ISSUE_PRIORITY } from "../../lib/issuePriority";
 import { getLocation, type Location } from "../../lib/locationsApi";
 import { getProjectTeammates, type Teammate } from "../../lib/commentsApi";
 import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
@@ -63,13 +64,17 @@ export default function IssueForm({
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState<Issue["priority"]>("medium");
+  const [priority, setPriority] = useState<Issue["priority"]>(DEFAULT_ISSUE_PRIORITY);
   const [status, setStatus] = useState<Issue["status"]>(DEFAULT_ISSUE_STATUS);
   // Explanation attached to a lifecycle move, carried into the history
   // timeline by the RPC. Create mode has nothing to explain — the issue
   // starts at "Signalé" and the description IS the explanation.
   const [statusNote, setStatusNote] = useState("");
-  const [discipline, setDiscipline] = useState("");
+  // Architecture is the common case, so it is pre-selected and creating a
+  // déficience is one tap fewer. The edit path below deliberately does NOT
+  // apply this default: an existing issue saved with no discipline keeps
+  // "Non spécifiée" rather than being silently relabelled on open.
+  const [discipline, setDiscipline] = useState<string>(DEFAULT_DISCIPLINE);
   const [dueDate, setDueDate] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -108,10 +113,12 @@ export default function IssueForm({
     if (!issue) {
       setTitle("");
       setDescription("");
-      setPriority("medium");
+      setPriority(DEFAULT_ISSUE_PRIORITY);
       setStatus(DEFAULT_ISSUE_STATUS);
       setStatusNote("");
-      setDiscipline("");
+      // Back to the default, not blank: otherwise the pre-selection only
+      // applies the first time the form opens.
+      setDiscipline(DEFAULT_DISCIPLINE);
       setDueDate("");
       setTags([]);
       setAssigneeMode("none");

@@ -32,3 +32,14 @@ export function disciplineOptions(present: (string | null | undefined)[]): strin
   }
   return [...DISCIPLINES, ...[...extra].sort((a, b) => a.localeCompare(b, "fr"))];
 }
+
+/**
+ * Pre-selected discipline for a NEW déficience. Architecture is the
+ * overwhelmingly common case on these projects, so defaulting to it makes the
+ * usual path one tap shorter while leaving every other discipline one select
+ * away.
+ *
+ * Deliberately NOT applied when editing an existing issue: a row saved with no
+ * discipline must keep "Non spécifiée" rather than be silently relabelled.
+ */
+export const DEFAULT_DISCIPLINE: Discipline = "Architecture";

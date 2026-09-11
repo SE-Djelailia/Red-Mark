@@ -64,13 +64,14 @@ import { IconPhoto, IconVisit } from "./ui-kit/RedMarkIcons";
 import EmptyState from "./ui-kit/EmptyState";
 import PunchListModal from "./PunchListModal";
 import { TERMINAL_ISSUE_STATUS } from "../../lib/issueStatus";
+import type { IssuePriority } from "../../lib/issuePriority";
 import type { Project } from "../../lib/supabase";
 
 interface Issue {
   id: string;
   title: string;
   description: string;
-  priority: "low" | "medium" | "high" | "critical";
+  priority: IssuePriority;
   status: IssueStatus;
   statusChangedAt?: string | null;
   discipline?: string;

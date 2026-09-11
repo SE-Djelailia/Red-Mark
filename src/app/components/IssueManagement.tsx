@@ -5,7 +5,7 @@ import { getAllUserIssues, type Issue } from "../../lib/issuesApi";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/useAuth";
 import { parseLocalDate } from "../../lib/dateUtils";
-import { PriorityBadge, StatusBadge, PRIORITY_LABEL, STATUS_LABEL } from "./ui-kit/Badge";
+import { PriorityBadge, StatusBadge, PRIORITY_OPTIONS, STATUS_LABEL } from "./ui-kit/Badge";
 import { StatGrid, StatTile } from "./ui-kit/StatTile";
 import { inputClassName } from "./ui-kit/Input";
 import { usePageHeader } from "../../contexts/PageHeaderContext";
@@ -127,10 +127,11 @@ export default function IssueManagement() {
               className="h-10 px-3 bg-subtle border border-line-strong rounded-[4px] text-sm text-ink focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/10"
             >
               <option value="all">Toutes les priorités</option>
-              <option value="critical">{PRIORITY_LABEL.critical}</option>
-              <option value="high">{PRIORITY_LABEL.high}</option>
-              <option value="medium">{PRIORITY_LABEL.medium}</option>
-              <option value="low">{PRIORITY_LABEL.low}</option>
+              {PRIORITY_OPTIONS.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>

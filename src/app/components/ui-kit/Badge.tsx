@@ -11,6 +11,11 @@
 // amber → grey → white) rather than four competing hues.
 import type { Issue } from "../../../lib/issuesApi";
 import { ISSUE_STATUS_LABEL as STATUS_LABEL } from "../../../lib/issueStatus";
+import {
+  ISSUE_PRIORITIES,
+  PRIORITY_LABEL,
+  PRIORITY_RANK,
+} from "../../../lib/issuePriority";
 import { StatusGlyph } from "./RedMarkIcons";
 
 type Priority = Issue["priority"];
@@ -24,48 +29,36 @@ type Status = Issue["status"];
 const BASE =
   "inline-flex items-center gap-1.5 h-5 px-2 rounded-[2px] border text-[11px] font-semibold uppercase tracking-[0.08em] whitespace-nowrap";
 
-// Only "Critique" is allowed near the red, and even then as tinted ground
-// with red TEXT — never a red fill. A filled red priority badge would
-// compete with the status badge and with the screen's primary action, and
-// three reds in a row is exactly the dilution the system forbids.
+// Two levels only (see lib/issuePriority.ts). "Urgent" is allowed near the
+// red, and even then as tinted ground with red TEXT — never a red fill. A
+// filled red priority badge would compete with the status badge and with the
+// screen's primary action, and three reds in a row is exactly the dilution
+// the system forbids. "Normal" is deliberately neutral, so urgency reads as
+// presence-or-absence of colour rather than as a gradient.
 const PRIORITY_STYLE: Record<Priority, string> = {
-  critical: "bg-brand-50 border-brand-100 text-brand-strong",
-  high: "bg-subtle border-line-strong text-warn",
-  medium: "bg-surface border-line-strong text-body",
-  low: "bg-surface border-line text-muted",
-};
-
-const PRIORITY_LABEL: Record<Priority, string> = {
-  critical: "Critique",
-  high: "Élevé",
-  medium: "Moyen",
-  low: "Faible",
+  urgent: "bg-brand-50 border-brand-100 text-brand-strong",
+  normal: "bg-surface border-line-strong text-body",
 };
 
 // Dot colours for priority pickers, keyed to the badge palette above so a
 // form's swatch matches the badge the issue will actually render with.
 const PRIORITY_DOT: Record<Priority, string> = {
-  critical: "bg-open",
-  high: "bg-warn",
-  medium: "bg-line-strong",
-  low: "bg-line",
+  urgent: "bg-open",
+  normal: "bg-line-strong",
 };
 
-// Ordered options for the priority pickers in IssueForm / LocationPinPanel.
+// Ordered options for the priority pickers in IssueForm / LocationPinPanel
+// and for the priority filters in IssuesTab / IssueManagement.
 //
-// Both files previously hand-wrote this list and had drifted: each omitted
-// "critical" entirely (so the most urgent priority could be filtered and
-// displayed but never SET), and IssueForm carried `bg-subtle0`/`bg-canvas0`
-// — non-existent classes left by a find-replace during the design refresh,
-// which rendered the dots invisible.
+// Every one of those previously hand-wrote its own list and they had drifted.
+// Driving all four from this single export is what keeps a picker from
+// offering a level the filters cannot match.
 //
-// The Record<Priority, number> forces exhaustiveness: adding a priority to
-// the union without ranking it here is a compile error.
-const PRIORITY_RANK: Record<Priority, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-
-export const PRIORITY_OPTIONS: { value: Priority; label: string; dot: string }[] = (
-  Object.keys(PRIORITY_RANK) as Priority[]
-)
+// Ordered urgent-first, from the canonical rank so the picker can never
+// drift from the sort order used by the lists and the punch list.
+export const PRIORITY_OPTIONS: { value: Priority; label: string; dot: string }[] = [
+  ...ISSUE_PRIORITIES,
+]
   .sort((a, b) => PRIORITY_RANK[a] - PRIORITY_RANK[b])
   .map((value) => ({ value, label: PRIORITY_LABEL[value], dot: PRIORITY_DOT[value] }));
 
@@ -102,7 +95,7 @@ function Dot({ className }: { className: string }) {
 export function PriorityBadge({ priority }: { priority: Priority }) {
   return (
     <span className={`${BASE} ${PRIORITY_STYLE[priority]}`}>
-      {priority === "critical" && <Dot className="bg-brand-600" />}
+      {priority === "urgent" && <Dot className="bg-brand-600" />}
       {PRIORITY_LABEL[priority]}
     </span>
   );

@@ -9,12 +9,13 @@ import { createIssue, updateIssue, getIssuesByLocation, type Issue } from "../..
 import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
 import { STATUS_LABEL, PRIORITY_OPTIONS } from "./ui-kit/Badge";
+import { DEFAULT_ISSUE_PRIORITY } from "../../lib/issuePriority";
 import { DEFAULT_ISSUE_STATUS } from "../../lib/issueStatus";
 import { IconLocation } from "./ui-kit/RedMarkIcons";
 
-// Same 3-choice priority set as IssueForm (the canonical spec deliberately
-// excludes "critical") — this lite variant must not be able to create data
-// the canonical form couldn't also produce.
+// Same priority set as IssueForm, driven by the shared PRIORITY_OPTIONS —
+// this lite variant must not be able to create data the canonical form
+// couldn't also produce.
 interface Props {
   open: boolean;
   projectId: string;
@@ -44,7 +45,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState<Issue["priority"]>("medium");
+  const [priority, setPriority] = useState<Issue["priority"]>(DEFAULT_ISSUE_PRIORITY);
   const [photos, setPhotos] = useState<File[]>([]);
   const [creating, setCreating] = useState(false);
 
@@ -65,7 +66,7 @@ export default function LocationPinPanel({ open, projectId, visitId, location, o
     setShowCreateForm(false);
     setTitle("");
     setDescription("");
-    setPriority("medium");
+    setPriority(DEFAULT_ISSUE_PRIORITY);
     setPhotos([]);
     loadIssues(location.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps

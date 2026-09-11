@@ -8,6 +8,7 @@
 import { supabase } from "./supabase";
 import type { Photo } from "./supabase";
 import { getIssuesByProject, type Issue } from "./issuesApi";
+import { PRIORITY_LABEL, PRIORITY_RANK } from "./issuePriority";
 import { getLocations, type Location } from "./locationsApi";
 import { getPhotosSignedUrls } from "./supabaseApi";
 import {
@@ -74,21 +75,14 @@ export interface PunchListDocument {
   counts: { total: number; outstanding: number; verified: number };
 }
 
-const PRIORITY_LABEL: Record<Issue["priority"], string> = {
-  critical: "Critique",
-  high: "Élevé",
-  medium: "Moyen",
-  low: "Faible",
-};
-
-/** Sort: overdue first, then priority, then oldest — the order a site walk
- *  would actually take them in. */
-const PRIORITY_RANK: Record<Issue["priority"], number> = {
-  critical: 0,
-  high: 1,
-  medium: 2,
-  low: 3,
-};
+// Labels and rank come from the canonical two-level module, so the text
+// printed into the .docx matches what the screens show. Rows stored under the
+// old four-value vocabulary are already collapsed by issuesApi on read, so a
+// legacy 'high' prints "Urgent" rather than a stale "Élevé".
+//
+// Sort: overdue first, then priority, then oldest — the order a site walk
+// would actually take them in. The rank now has two buckets rather than four,
+// so within a bucket the secondary sort does the ordering work.
 
 /**
  * Photos attached to a set of issues, via photos.issue_id.

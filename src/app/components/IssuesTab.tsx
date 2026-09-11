@@ -6,7 +6,8 @@ import {
   MapPin,
   SlidersHorizontal,
 } from "lucide-react";
-import { PriorityBadge, StatusBadge, PRIORITY_LABEL } from "./ui-kit/Badge";
+import { PriorityBadge, StatusBadge, PRIORITY_OPTIONS } from "./ui-kit/Badge";
+import { type IssuePriority, PRIORITY_RANK } from "../../lib/issuePriority";
 import { StatGrid, StatTile } from "./ui-kit/StatTile";
 import { parseLocalDate } from "../../lib/dateUtils";
 import { disciplineOptions } from "../../lib/disciplines";
@@ -31,7 +32,7 @@ import {
 export interface IssueRow {
   id: string;
   title: string;
-  priority: "low" | "medium" | "high" | "critical";
+  priority: IssuePriority;
   status: IssueStatus;
   discipline?: string;
   dueDate?: string | null;
@@ -50,12 +51,7 @@ const SORT_LABEL: Record<SortKey, string> = {
   status: "État",
 };
 
-const PRIORITY_RANK: Record<IssueRow["priority"], number> = {
-  critical: 0,
-  high: 1,
-  medium: 2,
-  low: 3,
-};
+// Rank comes from the canonical two-level module; see lib/issuePriority.ts.
 
 interface Props {
   issues: IssueRow[];
@@ -321,10 +317,11 @@ export default function IssuesTab({
               aria-label="Priorité"
             >
               <option value="">Toutes les priorités</option>
-              <option value="critical">{PRIORITY_LABEL.critical}</option>
-              <option value="high">{PRIORITY_LABEL.high}</option>
-              <option value="medium">{PRIORITY_LABEL.medium}</option>
-              <option value="low">{PRIORITY_LABEL.low}</option>
+              {PRIORITY_OPTIONS.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
             </select>
           </div>
         )}
