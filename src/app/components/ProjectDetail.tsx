@@ -59,7 +59,7 @@ import { getLocations, getLevels, type Location, type Level } from "../../lib/lo
 import { PLANS_ENABLED } from "../../lib/featureFlags";
 import type { IssueStatus } from "../../lib/issueStatus";
 import IssuesTab from "./IssuesTab";
-import PhasesTab from "./PhasesTab";
+import LotTab from "./LotTab";
 import PhotoMetadataEditor, { type EditablePhoto } from "./PhotoMetadataEditor";
 import { IconPhoto, IconVisit } from "./ui-kit/RedMarkIcons";
 import EmptyState from "./ui-kit/EmptyState";
@@ -146,7 +146,7 @@ function mapVisitRow(visit: any): SiteVisit {
   };
 }
 
-type MainTab = "visits" | "issues" | "photos" | "plans" | "locations" | "phases";
+type MainTab = "visits" | "issues" | "photos" | "plans" | "locations" | "lots";
 
 export default function ProjectDetail() {
   const navigate = useNavigate();
@@ -999,13 +999,13 @@ export default function ProjectDetail() {
             )}
           </button>
           <button
-            onClick={() => setActiveTab("phases")}
+            onClick={() => setActiveTab("lots")}
             className={`flex-1 lg:flex-none lg:px-6 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === "phases" ? "text-ink" : "text-muted hover:text-ink"
+              activeTab === "lots" ? "text-ink" : "text-muted hover:text-ink"
             }`}
           >
-            Phases
-            {activeTab === "phases" && (
+            Lots
+            {activeTab === "lots" && (
               <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand-600" />
             )}
           </button>
@@ -1343,9 +1343,9 @@ export default function ProjectDetail() {
         {/* Plans Tab */}
         {PLANS_ENABLED && activeTab === "plans" && id && <PlanFilesManager projectId={id} />}
 
-        {/* Locations Tab */}
-        {activeTab === "phases" && id && (
-          <PhasesTab
+        {/* Lots Tab */}
+        {activeTab === "lots" && id && (
+          <LotTab
             projectId={id}
             // Same predicate the RLS policy uses (owner/editor). A commenter
             // gets the list read-only rather than buttons the database

@@ -1,5 +1,23 @@
-// Client-side API for construction phases and the firm's company directory
-// (Stages 15-19 of the schema).
+// Client-side API for LOTS and the firm's company directory.
+//
+// LOT vs STAGE — the distinction this file's name records
+//
+// A LOT is a contractual division of the project — "Lot 3 — Structure" — put
+// out to tender and carried out by ONE company from the firm's directory. It
+// is the ASSIGNMENT target for a déficience: assigning means naming who is
+// responsible.
+//
+// A construction STAGE (Fondation, Structure, Enveloppe, Finitions) is a
+// different axis entirely — WHEN in the build, not WHO. Stages live in
+// construction_stages (the firm's master list) and project_stages (the copy
+// one project uses), and are not this file's concern.
+//
+// Both concepts were once called "phases", which is why the table was renamed
+// to `lots` in Stage 21. A déficience carries both: a Lot and a stage.
+//
+//   discipline = trade taxonomy   (Architecture, Plomberie, …)
+//   lot        = contractual unit (tied to a company, tied to this project)
+//   stage      = construction stage (tied to the project's stage list)
 //
 // WHAT THE CLIENT MUST NEVER SEND
 //
@@ -10,14 +28,14 @@
 //     the caller's firm. The INSERT policy then requires it to equal
 //     current_org_id(), so a forged value cannot survive either.
 //
-//   phases.company_org_id      — stamped by set_phase_company_org() FROM THE
+//   lots.company_org_id        — stamped by set_lot_company_org() FROM THE
 //     PROJECT'S FIRM, never from the company the caller named. The composite
 //     FK (company_id, company_org_id) -> companies(id, organization_id) then
 //     finds no matching pair when the company belongs to another firm, and
 //     the write is rejected by the database rather than by policy.
 //
-// The write types (InsertTriggerOrg, InsertPhase, UpdatePhase) omit both, so
-// a call site cannot send them by accident.
+// The write types (InsertTriggerOrg, InsertLot, UpdateLot) omit both, so a
+// call site cannot send them by accident.
 //
 // EMBEDS MUST NAME THEIR FOREIGN KEY
 //
@@ -30,21 +48,24 @@
 //
 // The same applies to these pairs, none of which the client embeds yet:
 //   site_visit_phases -> site_visits   (…_visit_id_fkey / …_visit_project_fkey)
-//   site_visit_phases -> phases        (…_phase_id_fkey / …_phase_project_fkey)
+//   site_visit_phases -> lots          (…_phase_id_fkey / …_phase_project_fkey)
 //   observation_photos -> observations (…_observation_id_fkey / …_observation_project_fkey)
 //   observation_photos -> photos       (…_photo_id_fkey / …_photo_project_fkey)
 //
+// (site_visit_phases still carries the old names and still points at `lots`;
+// it is the STAGE link, and Stage 22 rebuilds it against project_stages.)
+//
 // PERMISSIONS, mirrored from the RLS policies so the UI can hide what the
 // database would refuse:
-//   phases    — read: any project member; write: owner/editor only.
+//   lots      — read: any project member; write: owner/editor only.
 //   companies — read/create/update: any member of the firm;
 //               delete: firm admins only (and deletion is not exposed here —
-//               a company may be referenced by phases in projects the caller
+//               a company may be referenced by lots in projects the caller
 //               cannot see, so removing one is an admin action, not a
 //               side-effect of tidying a picker).
 
 import { supabase } from "./supabase";
-import type { InsertPhase, InsertTriggerOrg, UpdatePhase } from "./supabase";
+import type { Insert, InsertLot, InsertTriggerOrg, UpdateLot } from "./supabase";
 
 export interface Company {
   id: string;
@@ -57,14 +78,14 @@ export interface Company {
   trade: string | null;
 }
 
-export interface Phase {
+export interface Lot {
   id: string;
   projectId: string;
   name: string;
   description: string | null;
   companyId: string | null;
   sortOrder: number;
-  /** Joined for display. Null when the phase has no company yet. */
+  /** Joined for display. Null when the lot has no company yet. */
   company: Company | null;
 }
 
@@ -149,7 +170,13 @@ export async function createCompany(input: CompanyInput): Promise<Company> {
 
   const { data, error } = await supabase
     .from("companies")
-    .insert(payload)
+    // Cast at the boundary, matching createProject / addProjectMember. The
+    // generated Insert type marks organization_id REQUIRED because the column
+    // is NOT NULL with no default — the generator cannot see that a BEFORE
+    // INSERT trigger supplies it. `payload` stays typed as
+    // InsertTriggerOrg<"companies">, so a call site still cannot send one;
+    // only this line, where the database's own rule takes over, is widened.
+    .insert(payload as Insert<"companies">)
     .select(COMPANY_COLUMNS)
     .single();
 
@@ -179,28 +206,33 @@ export async function updateCompany(id: string, input: CompanyInput): Promise<Co
   return rowToCompany(data);
 }
 
-/* ── PHASES ─────────────────────────────────────────────────────────────── */
+/* ── LOTS ───────────────────────────────────────────────────────────────── */
 
 /**
- * A project's phases in display order.
+ * A project's lots in display order.
  *
  * Ordered by sort_order then name: sort_order is not unique, and leaving the
- * tie to the database would let two phases swap places between renders.
+ * tie to the database would let two lots swap places between renders.
  */
-export async function getPhases(projectId: string): Promise<Phase[]> {
+export async function getLots(projectId: string): Promise<Lot[]> {
   const { data, error } = await supabase
-    .from("phases")
-    // The embed MUST name its foreign key. phases has TWO FKs to companies —
+    .from("lots")
+    // The embed MUST name its foreign key. lots has TWO FKs to companies —
     // the plain company_id -> companies(id), and the Stage 16 composite guard
     // (company_id, company_org_id) -> companies(id, organization_id) — so an
     // unqualified `companies(...)` is ambiguous and PostgREST refuses it with
     // PGRST201 rather than guessing.
     //
     // Embed through the PLAIN FK: it is the single-column relationship that
-    // actually expresses "this phase's company". The composite one exists to
+    // actually expresses "this lot's company". The composite one exists to
     // make a cross-firm link structurally impossible, not to be traversed.
+    //
+    // The constraint name moved with the table in Stage 21
+    // (phases_company_id_fkey -> lots_company_id_fkey). It is a literal
+    // string, so it does not typecheck — the Lot tab fails at runtime with
+    // PGRST200 if it drifts from the schema.
     .select(`id, project_id, name, description, company_id, sort_order,
-             company:companies!phases_company_id_fkey (${COMPANY_COLUMNS})`)
+             company:companies!lots_company_id_fkey (${COMPANY_COLUMNS})`)
     .eq("project_id", projectId)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
@@ -232,7 +264,7 @@ export async function getPhases(projectId: string): Promise<Phase[]> {
   });
 }
 
-export interface PhaseInput {
+export interface LotInput {
   name: string;
   description?: string | null;
   companyId?: string | null;
@@ -240,14 +272,14 @@ export interface PhaseInput {
 }
 
 /**
- * Creates a phase. `company_org_id` is never sent — the trigger derives it
+ * Creates a lot. `company_org_id` is never sent — the trigger derives it
  * from the project's firm and the composite FK validates the pair.
  */
-export async function createPhase(projectId: string, input: PhaseInput): Promise<void> {
+export async function createLot(projectId: string, input: LotInput): Promise<void> {
   const name = input.name.trim().replace(/\s+/g, " ");
-  if (!name) throw new Error("Le nom de la phase est requis.");
+  if (!name) throw new Error("Le nom du lot est requis.");
 
-  const payload: InsertPhase = {
+  const payload: InsertLot = {
     project_id: projectId,
     name,
     description: blankToNull(input.description),
@@ -255,42 +287,42 @@ export async function createPhase(projectId: string, input: PhaseInput): Promise
     sort_order: input.sortOrder ?? 0,
   };
 
-  const { error } = await supabase.from("phases").insert(payload as never);
+  const { error } = await supabase.from("lots").insert(payload as never);
   if (error) throw error;
 }
 
-export async function updatePhase(id: string, input: PhaseInput): Promise<void> {
+export async function updateLot(id: string, input: LotInput): Promise<void> {
   const name = input.name.trim().replace(/\s+/g, " ");
-  if (!name) throw new Error("Le nom de la phase est requis.");
+  if (!name) throw new Error("Le nom du lot est requis.");
 
-  const payload: UpdatePhase = {
+  const payload: UpdateLot = {
     name,
     description: blankToNull(input.description),
     company_id: input.companyId || null,
   };
   if (input.sortOrder !== undefined) payload.sort_order = input.sortOrder;
 
-  const { error } = await supabase.from("phases").update(payload as never).eq("id", id);
+  const { error } = await supabase.from("lots").update(payload as never).eq("id", id);
   if (error) throw error;
 }
 
-export async function deletePhase(id: string): Promise<void> {
-  const { error } = await supabase.from("phases").delete().eq("id", id);
+export async function deleteLot(id: string): Promise<void> {
+  const { error } = await supabase.from("lots").delete().eq("id", id);
   if (error) throw error;
 }
 
 /**
- * Persists a new order for a project's phases.
+ * Persists a new order for a project's lots.
  *
  * Written as individual updates rather than an upsert: an upsert would need
  * to send every column of every row, and any column it omitted would be
  * overwritten with a default. Reordering must touch sort_order and nothing
  * else.
  */
-export async function reorderPhases(ordered: { id: string; sortOrder: number }[]): Promise<void> {
+export async function reorderLots(ordered: { id: string; sortOrder: number }[]): Promise<void> {
   const results = await Promise.all(
     ordered.map(({ id, sortOrder }) =>
-      supabase.from("phases").update({ sort_order: sortOrder } as never).eq("id", id),
+      supabase.from("lots").update({ sort_order: sortOrder } as never).eq("id", id),
     ),
   );
   const failed = results.find((r) => r.error);

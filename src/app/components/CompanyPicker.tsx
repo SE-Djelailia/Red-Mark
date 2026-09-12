@@ -1,14 +1,14 @@
-// Picks a company for a phase, or creates one for the firm.
+// Picks a company for a lot, or creates one for the firm.
 //
 // This is the first surface in the app to expose `companies`, which is
 // FIRM-SCOPED rather than project-scoped: a company created while editing one
-// project's phases is immediately available to every project in the firm.
+// project's lots is immediately available to every project in the firm.
 // That is the point of the table, and the copy says so, because a user who
 // expects a per-project list would otherwise create "Plomberie ABC" five
 // times.
 //
 // Two modes in one control, rather than a picker plus a separate "manage
-// companies" screen: on site the company is named at the moment the phase is
+// companies" screen: on site the company is named at the moment the lot is
 // defined, and forcing a detour to a directory screen first is how the field
 // ends up blank.
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -20,7 +20,7 @@ import {
   normalizeCompanyName,
   type Company,
   type CompanyInput,
-} from "../../lib/phasesApi";
+} from "../../lib/lotApi";
 import { inputClassName, labelClassName } from "./ui-kit/Input";
 import XSpinner from "./ui-kit/XSpinner";
 
@@ -28,7 +28,7 @@ interface Props {
   /** Currently linked company, or null. */
   value: Company | null;
   onChange: (company: Company | null) => void;
-  /** Read-only when the caller cannot edit phases. */
+  /** Read-only when the caller cannot edit lots. */
   disabled?: boolean;
 }
 
@@ -55,13 +55,13 @@ export default function CompanyPicker({ value, onChange, disabled }: Props) {
   };
 
   useEffect(() => {
-    // Loading is triggered by opening, not by mount: most phases never touch
+    // Loading is triggered by opening, not by mount: most lots never touch
     // the picker, and the firm's directory is not worth fetching for them.
     if (!open || companies.length > 0 || loadError) return;
 
     let cancelled = false;
     void (async () => {
-      // Inside the callback, not the effect body — see PhasesTab.
+      // Inside the callback, not the effect body — see LotTab.
       setLoading(true);
       try {
         const rows = await getCompanies();
@@ -159,7 +159,7 @@ export default function CompanyPicker({ value, onChange, disabled }: Props) {
       )}
 
       {/* The open picker. Inline rather than a nested modal: this control is
-          already inside the phase editor, and stacking a second overlay on a
+          already inside the lot editor, and stacking a second overlay on a
           phone leaves no way back that reads as obvious. */}
       {open && (
         <div
@@ -247,7 +247,7 @@ export default function CompanyPicker({ value, onChange, disabled }: Props) {
             )}
           </div>
 
-          {/* Create. Ink outline, not a red fill — the phase editor's primary
+          {/* Create. Ink outline, not a red fill — the lot editor's primary
               action is its own save button, and a second red here would put
               two on one sheet. */}
           {!loading && !loadError && (

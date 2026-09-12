@@ -785,6 +785,65 @@ BEGIN
 END;
 $$;
 
+
+
+-- STAGE 20 — stamps the firm on a construction-stage master row, exactly as
+-- set_company_organization() does for companies.
+CREATE OR REPLACE FUNCTION "public"."set_construction_stage_organization"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  IF NEW.organization_id IS NULL THEN
+    NEW.organization_id := public.current_org_id();
+  END IF;
+  IF NEW.organization_id IS NULL THEN
+    RAISE EXCEPTION 'Cannot create a construction stage: the current user belongs to no organization';
+  END IF;
+  IF NEW.created_by IS NULL THEN
+    NEW.created_by := auth.uid();
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION "public"."set_construction_stage_organization"() OWNER TO "postgres";
+REVOKE ALL ON FUNCTION "public"."set_construction_stage_organization"() FROM PUBLIC;
+
+
+-- STAGE 20 — derives project_stages.source_org_id FROM THE PROJECT'S FIRM,
+-- never from the construction_stages row the caller named. That is what makes
+-- the composite FK meaningful: a caller citing another firm's master stage
+-- still gets their own project's firm, and the pair matches no row.
+CREATE OR REPLACE FUNCTION "public"."set_project_stage_source_org"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  IF NEW.source_stage_id IS NULL THEN
+    NEW.source_org_id := NULL;
+  ELSE
+    SELECT p.organization_id INTO NEW.source_org_id
+    FROM public.projects p
+    WHERE p.id = NEW.project_id;
+
+    IF NEW.source_org_id IS NULL THEN
+      RAISE EXCEPTION 'Cannot resolve the owning firm for project %', NEW.project_id;
+    END IF;
+  END IF;
+
+  IF TG_OP = 'INSERT' AND NEW.created_by IS NULL THEN
+    NEW.created_by := auth.uid();
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION "public"."set_project_stage_source_org"() OWNER TO "postgres";
+REVOKE ALL ON FUNCTION "public"."set_project_stage_source_org"() FROM PUBLIC;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
@@ -1020,6 +1079,55 @@ COMMENT ON TABLE "public"."phases" IS 'Project-level contractual grouping, optio
 COMMENT ON COLUMN "public"."phases"."company_org_id" IS 'Denormalised companies.organization_id, stamped by trigger. Exists only to support the composite FK that makes a cross-firm phase->company link structurally impossible. Never set by the client.';
 
 COMMENT ON COLUMN "public"."phases"."sort_order" IS 'Display order within the project. Not unique: ties broken by name.';
+
+
+-- STAGE 20 — the FIRM's master list of construction stages. Firm-scoped
+-- exactly like companies: organization_id stamped by trigger, RLS on
+-- current_org_id(), NOT reached through is_project_member().
+CREATE TABLE IF NOT EXISTS "public"."construction_stages" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "organization_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "construction_stages_name_not_blank" CHECK (("length"("btrim"("name")) > 0))
+);
+
+ALTER TABLE "public"."construction_stages" OWNER TO "postgres";
+
+COMMENT ON TABLE "public"."construction_stages" IS 'A firm''s master list of construction stages (Fondation, Structure, Enveloppe, Finitions). Projects COPY from this list into project_stages; editing a project''s stages never mutates this one.';
+
+COMMENT ON COLUMN "public"."construction_stages"."is_active" IS 'False retires a stage from the pick list without deleting it, so projects that already copied it keep their provenance link.';
+
+
+-- STAGE 20 — the stages ONE project actually uses. A COPY of the firm's
+-- master list, not a reference: name and sort_order are duplicated at
+-- creation, so renaming a firm-level stage never relabels what a project
+-- already recorded. A visit's stage is historical fact.
+CREATE TABLE IF NOT EXISTS "public"."project_stages" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "project_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "source_stage_id" "uuid",
+    "source_org_id" "uuid",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "project_stages_name_not_blank" CHECK (("length"("btrim"("name")) > 0)),
+    CONSTRAINT "project_stages_source_org_paired" CHECK (((("source_stage_id" IS NULL) AND ("source_org_id" IS NULL)) OR (("source_stage_id" IS NOT NULL) AND ("source_org_id" IS NOT NULL))))
+);
+
+ALTER TABLE "public"."project_stages" OWNER TO "postgres";
+
+COMMENT ON TABLE "public"."project_stages" IS 'The construction stages one project uses. A COPY of the firm''s master list, not a reference: renaming a firm-level stage never relabels what a project already recorded. This is what visits and déficiences link to.';
+
+COMMENT ON COLUMN "public"."project_stages"."source_stage_id" IS 'Provenance only — which construction_stages row this was copied from. Carries no data and is read by nothing; NULL for a stage typed directly into the project.';
+
+COMMENT ON COLUMN "public"."project_stages"."source_org_id" IS 'Denormalised construction_stages.organization_id, stamped by trigger from the project. Exists only to support the composite FK that makes a cross-firm provenance link structurally impossible. Never set by the client.';
 
 
 CREATE TABLE IF NOT EXISTS "public"."photos" (
@@ -1380,6 +1488,22 @@ ALTER TABLE ONLY "public"."photos"
     ADD CONSTRAINT "photos_id_project_id_key" UNIQUE ("id", "project_id");
 
 
+ALTER TABLE ONLY "public"."construction_stages"
+    ADD CONSTRAINT "construction_stages_pkey" PRIMARY KEY ("id");
+
+-- STAGE 20 — the composite key project_stages' provenance guard references.
+ALTER TABLE ONLY "public"."construction_stages"
+    ADD CONSTRAINT "construction_stages_id_organization_id_key" UNIQUE ("id", "organization_id");
+
+ALTER TABLE ONLY "public"."project_stages"
+    ADD CONSTRAINT "project_stages_pkey" PRIMARY KEY ("id");
+
+-- STAGE 20 — the composite key Stages 22 and 24 will reference, so a visit's
+-- or an issue's stage must agree with the owning project.
+ALTER TABLE ONLY "public"."project_stages"
+    ADD CONSTRAINT "project_stages_id_project_id_key" UNIQUE ("id", "project_id");
+
+
 ALTER TABLE ONLY "public"."observations"
     ADD CONSTRAINT "observations_pkey" PRIMARY KEY ("id");
 
@@ -1618,6 +1742,20 @@ CREATE INDEX IF NOT EXISTS "idx_observation_photos_project" ON "public"."observa
 CREATE INDEX IF NOT EXISTS "idx_observation_photos_obs_order" ON "public"."observation_photos" USING "btree" ("observation_id", "sort_order");
 
 
+-- STAGE 20 — one stage name per firm, case- and whitespace-insensitive. Two
+-- firms may both have "Fondation"; one firm may not have it twice.
+CREATE UNIQUE INDEX IF NOT EXISTS "construction_stages_org_name_key" ON "public"."construction_stages" USING "btree" ("organization_id", "lower"("btrim"("name")));
+
+CREATE INDEX IF NOT EXISTS "idx_construction_stages_org" ON "public"."construction_stages" USING "btree" ("organization_id", "sort_order");
+
+-- One stage name per project, on the same normalised comparison.
+CREATE UNIQUE INDEX IF NOT EXISTS "project_stages_project_name_key" ON "public"."project_stages" USING "btree" ("project_id", "lower"("btrim"("name")));
+
+CREATE INDEX IF NOT EXISTS "idx_project_stages_project" ON "public"."project_stages" USING "btree" ("project_id", "sort_order");
+
+CREATE INDEX IF NOT EXISTS "idx_project_stages_source" ON "public"."project_stages" USING "btree" ("source_stage_id") WHERE ("source_stage_id" IS NOT NULL);
+
+
 CREATE INDEX "idx_observations_project_id" ON "public"."observations" USING "btree" ("project_id");
 
 CREATE INDEX "idx_observations_visit_id" ON "public"."observations" USING "btree" ("visit_id");
@@ -1756,6 +1894,15 @@ CREATE OR REPLACE TRIGGER "trg_phases_set_company_org" BEFORE INSERT OR UPDATE O
 CREATE OR REPLACE TRIGGER "set_updated_at_companies" BEFORE UPDATE ON "public"."companies" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
 
 CREATE OR REPLACE TRIGGER "trg_companies_set_organization" BEFORE INSERT ON "public"."companies" FOR EACH ROW EXECUTE FUNCTION "public"."set_company_organization"();
+
+
+CREATE OR REPLACE TRIGGER "set_updated_at_construction_stages" BEFORE UPDATE ON "public"."construction_stages" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
+
+CREATE OR REPLACE TRIGGER "trg_construction_stages_set_organization" BEFORE INSERT ON "public"."construction_stages" FOR EACH ROW EXECUTE FUNCTION "public"."set_construction_stage_organization"();
+
+CREATE OR REPLACE TRIGGER "set_updated_at_project_stages" BEFORE UPDATE ON "public"."project_stages" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
+
+CREATE OR REPLACE TRIGGER "trg_project_stages_set_source_org" BEFORE INSERT OR UPDATE OF "source_stage_id", "project_id" ON "public"."project_stages" FOR EACH ROW EXECUTE FUNCTION "public"."set_project_stage_source_org"();
 
 
 CREATE OR REPLACE TRIGGER "set_updated_at_issues" BEFORE UPDATE ON "public"."issues" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
@@ -1982,6 +2129,31 @@ ALTER TABLE ONLY "public"."observation_photos"
     ADD CONSTRAINT "observation_photos_photo_project_fkey" FOREIGN KEY ("photo_id", "project_id") REFERENCES "public"."photos"("id", "project_id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
+ALTER TABLE ONLY "public"."construction_stages"
+    ADD CONSTRAINT "construction_stages_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."construction_stages"
+    ADD CONSTRAINT "construction_stages_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."project_stages"
+    ADD CONSTRAINT "project_stages_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."project_stages"
+    ADD CONSTRAINT "project_stages_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+-- STAGE 20 — the cross-firm guard on provenance. (source_stage_id,
+-- source_org_id) must be a real (id, organization_id) pair: because the
+-- trigger derives source_org_id from the PROJECT'S firm, naming another
+-- firm's stage leaves a pair matching no row, and the database rejects it
+-- whether or not RLS is in force.
+--
+-- SET NULL is scoped to the two provenance columns ALONE. An unqualified
+-- ON DELETE SET NULL on a composite FK nulls EVERY column in the key — the
+-- Stage 18 trap, where it would have aborted the delete outright.
+ALTER TABLE ONLY "public"."project_stages"
+    ADD CONSTRAINT "project_stages_source_org_fkey" FOREIGN KEY ("source_stage_id", "source_org_id") REFERENCES "public"."construction_stages"("id", "organization_id") ON UPDATE CASCADE ON DELETE SET NULL ("source_stage_id", "source_org_id");
+
+
 ALTER TABLE ONLY "public"."observations"
     ADD CONSTRAINT "observations_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."locations"("id") ON DELETE SET NULL;
 
@@ -2200,6 +2372,35 @@ CREATE POLICY "Firm members can create companies" ON "public"."companies" FOR IN
 CREATE POLICY "Firm members can update companies" ON "public"."companies" FOR UPDATE USING (("organization_id" = "public"."current_org_id"())) WITH CHECK (("organization_id" = "public"."current_org_id"()));
 
 CREATE POLICY "Firm admins can delete companies" ON "public"."companies" FOR DELETE USING ("public"."is_org_admin"("organization_id"));
+
+
+-- STAGE 20 — construction_stages is firm-scoped like companies: read/create/
+-- update for any member of the firm (the person setting up a project is the
+-- one who needs to add a missing stage), delete for firm admins only, since a
+-- master stage may be the provenance source for projects they cannot see.
+CREATE POLICY "Firm members can view construction stages" ON "public"."construction_stages" FOR SELECT USING (("organization_id" = "public"."current_org_id"()));
+
+CREATE POLICY "Firm members can create construction stages" ON "public"."construction_stages" FOR INSERT WITH CHECK (("organization_id" = "public"."current_org_id"()));
+
+CREATE POLICY "Firm members can update construction stages" ON "public"."construction_stages" FOR UPDATE USING (("organization_id" = "public"."current_org_id"())) WITH CHECK (("organization_id" = "public"."current_org_id"()));
+
+CREATE POLICY "Firm admins can delete construction stages" ON "public"."construction_stages" FOR DELETE USING ("public"."is_org_admin"("organization_id"));
+
+
+-- STAGE 20 — project_stages follows the phases pattern: read for any project
+-- member (a stage label appears on visits a commenter can already see), write
+-- for owners and editors, since a project's stage list is project structure.
+--
+-- Every writing command carries WITH CHECK: an RLS denial on UPDATE is a
+-- silent 0-row no-op, and USING alone would let a member move a stage into
+-- another project.
+CREATE POLICY "Members can view project stages" ON "public"."project_stages" FOR SELECT USING ("public"."is_project_member"("project_id"));
+
+CREATE POLICY "Editors can create project stages" ON "public"."project_stages" FOR INSERT WITH CHECK ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
+
+CREATE POLICY "Editors can update project stages" ON "public"."project_stages" FOR UPDATE USING ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"])) WITH CHECK ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
+
+CREATE POLICY "Editors can delete project stages" ON "public"."project_stages" FOR DELETE USING ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
 
 
 CREATE POLICY "Editors can delete reports" ON "public"."reports" FOR DELETE USING ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
@@ -2526,6 +2727,10 @@ ALTER TABLE "public"."phases" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."companies" ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE "public"."construction_stages" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."project_stages" ENABLE ROW LEVEL SECURITY;
+
 ALTER TABLE "public"."report_locations" ENABLE ROW LEVEL SECURITY;
 
 
@@ -2554,6 +2759,10 @@ GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE "public"."site_visit_phases" TO "auth
 GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE "public"."phases" TO "authenticated";
 
 GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE "public"."companies" TO "authenticated";
+
+GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE "public"."construction_stages" TO "authenticated";
+
+GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE "public"."project_stages" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."issue_status_events" TO "service_role";
 

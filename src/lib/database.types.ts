@@ -127,7 +127,7 @@ export type Database = {
           email?: string | null
           id?: string
           name: string
-          organization_id?: string
+          organization_id: string
           phone?: string | null
           trade?: string | null
           updated_at?: string
@@ -148,6 +148,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "companies_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      construction_stages: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "construction_stages_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -214,7 +255,7 @@ export type Database = {
           id: string
           location: Json | null
           location_id: string | null
-          phase_id: string | null
+          lot_id: string | null
           photo_id: string | null
           priority: string | null
           project_id: string
@@ -236,7 +277,7 @@ export type Database = {
           id?: string
           location?: Json | null
           location_id?: string | null
-          phase_id?: string | null
+          lot_id?: string | null
           photo_id?: string | null
           priority?: string | null
           project_id: string
@@ -258,7 +299,7 @@ export type Database = {
           id?: string
           location?: Json | null
           location_id?: string | null
-          phase_id?: string | null
+          lot_id?: string | null
           photo_id?: string | null
           priority?: string | null
           project_id?: string
@@ -279,10 +320,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "issues_phase_project_fkey"
-            columns: ["phase_id", "project_id"]
+            foreignKeyName: "issues_lot_project_fkey"
+            columns: ["lot_id", "project_id"]
             isOneToOne: false
-            referencedRelation: "phases"
+            referencedRelation: "lots"
             referencedColumns: ["id", "project_id"]
           },
           {
@@ -412,6 +453,67 @@ export type Database = {
           },
           {
             foreignKeyName: "locations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lots: {
+        Row: {
+          company_id: string | null
+          company_org_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          project_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          company_org_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          project_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          company_org_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lots_company_org_fkey"
+            columns: ["company_id", "company_org_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "lots_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -680,67 +782,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      phases: {
-        Row: {
-          company_id: string | null
-          company_org_id: string | null
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          name: string
-          project_id: string
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          company_id?: string | null
-          company_org_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          name: string
-          project_id: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string | null
-          company_org_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          name?: string
-          project_id?: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "phases_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "phases_company_org_fkey"
-            columns: ["company_id", "company_org_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id", "organization_id"]
-          },
-          {
-            foreignKeyName: "phases_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       photos: {
         Row: {
@@ -1077,6 +1118,57 @@ export type Database = {
           },
         ]
       }
+      project_stages: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          project_id: string
+          sort_order: number
+          source_org_id: string | null
+          source_stage_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          project_id: string
+          sort_order?: number
+          source_org_id?: string | null
+          source_stage_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          sort_order?: number
+          source_org_id?: string | null
+          source_stage_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_stages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_stages_source_org_fkey"
+            columns: ["source_stage_id", "source_org_id"]
+            isOneToOne: false
+            referencedRelation: "construction_stages"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           address: string | null
@@ -1283,14 +1375,14 @@ export type Database = {
             foreignKeyName: "site_visit_phases_phase_id_fkey"
             columns: ["phase_id"]
             isOneToOne: false
-            referencedRelation: "phases"
+            referencedRelation: "lots"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "site_visit_phases_phase_project_fkey"
             columns: ["phase_id", "project_id"]
             isOneToOne: false
-            referencedRelation: "phases"
+            referencedRelation: "lots"
             referencedColumns: ["id", "project_id"]
           },
           {
