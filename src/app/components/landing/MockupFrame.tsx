@@ -1,22 +1,32 @@
-// Device frames for the landing page's app screenshots.
+// Device frames for the landing page's app mockups.
 //
-// SWAPPING IN REAL SCREENSHOTS: pass `src`. The placeholder disappears and
-// the image fills the frame at the correct aspect ratio — no other change.
+// THREE MODES, in order of fidelity:
 //
+//   1. `demo` — an animated walkthrough: the app's own UI, rebuilt in HTML
+//      from the real design tokens and driven by the motion system, so the
+//      frame shows the product demonstrating itself. This is the default
+//      for the workflow frames.
+//   2. `src` — a real screenshot, when one exists. Wins over `demo`.
+//   3. Neither — the drawn wireframe placeholder, which shows the intended
+//      composition so the page still reads as designed.
+//
+//   <PhoneFrame label="Visite" caption="…" demo={<VisitWalkthrough />} />
 //   <PhoneFrame label="Visite" caption="…" src="/marketing/visit.png" />
-//
-// Until then each frame renders a labelled placeholder, deliberately drawn
-// as a wireframe rather than a grey box: it shows the intended composition
-// (title block, ruled rows, a marked row) so the page reads as designed
-// even before the real captures exist.
 
 interface FrameProps {
   label: string;
   caption: string;
-  /** Real screenshot. When absent, the wireframe placeholder renders. */
+  /** Real screenshot. Takes precedence over `demo`. */
   src?: string;
   /** Alt text for the screenshot. Falls back to the caption. */
   alt?: string;
+  /**
+   * An animated walkthrough to render inside the frame. Used when no
+   * screenshot exists — which is the intended state, since the walkthrough
+   * is higher fidelity than a static capture: it shows the flow, not a
+   * moment of it.
+   */
+  demo?: React.ReactNode;
 }
 
 /** The wireframe shown until a real screenshot is supplied. */
@@ -64,12 +74,14 @@ function Caption({ label, caption }: { label: string; caption: string }) {
  * The bezel is a 1px rule rather than a rendered device: a drawn frame, not
  * a photograph of hardware.
  */
-export function PhoneFrame({ label, caption, src, alt }: FrameProps) {
+export function PhoneFrame({ label, caption, src, alt, demo }: FrameProps) {
   return (
     <figure>
       <div className="relative mx-auto w-full max-w-[210px] aspect-[9/19.5] border border-line-strong rounded-[4px] overflow-hidden bg-surface shadow-[0_1px_2px_rgb(20_20_20/0.04)]">
         {src ? (
           <img src={src} alt={alt ?? caption} className="absolute inset-0 w-full h-full object-cover object-top" />
+        ) : demo ? (
+          demo
         ) : (
           <Placeholder />
         )}
@@ -83,7 +95,7 @@ export function PhoneFrame({ label, caption, src, alt }: FrameProps) {
  * Browser frame, for the report / desktop views. 16:10 with a title bar
  * carrying three square dots — square, because nothing here is round.
  */
-export function BrowserFrame({ label, caption, src, alt }: FrameProps) {
+export function BrowserFrame({ label, caption, src, alt, demo }: FrameProps) {
   return (
     <figure>
       <div className="border border-line-strong rounded-[4px] overflow-hidden bg-surface shadow-[0_1px_2px_rgb(20_20_20/0.04)]">
@@ -95,6 +107,8 @@ export function BrowserFrame({ label, caption, src, alt }: FrameProps) {
         <div className="relative aspect-[16/10]">
           {src ? (
             <img src={src} alt={alt ?? caption} className="absolute inset-0 w-full h-full object-cover object-top" />
+          ) : demo ? (
+            demo
           ) : (
             <Placeholder />
           )}

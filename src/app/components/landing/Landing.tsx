@@ -10,6 +10,7 @@ import {
   StateVerifie,
 } from "../ui-kit/RedMarkIcons";
 import { BrowserFrame, PhoneFrame } from "./MockupFrame";
+import { VisitWalkthrough } from "./VisitWalkthrough";
 import SheetBackdrop from "./SheetBackdrop";
 import { useReveal } from "./useReveal";
 import { COPY, CONTACT_EMAIL, type Lang } from "./copy";
@@ -222,6 +223,7 @@ export default function Landing() {
                 <PhoneFrame
                   label={t.mockups.frames[0].label}
                   caption={t.mockups.frames[0].caption}
+                  demo={<VisitWalkthrough />}
                 />
               </div>
               <div className="lg:-mt-2">
