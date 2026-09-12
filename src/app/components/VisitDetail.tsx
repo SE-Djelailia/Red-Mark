@@ -694,17 +694,24 @@ export default function VisitDetail() {
           </div>
         </div>
 
-        {/* Two columns from lg. The split is by weight, not by size:
-            the left column holds what the visit is a record OF (notes,
-            photos, observations, déficiences, comments) and the right
-            holds what you DO with it plus the rarely-opened panels.
-            items-start stops the short right column from stretching.
+        {/* Two columns from md (iPad portrait), three from lg (landscape).
+            The split is by weight, not by size: the left column holds what
+            the visit is a record OF (notes, photos, observations,
+            déficiences, comments) and the right holds what you DO with it
+            plus the rarely-opened panels. items-start stops the short right
+            column from stretching.
+
+            Portrait gets a 3-col grid with a 2:1 span rather than the
+            simpler 2-col: at 768px an even split would leave the action
+            column ~370px — wider than its buttons need — while starving the
+            photo grid beside it. 2:1 keeps the record column dominant at
+            every size the layout appears.
 
             The phone order is deliberately almost unchanged from before:
             only Notes vocales moves (it now follows the comments), and
             Plans is behind PLANS_ENABLED=false so it renders nowhere. */}
-        <div className="grid gap-3 lg:grid-cols-3 items-start">
-          <div className="lg:col-span-2 space-y-3">
+        <div className="grid gap-3 md:grid-cols-3 items-start">
+          <div className="md:col-span-2 space-y-3">
           {/* Notes de visite — collapsed by default when empty (nothing to
               reclaim space for otherwise); stays open if there's real content
               to read at a glance. */}
@@ -973,7 +980,11 @@ export default function VisitDetail() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {/* Inside the 2/3 record column, so the usable width is ~490px
+                at md and ~740px at lg — 3 then 4 tiles keeps each plate
+                large enough to judge a defect from, which is the point of
+                reviewing photos on iPad rather than on the phone. */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {visit?.photos
                 .filter((photo) => {
                   // Filter by tag

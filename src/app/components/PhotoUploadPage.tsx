@@ -492,7 +492,11 @@ export default function PhotoUploadPage() {
 
             {/* Photo Grid */}
             <div className="bg-surface rounded-[4px] p-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {/* Upload staging grid. Capped at max-w-4xl (896px), so 5
+                  tiles at lg is the honest ceiling — more would shrink each
+                  thumbnail below the size needed to spot a bad frame before
+                  committing the upload. */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {photosToUpload.map((file, index) => {
                   const isSelected = selectedPhotoIndices.includes(index);
                   const tags = photoTags[index.toString()] || [];

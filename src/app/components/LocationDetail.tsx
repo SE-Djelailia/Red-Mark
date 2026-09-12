@@ -709,74 +709,37 @@ export default function LocationDetail() {
           </div>
         </div>
       ) : (
-      <div className="px-4 py-6 max-w-2xl mx-auto space-y-6">
-        {/* Metadata card */}
-        <div className="bg-surface rounded-[4px] border border-line p-5 space-y-2 text-sm">
-          <div className="flex items-center gap-3">
-            {(() => {
-              const TypeIcon = LOCATION_TYPE_ICONS[location.type];
-              return <TypeIcon size={16} className="text-muted" />;
-            })()}
-            <span className="text-muted">Type :</span>
-            <span className="text-body">{LOCATION_TYPE_LABELS[location.type]}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Layers size={16} className="text-muted" />
-            <span className="text-muted">Niveau :</span>
-            <span className="text-body">{levelName || "—"}</span>
-          </div>
-          {location.discipline && (
-            <div className="flex items-center gap-3">
-              <span className="w-4" />
-              <span className="text-muted">Discipline :</span>
-              <span className="text-body">{location.discipline}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Parent/child locations — only shown when there's something to show */}
-        {(parentLocation || childLocations.length > 0) && (
-          <div className="bg-surface rounded-[4px] border border-line p-5 space-y-3">
-            {parentLocation && (
-              <div>
-                <div className="text-xs text-muted mb-1.5">Emplacement parent</div>
-                <button
-                  onClick={() => navigate(`/app/projects/${projectId}/locations/${parentLocation.id}`)}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-[4px] border border-line border-l-2 border-l-transparent hover:border-l-brand-600 hover:bg-subtle min-h-[44px] text-left"
-                >
-                  <span className="text-sm text-ink font-medium truncate">
-                    {parentLocation.locationNumber}
-                    {parentLocation.name ? ` — ${parentLocation.name}` : ""}
-                  </span>
-                  <ChevronRight size={16} className="text-faint flex-shrink-0" />
-                </button>
-              </div>
-            )}
-            {childLocations.length > 0 && (
-              <div>
-                <div className="text-xs text-muted mb-1.5">
-                  Emplacements enfants ({childLocations.length})
-                </div>
-                <div className="space-y-1.5">
-                  {childLocations.map((child) => (
-                    <button
-                      key={child.id}
-                      onClick={() => navigate(`/app/projects/${projectId}/locations/${child.id}`)}
-                      className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-[4px] border border-line border-l-2 border-l-transparent hover:border-l-brand-600 hover:bg-subtle min-h-[44px] text-left"
-                    >
-                      <span className="text-sm text-ink font-medium truncate">
-                        {child.locationNumber}
-                        {child.name ? ` — ${child.name}` : ""}
-                      </span>
-                      <ChevronRight size={16} className="text-faint flex-shrink-0" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
+      // Two columns from md (iPad portrait). The split is by WEIGHT, not
+      // size: the left column is the visual RECORD of the local — its
+      // déficiences, its photos, the visits that produced them — and the
+      // right is REFERENCE you consult rather than work through: what the
+      // local is, where it sits in the hierarchy, which issued reports
+      // covered it.
+      //
+      // Each section keeps exactly one definition in source — no duplicated
+      // JSX to drift — and the two wrappers use `display: contents` below md
+      // so the sections stay direct grid children in source order.
+      //
+      // ONE PHONE-VISIBLE CHANGE, deliberate: the metadata and hierarchy
+      // cards now follow the déficiences/photos/visits rather than leading
+      // them. Grouping the record together is what makes the two columns
+      // possible at all, and on a phone it also puts the thing you opened
+      // the local to see first. Nothing is added, removed, or restyled.
+      //
+      // The max-w-2xl cap lifts to max-w-6xl only at md. At 672px a two-pane
+      // layout would give each side ~320px — narrower than the phone, which
+      // would be a regression dressed up as an improvement.
+      <div className="px-4 sm:px-6 py-6 max-w-2xl md:max-w-6xl mx-auto">
+        <div className="grid gap-6 md:[grid-template-columns:3fr_2fr] items-start">
+        {/* `contents` below md: the wrappers dissolve and all six sections
+            are direct children of the single-column grid, in the source
+            order written here — which is why the phone still reads
+            déficiences, photos, visits, then the reference material. From md
+            the wrappers become real columns, each flowing independently, so
+            a tall photo grid never drags a short metadata card down with it.
+            (Explicit row placement would share row tracks between the
+            columns and reintroduce exactly the dead space this fixes.) */}
+        <div className="contents md:block md:space-y-6">
         {/* Issues section */}
         <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center justify-between mb-3">
@@ -821,8 +784,47 @@ export default function LocationDetail() {
               ))}
             </div>
           )}
-        </div>
-
+        {/* Photos section */}
+        <div className="bg-surface rounded-[4px] border border-line p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
+              <ImageIcon size={16} className="text-muted" />
+              Photos ({loadingPhotos ? "…" : photosLoadError ? "?" : photos.length})
+            </h2>
+            {projectRole.canUploadPhotos && (
+              <button
+                onClick={startAddPhotos}
+                className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line active:bg-line-strong rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
+              >
+                <Camera size={16} />
+                Ajouter
+              </button>
+            )}
+          </div>
+          {loadingPhotos ? (
+            <div className="text-sm text-muted">Chargement…</div>
+          ) : photosLoadError ? (
+            <div className="text-sm text-brand-strong flex items-center gap-2">
+              Impossible de charger les photos.
+              <button onClick={loadPhotos} className="underline font-medium">
+                Réessayer
+              </button>
+            </div>
+          ) : photos.length === 0 ? (
+            <EmptyState
+              size="compact"
+              icon={<IconPhoto size={32} className="text-faint lucide-display" />}
+              label="Aucune photo"
+              message="Les photos prises à ce local apparaîtront ici, groupées par visite."
+            />
+          ) : (
+            <LocationPhotoCompare
+              photos={photos}
+              visitDates={visitDatesById}
+              datesLoading={loadingActivity}
+              onOpenPhoto={setLightboxPhoto}
+            />
+          )}
         {/* Visits at this location — derived, not stored. Sits above Photos
             because "when was this looked at" frames everything below it. */}
         <div className="bg-surface rounded-[4px] border border-line p-5">
@@ -866,49 +868,71 @@ export default function LocationDetail() {
             </div>
           )}
         </div>
-
-        {/* Photos section */}
-        <div className="bg-surface rounded-[4px] border border-line p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
-              <ImageIcon size={16} className="text-muted" />
-              Photos ({loadingPhotos ? "…" : photosLoadError ? "?" : photos.length})
-            </h2>
-            {projectRole.canUploadPhotos && (
-              <button
-                onClick={startAddPhotos}
-                className="flex items-center gap-1.5 px-3 py-2 bg-subtle hover:bg-line active:bg-line-strong rounded-[4px] text-sm font-medium text-ink min-h-[40px]"
-              >
-                <Camera size={16} />
-                Ajouter
-              </button>
+        <div className="contents md:block md:space-y-6">
+        {/* Metadata card */}
+        <div className="bg-surface rounded-[4px] border border-line p-5 space-y-2 text-sm">
+          <div className="flex items-center gap-3">
+            {(() => {
+              const TypeIcon = LOCATION_TYPE_ICONS[location.type];
+              return <TypeIcon size={16} className="text-muted" />;
+            })()}
+            <span className="text-muted">Type :</span>
+            <span className="text-body">{LOCATION_TYPE_LABELS[location.type]}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Layers size={16} className="text-muted" />
+            <span className="text-muted">Niveau :</span>
+            <span className="text-body">{levelName || "—"}</span>
+          </div>
+          {location.discipline && (
+            <div className="flex items-center gap-3">
+              <span className="w-4" />
+              <span className="text-muted">Discipline :</span>
+              <span className="text-body">{location.discipline}</span>
+            </div>
+          )}
+        {/* Parent/child locations — only shown when there's something to show */}
+        {(parentLocation || childLocations.length > 0) && (
+          <div className="bg-surface rounded-[4px] border border-line p-5 space-y-3">
+            {parentLocation && (
+              <div>
+                <div className="text-xs text-muted mb-1.5">Emplacement parent</div>
+                <button
+                  onClick={() => navigate(`/app/projects/${projectId}/locations/${parentLocation.id}`)}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-[4px] border border-line border-l-2 border-l-transparent hover:border-l-brand-600 hover:bg-subtle min-h-[44px] text-left"
+                >
+                  <span className="text-sm text-ink font-medium truncate">
+                    {parentLocation.locationNumber}
+                    {parentLocation.name ? ` — ${parentLocation.name}` : ""}
+                  </span>
+                  <ChevronRight size={16} className="text-faint flex-shrink-0" />
+                </button>
+              </div>
+            )}
+            {childLocations.length > 0 && (
+              <div>
+                <div className="text-xs text-muted mb-1.5">
+                  Emplacements enfants ({childLocations.length})
+                </div>
+                <div className="space-y-1.5">
+                  {childLocations.map((child) => (
+                    <button
+                      key={child.id}
+                      onClick={() => navigate(`/app/projects/${projectId}/locations/${child.id}`)}
+                      className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-[4px] border border-line border-l-2 border-l-transparent hover:border-l-brand-600 hover:bg-subtle min-h-[44px] text-left"
+                    >
+                      <span className="text-sm text-ink font-medium truncate">
+                        {child.locationNumber}
+                        {child.name ? ` — ${child.name}` : ""}
+                      </span>
+                      <ChevronRight size={16} className="text-faint flex-shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
-          {loadingPhotos ? (
-            <div className="text-sm text-muted">Chargement…</div>
-          ) : photosLoadError ? (
-            <div className="text-sm text-brand-strong flex items-center gap-2">
-              Impossible de charger les photos.
-              <button onClick={loadPhotos} className="underline font-medium">
-                Réessayer
-              </button>
-            </div>
-          ) : photos.length === 0 ? (
-            <EmptyState
-              size="compact"
-              icon={<IconPhoto size={32} className="text-faint lucide-display" />}
-              label="Aucune photo"
-              message="Les photos prises à ce local apparaîtront ici, groupées par visite."
-            />
-          ) : (
-            <LocationPhotoCompare
-              photos={photos}
-              visitDates={visitDatesById}
-              datesLoading={loadingActivity}
-              onOpenPhoto={setLightboxPhoto}
-            />
-          )}
-        </div>
+        )}
 
         {/* Reports section — the history of which issued reports covered this
             local. Read-only: reports are produced from a visit, not from here.
@@ -948,6 +972,16 @@ export default function LocationDetail() {
               ))}
             </div>
           )}
+        </div>
+
+        </div>
+
+        </div>
+
+        </div>
+
+        </div>
+        </div>
         </div>
       </div>
       )}

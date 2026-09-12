@@ -151,6 +151,16 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Stats and activity sit side by side from md (iPad portrait):
+            they are both "what is happening right now" and each is short
+            enough that stacking them wastes the top of a large screen.
+            The calendar below stays full width — a month grid is the one
+            thing here that genuinely wants every pixel.
+
+            items-start so the short stat column does not stretch to match
+            the activity list's height. Below md this grid is a single
+            column, so the phone keeps the exact stacking order it had. */}
+        <div className="grid gap-6 md:grid-cols-2 items-start">
         {/* Stat tiles — hairline-joined so the pair reads as one panel.
             Only the open-déficiences figure is red; the rest are ink.
             Photos and visits were dropped: both are per-project concepts,
@@ -226,6 +236,8 @@ export default function Dashboard() {
             )}
           </Card>
         </Section>
+
+        </div>
 
         {/* Cross-project visit calendar — month grid on iPad/desktop,
             agenda list on a phone (see DashboardVisitCalendar). */}

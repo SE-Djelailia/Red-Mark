@@ -1273,9 +1273,11 @@ export default function ProjectDetail() {
                   </div>
                 ) : (
                   /* The gallery is where the extra width pays off most:
-                     2-up on a phone, 5-up at xl, so a project's photos are
-                     scanned rather than scrolled. */
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                     2-up on a phone, 4-up on iPad portrait, 6-up at xl, so
+                     a project's photos are scanned rather than scrolled.
+                     Photo review is a primary iPad activity: at 1152px of
+                     content width, 6 tiles are still ~180px each. */
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                     {filteredPhotos.map((photo) => (
                       <div
                         key={photo.id}
@@ -1686,7 +1688,7 @@ export default function ProjectDetail() {
                     <ImageIcon size={16} className="text-muted" />
                     <span className="text-xs text-muted">Galerie photos</span>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {selectedVisit.photos.map((photo) => (
                       <div
                         key={photo.id}

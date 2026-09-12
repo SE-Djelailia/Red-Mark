@@ -1,15 +1,18 @@
 import { useMemo, useState } from "react";
 import {
+  ArrowRight,
   Camera,
   Clock,
   FileText,
   MapPin,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { PriorityBadge, StatusBadge, PRIORITY_OPTIONS } from "./ui-kit/Badge";
 import { type IssuePriority, PRIORITY_RANK } from "../../lib/issuePriority";
 import { StatGrid, StatTile } from "./ui-kit/StatTile";
 import { parseLocalDate } from "../../lib/dateUtils";
+import { useMediaQuery } from "../../lib/useMediaQuery";
 import { disciplineOptions } from "../../lib/disciplines";
 import { MarkX, StatusGlyph } from "./ui-kit/RedMarkIcons";
 import {
@@ -87,6 +90,25 @@ export default function IssuesTab({
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("age");
   const [showFilters, setShowFilters] = useState(false);
+
+  // MASTER/DETAIL, lg and up only.
+  //
+  // Below lg a row navigates away, exactly as it always has — the phone is
+  // the quick-consult device and its behaviour is deliberately untouched.
+  // At lg the same tap selects into the pane beside the list instead, so
+  // reviewing twenty déficiences is twenty taps rather than twenty
+  // round trips that each lose the filter position.
+  //
+  // The breakpoint is read in JS because the BEHAVIOUR forks, not just the
+  // layout: CSS alone cannot make one tap navigate on a phone and select on
+  // an iPad. It is kept in sync with the `lg:` classes below by hand — the
+  // 1024px literal is the same number Tailwind's lg represents.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const splitView = useMediaQuery("(min-width: 1024px)");
+
+  // A selection made on iPad must not survive a rotation into portrait, or
+  // the pane would vanish while the row still looked selected.
+  const selected = splitView ? (issues.find((i) => i.id === selectedId) ?? null) : null;
 
   // One clock for the whole render pass, so age and overdue can't disagree
   // across rows if the render straddles midnight.
@@ -327,6 +349,12 @@ export default function IssuesTab({
         )}
       </div>
 
+      {/* LIST | DETAIL from lg. One grid column below it, so the phone gets
+          the same full-width list it always had. items-start keeps the pane
+          from stretching to the list's full height, and the sticky offset
+          lets a long list scroll past a pinned detail. */}
+      <div className="grid gap-4 lg:grid-cols-12 items-start">
+        <div className={selected ? "lg:col-span-7" : "lg:col-span-12"}>
       {filtered.length === 0 ? (
         <div className="text-center py-8">
           <MarkX size={40} className="mx-auto text-faint mb-3 lucide-display" />
@@ -354,8 +382,23 @@ export default function IssuesTab({
               return (
                 <button
                   key={issue.id}
-                  onClick={() => onOpenIssue(issue.id)}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-surface border-b border-line hover:bg-subtle transition-colors min-h-[44px] text-left"
+                  onClick={() =>
+                    splitView ? setSelectedId(issue.id) : onOpenIssue(issue.id)
+                  }
+                  aria-current={selected?.id === issue.id ? "true" : undefined}
+                  // The selected row takes the system's 2px leading rule —
+                  // the same marker a marked row uses everywhere else. Not a
+                  // fill: a red-filled row would put a second red on a screen
+                  // that already spends its budget on the déficience state.
+                  // The selection marker is scoped to lg: below it `selected`
+                  // is always null, so the border would only ever be a 2px
+                  // transparent inset shifting every row on the phone. The
+                  // phone row is therefore byte-identical to what it was.
+                  className={`w-full flex items-center gap-3 px-4 py-3 border-b border-line hover:bg-subtle transition-colors min-h-[44px] text-left lg:border-l-2 ${
+                    selected?.id === issue.id
+                      ? "bg-subtle lg:border-l-brand-600"
+                      : "bg-surface lg:border-l-transparent"
+                  }`}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-ink truncate">{issue.title}</div>
@@ -406,6 +449,140 @@ export default function IssuesTab({
           </div>
         </>
       )}
+        </div>
+
+        {/* The detail pane. Rendered only when a row is selected AND the
+            viewport is wide enough — `selected` is already null below lg, so
+            this cannot appear on a phone even mid-rotation. */}
+        {selected && (
+          <div className="hidden lg:block lg:col-span-5 lg:sticky lg:top-4">
+            <IssueDetailPane
+              issue={selected}
+              locationLabel={resolveLocationLabel(selected)}
+              onOpenFull={() => onOpenIssue(selected.id)}
+              onClose={() => setSelectedId(null)}
+              now={now}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The déficience preview shown beside the list on iPad.
+ *
+ * Deliberately a PREVIEW, not the full IssueDetail screen: that component
+ * reads its own route params, so embedding it would mean either changing
+ * routing (explicitly out of scope) or rendering a second router context.
+ * What it shows instead is everything the list row already has in memory —
+ * enough to triage without a round trip — plus one obvious way through to
+ * the full record for the things that need it (photos, comments, history,
+ * status changes).
+ *
+ * That division is honest about what the pane is for: scanning a list and
+ * deciding which item deserves the full screen.
+ */
+function IssueDetailPane({
+  issue,
+  locationLabel,
+  onOpenFull,
+  onClose,
+  now,
+}: {
+  issue: IssueRow;
+  locationLabel: string | null;
+  onOpenFull: () => void;
+  onClose: () => void;
+  now: Date;
+}) {
+  // The same two helpers the list row uses, so the pane and the row it came
+  // from can never disagree about age or overdue state.
+  const age = ageInDays(issue.createdAt ?? issue.createdDate, now);
+  const overdue = isOverdue(issue.dueDate, issue.status, now);
+
+  return (
+    <div className="bg-surface border border-line rounded-[4px] overflow-hidden rm-fade">
+      {/* Title block, in the drawing-sheet voice. */}
+      <div className="px-4 py-3 border-b border-line flex items-start gap-3">
+        <StatusGlyph status={issue.status} size={20} className="text-ink mt-0.5 flex-shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="rm-label">Déficience</p>
+          <h3 className="text-base font-semibold text-ink mt-0.5 text-balance">{issue.title}</h3>
+        </div>
+        <button
+          onClick={onClose}
+          aria-label="Fermer le panneau"
+          className="text-muted hover:text-ink transition-colors duration-(--duration-fast) flex-shrink-0 min-h-[32px] px-1"
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      <div className="px-4 py-3 space-y-3">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <PriorityBadge priority={issue.priority} />
+          <StatusBadge status={issue.status} />
+          {overdue && (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-strong">
+              <Clock size={12} />
+              En retard
+            </span>
+          )}
+        </div>
+
+        {/* Metadata as label/value pairs — the title-block treatment used
+            everywhere else a record is summarised. */}
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
+          <Pair label="Signalée le">
+            {parseLocalDate(issue.createdDate).toLocaleDateString("fr-CA", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </Pair>
+          {age !== null && age > 0 && <Pair label="Âge">{age} jours</Pair>}
+          {issue.discipline && <Pair label="Discipline">{issue.discipline}</Pair>}
+          {issue.dueDate && (
+            <Pair label="Échéance">
+              {parseLocalDate(issue.dueDate).toLocaleDateString("fr-CA", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </Pair>
+          )}
+          {locationLabel && <Pair label="Local">{locationLabel}</Pair>}
+          {issue.photos.length > 0 && (
+            <Pair label="Photos">
+              {issue.photos.length} photo{issue.photos.length > 1 ? "s" : ""}
+            </Pair>
+          )}
+        </dl>
+      </div>
+
+      {/* The way through to the full record. Ink outline, not a red fill:
+          the screen's red is already spent on the déficience state, and the
+          punch-list action above is the tab's one primary. */}
+      <div className="px-4 py-3 border-t border-line">
+        <button
+          onClick={onOpenFull}
+          className="w-full min-h-[44px] px-4 rounded-[4px] border border-ink text-ink text-sm font-semibold hover:bg-subtle active:bg-line/50 transition-colors duration-(--duration-fast) flex items-center justify-center gap-2"
+        >
+          Ouvrir la fiche complète
+          <ArrowRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Pair({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <dt className="rm-label">{label}</dt>
+      <dd className="text-ink mt-0.5 truncate">{children}</dd>
     </div>
   );
 }
