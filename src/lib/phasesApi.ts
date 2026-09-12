@@ -19,6 +19,21 @@
 // The write types (InsertTriggerOrg, InsertPhase, UpdatePhase) omit both, so
 // a call site cannot send them by accident.
 //
+// EMBEDS MUST NAME THEIR FOREIGN KEY
+//
+// A side effect of those composite guards: every guarded table has TWO
+// foreign keys to its parent, so PostgREST cannot infer which to join
+// through and rejects an unqualified embed with PGRST201. Always use the
+// `target!constraint_name(...)` form and pick the PLAIN single-column FK —
+// the composite exists to make a cross-boundary row impossible, not to be
+// traversed.
+//
+// The same applies to these pairs, none of which the client embeds yet:
+//   site_visit_phases -> site_visits   (…_visit_id_fkey / …_visit_project_fkey)
+//   site_visit_phases -> phases        (…_phase_id_fkey / …_phase_project_fkey)
+//   observation_photos -> observations (…_observation_id_fkey / …_observation_project_fkey)
+//   observation_photos -> photos       (…_photo_id_fkey / …_photo_project_fkey)
+//
 // PERMISSIONS, mirrored from the RLS policies so the UI can hide what the
 // database would refuse:
 //   phases    — read: any project member; write: owner/editor only.
@@ -175,8 +190,17 @@ export async function updateCompany(id: string, input: CompanyInput): Promise<Co
 export async function getPhases(projectId: string): Promise<Phase[]> {
   const { data, error } = await supabase
     .from("phases")
+    // The embed MUST name its foreign key. phases has TWO FKs to companies —
+    // the plain company_id -> companies(id), and the Stage 16 composite guard
+    // (company_id, company_org_id) -> companies(id, organization_id) — so an
+    // unqualified `companies(...)` is ambiguous and PostgREST refuses it with
+    // PGRST201 rather than guessing.
+    //
+    // Embed through the PLAIN FK: it is the single-column relationship that
+    // actually expresses "this phase's company". The composite one exists to
+    // make a cross-firm link structurally impossible, not to be traversed.
     .select(`id, project_id, name, description, company_id, sort_order,
-             company:companies (${COMPANY_COLUMNS})`)
+             company:companies!phases_company_id_fkey (${COMPANY_COLUMNS})`)
     .eq("project_id", projectId)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });

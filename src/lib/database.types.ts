@@ -127,7 +127,7 @@ export type Database = {
           email?: string | null
           id?: string
           name: string
-          organization_id: string
+          organization_id?: string
           phone?: string | null
           trade?: string | null
           updated_at?: string
