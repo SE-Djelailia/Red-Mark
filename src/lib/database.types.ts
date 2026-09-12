@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -105,6 +105,56 @@ export type Database = {
           },
         ]
       }
+      companies: {
+        Row: {
+          address: string | null
+          contact_name: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          name: string
+          organization_id: string
+          phone: string | null
+          trade: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          phone?: string | null
+          trade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          phone?: string | null
+          trade?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       issue_status_events: {
         Row: {
           changed_by: string | null
@@ -164,6 +214,7 @@ export type Database = {
           id: string
           location: Json | null
           location_id: string | null
+          phase_id: string | null
           photo_id: string | null
           priority: string | null
           project_id: string
@@ -185,6 +236,7 @@ export type Database = {
           id?: string
           location?: Json | null
           location_id?: string | null
+          phase_id?: string | null
           photo_id?: string | null
           priority?: string | null
           project_id: string
@@ -206,6 +258,7 @@ export type Database = {
           id?: string
           location?: Json | null
           location_id?: string | null
+          phase_id?: string | null
           photo_id?: string | null
           priority?: string | null
           project_id?: string
@@ -224,6 +277,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "locations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issues_phase_project_fkey"
+            columns: ["phase_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "phases"
+            referencedColumns: ["id", "project_id"]
           },
           {
             foreignKeyName: "issues_photo_id_fkey"
@@ -391,6 +451,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      observation_photos: {
+        Row: {
+          created_at: string
+          observation_id: string
+          photo_id: string
+          project_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          observation_id: string
+          photo_id: string
+          project_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          observation_id?: string
+          photo_id?: string
+          project_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "observation_photos_observation_id_fkey"
+            columns: ["observation_id"]
+            isOneToOne: false
+            referencedRelation: "observations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observation_photos_observation_project_fkey"
+            columns: ["observation_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "observations"
+            referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "observation_photos_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "photos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observation_photos_photo_project_fkey"
+            columns: ["photo_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "photos"
+            referencedColumns: ["id", "project_id"]
+          },
+        ]
       }
       observations: {
         Row: {
@@ -567,6 +680,67 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      phases: {
+        Row: {
+          company_id: string | null
+          company_org_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          project_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          company_org_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          project_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          company_org_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phases_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phases_company_org_fkey"
+            columns: ["company_id", "company_org_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "phases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       photos: {
         Row: {
@@ -908,6 +1082,7 @@ export type Database = {
           address: string | null
           client_name: string | null
           contractor_address: string | null
+          contractor_company_id: string | null
           contractor_contact: string | null
           contractor_email: string | null
           contractor_name: string | null
@@ -926,6 +1101,7 @@ export type Database = {
           address?: string | null
           client_name?: string | null
           contractor_address?: string | null
+          contractor_company_id?: string | null
           contractor_contact?: string | null
           contractor_email?: string | null
           contractor_name?: string | null
@@ -944,6 +1120,7 @@ export type Database = {
           address?: string | null
           client_name?: string | null
           contractor_address?: string | null
+          contractor_company_id?: string | null
           contractor_contact?: string | null
           contractor_email?: string | null
           contractor_name?: string | null
@@ -959,6 +1136,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_contractor_company_id_fkey"
+            columns: ["contractor_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_organization_id_fkey"
             columns: ["organization_id"]
@@ -1072,6 +1256,56 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_visit_phases: {
+        Row: {
+          created_at: string
+          phase_id: string
+          project_id: string
+          visit_id: string
+        }
+        Insert: {
+          created_at?: string
+          phase_id: string
+          project_id: string
+          visit_id: string
+        }
+        Update: {
+          created_at?: string
+          phase_id?: string
+          project_id?: string
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_visit_phases_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_visit_phases_phase_project_fkey"
+            columns: ["phase_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "phases"
+            referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "site_visit_phases_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "site_visits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_visit_phases_visit_project_fkey"
+            columns: ["visit_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "site_visits"
+            referencedColumns: ["id", "project_id"]
           },
         ]
       }
@@ -1234,12 +1468,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1263,11 +1497,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1288,11 +1522,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1313,11 +1547,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1330,11 +1564,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

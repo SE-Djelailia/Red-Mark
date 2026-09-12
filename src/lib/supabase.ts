@@ -78,10 +78,20 @@ export type Update<T extends keyof Database["public"]["Tables"]> =
 // trigger, and the composite FKs exist precisely so a cross-firm row is
 // unrepresentable rather than merely denied. This alias states that the
 // column is the database's to fill.
-export type InsertTriggerOrg<T extends "projects" | "project_members"> = Omit<
+export type InsertTriggerOrg<T extends "projects" | "project_members" | "companies"> = Omit<
   Insert<T>,
   "organization_id"
 >;
+
+// phases.company_org_id is the same idea one level further out: a BEFORE
+// INSERT/UPDATE trigger (set_phase_company_org) derives it FROM THE PROJECT'S
+// FIRM, and the composite FK (company_id, company_org_id) -> companies(id,
+// organization_id) then makes a cross-firm phase structurally impossible.
+// A client-supplied value is overwritten, so the column is not the client's
+// to send. Omitting it from the write type states that in the type system
+// rather than in a comment nobody reads at the call site.
+export type InsertPhase = Omit<Insert<"phases">, "company_org_id">;
+export type UpdatePhase = Omit<Update<"phases">, "company_org_id">;
 
 /** One row of the report's ASSISTAIENT table. Stored on the visit. */
 export interface VisitAttendee {

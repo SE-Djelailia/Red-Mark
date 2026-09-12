@@ -59,6 +59,7 @@ import { getLocations, getLevels, type Location, type Level } from "../../lib/lo
 import { PLANS_ENABLED } from "../../lib/featureFlags";
 import type { IssueStatus } from "../../lib/issueStatus";
 import IssuesTab from "./IssuesTab";
+import PhasesTab from "./PhasesTab";
 import PhotoMetadataEditor, { type EditablePhoto } from "./PhotoMetadataEditor";
 import { IconPhoto, IconVisit } from "./ui-kit/RedMarkIcons";
 import EmptyState from "./ui-kit/EmptyState";
@@ -145,7 +146,7 @@ function mapVisitRow(visit: any): SiteVisit {
   };
 }
 
-type MainTab = "visits" | "issues" | "photos" | "plans" | "locations";
+type MainTab = "visits" | "issues" | "photos" | "plans" | "locations" | "phases";
 
 export default function ProjectDetail() {
   const navigate = useNavigate();
@@ -997,6 +998,17 @@ export default function ProjectDetail() {
               <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand-600" />
             )}
           </button>
+          <button
+            onClick={() => setActiveTab("phases")}
+            className={`flex-1 lg:flex-none lg:px-6 py-3 text-sm font-medium transition-colors relative ${
+              activeTab === "phases" ? "text-ink" : "text-muted hover:text-ink"
+            }`}
+          >
+            Phases
+            {activeTab === "phases" && (
+              <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand-600" />
+            )}
+          </button>
         </div>
       </div>
 
@@ -1332,6 +1344,16 @@ export default function ProjectDetail() {
         {PLANS_ENABLED && activeTab === "plans" && id && <PlanFilesManager projectId={id} />}
 
         {/* Locations Tab */}
+        {activeTab === "phases" && id && (
+          <PhasesTab
+            projectId={id}
+            // Same predicate the RLS policy uses (owner/editor). A commenter
+            // gets the list read-only rather than buttons the database
+            // would refuse.
+            canEdit={projectRole.canCreateIssues}
+          />
+        )}
+
         {activeTab === "locations" && id && (
           <LocationsTab
             projectId={id}
