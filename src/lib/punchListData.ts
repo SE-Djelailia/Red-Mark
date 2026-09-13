@@ -10,6 +10,7 @@ import type { Photo } from "./supabase";
 import { getIssuesByProject, type Issue } from "./issuesApi";
 import { PRIORITY_LABEL, PRIORITY_RANK } from "./issuePriority";
 import { getLocations, type Location } from "./locationsApi";
+import { getLots, type Lot } from "./lotApi";
 import { getPhotosSignedUrls } from "./supabaseApi";
 import {
   ISSUE_STATUS_LABEL,
@@ -59,7 +60,10 @@ export interface PunchListItem {
   dueDate: string;
   /** True when past due and not yet verified. Lets the template mark a row. */
   overdue: boolean;
-  assignedTo: string;
+  /** "Lot 3 — Plomberie Inc", or "" when the déficience has no lot.
+   *  This REPLACED the old `assignedTo` person-assignee (#7): responsibility
+   *  now follows the lot, i.e. the company contracted to do that work. */
+  lot: string;
   /** Signed URLs, ready for the image module. May be empty. */
   photos: { image: string; caption: string }[];
 }
@@ -130,14 +134,18 @@ export async function buildPunchList(
   projectId: string,
   options: PunchListOptions,
 ): Promise<PunchListDocument> {
-  const [issues, locations] = await Promise.all([
+  const [issues, locations, lots] = await Promise.all([
     getIssuesByProject(projectId),
     // Location labels are a nicety; an empty list degrades to a blank
     // location rather than failing the document.
     getLocations(projectId).catch(() => [] as Location[]),
+    // Same contract for lots: a failed lookup prints a blank lot rather than
+    // failing the whole punch list.
+    getLots(projectId).catch(() => [] as Lot[]),
   ]);
 
   const locationsById = new Map(locations.map((l) => [l.id, l]));
+  const lotsById = new Map(lots.map((l) => [l.id, l]));
 
   const outstandingSet = new Set<IssueStatus>(OUTSTANDING_ISSUE_STATUSES);
   const isOutstanding = (i: Issue) => outstandingSet.has(i.status);
@@ -167,6 +175,16 @@ export async function buildPunchList(
   const signed = await getPhotosSignedUrls(allPhotos.map((p) => p.storage_path));
   const urlByPhotoId = new Map(allPhotos.map((p, idx) => [p.id, signed[idx] ?? ""]));
 
+  // "Lot 3 — Plomberie Inc" when the lot has a company, otherwise just the
+  // lot name. getLots already embeds the company through the plain FK, so
+  // this costs no extra query.
+  const lotLabel = (issue: Issue): string => {
+    if (!issue.lotId) return "";
+    const lot = lotsById.get(issue.lotId);
+    if (!lot) return "";
+    return lot.company ? `${lot.name} — ${lot.company.name}` : lot.name;
+  };
+
   const toItem = (issue: Issue, index: number): PunchListItem => {
     const loc = issue.locationId ? locationsById.get(issue.locationId) : undefined;
     const days = ageInDays(issue.createdAt ?? issue.createdDate);
@@ -190,7 +208,7 @@ export async function buildPunchList(
       age: days === null ? "" : `${days} j`,
       dueDate: issue.dueDate ? formatDateLong(issue.dueDate) : "",
       overdue: isOverdue(issue.dueDate, issue.status),
-      assignedTo: issue.assignedToName || issue.assignedTo || "",
+      lot: lotLabel(issue),
       photos,
     };
   };

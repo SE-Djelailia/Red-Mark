@@ -64,6 +64,7 @@ import VisitAttendeesSection from "./VisitAttendeesSection";
 import { IconPhoto, MarkX } from "./ui-kit/RedMarkIcons";
 import EmptyState from "./ui-kit/EmptyState";
 import { getVisitStages, type ProjectStage } from "../../lib/stagesApi";
+import { getLots } from "../../lib/lotApi";
 
 interface Photo {
   id: string;
@@ -113,6 +114,10 @@ export default function VisitDetail() {
   // into a readable zone. Optional context: a failure degrades to the legacy
   // free-text label rather than hiding the photos.
   const [locations, setLocations] = useState<Location[]>([]);
+  // Lot name (with its company) per lot id, for the condensed déficience rows.
+  // The lot is now what says WHO is responsible — it replaced the old
+  // person-assignee that used to print on this line (#7).
+  const [lotLabelById, setLotLabelById] = useState<Map<string, string>>(new Map());
   const [projectName, setProjectName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -279,6 +284,24 @@ export default function VisitDetail() {
         if (!cancelled) setLocations(locs);
       })
       .catch((e) => console.error("Error loading locations for visit photos:", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    let cancelled = false;
+    getLots(projectId)
+      .then((lots) => {
+        if (cancelled) return;
+        setLotLabelById(
+          new Map(
+            lots.map((l) => [l.id, l.company ? `${l.name} — ${l.company.name}` : l.name]),
+          ),
+        );
+      })
+      .catch((e) => console.error("Error loading lots for visit issues:", e));
     return () => {
       cancelled = true;
     };
@@ -1131,7 +1154,7 @@ export default function VisitDetail() {
           {/* Deficiences — stays always visible (core content), but each row
               is now a single compact line instead of a large card. Same
               fields as before (title, description, priority, status, linked
-              photos, assignee), just condensed. */}
+              photos, lot), just condensed. */}
           {locationsInVisit.length > 0 && (
             <div className="bg-surface rounded-[4px] border border-line p-4">
               <h2 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
@@ -1208,13 +1231,21 @@ export default function VisitDetail() {
                         <PriorityBadge priority={issue.priority} />
                         <StatusBadge status={issue.status} />
                       </div>
-                      {(issue.description || issue.assignedTo) && (
-                        <div className="text-xs text-muted truncate mt-0.5">
-                          {issue.description}
-                          {issue.description && issue.assignedTo ? " · " : ""}
-                          {issue.assignedTo}
-                        </div>
-                      )}
+                      {(() => {
+                        // The lot replaces the assignee on this line: it names
+                        // the company responsible for the work.
+                        const lotLabel = issue.lotId
+                          ? (lotLabelById.get(issue.lotId) ?? "")
+                          : "";
+                        if (!issue.description && !lotLabel) return null;
+                        return (
+                          <div className="text-xs text-muted truncate mt-0.5">
+                            {issue.description}
+                            {issue.description && lotLabel ? " · " : ""}
+                            {lotLabel}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Linked Photos — small thumbnails instead of a full row */}

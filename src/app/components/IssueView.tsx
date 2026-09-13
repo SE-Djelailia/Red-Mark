@@ -8,12 +8,11 @@ import {
   MessageSquare,
   Pencil,
   Tag,
-  User,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getCommentsForIssue } from "../../lib/commentsApi";
-import { getProjectTeammates, type Comment, type Teammate } from "../../lib/commentsApi";
+import type { Comment } from "../../lib/commentsApi";
 import { getLocation, type Location } from "../../lib/locationsApi";
 import { getLots } from "../../lib/lotApi";
 import { getProjectStages } from "../../lib/stagesApi";
@@ -102,7 +101,6 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
     }
   };
   const [location, setLocation] = useState<Location | null>(null);
-  const [assigneeName, setAssigneeName] = useState<string | null>(null);
   const [lotLabel, setLotLabel] = useState<string | null>(null);
   const [stageLabel, setStageLabel] = useState<string | null>(null);
 
@@ -120,16 +118,6 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
       .catch((e) => console.error("Error loading linked location:", e));
   }, [issue.locationId]);
 
-  useEffect(() => {
-    if (!issue.assignedToUserId) {
-      setAssigneeName(null);
-      return;
-    }
-    getProjectTeammates(projectId).then((teammates: Teammate[]) => {
-      const match = teammates.find((t) => t.id === issue.assignedToUserId);
-      setAssigneeName(match ? match.name || match.email : null);
-    });
-  }, [issue.assignedToUserId, projectId]);
   // Resolve lot/stage names only when the issue actually HAS one — both are
   // optional and usually unset, so the common case costs no request at all.
   // getLots already embeds the company through the plain FK
@@ -173,10 +161,6 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
       cancelled = true;
     };
   }, [issue.stageId, projectId]);
-
-  const assigneeDisplay = issue.assignedToUserId
-    ? assigneeName || "Membre du projet"
-    : issue.assignedToName || issue.assignedTo || null;
 
   if (editing) {
     return (
@@ -240,12 +224,6 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
             <div className="flex items-center gap-2 text-body">
               <Calendar size={12} className="text-faint flex-shrink-0" />
               Échéance : {issue.dueDate}
-            </div>
-          )}
-          {assigneeDisplay && (
-            <div className="flex items-center gap-2 text-body">
-              <User size={12} className="text-faint flex-shrink-0" />
-              Assigné à {assigneeDisplay}
             </div>
           )}
           {location && (

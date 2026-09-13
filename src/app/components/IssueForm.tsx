@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, User, Users } from "lucide-react";
+import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../contexts/useAuth";
 import {
@@ -20,7 +20,6 @@ import { DEFAULT_ISSUE_PRIORITY } from "../../lib/issuePriority";
 import { getLocation, type Location } from "../../lib/locationsApi";
 import { getLots, type Lot } from "../../lib/lotApi";
 import { ensureProjectStages, type ProjectStage } from "../../lib/stagesApi";
-import { getProjectTeammates, type Teammate } from "../../lib/commentsApi";
 import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
 import SecureImage from "./SecureImage";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
@@ -44,8 +43,6 @@ interface Props {
   onSaved: (issue: Issue) => void;
   onCancel: () => void;
 }
-
-type AssigneeMode = "none" | "member" | "external";
 
 // Canonical create/edit form for issues (déficiences), reused by every issue
 // surface (IssueDetail, IssueManagement, VisitDetail, LocationPinPanel — see
@@ -81,11 +78,6 @@ export default function IssueForm({
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
 
-  const [teammates, setTeammates] = useState<Teammate[]>([]);
-  const [assigneeMode, setAssigneeMode] = useState<AssigneeMode>("none");
-  const [assignedToUserId, setAssignedToUserId] = useState("");
-  const [assignedToName, setAssignedToName] = useState("");
-
   const [location, setLocation] = useState<Location | null>(null);
   const [loadingLocation, setLoadingLocation] = useState(false);
 
@@ -101,10 +93,6 @@ export default function IssueForm({
   const [removedPhotoIds, setRemovedPhotoIds] = useState<string[]>([]);
   const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    getProjectTeammates(projectId).then(setTeammates);
-  }, [projectId]);
 
   // Lots and stages for the two optional pickers. ensureProjectStages is the
   // same copy-on-first-need used by the visit form: it seeds this project's
@@ -161,9 +149,6 @@ export default function IssueForm({
       setDiscipline(DEFAULT_DISCIPLINE);
       setDueDate("");
       setTags([]);
-      setAssigneeMode("none");
-      setAssignedToUserId("");
-      setAssignedToName("");
       setLotId("");
       setStageId("");
       setExistingPhotos(initialPhotos || []);
@@ -179,39 +164,12 @@ export default function IssueForm({
     setDiscipline(issue.discipline || "");
     setDueDate(issue.dueDate || "");
     setTags(issue.tags);
-    if (issue.assignedToUserId) {
-      setAssigneeMode("member");
-      setAssignedToUserId(issue.assignedToUserId);
-      setAssignedToName("");
-    } else if (issue.assignedToName || issue.assignedTo) {
-      setAssigneeMode("external");
-      setAssignedToUserId("");
-      setAssignedToName(issue.assignedToName || issue.assignedTo || "");
-    } else {
-      setAssigneeMode("none");
-      setAssignedToUserId("");
-      setAssignedToName("");
-    }
     setLotId(issue.lotId || "");
     setStageId(issue.stageId || "");
     setExistingPhotos(issue.photos);
     setRemovedPhotoIds([]);
     setNewPhotoFiles([]);
   }, [issue]);
-
-  const selectMemberMode = () => {
-    setAssigneeMode("member");
-    setAssignedToName("");
-  };
-  const selectExternalMode = () => {
-    setAssigneeMode("external");
-    setAssignedToUserId("");
-  };
-  const clearAssignee = () => {
-    setAssigneeMode("none");
-    setAssignedToUserId("");
-    setAssignedToName("");
-  };
 
   // A lifecycle move is in progress in this edit session — the only case
   // where a note is meaningful.
@@ -253,12 +211,16 @@ export default function IssueForm({
         priority,
         discipline: discipline || undefined,
         dueDate: dueDate || null,
-        assignedTo: assigneeMode === "external" ? assignedToName.trim() : "",
-        assignedToName: assigneeMode === "external" ? assignedToName.trim() : "",
-        assignedToUserId: assigneeMode === "member" ? assignedToUserId || null : null,
         tags,
         location: location ? location.name || location.locationNumber : "",
         locationId: location?.id || null,
+        // No assignee keys here, DELIBERATELY omitted rather than sent as null.
+        // The person-assignee UI was retired in #7 — the Lot now carries
+        // responsibility (the company doing that lot). The assigned_to /
+        // assigned_to_name COLUMNS are kept, and updateIssue only writes a
+        // field when its key is present, so an old déficience's assignee data
+        // survives an edit made through this form. Sending null would erase
+        // it the first time anyone touched the issue.
         // `|| null`, never undefined: undefined is dropped from the payload
         // and updateIssue would leave the old value in place, so choosing
         // "Aucun lot" on an issue that had one would appear to work and
@@ -494,69 +456,6 @@ export default function IssueForm({
           onChange={(e) => setDueDate(e.target.value)}
           className={inputClassName}
         />
-      </div>
-
-      {/* Assigned to */}
-      <div>
-        <label className={labelClassName}>Assigné à</label>
-        <div className="flex gap-2 mb-2">
-          <button
-            type="button"
-            onClick={selectMemberMode}
-            className={`flex-1 py-2 px-3 rounded-[4px] border-2 transition-all flex items-center justify-center gap-2 text-sm min-h-[40px] ${
-              assigneeMode === "member"
-                ? "border-line-strong border-l-2 border-l-brand-600 bg-surface"
-                : "border-line hover:border-line-strong"
-            }`}
-          >
-            <Users size={12} />
-            Membre du projet
-          </button>
-          <button
-            type="button"
-            onClick={selectExternalMode}
-            className={`flex-1 py-2 px-3 rounded-[4px] border-2 transition-all flex items-center justify-center gap-2 text-sm min-h-[40px] ${
-              assigneeMode === "external"
-                ? "border-line-strong border-l-2 border-l-brand-600 bg-surface"
-                : "border-line hover:border-line-strong"
-            }`}
-          >
-            <User size={12} />
-            Externe
-          </button>
-        </div>
-        {assigneeMode === "member" && (
-          <select
-            value={assignedToUserId}
-            onChange={(e) => setAssignedToUserId(e.target.value)}
-            className={inputClassName}
-          >
-            <option value="">Sélectionner un membre</option>
-            {teammates.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name || t.email}
-              </option>
-            ))}
-          </select>
-        )}
-        {assigneeMode === "external" && (
-          <input
-            type="text"
-            value={assignedToName}
-            onChange={(e) => setAssignedToName(e.target.value)}
-            placeholder="Nom de l'entrepreneur externe"
-            className={inputClassName}
-          />
-        )}
-        {assigneeMode !== "none" && (
-          <button
-            type="button"
-            onClick={clearAssignee}
-            className="text-xs text-muted hover:text-brand-600 mt-1.5"
-          >
-            Retirer l'assignation
-          </button>
-        )}
       </div>
 
       {/* Location — read-only */}

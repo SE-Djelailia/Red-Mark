@@ -78,7 +78,6 @@ interface Issue {
   discipline?: string;
   dueDate?: string | null;
   createdAt?: string;
-  assignedTo: string;
   createdBy: string;
   createdDate: string;
   photos: { id: string; url: string; storagePath?: string }[];
