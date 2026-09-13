@@ -47,13 +47,14 @@
 // traversed.
 //
 // The same applies to these pairs, none of which the client embeds yet:
-//   site_visit_phases -> site_visits   (…_visit_id_fkey / …_visit_project_fkey)
-//   site_visit_phases -> lots          (…_phase_id_fkey / …_phase_project_fkey)
-//   observation_photos -> observations (…_observation_id_fkey / …_observation_project_fkey)
-//   observation_photos -> photos       (…_photo_id_fkey / …_photo_project_fkey)
+//   site_visit_stages -> site_visits    (…_visit_id_fkey / …_visit_project_fkey)
+//   site_visit_stages -> project_stages (…_stage_id_fkey / …_stage_project_fkey)
+//   observation_photos -> observations  (…_observation_id_fkey / …_observation_project_fkey)
+//   observation_photos -> photos        (…_photo_id_fkey / …_photo_project_fkey)
 //
-// (site_visit_phases still carries the old names and still points at `lots`;
-// it is the STAGE link, and Stage 22 rebuilds it against project_stages.)
+// (site_visit_stages is the STAGE link — which construction stages a visit
+// covered. Stage 22 rebuilt it against project_stages; it has nothing to do
+// with lots.)
 //
 // PERMISSIONS, mirrored from the RLS policies so the UI can hide what the
 // database would refuse:

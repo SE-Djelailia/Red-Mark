@@ -260,6 +260,7 @@ export type Database = {
           priority: string | null
           project_id: string
           resolved_at: string | null
+          stage_id: string | null
           status: string | null
           status_changed_at: string | null
           title: string
@@ -282,6 +283,7 @@ export type Database = {
           priority?: string | null
           project_id: string
           resolved_at?: string | null
+          stage_id?: string | null
           status?: string | null
           status_changed_at?: string | null
           title: string
@@ -304,6 +306,7 @@ export type Database = {
           priority?: string | null
           project_id?: string
           resolved_at?: string | null
+          stage_id?: string | null
           status?: string | null
           status_changed_at?: string | null
           title?: string
@@ -339,6 +342,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issues_stage_project_fkey"
+            columns: ["stage_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "project_stages"
+            referencedColumns: ["id", "project_id"]
           },
           {
             foreignKeyName: "issues_visit_id_fkey"
@@ -1351,49 +1361,49 @@ export type Database = {
           },
         ]
       }
-      site_visit_phases: {
+      site_visit_stages: {
         Row: {
           created_at: string
-          phase_id: string
           project_id: string
+          stage_id: string
           visit_id: string
         }
         Insert: {
           created_at?: string
-          phase_id: string
           project_id: string
+          stage_id: string
           visit_id: string
         }
         Update: {
           created_at?: string
-          phase_id?: string
           project_id?: string
+          stage_id?: string
           visit_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "site_visit_phases_phase_id_fkey"
-            columns: ["phase_id"]
+            foreignKeyName: "site_visit_stages_stage_id_fkey"
+            columns: ["stage_id"]
             isOneToOne: false
-            referencedRelation: "lots"
+            referencedRelation: "project_stages"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "site_visit_phases_phase_project_fkey"
-            columns: ["phase_id", "project_id"]
+            foreignKeyName: "site_visit_stages_stage_project_fkey"
+            columns: ["stage_id", "project_id"]
             isOneToOne: false
-            referencedRelation: "lots"
+            referencedRelation: "project_stages"
             referencedColumns: ["id", "project_id"]
           },
           {
-            foreignKeyName: "site_visit_phases_visit_id_fkey"
+            foreignKeyName: "site_visit_stages_visit_id_fkey"
             columns: ["visit_id"]
             isOneToOne: false
             referencedRelation: "site_visits"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "site_visit_phases_visit_project_fkey"
+            foreignKeyName: "site_visit_stages_visit_project_fkey"
             columns: ["visit_id", "project_id"]
             isOneToOne: false
             referencedRelation: "site_visits"
