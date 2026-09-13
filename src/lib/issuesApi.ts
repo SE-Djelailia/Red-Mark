@@ -44,6 +44,13 @@ export interface Issue {
   // Real project-member assignee (uuid FK -> auth.users). No UI writes this
   // yet (Stage 2/3 adds the member picker) — exposed for forward use.
   assignedToUserId?: string | null;
+  // Optional single-select metadata (stakeholder request #6). Both are
+  // nullable columns guarded by a composite FK to the issue's OWN project
+  // (issues_lot_project_fkey / issues_stage_project_fkey), so a lot or stage
+  // from another project is structurally unrepresentable rather than merely
+  // denied — the client cannot create a mismatch even by sending one.
+  lotId?: string | null;
+  stageId?: string | null;
   createdBy: string;
   createdDate: string;
   // Full-precision counterparts of createdDate/status, for callers that need
@@ -166,6 +173,8 @@ function rowToIssueBase(row: any): Omit<Issue, "photos"> {
     tags: Array.isArray(extras.tags) ? extras.tags : [],
     location: extras.label || "",
     locationId: row.location_id || null,
+    lotId: row.lot_id || null,
+    stageId: row.stage_id || null,
   };
 }
 
@@ -475,6 +484,12 @@ export async function createIssue(
           : issueData.assignedToName || issueData.assignedTo || null,
         location: buildExtras(issueData),
         location_id: issueData.locationId || null,
+        // `|| null` rather than leaving them out: undefined is dropped from
+        // the JSON payload, which on an UPDATE means "leave as-is" — the
+        // cleared-field bug. Both columns are nullable, so null is the
+        // honest value for "aucun lot" / "aucune étape".
+        lot_id: issueData.lotId || null,
+        stage_id: issueData.stageId || null,
       },
     ])
     .select()
@@ -540,6 +555,13 @@ export async function updateIssue(
     payload.assigned_to_name = name;
     if (name) payload.assigned_to = null;
   }
+
+  // Explicit `!== undefined` guards, like every field above: an omitted key
+  // leaves the column untouched, while an explicit null CLEARS it. That is
+  // what lets the form's "Aucun lot" actually persist instead of silently
+  // keeping the previous value.
+  if (updates.lotId !== undefined) payload.lot_id = updates.lotId || null;
+  if (updates.stageId !== undefined) payload.stage_id = updates.stageId || null;
 
   // Rebuild extras JSONB if any of its constituent fields changed
   if (updates.location !== undefined || updates.tags !== undefined) {

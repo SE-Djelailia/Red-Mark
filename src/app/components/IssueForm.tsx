@@ -18,6 +18,8 @@ import {
 import { DISCIPLINES, DEFAULT_DISCIPLINE } from "../../lib/disciplines";
 import { DEFAULT_ISSUE_PRIORITY } from "../../lib/issuePriority";
 import { getLocation, type Location } from "../../lib/locationsApi";
+import { getLots, type Lot } from "../../lib/lotApi";
+import { ensureProjectStages, type ProjectStage } from "../../lib/stagesApi";
 import { getProjectTeammates, type Teammate } from "../../lib/commentsApi";
 import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
 import SecureImage from "./SecureImage";
@@ -87,6 +89,14 @@ export default function IssueForm({
   const [location, setLocation] = useState<Location | null>(null);
   const [loadingLocation, setLoadingLocation] = useState(false);
 
+  // Optional single-select metadata. "" is the "none" sentinel for both, so
+  // the <select> has a real value rather than an uncontrolled undefined; it
+  // is converted to null at save time.
+  const [lots, setLots] = useState<Lot[]>([]);
+  const [stages, setStages] = useState<ProjectStage[]>([]);
+  const [lotId, setLotId] = useState("");
+  const [stageId, setStageId] = useState("");
+
   const [existingPhotos, setExistingPhotos] = useState<Issue["photos"]>([]);
   const [removedPhotoIds, setRemovedPhotoIds] = useState<string[]>([]);
   const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
@@ -94,6 +104,36 @@ export default function IssueForm({
 
   useEffect(() => {
     getProjectTeammates(projectId).then(setTeammates);
+  }, [projectId]);
+
+  // Lots and stages for the two optional pickers. ensureProjectStages is the
+  // same copy-on-first-need used by the visit form: it seeds this project's
+  // project_stages from the firm's construction_stages master the first time
+  // anything needs them, and no-ops afterwards. A project created before the
+  // stage feature therefore gets its stages here rather than staying empty.
+  //
+  // Failure is non-fatal and deliberately silent in the UI: these are
+  // optional metadata, and a déficience must still be recordable on site if
+  // the lookup fails. The selects simply show only their "none" option.
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const [projectLots, projectStages] = await Promise.all([
+          getLots(projectId),
+          ensureProjectStages(projectId),
+        ]);
+        if (cancelled) return;
+        setLots(projectLots);
+        setStages(projectStages);
+      } catch (e) {
+        if (!cancelled) console.error("Error loading lots/stages:", e);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [projectId]);
 
   useEffect(() => {
@@ -124,6 +164,8 @@ export default function IssueForm({
       setAssigneeMode("none");
       setAssignedToUserId("");
       setAssignedToName("");
+      setLotId("");
+      setStageId("");
       setExistingPhotos(initialPhotos || []);
       setRemovedPhotoIds([]);
       setNewPhotoFiles([]);
@@ -150,6 +192,8 @@ export default function IssueForm({
       setAssignedToUserId("");
       setAssignedToName("");
     }
+    setLotId(issue.lotId || "");
+    setStageId(issue.stageId || "");
     setExistingPhotos(issue.photos);
     setRemovedPhotoIds([]);
     setNewPhotoFiles([]);
@@ -215,6 +259,12 @@ export default function IssueForm({
         tags,
         location: location ? location.name || location.locationNumber : "",
         locationId: location?.id || null,
+        // `|| null`, never undefined: undefined is dropped from the payload
+        // and updateIssue would leave the old value in place, so choosing
+        // "Aucun lot" on an issue that had one would appear to work and
+        // silently not persist.
+        lotId: lotId || null,
+        stageId: stageId || null,
         photos: [] as Issue["photos"],
       };
 
@@ -394,6 +444,45 @@ export default function IssueForm({
             </option>
           ))}
         </select>
+      </div>
+
+      {/* Lot + étape — optional metadata, so a compact two-up row rather than
+          two full-width blocks in an already dense form. Native <select>
+          matches Discipline above and gives the iPad its wheel picker for
+          free, which beats a custom dropdown for one-handed use on site.
+          Each collapses to full width below sm (phone). */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className={labelClassName}>Lot</label>
+          <select
+            value={lotId}
+            onChange={(e) => setLotId(e.target.value)}
+            className={inputClassName}
+          >
+            <option value="">Aucun lot</option>
+            {lots.map((lot) => (
+              <option key={lot.id} value={lot.id}>
+                {lot.company ? `${lot.name} — ${lot.company.name}` : lot.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className={labelClassName}>Étape</label>
+          <select
+            value={stageId}
+            onChange={(e) => setStageId(e.target.value)}
+            className={inputClassName}
+          >
+            <option value="">Aucune étape</option>
+            {stages.map((stage) => (
+              <option key={stage.id} value={stage.id}>
+                {stage.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Due date */}

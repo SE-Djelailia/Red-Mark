@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import {
   Calendar,
   Edit,
+  Layers,
   MapPin,
+  Milestone,
   MessageSquare,
   Pencil,
   Tag,
@@ -13,6 +15,8 @@ import { toast } from "sonner";
 import { getCommentsForIssue } from "../../lib/commentsApi";
 import { getProjectTeammates, type Comment, type Teammate } from "../../lib/commentsApi";
 import { getLocation, type Location } from "../../lib/locationsApi";
+import { getLots } from "../../lib/lotApi";
+import { getProjectStages } from "../../lib/stagesApi";
 import type { Issue } from "../../lib/issuesApi";
 import { saveAnnotatedPhoto } from "../../lib/supabaseApi";
 import { getRlsErrorMessage } from "../../lib/rlsErrors";
@@ -99,6 +103,8 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
   };
   const [location, setLocation] = useState<Location | null>(null);
   const [assigneeName, setAssigneeName] = useState<string | null>(null);
+  const [lotLabel, setLotLabel] = useState<string | null>(null);
+  const [stageLabel, setStageLabel] = useState<string | null>(null);
 
   useEffect(() => {
     getCommentsForIssue(issue.id).then(setComments);
@@ -124,6 +130,50 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
       setAssigneeName(match ? match.name || match.email : null);
     });
   }, [issue.assignedToUserId, projectId]);
+  // Resolve lot/stage names only when the issue actually HAS one — both are
+  // optional and usually unset, so the common case costs no request at all.
+  // getLots already embeds the company through the plain FK
+  // (lots_company_id_fkey), so naming the lot's company here adds no second
+  // query and no new PGRST201 surface.
+  useEffect(() => {
+    if (!issue.lotId) {
+      setLotLabel(null);
+      return;
+    }
+    let cancelled = false;
+    getLots(projectId)
+      .then((lots) => {
+        if (cancelled) return;
+        const match = lots.find((l) => l.id === issue.lotId);
+        setLotLabel(
+          match ? (match.company ? `${match.name} — ${match.company.name}` : match.name) : null,
+        );
+      })
+      .catch((e) => console.error("Error loading issue lot:", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [issue.lotId, projectId]);
+
+  useEffect(() => {
+    if (!issue.stageId) {
+      setStageLabel(null);
+      return;
+    }
+    let cancelled = false;
+    // getProjectStages, not ensureProjectStages: a read-only view must not
+    // seed rows as a side effect of someone merely looking at a déficience.
+    getProjectStages(projectId)
+      .then((stages) => {
+        if (cancelled) return;
+        setStageLabel(stages.find((st) => st.id === issue.stageId)?.name ?? null);
+      })
+      .catch((e) => console.error("Error loading issue stage:", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [issue.stageId, projectId]);
+
   const assigneeDisplay = issue.assignedToUserId
     ? assigneeName || "Membre du projet"
     : issue.assignedToName || issue.assignedTo || null;
@@ -203,6 +253,18 @@ export default function IssueView({ issue, projectId, onIssueUpdated, highlightC
               <MapPin size={12} className="text-faint flex-shrink-0" />
               {location.locationNumber}
               {location.name ? ` — ${location.name}` : ""}
+            </div>
+          )}
+          {lotLabel && (
+            <div className="flex items-center gap-2 text-body">
+              <Layers size={12} className="text-faint flex-shrink-0" />
+              Lot : {lotLabel}
+            </div>
+          )}
+          {stageLabel && (
+            <div className="flex items-center gap-2 text-body">
+              <Milestone size={12} className="text-faint flex-shrink-0" />
+              Étape : {stageLabel}
             </div>
           )}
           {issue.tags.length > 0 && (
