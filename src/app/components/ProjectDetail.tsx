@@ -28,7 +28,7 @@ import { VisitCardSkeleton, PhotoGridSkeleton, CommentSkeleton } from "./Loading
 import {
   getSiteVisitsPage,
   getVisitsCount,
-  getVisitPhasesInUse,
+  getVisitStageOptions,
   getProject,
   getPhotosByProject,
   getPhotosCount,
@@ -288,7 +288,9 @@ export default function ProjectDetail() {
   // Visits list filters — all server-side (see supabaseApi.ts's
   // getSiteVisitsPage), so they compose correctly with pagination instead
   // of only filtering whatever page happens to be loaded.
-  const [visitPhaseFilter, setVisitPhaseFilter] = useState("");
+  // Holds a project_stages.id, not the legacy phase string — a visit covers
+  // several stages now, so an exact match on the joined names would omit it.
+  const [visitStageFilter, setVisitStageFilter] = useState("");
   const [visitDateFrom, setVisitDateFrom] = useState("");
   const [visitDateTo, setVisitDateTo] = useState("");
   const [visitOpenIssuesOnly, setVisitOpenIssuesOnly] = useState(false);
@@ -298,9 +300,9 @@ export default function ProjectDetail() {
   const [showPunchList, setShowPunchList] = useState(false);
 
   const hasVisitFilters = Boolean(
-    visitPhaseFilter || visitDateFrom || visitDateTo || visitOpenIssuesOnly,
+    visitStageFilter || visitDateFrom || visitDateTo || visitOpenIssuesOnly,
   );
-  const [visitPhasesInUse, setVisitPhasesInUse] = useState<string[]>([]);
+  const [visitStageOptions, setVisitStageOptions] = useState<{ id: string; name: string }[]>([]);
   // Resolved lazily the first time the open-issues toggle is turned on, not
   // on every render — see toggleVisitOpenIssuesOnly below.
   const [openIssueVisitIds, setOpenIssueVisitIds] = useState<Set<string> | null>(null);
@@ -511,18 +513,18 @@ export default function ProjectDetail() {
       // actually on/near screen (see VisitCard.tsx). The total count is a
       // separate cheap query so the header stat/tab badge show the real
       // total, not just what's been paged in so far.
-      const [{ visits, hasMore }, total, totalPhotos, phases] = await Promise.all([
+      const [{ visits, hasMore }, total, totalPhotos, stageOptions] = await Promise.all([
         getSiteVisitsPage(id, { offset: 0, limit: VISITS_PAGE_SIZE }),
         getVisitsCount(id),
         getPhotosCount(id),
-        getVisitPhasesInUse(id),
+        getVisitStageOptions(id),
       ]);
 
       setSiteVisits(visits.map(mapVisitRow));
       setVisitsHasMore(hasMore);
       setTotalVisitsCount(total);
       setTotalPhotosCount(totalPhotos);
-      setVisitPhasesInUse(phases);
+      setVisitStageOptions(stageOptions);
     } catch (error) {
       console.error("❌ Error fetching site visits:", error);
       toast.error("Erreur lors du chargement des visites.");
@@ -538,12 +540,12 @@ export default function ProjectDetail() {
 
   const activeVisitFilters = useMemo((): SiteVisitPageFilters | undefined => {
     const f: SiteVisitPageFilters = {};
-    if (visitPhaseFilter) f.phase = visitPhaseFilter;
+    if (visitStageFilter) f.stageId = visitStageFilter;
     if (visitDateFrom) f.dateFrom = visitDateFrom;
     if (visitDateTo) f.dateTo = visitDateTo;
     if (visitOpenIssuesOnly) f.visitIds = Array.from(openIssueVisitIds || []);
     return Object.keys(f).length > 0 ? f : undefined;
-  }, [visitPhaseFilter, visitDateFrom, visitDateTo, visitOpenIssuesOnly, openIssueVisitIds]);
+  }, [visitStageFilter, visitDateFrom, visitDateTo, visitOpenIssuesOnly, openIssueVisitIds]);
 
   // Used by both "Charger plus" (reset=false) and the filter-change effect
   // below (reset=true) — kept separate from fetchData's own initial fetch
@@ -1054,14 +1056,15 @@ export default function ProjectDetail() {
                 {/* Filters */}
                 <div className="flex flex-wrap items-center gap-2">
                   <select
-                    value={visitPhaseFilter}
-                    onChange={(e) => setVisitPhaseFilter(e.target.value)}
+                    value={visitStageFilter}
+                    onChange={(e) => setVisitStageFilter(e.target.value)}
                     className="px-3 py-2 bg-surface border border-line-strong rounded-[4px] text-sm min-h-[44px]"
+                    aria-label="Filtrer par étape"
                   >
-                    <option value="">Toutes les phases</option>
-                    {visitPhasesInUse.map((phase) => (
-                      <option key={phase} value={phase}>
-                        {phase.charAt(0).toUpperCase() + phase.slice(1)}
+                    <option value="">Toutes les étapes</option>
+                    {visitStageOptions.map((stage) => (
+                      <option key={stage.id} value={stage.id}>
+                        {stage.name}
                       </option>
                     ))}
                   </select>
@@ -1092,7 +1095,7 @@ export default function ProjectDetail() {
                   {hasVisitFilters && (
                     <button
                       onClick={() => {
-                        setVisitPhaseFilter("");
+                        setVisitStageFilter("");
                         setVisitDateFrom("");
                         setVisitDateTo("");
                         setVisitOpenIssuesOnly(false);
@@ -1120,7 +1123,7 @@ export default function ProjectDetail() {
                         ? {
                             label: "Effacer les filtres",
                             onClick: () => {
-                              setVisitPhaseFilter("");
+                              setVisitStageFilter("");
                               setVisitDateFrom("");
                               setVisitDateTo("");
                               setVisitOpenIssuesOnly(false);

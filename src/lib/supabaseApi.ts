@@ -220,7 +220,16 @@ export async function getSiteVisits(projectId: string): Promise<SiteVisit[]> {
 }
 
 export interface SiteVisitPageFilters {
-  phase?: string;
+  // A project_stages.id, not the legacy free-text phase.
+  //
+  // WHY THIS MOVED OFF site_visits.phase
+  //
+  // A visit now covers SEVERAL stages, and site_visits.phase holds the joined
+  // names ("Fondation, Enveloppe") for the ~44 display readers. An exact match
+  // against that string breaks: .eq("phase", "Fondation") silently omits a
+  // visit that genuinely covered Fondation alongside another stage. Filtering
+  // through site_visit_stages asks the question the user meant.
+  stageId?: string;
   dateFrom?: string; // "YYYY-MM-DD"
   dateTo?: string;
   // Restricts to this exact id set — used for the "has open issues" filter
@@ -249,8 +258,19 @@ export async function getSiteVisitsPage(
       return { visits: [], hasMore: false };
     }
 
+    // Resolved ahead of the main query rather than as an inner join, for the
+    // same reason visitIds is (see the comment on that field): an embedded
+    // inner join would make .range() paginate over JOINED rows, so a visit
+    // covering three stages would consume three slots of a page and silently
+    // shorten it. One extra round trip buys correct pagination.
+    let stageVisitIds: string[] | undefined;
+    if (filters?.stageId) {
+      stageVisitIds = await getVisitIdsForStage(filters.stageId);
+      if (stageVisitIds.length === 0) return { visits: [], hasMore: false };
+    }
+
     let query = supabase.from("site_visits").select("*").eq("project_id", projectId);
-    if (filters?.phase) query = query.eq("phase", filters.phase);
+    if (stageVisitIds) query = query.in("id", stageVisitIds);
     if (filters?.dateFrom) query = query.gte("visit_date", filters.dateFrom);
     if (filters?.dateTo) query = query.lte("visit_date", filters.dateTo);
     if (filters?.visitIds) query = query.in("id", filters.visitIds);
@@ -325,24 +345,45 @@ export async function getSiteVisitsForMonth(
   }
 }
 
-// Distinct phases actually used by this project's visits, for the phase
-// filter dropdown — one lightweight single-column query, deduped
-// client-side (no DISTINCT support in the query builder for this).
-export async function getVisitPhasesInUse(projectId: string): Promise<string[]> {
+// The stages available to filter this project's visits by.
+//
+// REPLACES a DISTINCT over site_visits.phase, which stopped being a vocabulary
+// the moment a visit could cover several stages: the dropdown began offering
+// combinations ("Fondation, Enveloppe") as though they were stages, and the
+// list grew with every distinct combination anyone happened to record.
+//
+// project_stages IS the vocabulary — the list the project actually uses,
+// already ordered — so it is read directly rather than inferred from usage.
+export async function getVisitStageOptions(
+  projectId: string,
+): Promise<{ id: string; name: string }[]> {
   const { data, error } = await supabase
-    .from("site_visits")
-    .select("phase")
-    .eq("project_id", projectId);
+    .from("project_stages")
+    .select("id, name, sort_order")
+    .eq("project_id", projectId)
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
 
   if (error) {
-    console.error("❌ Error fetching visit phases:", error);
+    console.error("❌ Error fetching project stages:", error);
     return [];
   }
-  const phases = new Set<string>();
-  (data || []).forEach((r: any) => {
-    if (r.phase) phases.add(r.phase);
-  });
-  return Array.from(phases).sort();
+  return (data || []).map((r) => ({ id: r.id, name: r.name }));
+}
+
+// The visits linked to one stage. Its own query so the caller can intersect
+// it with the page query rather than inner-joining — see getSiteVisitsPage.
+async function getVisitIdsForStage(stageId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("site_visit_stages")
+    .select("visit_id")
+    .eq("stage_id", stageId);
+
+  if (error) {
+    console.error("❌ Error fetching visits for stage:", error);
+    return [];
+  }
+  return (data || []).map((r) => r.visit_id);
 }
 
 // Cheap total-count query for the "N visites" header stat and tab badge —

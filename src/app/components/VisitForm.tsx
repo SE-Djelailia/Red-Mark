@@ -1,16 +1,22 @@
-import { useEffect, useRef, useState } from "react";
-import { Calendar, Clock, Cloud, Thermometer, ChevronDown, Plus, X, Camera } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Calendar, Clock, Cloud, Thermometer, X, Camera } from "lucide-react";
 import { ButtonLoader } from "./LoadingStates";
 import { createSiteVisit } from "../../lib/supabaseApi";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
 import { useAuth } from "../../contexts/useAuth";
 import { uploadIssuePhotos, WEATHER_EVIDENCE_TAG } from "../../lib/issuePhotoUpload";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
+import StageMultiSelect from "./StageMultiSelect";
+import XSpinner from "./ui-kit/XSpinner";
 import type { SiteVisit } from "../../lib/supabase";
 import { inputClassName, labelClassName, textareaClassName } from "./ui-kit/Input";
+import {
+  ensureProjectStages,
+  joinStageNames,
+  setVisitStages,
+  type ProjectStage,
+} from "../../lib/stagesApi";
 
-const DEFAULT_PHASES = ["Fondation", "Charpente", "ÉMÉ", "Finitions", "Extérieur"];
-const CUSTOM_PHASES_KEY = "redmark_custom_phases";
 const WEATHER_OPTIONS = ["Ensoleillé", "Nuageux", "Pluvieux", "Neige", "Venteux", "Brouillard"];
 const TEMPERATURE_MIN = -30;
 const TEMPERATURE_MAX = 35;
@@ -40,7 +46,13 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [notes, setNotes] = useState("");
-  const [phase, setPhase] = useState("Fondation");
+  // The project's construction stages, and which ones this visit covers.
+  // A visit may cover SEVERAL — "foundations + envelope + finishes" in one
+  // morning is the ordinary case, not an edge case.
+  const [stages, setStages] = useState<ProjectStage[]>([]);
+  const [selectedStageIds, setSelectedStageIds] = useState<string[]>([]);
+  const [stagesLoading, setStagesLoading] = useState(true);
+  const [stagesError, setStagesError] = useState(false);
   const [weather, setWeather] = useState("");
   // null = not set. Slider needs a numeric value to render even before the
   // user has touched it, so the displayed position defaults to
@@ -52,80 +64,34 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
   // same deferred-upload pattern IssueForm uses for its own photos.
   const [weatherPhotos, setWeatherPhotos] = useState<File[]>([]);
 
-  // Custom phases management
-  const [customPhases, setCustomPhases] = useState<string[]>([]);
-  const [showPhaseDropdown, setShowPhaseDropdown] = useState(false);
-  const [phaseInput, setPhaseInput] = useState("");
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Load custom phases from localStorage
+  // Loads the project's stages, copying the firm's master list on first use.
+  //
+  // Nothing populates project_stages when a project is created, so a new
+  // project would otherwise offer an empty list. ensureProjectStages is
+  // self-healing and no-ops once the rows exist — see its own comment.
+  //
+  // The async work is declared inside the effect so no setState runs
+  // synchronously in the effect body; `cancelled` drops a response that
+  // arrives after the project changed.
   useEffect(() => {
-    const saved = localStorage.getItem(CUSTOM_PHASES_KEY);
-    if (saved) {
+    let cancelled = false;
+    void (async () => {
+      setStagesLoading(true);
+      setStagesError(false);
       try {
-        setCustomPhases(JSON.parse(saved));
+        const rows = await ensureProjectStages(projectId);
+        if (!cancelled) setStages(rows);
       } catch (error) {
-        console.error("Error loading custom phases:", error);
+        console.error("❌ Failed to load construction stages:", error);
+        if (!cancelled) setStagesError(true);
+      } finally {
+        if (!cancelled) setStagesLoading(false);
       }
-    }
-  }, []);
-
-  // Save custom phases to localStorage
-  const saveCustomPhases = (phases: string[]) => {
-    localStorage.setItem(CUSTOM_PHASES_KEY, JSON.stringify(phases));
-    setCustomPhases(phases);
-  };
-
-  // Combine default and custom phases
-  const allPhases = [...DEFAULT_PHASES, ...customPhases];
-
-  // Filter phases based on input
-  const filteredPhases = phaseInput
-    ? allPhases.filter((p) => p.toLowerCase().includes(phaseInput.toLowerCase()))
-    : allPhases;
-
-  // Check if input is a new phase
-  const isNewPhase =
-    phaseInput && !allPhases.some((p) => p.toLowerCase() === phaseInput.toLowerCase());
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowPhaseDropdown(false);
-      }
+    })();
+    return () => {
+      cancelled = true;
     };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleSelectPhase = (selectedPhase: string) => {
-    setPhase(selectedPhase);
-    setPhaseInput("");
-    setShowPhaseDropdown(false);
-  };
-
-  const handleAddNewPhase = () => {
-    if (phaseInput.trim() && isNewPhase) {
-      const newPhase = phaseInput.trim();
-      saveCustomPhases([...customPhases, newPhase]);
-      setPhase(newPhase);
-      setPhaseInput("");
-      setShowPhaseDropdown(false);
-    }
-  };
-
-  const handlePhaseInputKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (filteredPhases.length === 1) {
-        handleSelectPhase(filteredPhases[0]);
-      } else if (isNewPhase) {
-        handleAddNewPhase();
-      }
-    }
-  };
+  }, [projectId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,17 +103,38 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
         return;
       }
 
+      // site_visits.phase is still read in ~44 display places (report headers,
+      // visit cards, search titles, the calendar chip) and Stage 25 drops it
+      // only once those migrate. Writing the joined names keeps every one of
+      // them truthful — "Fondation, Enveloppe" is what an architect would
+      // have typed anyway — while site_visit_stages carries the structure.
+      const selectedStages = stages.filter((st) => selectedStageIds.includes(st.id));
+
       const newVisit = await createSiteVisit({
         user_id: user.id,
         project_id: projectId,
         visit_date: visitDate,
-        phase: phase,
+        phase: joinStageNames(selectedStages),
         notes: notes,
         weather: weather,
         temperature: temperature === null ? "" : `${temperature}°C`,
         start_time: startTime || null,
         end_time: endTime || null,
       });
+
+      // The links, once the visit exists to hang them on. A failure here must
+      // not lose the visit the user just recorded on site: the visit is saved,
+      // so the flow continues and only the stage links are reported missing.
+      if (selectedStageIds.length > 0) {
+        try {
+          await setVisitStages(newVisit.id, selectedStageIds);
+        } catch (error) {
+          console.error("❌ Failed to link visit stages:", error);
+          alert(
+            "Visite créée, mais les étapes n'ont pas pu être enregistrées. Vous pouvez les ajouter depuis la visite.",
+          );
+        }
+      }
 
       const actorName = user.user_metadata?.name || user.email?.split("@")[0] || "Utilisateur";
       notifyProjectOwner({
@@ -237,71 +224,40 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
           </div>
         </div>
 
-        {/* Phase Combobox */}
-        <div>
-          <label className={labelClassName}>Phase</label>
-          <div className="relative" ref={dropdownRef}>
-            <div className="relative">
-              <input
-                type="text"
-                value={showPhaseDropdown ? phaseInput : phase}
-                onChange={(e) => {
-                  setPhaseInput(e.target.value);
-                  setShowPhaseDropdown(true);
-                }}
-                onFocus={() => setShowPhaseDropdown(true)}
-                onKeyDown={handlePhaseInputKeyDown}
-                placeholder="Sélectionner ou créer une phase..."
-                className={`${inputClassName} pr-10`}
-                required
-              />
-              <ChevronDown
-                size={20}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-faint pointer-events-none"
-              />
+        {/* Construction stages — a visit may cover several. */}
+        {stagesLoading ? (
+          <div>
+            <label className={labelClassName}>Étapes de construction</label>
+            <div className="py-4 flex justify-center" role="status" aria-label="Chargement des étapes">
+              <XSpinner size={24} />
             </div>
-
-            {showPhaseDropdown && (
-              <div className="absolute z-10 w-full mt-2 bg-surface border border-line rounded-[4px] shadow-lg max-h-60 overflow-y-auto">
-                {filteredPhases.length > 0 ? (
-                  <div>
-                    {filteredPhases.map((p) => (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => handleSelectPhase(p)}
-                        className="w-full px-4 py-3 text-left hover:bg-subtle transition-colors border-b border-line last:border-b-0"
-                      >
-                        <span className="text-sm text-ink">{p}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-
-                {isNewPhase && (
-                  <button
-                    type="button"
-                    onClick={handleAddNewPhase}
-                    className="w-full px-4 py-3 text-left hover:bg-subtle transition-colors border-t border-line bg-subtle"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Plus size={16} className="text-ink" />
-                      <span className="text-sm text-ink font-medium">
-                        Créer "{phaseInput}"
-                      </span>
-                    </div>
-                  </button>
-                )}
-
-                {filteredPhases.length === 0 && !isNewPhase && phaseInput && (
-                  <div className="px-4 py-6 text-center text-muted text-sm">
-                    Aucune phase trouvée
-                  </div>
-                )}
-              </div>
-            )}
           </div>
-        </div>
+        ) : stagesError ? (
+          <div>
+            <label className={labelClassName}>Étapes de construction</label>
+            <p className="text-sm text-muted text-pretty">
+              Impossible de charger les étapes. La visite peut être enregistrée sans étape.
+            </p>
+          </div>
+        ) : stages.length === 0 ? (
+          // The FIRM has no master list — a firm created after the stages were
+          // seeded. Naming where to fix it beats an empty box with no
+          // explanation, and the visit can still be saved without stages.
+          <div>
+            <label className={labelClassName}>Étapes de construction</label>
+            <p className="text-sm text-muted text-pretty">
+              Aucune étape de construction définie pour votre firme. Un administrateur peut les
+              configurer dans les paramètres de la firme.
+            </p>
+          </div>
+        ) : (
+          <StageMultiSelect
+            stages={stages}
+            selectedIds={selectedStageIds}
+            onChange={setSelectedStageIds}
+            disabled={isSubmitting}
+          />
+        )}
 
         {/* Notes */}
         <div>

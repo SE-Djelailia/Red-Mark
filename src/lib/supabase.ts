@@ -93,6 +93,19 @@ export type InsertTriggerOrg<T extends "projects" | "project_members" | "compani
 export type InsertLot = Omit<Insert<"lots">, "company_org_id">;
 export type UpdateLot = Omit<Update<"lots">, "company_org_id">;
 
+// site_visit_stages.project_id is the same pattern again: set_visit_stage_project()
+// derives it FROM THE VISIT, and the composite FKs to both parents
+// (visit_id, project_id) and (stage_id, project_id) then make a link that
+// straddles two projects unrepresentable. The client names the visit and the
+// stage; the database decides which project that is.
+export type InsertVisitStage = Omit<Insert<"site_visit_stages">, "project_id">;
+
+// project_stages.source_org_id is trigger-derived FROM THE PROJECT (not from
+// the construction_stages row named), which is what makes the composite FK
+// (source_stage_id, source_org_id) -> construction_stages(id, organization_id)
+// a real guard: copying another firm's stage leaves a pair matching no row.
+export type InsertProjectStage = Omit<Insert<"project_stages">, "source_org_id">;
+
 /** One row of the report's ASSISTAIENT table. Stored on the visit. */
 export interface VisitAttendee {
   name: string;

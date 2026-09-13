@@ -63,6 +63,7 @@ import VoiceRecorderModal from "./VoiceRecorderModal";
 import VisitAttendeesSection from "./VisitAttendeesSection";
 import { IconPhoto, MarkX } from "./ui-kit/RedMarkIcons";
 import EmptyState from "./ui-kit/EmptyState";
+import { getVisitStages, type ProjectStage } from "../../lib/stagesApi";
 
 interface Photo {
   id: string;
@@ -104,6 +105,10 @@ export default function VisitDetail() {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [editedNotes, setEditedNotes] = useState("");
   const [visit, setVisit] = useState<VisitDisplay | null>(null);
+  // The stages this visit covered. Read separately rather than embedded on
+  // the visit: site_visits.phase still carries the joined names for display,
+  // and this is the structured form the chips render from.
+  const [visitStages, setVisitStages] = useState<ProjectStage[]>([]);
   // The project's imported locations, purely to turn a photo's location_id
   // into a readable zone. Optional context: a failure degrades to the legacy
   // free-text label rather than hiding the photos.
@@ -226,6 +231,25 @@ export default function VisitDetail() {
       setIsLoading(false);
     }
   }, [visitId, projectId]);
+
+  useEffect(() => {
+    if (!visitId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = await getVisitStages(visitId);
+        if (!cancelled) setVisitStages(rows);
+      } catch (error) {
+        // Non-fatal: the visit still renders, and site_visits.phase below
+        // carries the same names as text for visits recorded before the
+        // link table existed.
+        console.error("❌ Failed to load visit stages:", error);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [visitId]);
 
   useEffect(() => {
     fetchData();
@@ -653,9 +677,23 @@ export default function VisitDetail() {
             Photos section below already shows the count). */}
         <div className="bg-surface rounded-[4px] border border-line px-4 py-3">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
-            <div className="flex items-center gap-1.5">
+            {/* Stages as chips when the visit has structured links; the legacy
+                joined string otherwise, so visits recorded before the multi-
+                select still read correctly. */}
+            <div className="flex items-center gap-1.5 flex-wrap">
               <Tag size={12} className="text-faint flex-shrink-0" />
-              <span className="font-medium text-ink">{visit?.phase}</span>
+              {visitStages.length > 0 ? (
+                visitStages.map((stage) => (
+                  <span
+                    key={stage.id}
+                    className="px-2 py-0.5 rounded-[4px] border border-line-strong bg-subtle text-xs font-medium text-ink"
+                  >
+                    {stage.name}
+                  </span>
+                ))
+              ) : (
+                <span className="font-medium text-ink">{visit?.phase}</span>
+              )}
             </div>
             {visit?.weather && (
               <div className="flex items-center gap-1.5">
