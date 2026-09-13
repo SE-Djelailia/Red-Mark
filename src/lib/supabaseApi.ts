@@ -99,12 +99,39 @@ export async function createProject(
   project: InsertTriggerOrg<"projects">,
 ): Promise<Project> {
   try {
-    const { data, error } = await supabase
+    // Two steps, on purpose — a single .insert().select() CANNOT work here.
+    //
+    // PostgREST's .select() makes the INSERT a RETURNING, and Postgres checks
+    // the SELECT policy against the new row before returning it. That policy is
+    // `is_project_member(id) AND organization_id = current_org_id()`, and the
+    // membership row it looks for is written by `on_project_created`, an AFTER
+    // INSERT trigger that has not run yet at RETURNING time. The row inserts
+    // fine and the trigger does its job; the creator simply cannot SEE it in
+    // the same statement, so PostgREST reports 42501 and the app reports
+    // failure for a project that was in fact created.
+    //
+    // This is why createProject differs from createCompany, which does use
+    // .insert().select(): the companies SELECT policy is satisfied by the
+    // BEFORE trigger's organization_id alone, with no AFTER-trigger dependency.
+    //
+    // Generating the id client-side lets us read the row back by primary key
+    // once the AFTER trigger has committed. The alternative — widening the
+    // SELECT policy with `OR auth.uid() = user_id` — would permanently re-grant
+    // read access to a creator who had since been removed from the project.
+    const id = crypto.randomUUID();
+
+    const { error: insertError } = await supabase
       .from("projects")
       // organization_id omitted by design — the set_project_organization
       // trigger derives it from the caller's firm (see InsertTriggerOrg).
-      .insert([project as Insert<"projects">])
+      .insert([{ ...project, id } as Insert<"projects">]);
+
+    if (insertError) throw insertError;
+
+    const { data, error } = await supabase
+      .from("projects")
       .select()
+      .eq("id", id)
       .single();
 
     if (error) throw error;
