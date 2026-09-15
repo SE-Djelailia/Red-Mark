@@ -32,6 +32,18 @@ export interface ReportManualFields {
   transmittedBy: string;
   dossierNumbers: DossierNumberEntry[];
   subject: string;
+  /**
+   * "AVANCEMENT DU CHANTIER" — free prose on the work in progress, printed
+   * after the visits list.
+   *
+   * Per-generation like `subject`, NOT stored: `reports` has no column for it,
+   * so re-downloading an existing report renders the document without whatever
+   * was typed the first time. That is a deliberate trade for now — a
+   * reports.avancement column is a migration, and this field is the kind of
+   * thing that is rewritten each time rather than being a durable property of
+   * the report. Revisit if regeneration fidelity starts to matter.
+   */
+  avancement: string;
   // Fallback only. The report prefers the visit's real start_time/end_time
   // (added later as time columns); this free-text value is used only for
   // older visits that predate those columns and have neither set.
@@ -332,6 +344,9 @@ export async function generateSiteVisitReport(
     // The visits this report covers. Observations remain strictly the anchor
     // visit's: this list states coverage, it does not merge findings.
     reportVisits,
+    // Free prose under the visits list. Empty renders an empty paragraph
+    // rather than the literal placeholder.
+    avancement: manual.avancement,
     // ASSISTAIENT comes off the visit now. The template's columns are named
     // company/title, the stored shape uses organization/role — mapped here
     // so the document keeps its existing placeholders untouched. A visit

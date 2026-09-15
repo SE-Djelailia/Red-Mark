@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { getProject, getSiteVisitsWithAuthors, getPhotos } from "../../lib/supabaseApi";
 import { supabase } from "../../lib/supabase";
+import DictationButton from "./ui-kit/DictationButton";
+import { appendDictated } from "../../hooks/useSpeechDictation";
 import type { Project, SiteVisit, Photo } from "../../lib/supabase";
 import { formatDateLong } from "../../lib/dateUtils";
 import { toast } from "sonner";
@@ -39,6 +41,10 @@ const EMPTY_MANUAL_FIELDS: ReportManualFields = {
   transmittedBy: "Courriel",
   dossierNumbers: [{ label: "Dossier", number: "" }],
   subject: "Visite de chantier / constatations.",
+  // No default: unlike `subject`, there is no sensible generic sentence about
+  // a specific site's progress, and a placeholder left unedited would print
+  // boilerplate into a client document.
+  avancement: "",
   time: "",
 };
 
@@ -587,6 +593,36 @@ export default function ReportGenerator() {
                 className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
                 placeholder="Visite de chantier / constatations."
               />
+            </div>
+
+            <div>
+              <label className="block text-xs text-body mb-1">Avancement du chantier</label>
+              <div className="flex items-start gap-2">
+                <textarea
+                  value={manual.avancement}
+                  onChange={(e) => updateManual("avancement", e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink resize-none"
+                  placeholder="Les travaux en cours…"
+                />
+                <DictationButton
+                  fieldLabel="l'avancement du chantier"
+                  // setManual directly, not updateManual: that helper takes a
+                  // VALUE, so it would close over the render's `avancement`.
+                  // Two phrases finalized before a re-render would then make
+                  // the second overwrite the first. The functional form always
+                  // appends to the latest text.
+                  onTranscript={(text) =>
+                    setManual((prev) => ({
+                      ...prev,
+                      avancement: appendDictated(prev.avancement, text),
+                    }))
+                  }
+                />
+              </div>
+              <p className="text-xs text-muted mt-1.5">
+                Saisi à chaque génération — non conservé entre deux rapports.
+              </p>
             </div>
 
             {/* Dossier numbers */}
