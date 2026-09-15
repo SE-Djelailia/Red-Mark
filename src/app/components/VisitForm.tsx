@@ -10,6 +10,8 @@ import StageMultiSelect from "./StageMultiSelect";
 import XSpinner from "./ui-kit/XSpinner";
 import type { SiteVisit } from "../../lib/supabase";
 import { inputClassName, labelClassName, textareaClassName } from "./ui-kit/Input";
+import DictationButton from "./ui-kit/DictationButton";
+import { appendDictated } from "../../hooks/useSpeechDictation";
 import {
   ensureProjectStages,
   joinStageNames,
@@ -262,13 +264,19 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
         {/* Notes */}
         <div>
           <label className={labelClassName}>Notes (optionnel)</label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Ajouter des notes et observations de la visite..."
-            rows={4}
-            className={textareaClassName}
-          />
+          <div className="flex items-start gap-2">
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Ajouter des notes et observations de la visite..."
+              rows={4}
+              className={textareaClassName}
+            />
+            <DictationButton
+              fieldLabel="les notes"
+              onTranscript={(text) => setNotes((prev) => appendDictated(prev, text))}
+            />
+          </div>
         </div>
 
         {/* Weather */}

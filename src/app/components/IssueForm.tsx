@@ -24,6 +24,8 @@ import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
 import SecureImage from "./SecureImage";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
 import { inputClassName, labelClassName, textareaClassName } from "./ui-kit/Input";
+import DictationButton from "./ui-kit/DictationButton";
+import { appendDictated } from "../../hooks/useSpeechDictation";
 import { PRIORITY_OPTIONS } from "./ui-kit/Badge";
 import { StatusGlyph } from "./ui-kit/RedMarkIcons";
 
@@ -305,26 +307,38 @@ export default function IssueForm({
       {/* Title */}
       <div>
         <label className={labelClassName}>Titre *</label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Ex: Fissure dans le béton"
-          className={inputClassName}
-          autoFocus
-        />
+        <div className="flex items-start gap-2">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ex: Fissure dans le béton"
+            className={inputClassName}
+            autoFocus
+          />
+          <DictationButton
+            fieldLabel="le titre"
+            onTranscript={(text) => setTitle((prev) => appendDictated(prev, text))}
+          />
+        </div>
       </div>
 
       {/* Description */}
       <div>
         <label className={labelClassName}>Description</label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Détails de la déficience..."
-          rows={4}
-          className={textareaClassName}
-        />
+        <div className="flex items-start gap-2">
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Détails de la déficience..."
+            rows={4}
+            className={textareaClassName}
+          />
+          <DictationButton
+            fieldLabel="la description"
+            onTranscript={(text) => setDescription((prev) => appendDictated(prev, text))}
+          />
+        </div>
       </div>
 
       {/* Priority */}
