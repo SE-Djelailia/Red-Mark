@@ -246,6 +246,58 @@ export async function getSiteVisits(projectId: string): Promise<SiteVisit[]> {
   }
 }
 
+/**
+ * Resolves visit author names in ONE query for a set of visit rows.
+ *
+ * site_visits carries only user_id — there is no denormalised author name —
+ * so every surface that shows "who made this visit" has to join profiles.
+ * This was copy-pasted in getSiteVisitsPage and getSiteVisitsForMonth before
+ * the report's visits list needed it a third time.
+ *
+ * A failed profile lookup degrades to "Utilisateur" rather than throwing: a
+ * missing display name must not cost the caller its visits.
+ */
+async function attachAuthorNames<T extends { user_id: string }>(
+  rows: T[],
+): Promise<(T & { authorName: string })[]> {
+  const userIds = [...new Set(rows.map((r) => r.user_id).filter(Boolean))];
+  const nameById = new Map<string, string>();
+  if (userIds.length > 0) {
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, name, email")
+      .in("id", userIds);
+    if (profilesError) console.error("❌ Error resolving visit author names:", profilesError);
+    (profiles || []).forEach((p: any) => nameById.set(p.id, p.name || p.email || "Utilisateur"));
+  }
+  return rows.map((row) => ({
+    ...row,
+    authorName: nameById.get(row.user_id) || "Utilisateur",
+  }));
+}
+
+/**
+ * Every visit of a project WITH its author's name, oldest first.
+ *
+ * Chronological (unlike getSiteVisits, which is newest-first for lists):
+ * the report's visits list reads as a timeline, and the covered-visits
+ * picker is easier to scan in the order the visits happened.
+ */
+export async function getSiteVisitsWithAuthors(
+  projectId: string,
+): Promise<(SiteVisit & { authorName: string })[]> {
+  const { data, error } = await supabase
+    .from("site_visits")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("visit_date", { ascending: true });
+  if (error) {
+    console.error("❌ Error fetching visits with authors:", error);
+    throw error;
+  }
+  return attachAuthorNames((data || []).map(toSiteVisit) as (SiteVisit & { user_id: string })[]);
+}
+
 export interface SiteVisitPageFilters {
   // A project_stages.id, not the legacy free-text phase.
   //
@@ -309,22 +361,8 @@ export async function getSiteVisitsPage(
     if (error) throw error;
     const rows = data || [];
 
-    const userIds = [...new Set(rows.map((r: any) => r.user_id).filter(Boolean))];
-    const nameById = new Map<string, string>();
-    if (userIds.length > 0) {
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, name, email")
-        .in("id", userIds);
-      if (profilesError) console.error("❌ Error resolving visit author names:", profilesError);
-      (profiles || []).forEach((p: any) => nameById.set(p.id, p.name || p.email || "Utilisateur"));
-    }
-
-    const visits = rows.map((row: any) => ({
-      ...row,
-      authorName: nameById.get(row.user_id) || "Utilisateur",
-    }));
-    return { visits, hasMore: rows.length === limit };
+    const visits = await attachAuthorNames(rows as { user_id: string }[]);
+    return { visits: visits as (SiteVisit & { authorName: string })[], hasMore: rows.length === limit };
   } catch (error) {
     console.error("❌ Error fetching visits page:", error);
     throw error;
@@ -351,21 +389,9 @@ export async function getSiteVisitsForMonth(
     if (error) throw error;
     const rows = data || [];
 
-    const userIds = [...new Set(rows.map((r: any) => r.user_id).filter(Boolean))];
-    const nameById = new Map<string, string>();
-    if (userIds.length > 0) {
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, name, email")
-        .in("id", userIds);
-      if (profilesError) console.error("❌ Error resolving visit author names:", profilesError);
-      (profiles || []).forEach((p: any) => nameById.set(p.id, p.name || p.email || "Utilisateur"));
-    }
-
-    return rows.map((row: any) => ({
-      ...row,
-      authorName: nameById.get(row.user_id) || "Utilisateur",
-    }));
+    return (await attachAuthorNames(rows as { user_id: string }[])) as (SiteVisit & {
+      authorName: string;
+    })[];
   } catch (error) {
     console.error("❌ Error fetching visits for month:", error);
     throw error;

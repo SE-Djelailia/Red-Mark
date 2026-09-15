@@ -133,6 +133,34 @@ export function deriveLocationIds(observations: Observation[]): string[] {
 }
 
 /**
+ * One row of the document's visits list — the report's coverage statement,
+ * printed under CONDITIONS CLIMATIQUES.
+ *
+ * Distinct from the ANCHOR visit passed as `visit`: the anchor is what the
+ * document is about (its date, observations, attendees), while this list says
+ * which visits the report covers. Observations are deliberately NOT merged
+ * across them — see generateSiteVisitReport.
+ */
+export interface ReportVisitEntry {
+  /** "12 mars 2026" — already formatted for the document. */
+  visitDate: string;
+  /** Who made the visit. Resolved from profiles; "Utilisateur" when unknown. */
+  visitBy: string;
+}
+
+/** Formats covered visits for the document, oldest first. */
+export function buildReportVisits(
+  visits: { visit_date: string; authorName: string }[],
+): ReportVisitEntry[] {
+  return [...visits]
+    .sort((a, b) => a.visit_date.localeCompare(b.visit_date))
+    .map((v) => ({
+      visitDate: formatDateLong(v.visit_date),
+      visitBy: v.authorName,
+    }));
+}
+
+/**
  * A photo set assembled on the report screen, possibly drawn from several
  * visits. The report itself stays anchored to ONE visit (its header, date,
  * observations and déficiences all come from that visit) — only the photos
@@ -243,6 +271,10 @@ export async function generateSiteVisitReport(
   // visit" — the behaviour before selection existed, kept so other callers
   // don't silently lose their photo section.
   photoSelection?: ReportPhotoSelection,
+  // The visits this report COVERS, for the document's visits list. The anchor
+  // visit is included by the caller. Empty/undefined renders no list — the
+  // template's loop simply drops its repeating row.
+  reportVisits: ReportVisitEntry[] = [],
 ): Promise<void> {
   const [ownPhotos, observations, locations] = await Promise.all([
     // Only needed for the no-selection fallback; skipped when the caller
@@ -297,6 +329,9 @@ export async function generateSiteVisitReport(
     // visits saved before start_time/end_time existed.
     time: formatVisitTimeRange(visit.start_time, visit.end_time) || manual.time,
     subject: manual.subject,
+    // The visits this report covers. Observations remain strictly the anchor
+    // visit's: this list states coverage, it does not merge findings.
+    reportVisits,
     // ASSISTAIENT comes off the visit now. The template's columns are named
     // company/title, the stored shape uses organization/role — mapped here
     // so the document keeps its existing placeholders untouched. A visit

@@ -11,7 +11,7 @@ import {
   Send,
   Check,
 } from "lucide-react";
-import { getProject, getSiteVisits, getPhotos } from "../../lib/supabaseApi";
+import { getProject, getSiteVisitsWithAuthors, getPhotos } from "../../lib/supabaseApi";
 import { supabase } from "../../lib/supabase";
 import type { Project, SiteVisit, Photo } from "../../lib/supabase";
 import { formatDateLong } from "../../lib/dateUtils";
@@ -20,6 +20,7 @@ import { getObservationsByVisit } from "../../lib/observationsApi";
 import { createReport, deleteReport, touchRegenerated, type Report } from "../../lib/reportsApi";
 import {
   generateSiteVisitReport,
+  buildReportVisits,
   deriveLocationIds,
   selectableReportPhotos,
   formatVisitTimeRange,
@@ -40,6 +41,8 @@ const EMPTY_MANUAL_FIELDS: ReportManualFields = {
   subject: "Visite de chantier / constatations.",
   time: "",
 };
+
+type VisitWithAuthor = SiteVisit & { authorName: string };
 
 export default function ReportGenerator() {
   const { id } = useParams();
@@ -93,8 +96,21 @@ export default function ReportGenerator() {
   const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [visits, setVisits] = useState<SiteVisit[]>([]);
+  // Chronological (oldest first) and carrying each author's name, because the
+  // document's visits list is a timeline and names who made each visit.
+  const [visits, setVisits] = useState<VisitWithAuthor[]>([]);
+  // The ANCHOR visit: the one the document is about. Its date, observations,
+  // attendees and stages are what the report states.
   const [selectedVisitId, setSelectedVisitId] = useState<string>("");
+  // The visits this report COVERS — an editorial choice, rendered as the
+  // document's visits list and written to report_visits.
+  //
+  // Deliberately NOT derived from which visits supplied photos. Before this,
+  // report_visits was written as [anchor, ...visits that contributed a photo],
+  // so borrowing a single shot silently enrolled that visit into the report's
+  // coverage — and into LocationDetail's "Rapports" history. Coverage is now
+  // stated, not inferred.
+  const [coveredVisitIds, setCoveredVisitIds] = useState<string[]>([]);
 
   const [manual, setManual] = useState<ReportManualFields>(EMPTY_MANUAL_FIELDS);
 
@@ -121,14 +137,20 @@ export default function ReportGenerator() {
               : prev.dossierNumbers,
           }));
 
-          const visitsData = await getSiteVisits(id);
+          const visitsData = await getSiteVisitsWithAuthors(id);
           setVisits(visitsData);
           if (visitsData.length > 0) {
             // Honour ?visit= only if it names a visit of THIS project —
             // a stale or foreign id falls back to the default rather than
             // leaving the selector pointing at nothing.
+            //
+            // The default is the MOST RECENT visit. getSiteVisitsWithAuthors
+            // returns oldest-first (the order the list renders in), so that is
+            // the last element, not the first — the previous newest-first
+            // getSiteVisits made [0] the right default.
             const requested = visitsData.find((v) => v.id === requestedVisitId);
-            setSelectedVisitId(requested ? requested.id : visitsData[0].id);
+            const anchor = requested ?? visitsData[visitsData.length - 1];
+            setSelectedVisitId(anchor.id);
           }
         }
       } catch (error) {
@@ -169,6 +191,16 @@ export default function ReportGenerator() {
   // NOT touch the photo selection.
   useEffect(() => {
     setReport(null);
+  }, [selectedVisitId]);
+
+  // The anchor is ALWAYS part of its own coverage. Enforced here rather than
+  // only in the checkbox's disabled state, so changing the anchor cannot leave
+  // a covered list that omits the very visit the document is about.
+  useEffect(() => {
+    if (!selectedVisitId) return;
+    setCoveredVisitIds((current) =>
+      current.includes(selectedVisitId) ? current : [...current, selectedVisitId],
+    );
   }, [selectedVisitId]);
 
   // Seed the photo browser from the report's visit, once. After that the two
@@ -222,9 +254,24 @@ export default function ReportGenerator() {
     return (a.created_at || "").localeCompare(b.created_at || "");
   });
 
-  // Which visits the selection draws from, for the running summary and for
-  // the report_visits linkage.
+  // Which visits the PHOTO selection draws from. Still shown in the running
+  // photo summary — but no longer the source of report_visits; see the
+  // covered-visits selection for that.
   const sourceVisitIds = [...new Set(orderedSelection.map((p) => p.visit_id))];
+
+  // The covered visits as rows, chronologically — the order the document's
+  // visits list prints in, and the order report_visits is written in.
+  const orderedCoveredVisits = visits.filter((v) => coveredVisitIds.includes(v.id));
+
+  const toggleCoveredVisit = (visitId: string) => {
+    // The anchor cannot be removed from its own report.
+    if (visitId === selectedVisitId) return;
+    setCoveredVisitIds((current) =>
+      current.includes(visitId)
+        ? current.filter((vid) => vid !== visitId)
+        : [...current, visitId],
+    );
+  };
 
   const updateManual = <K extends keyof ReportManualFields>(key: K, value: ReportManualFields[K]) => {
     setManual((prev) => ({ ...prev, [key]: value }));
@@ -285,10 +332,18 @@ export default function ReportGenerator() {
 
       // The number must be inside the .docx, so it is allocated first and
       // rolled back below if the render throws.
-      // Every visit that contributed a photo travels with the report, so
-      // report_visits (and therefore location history) reflects what the
-      // document actually contains. Primary first, deduped.
-      const reportVisitIds = [...new Set([visit.id, ...sourceVisitIds])];
+      //
+      // report_visits now comes from the EXPLICIT covered-visits selection,
+      // anchor first, in the document's own chronological order. It used to be
+      // [anchor, ...visits that supplied a photo], which meant borrowing one
+      // shot from an unrelated visit enrolled that visit in the report's
+      // coverage — and in LocationDetail's "Rapports" history — without anyone
+      // saying so. Coverage is a statement the architect makes, not a
+      // by-product of photo browsing.
+      const reportVisitIds = [
+        visit.id,
+        ...orderedCoveredVisits.map((v) => v.id).filter((vid) => vid !== visit.id),
+      ];
       created = await createReport(id, reportVisitIds, locationIds);
 
       await generateSiteVisitReport(
@@ -299,6 +354,7 @@ export default function ReportGenerator() {
         preparedByNameTitle,
         created.reportNumber,
         { photos: orderedSelection, visitDates: visitDateById },
+        buildReportVisits(orderedCoveredVisits),
       );
 
       setReport(created);
@@ -336,6 +392,7 @@ export default function ReportGenerator() {
         preparedByNameTitle,
         report.reportNumber,
         { photos: orderedSelection, visitDates: visitDateById },
+        buildReportVisits(orderedCoveredVisits),
       );
       // Bookkeeping only — a failure here must not read as a failed download.
       try {
@@ -383,23 +440,76 @@ export default function ReportGenerator() {
         <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center gap-2 mb-3">
             <Calendar size={16} className="text-brand-600" />
-            <label className="text-sm font-semibold text-ink">Visite de chantier</label>
+            <label className="text-sm font-semibold text-ink">Visite principale</label>
           </div>
           {!loading && visits.length === 0 ? (
             <p className="text-sm text-muted">Aucune visite trouvée pour ce projet.</p>
           ) : (
-            <select
-              value={selectedVisitId}
-              onChange={(e) => setSelectedVisitId(e.target.value)}
-              className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
-            >
-              {visits.map((visit) => (
-                <option key={visit.id} value={visit.id}>
-                  {formatDateLong(visit.visit_date)}
-                  {visit.phase ? ` — ${visit.phase}` : ""}
-                </option>
-              ))}
-            </select>
+            <>
+              <select
+                value={selectedVisitId}
+                onChange={(e) => setSelectedVisitId(e.target.value)}
+                className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
+              >
+                {visits.map((visit) => (
+                  <option key={visit.id} value={visit.id}>
+                    {formatDateLong(visit.visit_date)}
+                    {visit.phase ? ` — ${visit.phase}` : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted mt-1.5">
+                Le rapport est daté de cette visite et reprend ses observations.
+              </p>
+
+              {/* Coverage — which visits this report reports ON. Separate from
+                  the anchor above, and from the photo browser further down:
+                  borrowing a photo no longer enrols its visit here. */}
+              <div className="mt-4 pt-4 border-t border-line">
+                <label className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-muted mb-2">
+                  Visites couvertes
+                </label>
+                <div className="space-y-1">
+                  {visits.map((visit) => {
+                    const isAnchor = visit.id === selectedVisitId;
+                    const checked = coveredVisitIds.includes(visit.id);
+                    return (
+                      <label
+                        key={visit.id}
+                        className={`flex items-center gap-2.5 min-h-[44px] px-2 -mx-2 rounded-[4px] text-sm ${
+                          isAnchor ? "text-muted" : "text-body cursor-pointer hover:bg-subtle"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          // The anchor is always covered by its own report, so
+                          // its box is checked and locked rather than hidden —
+                          // showing it keeps the list a complete statement of
+                          // what the document covers.
+                          disabled={isAnchor}
+                          onChange={() => toggleCoveredVisit(visit.id)}
+                          className="w-4 h-4 accent-ink flex-shrink-0 disabled:opacity-60"
+                        />
+                        <span className="flex-1 min-w-0 truncate">
+                          {formatDateLong(visit.visit_date)}
+                          <span className="text-muted"> · {visit.authorName}</span>
+                        </span>
+                        {isAnchor && (
+                          <span className="text-[11px] text-faint flex-shrink-0">
+                            visite principale
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted mt-2">
+                  Ces visites sont listées dans le rapport, sous les conditions
+                  climatiques. Les observations restent celles de la visite principale.
+                </p>
+              </div>
+            </>
           )}
         </div>
 
