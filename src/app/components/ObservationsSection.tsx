@@ -340,7 +340,15 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
                   </span>
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-ink whitespace-pre-wrap break-words">{o.text}</p>
+                    {/* Capped measure on wide screens. The row already pins
+                        its action buttons right and lets the text column
+                        flex, so on landscape iPad the only problem was line
+                        LENGTH — a one-sentence observation spanning 1100px
+                        is hard to read. ~90ch keeps it comfortable without
+                        changing anything below lg. */}
+                    <p className="text-sm text-ink whitespace-pre-wrap break-words lg:max-w-[90ch]">
+                      {o.text}
+                    </p>
                     {(locationLabel(o.locationId) || o.actionBy) && (
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
                         {locationLabel(o.locationId) && (

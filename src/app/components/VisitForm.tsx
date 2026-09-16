@@ -174,6 +174,10 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
   return (
     <form onSubmit={handleSubmit}>
       <div className="space-y-5">
+        {/* Date and the De/À times share one row from md: three short scalar
+            controls that each need far less than the full width. Below md the
+            stack is untouched — date full width, times as their own 2-up. */}
+        <div className="md:grid md:grid-cols-2 md:gap-3 md:items-start space-y-5 md:space-y-0">
         {/* Visit Date */}
         <div>
           <label className={labelClassName}>Date de visite</label>
@@ -224,6 +228,7 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
               />
             </div>
           </div>
+        </div>
         </div>
 
         {/* Construction stages — a visit may cover several. */}

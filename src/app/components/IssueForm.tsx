@@ -405,7 +405,10 @@ export default function IssueForm({
         </div>
       )}
 
-      {/* Discipline */}
+      {/* Discipline, lot and étape are three single-select fields in a row.
+          Discipline keeps its own block on phone (unchanged), and from md the
+          three share one row — see the wrapper below. */}
+      <div className="md:grid md:grid-cols-3 md:gap-3 md:items-start space-y-4 md:space-y-0">
       <div>
         <label className={labelClassName}>Discipline</label>
         <select
@@ -427,7 +430,7 @@ export default function IssueForm({
           matches Discipline above and gives the iPad its wheel picker for
           free, which beats a custom dropdown for one-handed use on site.
           Each collapses to full width below sm (phone). */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:contents">
         <div>
           <label className={labelClassName}>Lot</label>
           <select
@@ -459,6 +462,7 @@ export default function IssueForm({
             ))}
           </select>
         </div>
+      </div>
       </div>
 
       {/* Due date */}

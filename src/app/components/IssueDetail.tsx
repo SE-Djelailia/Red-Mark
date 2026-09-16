@@ -81,7 +81,7 @@ export default function IssueDetail() {
       {/* Toolbar — the dark band is gone; back/delete now sit on the canvas
           directly under the global light header. */}
       <div className="px-4 sm:px-6 pt-4">
-        <div className="flex items-center justify-between max-w-2xl mx-auto">
+        <div className="flex items-center justify-between max-w-2xl lg:max-w-4xl mx-auto">
           <button
             onClick={goBack}
             className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
@@ -102,7 +102,7 @@ export default function IssueDetail() {
       </div>
 
       {/* Content */}
-      <div className="px-4 sm:px-6 py-5 max-w-2xl mx-auto space-y-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-5 max-w-2xl lg:max-w-4xl mx-auto space-y-6">
         {isLoadingIssue && (
           <div className="bg-surface rounded-[4px] border border-line p-4 text-sm text-muted text-center">
             Chargement de la déficience...

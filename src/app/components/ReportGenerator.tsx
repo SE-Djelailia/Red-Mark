@@ -431,7 +431,7 @@ export default function ReportGenerator() {
   return (
     <div className="min-h-screen pb-20 bg-canvas">
       {/* Toolbar — title/subtitle render in the global light header. */}
-      <div className="px-4 sm:px-6 pt-4 max-w-2xl mx-auto">
+      <div className="px-4 sm:px-6 lg:px-8 pt-4 max-w-2xl lg:max-w-6xl mx-auto">
         <button
           onClick={goBack}
           className="flex items-center gap-2 text-muted hover:text-ink transition-colors min-h-[44px] text-sm font-medium"
@@ -441,470 +441,486 @@ export default function ReportGenerator() {
         </button>
       </div>
 
-      <div className="px-4 py-6 max-w-2xl mx-auto space-y-6">
-        {/* Visit selector */}
-        <div className="bg-surface rounded-[4px] border border-line p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Calendar size={16} className="text-brand-600" />
-            <label className="text-sm font-semibold text-ink">Visite principale</label>
+      {/* Two columns from lg (landscape iPad and up). The report screen is
+          two distinct jobs — DECIDING what the report covers, and ASSEMBLING
+          what goes in it — so they sit side by side rather than as one long
+          scroll down a phone-width ribbon.
+
+          Phone and portrait iPad keep the single stack: at 768px a two-up
+          would give each column ~370px, which is narrower than the phone
+          layout it replaced. items-start so the columns do not stretch to
+          match each other height. */}
+      <div className="px-4 lg:px-8 py-6 max-w-2xl lg:max-w-6xl mx-auto space-y-6 lg:space-y-0 lg:grid lg:gap-6 lg:grid-cols-2 lg:items-start">
+        {/* Settings column — what the report IS. */}
+        <div className="space-y-6 lg:min-w-0">
+          {/* Visit selector */}
+          <div className="bg-surface rounded-[4px] border border-line p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar size={16} className="text-brand-600" />
+              <label className="text-sm font-semibold text-ink">Visite principale</label>
+            </div>
+            {!loading && visits.length === 0 ? (
+              <p className="text-sm text-muted">Aucune visite trouvée pour ce projet.</p>
+            ) : (
+              <>
+                <select
+                  value={selectedVisitId}
+                  onChange={(e) => setSelectedVisitId(e.target.value)}
+                  className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
+                >
+                  {visits.map((visit) => (
+                    <option key={visit.id} value={visit.id}>
+                      {formatDateLong(visit.visit_date)}
+                      {visit.phase ? ` — ${visit.phase}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted mt-1.5">
+                  Le rapport est daté de cette visite et reprend ses observations.
+                </p>
+
+                {/* Coverage — which visits this report reports ON. Separate from
+                    the anchor above, and from the photo browser further down:
+                    borrowing a photo no longer enrols its visit here. */}
+                <div className="mt-4 pt-4 border-t border-line">
+                  <label className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-muted mb-2">
+                    Visites couvertes
+                  </label>
+                  <div className="space-y-1">
+                    {visits.map((visit) => {
+                      const isAnchor = visit.id === selectedVisitId;
+                      const checked = coveredVisitIds.includes(visit.id);
+                      return (
+                        <label
+                          key={visit.id}
+                          className={`flex items-center gap-2.5 min-h-[44px] px-2 -mx-2 rounded-[4px] text-sm ${
+                            isAnchor ? "text-muted" : "text-body cursor-pointer hover:bg-subtle"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            // The anchor is always covered by its own report, so
+                            // its box is checked and locked rather than hidden —
+                            // showing it keeps the list a complete statement of
+                            // what the document covers.
+                            disabled={isAnchor}
+                            onChange={() => toggleCoveredVisit(visit.id)}
+                            className="w-4 h-4 accent-ink flex-shrink-0 disabled:opacity-60"
+                          />
+                          <span className="flex-1 min-w-0 truncate">
+                            {formatDateLong(visit.visit_date)}
+                            <span className="text-muted"> · {visit.authorName}</span>
+                          </span>
+                          {isAnchor && (
+                            <span className="text-[11px] text-faint flex-shrink-0">
+                              visite principale
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-muted mt-2">
+                    Ces visites sont listées dans le rapport, sous les conditions
+                    climatiques. Les observations restent celles de la visite principale.
+                  </p>
+                </div>
+              </>
+            )}
           </div>
-          {!loading && visits.length === 0 ? (
-            <p className="text-sm text-muted">Aucune visite trouvée pour ce projet.</p>
-          ) : (
-            <>
+
+          {/* Report metadata not yet captured elsewhere in the app */}
+          <div className="bg-surface rounded-[4px] border border-line p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Hash size={16} className="text-brand-600" />
+              <label className="text-sm font-semibold text-ink">Informations du rapport</label>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-body mb-1">N° de note</label>
+                  {/* Read-only: the number is allocated server-side at
+                      generation, sequentially per project, so it can't be
+                      typed into a collision. */}
+                  <input
+                    type="text"
+                    value={report?.reportNumber || ""}
+                    readOnly
+                    aria-readonly="true"
+                    className="w-full px-3 py-2 bg-subtle border border-line rounded-[4px] text-sm text-muted cursor-default"
+                    placeholder="Attribué automatiquement"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-body mb-1">Nb pages</label>
+                  <input
+                    type="text"
+                    value={manual.pageCount}
+                    onChange={(e) => updateManual("pageCount", e.target.value)}
+                    className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
+                    placeholder="À déterminer"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-body mb-1">Transmis par</label>
+                  <input
+                    type="text"
+                    value={manual.transmittedBy}
+                    onChange={(e) => updateManual("transmittedBy", e.target.value)}
+                    className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
+                    placeholder="Courriel"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-body mb-1">Heure de visite</label>
+                  {visitTimeRange ? (
+                    <div className="w-full px-3 py-2 bg-subtle border border-line rounded-[4px] text-sm text-body">
+                      {visitTimeRange}
+                      <span className="text-faint"> (de la visite)</span>
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      value={manual.time}
+                      onChange={(e) => updateManual("time", e.target.value)}
+                      className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
+                      placeholder="9h00 - 10h00"
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-body mb-1">Objet de la visite</label>
+                <input
+                  type="text"
+                  value={manual.subject}
+                  onChange={(e) => updateManual("subject", e.target.value)}
+                  className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
+                  placeholder="Visite de chantier / constatations."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-body mb-1">Avancement du chantier</label>
+                <div className="flex items-start gap-2">
+                  <textarea
+                    value={manual.avancement}
+                    onChange={(e) => updateManual("avancement", e.target.value)}
+                    rows={4}
+                    className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink resize-none"
+                    placeholder="Les travaux en cours…"
+                  />
+                  <DictationButton
+                    fieldLabel="l'avancement du chantier"
+                    // setManual directly, not updateManual: that helper takes a
+                    // VALUE, so it would close over the render's `avancement`.
+                    // Two phrases finalized before a re-render would then make
+                    // the second overwrite the first. The functional form always
+                    // appends to the latest text.
+                    onTranscript={(text) =>
+                      setManual((prev) => ({
+                        ...prev,
+                        avancement: appendDictated(prev.avancement, text),
+                      }))
+                    }
+                  />
+                </div>
+                <p className="text-xs text-muted mt-1.5">
+                  Saisi à chaque génération — non conservé entre deux rapports.
+                </p>
+              </div>
+
+              {/* Dossier numbers */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs text-body">
+                    Numéros de dossier
+                    {project?.file_number && (
+                      <span className="text-faint"> (pré-rempli du projet, modifiable)</span>
+                    )}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => addListEntry("dossierNumbers", { label: "", number: "" })}
+                    className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-800"
+                  >
+                    <Plus size={16} />
+                    Ajouter
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {manual.dossierNumbers.map((entry, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={entry.label}
+                        onChange={(e) =>
+                          updateListEntry<DossierNumberEntry>("dossierNumbers", index, {
+                            label: e.target.value,
+                          })
+                        }
+                        className="w-24 px-2 py-1.5 bg-canvas border border-line rounded text-sm focus:outline-none focus:border-ink"
+                        placeholder="JLPa"
+                      />
+                      <input
+                        type="text"
+                        value={entry.number}
+                        onChange={(e) =>
+                          updateListEntry<DossierNumberEntry>("dossierNumbers", index, {
+                            number: e.target.value,
+                          })
+                        }
+                        className="flex-1 px-2 py-1.5 bg-canvas border border-line rounded text-sm focus:outline-none focus:border-ink"
+                        placeholder="Numéro"
+                      />
+                      {manual.dossierNumbers.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeListEntry("dossierNumbers", index)}
+                          className="p-1.5 text-faint hover:text-brand-strong"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        {/* Working column — what goes IN it, and the action. */}
+        <div className="space-y-6 lg:min-w-0">
+          {/* Photo selection — browses INDEPENDENTLY of the top visit selector.
+              The report stays anchored to one visit; photos may be borrowed
+              from any visit, and the selection accumulates as you move between
+              them. Weather-evidence photos never appear here (see
+              selectableReportPhotos), and the generator re-filters anyway. */}
+          {!loading && visits.length > 0 && (
+            <div className="bg-surface rounded-[4px] border border-line p-5">
+              <h3 className="text-sm text-ink font-semibold mb-1">Photos du rapport</h3>
+              <p className="text-xs text-muted mb-3">
+                Choisissez une visite, cochez ses photos, puis changez de visite — la sélection est
+                conservée.
+              </p>
+
+              {/* The photo section's OWN visit picker. */}
+              <label className="block text-xs text-body mb-1">Photos de la visite</label>
               <select
-                value={selectedVisitId}
-                onChange={(e) => setSelectedVisitId(e.target.value)}
-                className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
+                value={photoVisitId}
+                onChange={(e) => setPhotoVisitId(e.target.value)}
+                className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm mb-3 min-h-[44px] focus:outline-none focus:border-ink"
               >
-                {visits.map((visit) => (
-                  <option key={visit.id} value={visit.id}>
-                    {formatDateLong(visit.visit_date)}
-                    {visit.phase ? ` — ${visit.phase}` : ""}
+                {visits.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {formatDateLong(v.visit_date)}
+                    {v.phase ? ` — ${v.phase}` : ""}
+                    {v.id === selectedVisitId ? " (visite du rapport)" : ""}
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-muted mt-1.5">
-                Le rapport est daté de cette visite et reprend ses observations.
-              </p>
 
-              {/* Coverage — which visits this report reports ON. Separate from
-                  the anchor above, and from the photo browser further down:
-                  borrowing a photo no longer enrols its visit here. */}
-              <div className="mt-4 pt-4 border-t border-line">
-                <label className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-muted mb-2">
-                  Visites couvertes
-                </label>
-                <div className="space-y-1">
-                  {visits.map((visit) => {
-                    const isAnchor = visit.id === selectedVisitId;
-                    const checked = coveredVisitIds.includes(visit.id);
-                    return (
-                      <label
-                        key={visit.id}
-                        className={`flex items-center gap-2.5 min-h-[44px] px-2 -mx-2 rounded-[4px] text-sm ${
-                          isAnchor ? "text-muted" : "text-body cursor-pointer hover:bg-subtle"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          // The anchor is always covered by its own report, so
-                          // its box is checked and locked rather than hidden —
-                          // showing it keeps the list a complete statement of
-                          // what the document covers.
-                          disabled={isAnchor}
-                          onChange={() => toggleCoveredVisit(visit.id)}
-                          className="w-4 h-4 accent-ink flex-shrink-0 disabled:opacity-60"
-                        />
-                        <span className="flex-1 min-w-0 truncate">
-                          {formatDateLong(visit.visit_date)}
-                          <span className="text-muted"> · {visit.authorName}</span>
-                        </span>
-                        {isAnchor && (
-                          <span className="text-[11px] text-faint flex-shrink-0">
-                            visite principale
-                          </span>
-                        )}
-                      </label>
-                    );
-                  })}
+              {/* Running summary across every visit contributing photos. */}
+              <div className="bg-canvas border border-line rounded-[4px] px-3 py-2.5 mb-3">
+                <div className="text-sm text-ink font-medium">
+                  {selectedPhotos.length} photo{selectedPhotos.length === 1 ? "" : "s"} sélectionnée
+                  {selectedPhotos.length === 1 ? "" : "s"}
+                  {sourceVisitIds.length > 1 ? ` · ${sourceVisitIds.length} visites` : ""}
                 </div>
-                <p className="text-xs text-muted mt-2">
-                  Ces visites sont listées dans le rapport, sous les conditions
-                  climatiques. Les observations restent celles de la visite principale.
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Report metadata not yet captured elsewhere in the app */}
-        <div className="bg-surface rounded-[4px] border border-line p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Hash size={16} className="text-brand-600" />
-            <label className="text-sm font-semibold text-ink">Informations du rapport</label>
-          </div>
-
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-body mb-1">N° de note</label>
-                {/* Read-only: the number is allocated server-side at
-                    generation, sequentially per project, so it can't be
-                    typed into a collision. */}
-                <input
-                  type="text"
-                  value={report?.reportNumber || ""}
-                  readOnly
-                  aria-readonly="true"
-                  className="w-full px-3 py-2 bg-subtle border border-line rounded-[4px] text-sm text-muted cursor-default"
-                  placeholder="Attribué automatiquement"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-body mb-1">Nb pages</label>
-                <input
-                  type="text"
-                  value={manual.pageCount}
-                  onChange={(e) => updateManual("pageCount", e.target.value)}
-                  className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
-                  placeholder="À déterminer"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-body mb-1">Transmis par</label>
-                <input
-                  type="text"
-                  value={manual.transmittedBy}
-                  onChange={(e) => updateManual("transmittedBy", e.target.value)}
-                  className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
-                  placeholder="Courriel"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-body mb-1">Heure de visite</label>
-                {visitTimeRange ? (
-                  <div className="w-full px-3 py-2 bg-subtle border border-line rounded-[4px] text-sm text-body">
-                    {visitTimeRange}
-                    <span className="text-faint"> (de la visite)</span>
-                  </div>
+                {sourceVisitIds.length > 0 ? (
+                  <ul className="mt-1 space-y-0.5">
+                    {sourceVisitIds.map((vid) => {
+                      const count = orderedSelection.filter((p) => p.visit_id === vid).length;
+                      return (
+                        <li key={vid} className="text-xs text-muted">
+                          {visitDateById[vid] ? formatDateLong(visitDateById[vid]) : "Visite inconnue"} ·{" "}
+                          {count} photo{count === 1 ? "" : "s"}
+                          {vid !== selectedVisitId && (
+                            <span className="text-faint"> (empruntée)</span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
                 ) : (
-                  <input
-                    type="text"
-                    value={manual.time}
-                    onChange={(e) => updateManual("time", e.target.value)}
-                    className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
-                    placeholder="9h00 - 10h00"
-                  />
+                  <div className="text-xs text-muted mt-0.5">
+                    Aucune photo — le rapport sera généré sans section photos.
+                  </div>
+                )}
+                {selectedPhotos.length > 0 && (
+                  <button
+                    onClick={() => setSelectedPhotos([])}
+                    className="mt-2 text-xs font-medium text-brand-strong hover:underline"
+                  >
+                    Effacer toute la sélection
+                  </button>
                 )}
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs text-body mb-1">Objet de la visite</label>
-              <input
-                type="text"
-                value={manual.subject}
-                onChange={(e) => updateManual("subject", e.target.value)}
-                className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink"
-                placeholder="Visite de chantier / constatations."
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs text-body mb-1">Avancement du chantier</label>
-              <div className="flex items-start gap-2">
-                <textarea
-                  value={manual.avancement}
-                  onChange={(e) => updateManual("avancement", e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm focus:outline-none focus:border-ink resize-none"
-                  placeholder="Les travaux en cours…"
-                />
-                <DictationButton
-                  fieldLabel="l'avancement du chantier"
-                  // setManual directly, not updateManual: that helper takes a
-                  // VALUE, so it would close over the render's `avancement`.
-                  // Two phrases finalized before a re-render would then make
-                  // the second overwrite the first. The functional form always
-                  // appends to the latest text.
-                  onTranscript={(text) =>
-                    setManual((prev) => ({
-                      ...prev,
-                      avancement: appendDictated(prev.avancement, text),
-                    }))
-                  }
-                />
-              </div>
-              <p className="text-xs text-muted mt-1.5">
-                Saisi à chaque génération — non conservé entre deux rapports.
-              </p>
-            </div>
-
-            {/* Dossier numbers */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs text-body">
-                  Numéros de dossier
-                  {project?.file_number && (
-                    <span className="text-faint"> (pré-rempli du projet, modifiable)</span>
-                  )}
-                </label>
-                <button
-                  type="button"
-                  onClick={() => addListEntry("dossierNumbers", { label: "", number: "" })}
-                  className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-800"
-                >
-                  <Plus size={16} />
-                  Ajouter
-                </button>
-              </div>
-              <div className="space-y-2">
-                {manual.dossierNumbers.map((entry, index) => (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={entry.label}
-                      onChange={(e) =>
-                        updateListEntry<DossierNumberEntry>("dossierNumbers", index, {
-                          label: e.target.value,
-                        })
-                      }
-                      className="w-24 px-2 py-1.5 bg-canvas border border-line rounded text-sm focus:outline-none focus:border-ink"
-                      placeholder="JLPa"
-                    />
-                    <input
-                      type="text"
-                      value={entry.number}
-                      onChange={(e) =>
-                        updateListEntry<DossierNumberEntry>("dossierNumbers", index, {
-                          number: e.target.value,
-                        })
-                      }
-                      className="flex-1 px-2 py-1.5 bg-canvas border border-line rounded text-sm focus:outline-none focus:border-ink"
-                      placeholder="Numéro"
-                    />
-                    {manual.dossierNumbers.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeListEntry("dossierNumbers", index)}
-                        className="p-1.5 text-faint hover:text-brand-strong"
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* Photo selection — browses INDEPENDENTLY of the top visit selector.
-            The report stays anchored to one visit; photos may be borrowed
-            from any visit, and the selection accumulates as you move between
-            them. Weather-evidence photos never appear here (see
-            selectableReportPhotos), and the generator re-filters anyway. */}
-        {!loading && visits.length > 0 && (
-          <div className="bg-surface rounded-[4px] border border-line p-5">
-            <h3 className="text-sm text-ink font-semibold mb-1">Photos du rapport</h3>
-            <p className="text-xs text-muted mb-3">
-              Choisissez une visite, cochez ses photos, puis changez de visite — la sélection est
-              conservée.
-            </p>
-
-            {/* The photo section's OWN visit picker. */}
-            <label className="block text-xs text-body mb-1">Photos de la visite</label>
-            <select
-              value={photoVisitId}
-              onChange={(e) => setPhotoVisitId(e.target.value)}
-              className="w-full px-3 py-2 bg-canvas border border-line rounded-[4px] text-sm mb-3 min-h-[44px] focus:outline-none focus:border-ink"
-            >
-              {visits.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {formatDateLong(v.visit_date)}
-                  {v.phase ? ` — ${v.phase}` : ""}
-                  {v.id === selectedVisitId ? " (visite du rapport)" : ""}
-                </option>
-              ))}
-            </select>
-
-            {/* Running summary across every visit contributing photos. */}
-            <div className="bg-canvas border border-line rounded-[4px] px-3 py-2.5 mb-3">
-              <div className="text-sm text-ink font-medium">
-                {selectedPhotos.length} photo{selectedPhotos.length === 1 ? "" : "s"} sélectionnée
-                {selectedPhotos.length === 1 ? "" : "s"}
-                {sourceVisitIds.length > 1 ? ` · ${sourceVisitIds.length} visites` : ""}
-              </div>
-              {sourceVisitIds.length > 0 ? (
-                <ul className="mt-1 space-y-0.5">
-                  {sourceVisitIds.map((vid) => {
-                    const count = orderedSelection.filter((p) => p.visit_id === vid).length;
-                    return (
-                      <li key={vid} className="text-xs text-muted">
-                        {visitDateById[vid] ? formatDateLong(visitDateById[vid]) : "Visite inconnue"} ·{" "}
-                        {count} photo{count === 1 ? "" : "s"}
-                        {vid !== selectedVisitId && (
-                          <span className="text-faint"> (empruntée)</span>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <div className="text-xs text-muted mt-0.5">
-                  Aucune photo — le rapport sera généré sans section photos.
-                </div>
-              )}
-              {selectedPhotos.length > 0 && (
-                <button
-                  onClick={() => setSelectedPhotos([])}
-                  className="mt-2 text-xs font-medium text-brand-strong hover:underline"
-                >
-                  Effacer toute la sélection
-                </button>
-              )}
-            </div>
-
-            {loadingPhotos ? (
-              <div className="text-sm text-muted">Chargement des photos…</div>
-            ) : photosLoadError ? (
-              <div className="text-sm text-brand-strong flex items-center gap-2">
-                Impossible de charger les photos.
-                <button onClick={loadPhotos} className="underline font-medium">
-                  Réessayer
-                </button>
-              </div>
-            ) : photos.length === 0 ? (
-              <div className="text-sm text-muted">Aucune photo pour cette visite.</div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <span className="text-xs text-muted">
-                    {photos.filter((p) => selectedIds.has(p.id)).length} / {photos.length} dans cette
-                    visite
-                  </span>
-                  <button
-                    onClick={() => {
-                      const allChosen = photos.every((p) => selectedIds.has(p.id));
-                      setSelectedPhotos((current) =>
-                        allChosen
-                          ? // Only clears THIS visit's photos; other visits' stay.
-                            current.filter((p) => !photos.some((v) => v.id === p.id))
-                          : [
-                              ...current,
-                              ...photos.filter((p) => !current.some((c) => c.id === p.id)),
-                            ],
-                      );
-                    }}
-                    className="text-xs font-medium text-brand-strong hover:underline flex-shrink-0"
-                  >
-                    {photos.every((p) => selectedIds.has(p.id))
-                      ? "Décocher cette visite"
-                      : "Tout cocher"}
+              {loadingPhotos ? (
+                <div className="text-sm text-muted">Chargement des photos…</div>
+              ) : photosLoadError ? (
+                <div className="text-sm text-brand-strong flex items-center gap-2">
+                  Impossible de charger les photos.
+                  <button onClick={loadPhotos} className="underline font-medium">
+                    Réessayer
                   </button>
                 </div>
+              ) : photos.length === 0 ? (
+                <div className="text-sm text-muted">Aucune photo pour cette visite.</div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <span className="text-xs text-muted">
+                      {photos.filter((p) => selectedIds.has(p.id)).length} / {photos.length} dans cette
+                      visite
+                    </span>
+                    <button
+                      onClick={() => {
+                        const allChosen = photos.every((p) => selectedIds.has(p.id));
+                        setSelectedPhotos((current) =>
+                          allChosen
+                            ? // Only clears THIS visit's photos; other visits' stay.
+                              current.filter((p) => !photos.some((v) => v.id === p.id))
+                            : [
+                                ...current,
+                                ...photos.filter((p) => !current.some((c) => c.id === p.id)),
+                              ],
+                        );
+                      }}
+                      className="text-xs font-medium text-brand-strong hover:underline flex-shrink-0"
+                    >
+                      {photos.every((p) => selectedIds.has(p.id))
+                        ? "Décocher cette visite"
+                        : "Tout cocher"}
+                    </button>
+                  </div>
 
-                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-                  {photos.map((photo) => {
-                    const checked = selectedIds.has(photo.id);
-                    return (
-                      <button
-                        key={photo.id}
-                        type="button"
-                        onClick={() => togglePhoto(photo)}
-                        aria-pressed={checked}
-                        className={`relative aspect-square rounded-[4px] overflow-hidden bg-subtle transition-all ${
-                          checked ? "ring-2 ring-brand-600" : "hover:opacity-90"
-                        }`}
-                      >
-                        <SecureImage
-                          storagePath={photo.storage_path}
-                          alt="Photo de la visite"
-                          className="w-full h-full object-cover"
-                        />
-                        {!checked && (
-                          <span className="absolute inset-0 bg-black/25" aria-hidden="true" />
-                        )}
-                        <span
-                          className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                            checked
-                              ? "bg-brand-600 border-brand-600 text-white"
-                              : "bg-surface/90 border-line-strong"
+                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
+                    {photos.map((photo) => {
+                      const checked = selectedIds.has(photo.id);
+                      return (
+                        <button
+                          key={photo.id}
+                          type="button"
+                          onClick={() => togglePhoto(photo)}
+                          aria-pressed={checked}
+                          className={`relative aspect-square rounded-[4px] overflow-hidden bg-subtle transition-all ${
+                            checked ? "ring-2 ring-brand-600" : "hover:opacity-90"
                           }`}
-                          aria-hidden="true"
                         >
-                          {checked && <Check size={12} className="lucide-weight" style={{ "--icon-stroke": 2.5 } as React.CSSProperties} />}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Visit summary preview */}
-        {!loading && selectedVisit && (
-          <div className="bg-surface rounded-[4px] border border-line p-5">
-            <h3 className="text-sm text-ink mb-2 font-semibold">Visite sélectionnée :</h3>
-            <p className="text-sm text-body">
-              {formatDateLong(selectedVisit.visit_date)}
-              {selectedVisit.phase ? ` — ${selectedVisit.phase}` : ""}
-            </p>
-          </div>
-        )}
-
-        {/* Generate / re-download. Once a number is issued the primary
-            action stops allocating: burning A004, A005, A006 on repeated
-            taps for one visit is the failure mode this guards. */}
-        {!report ? (
-          <button
-            onClick={() => void handleGenerateReport()}
-            disabled={generating || loading || !selectedVisitId}
-            className={`w-full py-4 rounded-[4px] flex items-center justify-center gap-3 transition-all ${
-              generating ? "bg-line-strong cursor-not-allowed" : "bg-brand-600 hover:bg-brand-700 active:scale-[0.98]"
-            } text-white disabled:opacity-40 shadow-md`}
-          >
-            {generating ? (
-              <>
-                <XSpinner size={20} tone="current" label={null} />
-                <span>Génération du rapport...</span>
-              </>
-            ) : (
-              <>
-                <FileText size={20} />
-                <span>Générer le rapport Word</span>
-              </>
-            )}
-          </button>
-        ) : (
-          <div className="space-y-3">
-            <div className="bg-surface border border-line rounded-[4px] p-4 flex items-center gap-3">
-              <CheckCircle size={20} className="text-resolved flex-shrink-0" />
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-ink">Rapport {report.reportNumber}</div>
-                <div className="text-xs text-muted">
-                  Généré le {formatDateLong(report.generatedAt)}
-                </div>
-              </div>
+                          <SecureImage
+                            storagePath={photo.storage_path}
+                            alt="Photo de la visite"
+                            className="w-full h-full object-cover"
+                          />
+                          {!checked && (
+                            <span className="absolute inset-0 bg-black/25" aria-hidden="true" />
+                          )}
+                          <span
+                            className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                              checked
+                                ? "bg-brand-600 border-brand-600 text-white"
+                                : "bg-surface/90 border-line-strong"
+                            }`}
+                            aria-hidden="true"
+                          >
+                            {checked && <Check size={12} className="lucide-weight" style={{ "--icon-stroke": 2.5 } as React.CSSProperties} />}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
+          )}
 
+          {/* Visit summary preview */}
+          {!loading && selectedVisit && (
+            <div className="bg-surface rounded-[4px] border border-line p-5">
+              <h3 className="text-sm text-ink mb-2 font-semibold">Visite sélectionnée :</h3>
+              <p className="text-sm text-body">
+                {formatDateLong(selectedVisit.visit_date)}
+                {selectedVisit.phase ? ` — ${selectedVisit.phase}` : ""}
+              </p>
+            </div>
+          )}
+
+          {/* Generate / re-download. Once a number is issued the primary
+              action stops allocating: burning A004, A005, A006 on repeated
+              taps for one visit is the failure mode this guards. */}
+          {!report ? (
             <button
-              onClick={() => void handleDownloadAgain()}
-              disabled={generating}
-              className="w-full py-4 bg-ink text-white rounded-[4px] flex items-center justify-center gap-3 hover:bg-body active:scale-[0.98] transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={() => void handleGenerateReport()}
+              disabled={generating || loading || !selectedVisitId}
+              className={`w-full py-4 rounded-[4px] flex items-center justify-center gap-3 transition-all ${
+                generating ? "bg-line-strong cursor-not-allowed" : "bg-brand-600 hover:bg-brand-700 active:scale-[0.98]"
+              } text-white disabled:opacity-40 shadow-md`}
             >
               {generating ? (
                 <>
                   <XSpinner size={20} tone="current" label={null} />
-                  <span>Téléchargement...</span>
+                  <span>Génération du rapport...</span>
                 </>
               ) : (
                 <>
-                  <Send size={20} />
-                  <span>Télécharger à nouveau</span>
+                  <FileText size={20} />
+                  <span>Générer le rapport Word</span>
                 </>
               )}
             </button>
+          ) : (
+            <div className="space-y-3">
+              <div className="bg-surface border border-line rounded-[4px] p-4 flex items-center gap-3">
+                <CheckCircle size={20} className="text-resolved flex-shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-ink">Rapport {report.reportNumber}</div>
+                  <div className="text-xs text-muted">
+                    Généré le {formatDateLong(report.generatedAt)}
+                  </div>
+                </div>
+              </div>
 
-            {/* The only path to a new number. */}
-            <button
-              onClick={handleNewReport}
-              disabled={generating}
-              className="w-full py-3 bg-surface border border-line text-ink rounded-[4px] flex items-center justify-center gap-2 hover:border-brand-600 hover:text-brand-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[48px]"
-            >
-              <Plus size={20} />
-              <span className="text-sm font-medium">Nouveau rapport</span>
-            </button>
-          </div>
-        )}
+              <button
+                onClick={() => void handleDownloadAgain()}
+                disabled={generating}
+                className="w-full py-4 bg-ink text-white rounded-[4px] flex items-center justify-center gap-3 hover:bg-body active:scale-[0.98] transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {generating ? (
+                  <>
+                    <XSpinner size={20} tone="current" label={null} />
+                    <span>Téléchargement...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send size={20} />
+                    <span>Télécharger à nouveau</span>
+                  </>
+                )}
+              </button>
+
+              {/* The only path to a new number. */}
+              <button
+                onClick={handleNewReport}
+                disabled={generating}
+                className="w-full py-3 bg-surface border border-line text-ink rounded-[4px] flex items-center justify-center gap-2 hover:border-brand-600 hover:text-brand-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[48px]"
+              >
+                <Plus size={20} />
+                <span className="text-sm font-medium">Nouveau rapport</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
