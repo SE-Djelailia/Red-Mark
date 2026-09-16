@@ -10,6 +10,7 @@ import {
   StateVerifie,
 } from "../ui-kit/RedMarkIcons";
 import { IPadFrame } from "./IPadFrame";
+import { HistoryDiagram } from "./HistoryDiagram";
 import SheetBackdrop from "./SheetBackdrop";
 import { useReveal } from "./useReveal";
 import { COPY, CONTACT_EMAIL, type Lang } from "./copy";
@@ -257,10 +258,26 @@ export default function Landing() {
           </div>
         </Section>
 
-        {/* ── 02 · BENEFITS ────────────────────────────────────────
+        {/* ── 02 · THE HISTORY ─────────────────────────────────────
+            The conceptual map: how one project becomes a documented
+            building memory. Stage 1 is the static sheet; Stage 2 will drive
+            its reveal from scroll. See HistoryDiagram.tsx. */}
+        <Section n="02" label={t.history.label} lead={t.history.lead} className="mt-20 sm:mt-28">
+          {/* The sheet keeps its own 5:3 proportion and fills the measure. It
+              is legible down to ~640px; below that the labels get small, so
+              on a phone it scrolls sideways in its own gutter rather than
+              shrinking into illegibility. */}
+          <div className="mt-10 sm:mt-12 -mx-5 sm:mx-0 overflow-x-auto">
+            <div className="min-w-[640px] px-5 sm:px-0">
+              <HistoryDiagram className="w-full h-auto block" />
+            </div>
+          </div>
+        </Section>
+
+        {/* ── 03 · BENEFITS ────────────────────────────────────────
             Each card carries the leading rule at rest — the system's own
             marked-row treatment, applied to a marketing card. */}
-        <Section n="02" label={t.benefits.label} lead={t.benefits.lead} className="mt-20 sm:mt-28">
+        <Section n="03" label={t.benefits.label} lead={t.benefits.lead} className="mt-20 sm:mt-28">
           <div className="grid gap-px bg-line border border-line rounded-[4px] overflow-hidden sm:grid-cols-2">
             {t.benefits.items.map((item, i) => (
               <div

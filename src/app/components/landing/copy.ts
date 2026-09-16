@@ -18,6 +18,7 @@ export interface Copy {
     ctaSecondary: string;
   };
   mockups: { label: string; lead: string; frames: { label: string; caption: string }[] };
+  history: { label: string; lead: string };
   benefits: { label: string; lead: string; items: { title: string; body: string }[] };
   contact: {
     label: string;
@@ -51,6 +52,10 @@ export const COPY: Record<Lang, Copy> = {
         { label: "Projets", caption: "Tous vos chantiers, filtrés par statut" },
         { label: "Déficience", caption: "Signalée sur place, avec son lot et son étape" },
       ],
+    },
+    history: {
+      label: "L'historique",
+      lead: "Chaque photo, chaque observation, chaque déficience se relie à son projet. Rien ne se perd.",
     },
     benefits: {
       label: "Ce que ça change",
@@ -103,6 +108,10 @@ export const COPY: Record<Lang, Copy> = {
         { label: "Projects", caption: "Every site, filtered by status" },
         { label: "Deficiency", caption: "Raised on site, with its lot and stage" },
       ],
+    },
+    history: {
+      label: "The history",
+      lead: "Every photo, every observation, every deficiency connects back to its project. Nothing gets lost.",
     },
     benefits: {
       label: "What changes",
