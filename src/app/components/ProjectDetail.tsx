@@ -1005,7 +1005,12 @@ export default function ProjectDetail() {
               activeTab === "lots" ? "text-ink" : "text-muted hover:text-ink"
             }`}
           >
-            Lots
+            {/* Same treatment as "Déficiences" above, and for the same
+                reason: five tabs at flex-1 leave ~75px each on a 375px
+                phone, which "Lots et étapes" overruns. It abbreviates below
+                sm and spells out from sm up, where there is room. */}
+            <span className="sm:hidden">Lots</span>
+            <span className="hidden sm:inline">Lots et étapes</span>
             {activeTab === "lots" && (
               <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand-600" />
             )}
@@ -1345,7 +1350,7 @@ export default function ProjectDetail() {
         {/* Plans Tab */}
         {PLANS_ENABLED && activeTab === "plans" && id && <PlanFilesManager projectId={id} />}
 
-        {/* Lots Tab */}
+        {/* Lots et étapes Tab */}
         {activeTab === "lots" && id && (
           <LotTab
             projectId={id}

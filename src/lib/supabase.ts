@@ -106,6 +106,12 @@ export type InsertVisitStage = Omit<Insert<"site_visit_stages">, "project_id">;
 // a real guard: copying another firm's stage leaves a pair matching no row.
 export type InsertProjectStage = Omit<Insert<"project_stages">, "source_org_id">;
 
+// The same omission on the update side. A rename or a reorder must never
+// restate source_org_id: the trigger recomputes it on any update that touches
+// source_stage_id or project_id, and a client-supplied value would either be
+// overwritten or, worse, pair with a source_stage_id it does not belong to.
+export type UpdateProjectStage = Omit<Update<"project_stages">, "source_org_id">;
+
 /** One row of the report's ASSISTAIENT table. Stored on the visit. */
 export interface VisitAttendee {
   name: string;

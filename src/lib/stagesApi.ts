@@ -12,6 +12,12 @@
 //     MUST NOT silently relabel — what was written on site is historical fact.
 //     source_stage_id records provenance only.
 //
+//     Being a copy is also what makes the "Lots et étapes" tab's per-project
+//     editing safe: a project may add, rename, reorder and delete its own
+//     stages freely, and none of it touches the firm's master list or any
+//     other project. A stage added here has no provenance at all
+//     (source_stage_id NULL), which is the truth — nobody copied it.
+//
 //   site_visit_stages — which stages a visit covered. A LINK table, not a
 //     column, because a visit covers SEVERAL stages: an architect walks the
 //     foundations, the envelope and the finishes in one morning.
@@ -45,7 +51,12 @@
 // fails exactly as the Lot tab did.
 
 import { supabase } from "./supabase";
-import type { Insert, InsertProjectStage, InsertVisitStage } from "./supabase";
+import type {
+  Insert,
+  InsertProjectStage,
+  InsertVisitStage,
+  UpdateProjectStage,
+} from "./supabase";
 
 /** A stage as the project uses it. `id` is what visits link to. */
 export interface ProjectStage {
@@ -123,13 +134,13 @@ export async function ensureProjectStages(projectId: string): Promise<ProjectSta
     source_stage_id: m.id,
   }));
 
-  // Cast at the boundary, matching createCompany: the generated Insert type
-  // marks the trigger-filled column required because it is NOT NULL with no
-  // default, and the generator cannot see the trigger. `payload` stays typed
-  // as InsertProjectStage, so a call site still cannot send source_org_id.
+  // No cast needed — see createProjectStage. source_org_id is nullable, so the
+  // generated Insert type has it optional and InsertProjectStage assigns
+  // straight through. The type still omits the column, so a call site cannot
+  // send one; that guarantee comes from the alias, not from a cast.
   const { error: insertError } = await supabase
     .from("project_stages")
-    .insert(payload as Insert<"project_stages">[]);
+    .insert(payload);
 
   // A concurrent caller may have seeded first — project_stages_project_name_key
   // makes that a duplicate rather than a double insert. Re-read either way:
@@ -137,6 +148,163 @@ export async function ensureProjectStages(projectId: string): Promise<ProjectSta
   if (insertError && !isDuplicate(insertError)) throw insertError;
 
   return getProjectStages(projectId);
+}
+
+/* ── MANAGING A PROJECT'S STAGES ────────────────────────────────────────── */
+
+/**
+ * Adds one stage to a project.
+ *
+ * source_stage_id is deliberately NOT set: a stage typed into a project came
+ * from nobody's master list, and the paired CHECK constraint
+ * (project_stages_source_org_paired) requires source_stage_id and source_org_id
+ * to be null or non-null together. Leaving both null is the honest record —
+ * see the column comment, which says exactly this.
+ *
+ * The name is trimmed and its internal whitespace collapsed before it is sent,
+ * because project_stages_project_name_key indexes `lower(btrim(name))`: without
+ * normalising, "  Structure " and "Structure" are one key to the database but
+ * two different strings to every list that displays them.
+ */
+export async function createProjectStage(
+  projectId: string,
+  name: string,
+  sortOrder: number,
+): Promise<void> {
+  const clean = normaliseName(name);
+  if (!clean) throw new Error("Le nom de l'étape est requis.");
+
+  const payload: InsertProjectStage = {
+    project_id: projectId,
+    name: clean,
+    sort_order: sortOrder,
+  };
+
+  // NO boundary cast here, unlike createCompany / createLot. Those tables'
+  // trigger-stamped column is NOT NULL, so the generated Insert type marks it
+  // required and the payload will not typecheck without one. project_stages
+  // .source_org_id is NULLABLE, so the generated type already has it optional
+  // and InsertProjectStage assigns directly. Adding a cast would compile but
+  // would switch OFF checking on every other column for no benefit.
+  const { error } = await supabase.from("project_stages").insert(payload);
+  if (error) throw error;
+}
+
+/**
+ * Renames one stage.
+ *
+ * Renaming a PROJECT stage is safe in a way that renaming a firm-level one is
+ * not: visits and déficiences reference the stage by id, so the label moves
+ * with them and nothing is silently relabelled behind a historical record.
+ * That is the whole reason project_stages is a copy rather than a reference —
+ * see the module header.
+ */
+export async function renameProjectStage(id: string, name: string): Promise<void> {
+  const clean = normaliseName(name);
+  if (!clean) throw new Error("Le nom de l'étape est requis.");
+
+  const payload: UpdateProjectStage = { name: clean };
+  const { error } = await supabase.from("project_stages").update(payload).eq("id", id);
+  if (error) throw error;
+}
+
+/**
+ * Persists a new order for a project's stages.
+ *
+ * Individual updates rather than an upsert, for the reason reorderLots gives:
+ * an upsert sends every column of every row, and any column it omitted would
+ * be reset to its default. A reorder must touch sort_order and nothing else —
+ * here that matters twice over, since restating source_stage_id would re-fire
+ * the source-org trigger.
+ */
+export async function reorderProjectStages(
+  ordered: { id: string; sortOrder: number }[],
+): Promise<void> {
+  const results = await Promise.all(
+    ordered.map(({ id, sortOrder }) =>
+      supabase.from("project_stages").update({ sort_order: sortOrder }).eq("id", id),
+    ),
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
+}
+
+/** How many records a stage is attached to. Both zero means it is unused. */
+export interface StageUsage {
+  visits: number;
+  issues: number;
+}
+
+/**
+ * Counts what a stage is attached to, so deleting one can warn before it
+ * unlinks anything.
+ *
+ * Two `head: true` counts in parallel. `head` means PostgREST returns the count
+ * in the Content-Range header and NO rows at all, so this costs two index
+ * lookups and transfers nothing — which is what makes it cheap enough to run on
+ * every delete tap rather than precomputing.
+ *
+ * Deliberately NOT computed for the whole list up front: that needs a GROUP BY
+ * per stage, which PostgREST cannot express without an RPC, and it would mean a
+ * migration for a number that is only ever read at the moment of deletion.
+ *
+ * site_visit_stages is counted rather than site_visits: the link table is the
+ * fact being counted, and it has one row per (visit, stage) pair, so the number
+ * IS the number of visits covering this stage.
+ */
+export async function getStageUsage(stageId: string): Promise<StageUsage> {
+  const [visitsRes, issuesRes] = await Promise.all([
+    supabase
+      .from("site_visit_stages")
+      .select("stage_id", { count: "exact", head: true })
+      .eq("stage_id", stageId),
+    supabase
+      .from("issues")
+      .select("id", { count: "exact", head: true })
+      .eq("stage_id", stageId),
+  ]);
+
+  if (visitsRes.error) throw visitsRes.error;
+  if (issuesRes.error) throw issuesRes.error;
+
+  return { visits: visitsRes.count ?? 0, issues: issuesRes.count ?? 0 };
+}
+
+/**
+ * Deletes a stage. Anything attached to it is UNLINKED, not deleted.
+ *
+ * The database does the unlinking, and the two FKs do it differently on
+ * purpose — verified in a sandbox against this exact constraint shape:
+ *
+ *   site_visit_stages → ON DELETE CASCADE. The link row is the statement "this
+ *     visit covered this stage"; with the stage gone the statement has no
+ *     meaning, so the row goes. The VISIT itself is untouched.
+ *
+ *   issues.stage_id → ON DELETE SET NULL (stage_id). Column-scoped, and that
+ *     scoping is load-bearing: the FK is composite (stage_id, project_id), so
+ *     the unqualified form would also null project_id — which is NOT NULL, so
+ *     every delete of a used stage would abort instead of unlinking. The
+ *     déficience survives and simply loses its stage.
+ *
+ * Callers should show getStageUsage's counts first when either is non-zero.
+ */
+export async function deleteProjectStage(id: string): Promise<void> {
+  const { error } = await supabase.from("project_stages").delete().eq("id", id);
+  if (error) throw error;
+}
+
+/** Trim and collapse internal runs of whitespace — see createProjectStage. */
+function normaliseName(name: string): string {
+  return name.trim().replace(/\s+/g, " ");
+}
+
+/** True when an error is the project_stages duplicate-name index firing. */
+export function isDuplicateStageName(error: unknown): boolean {
+  const e = error as { code?: string; message?: string };
+  return (
+    e?.code === "23505" ||
+    (e?.message ?? "").includes("project_stages_project_name_key")
+  );
 }
 
 /* ── VISIT ↔ STAGE LINKS ────────────────────────────────────────────────── */

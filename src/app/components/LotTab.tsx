@@ -1,13 +1,25 @@
-// Contractual LOTS for a project.
+// The "LOTS ET ÉTAPES" tab — a project's two organising axes, on one screen.
 //
-// A lot is a contractual division of the project — "Lot 3 — Structure" — put
+// A LOT is a contractual division of the project — "Lot 3 — Structure" — put
 // out to tender and optionally carried out by one company from the firm's
 // directory. It is the ASSIGNMENT target for a déficience: assigning means
 // naming who is responsible.
 //
-// A construction STAGE (Fondation, Structure, Enveloppe, Finitions) is a
-// different axis — WHEN in the build, not WHO — and is not this tab's
-// concern. Both were once called "phases"; Stage 21 split the names.
+// A construction STAGE (Fondation, Structure, Enveloppe, Finitions) is the
+// other axis — WHEN in the build, not WHO. Both were once called "phases";
+// Stage 21 split the names.
+//
+// WHY THEY SHARE A TAB
+//
+// They are the two things you set up once per project and then pick from all
+// season, and they are short lists. Two tabs for two short lists would mean
+// hunting for which one holds the thing you want. They are kept visually
+// distinct — separate headed sections, a rule between them — because a lot and
+// a stage are NOT interchangeable, and a merged list would invite treating
+// them as one taxonomy.
+//
+// This file owns the lots section; StageSection owns the étapes section and
+// all of its state. Splitting them later means moving one import.
 //
 //   discipline = trade taxonomy   (Architecture, Plomberie, …)
 //   lot        = contractual unit (tied to a company, tied to this project)
@@ -35,6 +47,7 @@ import {
   type LotInput,
 } from "../../lib/lotApi";
 import CompanyPicker from "./CompanyPicker";
+import StageSection from "./StageSection";
 import ConfirmDialog from "./ConfirmDialog";
 import EmptyState from "./ui-kit/EmptyState";
 import XSpinner from "./ui-kit/XSpinner";
@@ -197,106 +210,118 @@ export default function LotTab({ projectId, canEdit }: Props) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="py-12 flex justify-center" role="status" aria-label="Chargement des lots">
-        <XSpinner size={32} />
-      </div>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <div className="text-center py-10">
-        <p className="text-sm text-muted mb-3">Impossible de charger les lots.</p>
-        <button
-          onClick={() => void load()}
-          className="min-h-[44px] px-4 rounded-[4px] border border-ink text-ink text-sm font-semibold hover:bg-subtle transition-colors duration-(--duration-fast)"
-        >
-          Réessayer
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      {/* Header. The add button is the tab's one primary action, so it takes
-          the red fill — and nothing else on this tab does. */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="rm-label">Lots</p>
-          <p className="text-sm text-muted mt-1 text-pretty">
-            Divisions contractuelles du projet, chacune optionnellement confiée à une
-            entreprise.
-          </p>
+    <div className="space-y-8 lg:space-y-10">
+      <section className="space-y-4">
+        {/* Header. The add button is the tab's one primary action, so it takes
+            the red fill — and nothing else on this tab does, including the
+            stages section below. */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="rm-label">Lots</p>
+            <p className="text-sm text-muted mt-1 text-pretty">
+              Divisions contractuelles du projet, chacune optionnellement confiée à une
+              entreprise.
+            </p>
+          </div>
+          {canEdit && !draft && !loading && !loadError && (
+            <button
+              onClick={startCreate}
+              className="flex-shrink-0 min-h-[44px] px-4 rounded-[4px] bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 active:bg-brand-800 transition-colors duration-(--duration-fast) flex items-center gap-2"
+            >
+              <Plus size={16} />
+              <span className="hidden sm:inline">Nouveau lot</span>
+            </button>
+          )}
         </div>
-        {canEdit && !draft && (
-          <button
-            onClick={startCreate}
-            className="flex-shrink-0 min-h-[44px] px-4 rounded-[4px] bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 active:bg-brand-800 transition-colors duration-(--duration-fast) flex items-center gap-2"
-          >
-            <Plus size={16} />
-            <span className="hidden sm:inline">Nouveau lot</span>
-          </button>
-        )}
-      </div>
 
-      {draft && (
-        <LotEditor
-          draft={draft}
-          saving={saving}
-          onChange={setDraft}
-          onCancel={() => setDraft(null)}
-          onSave={() => void handleSave()}
-        />
-      )}
-
-      {lots.length === 0 && !draft ? (
-        <EmptyState
-          icon={<IconVisit size={40} className="lucide-display" />}
-          label="Lots"
-          message="Aucun lot défini pour ce projet."
-          action={
-            canEdit
-              ? { label: "Créer le premier lot", onClick: startCreate }
-              : undefined
-          }
-        />
-      ) : (
-        // Two columns from md (iPad portrait): a lot row is short, and one
-        // per line leaves most of a large screen empty. Below md this is a
-        // single column — the phone list is unchanged.
-        <div className="grid gap-3 md:grid-cols-2">
-          {lots.map((lot, index) => (
-            <LotCard
-              key={lot.id}
-              lot={lot}
-              index={index}
-              total={lots.length}
-              canEdit={canEdit}
-              busy={reordering}
-              onEdit={() => startEdit(lot)}
-              onDelete={() => setPendingDelete(lot)}
-              onMove={(d) => void move(index, d)}
+        {/* Loading and error render INSIDE this section rather than as early
+            returns from the component. The étapes section below runs its own
+            independent query, and a failure to load the lots must not take the
+            stages list down with it — they share a tab, not a fate. */}
+        {loading ? (
+          <div className="py-10 flex justify-center" role="status" aria-label="Chargement des lots">
+            <XSpinner size={32} />
+          </div>
+        ) : loadError ? (
+          <div className="text-center py-8">
+            <p className="text-sm text-muted mb-3">Impossible de charger les lots.</p>
+            <button
+              onClick={() => void load()}
+              className="min-h-[44px] px-4 rounded-[4px] border border-ink text-ink text-sm font-semibold hover:bg-subtle transition-colors duration-(--duration-fast)"
+            >
+              Réessayer
+            </button>
+          </div>
+        ) : (
+          <>
+          {draft && (
+            <LotEditor
+              draft={draft}
+              saving={saving}
+              onChange={setDraft}
+              onCancel={() => setDraft(null)}
+              onSave={() => void handleSave()}
             />
-          ))}
-        </div>
-      )}
+          )}
 
-      <ConfirmDialog
-        open={!!pendingDelete}
-        title="Supprimer le lot ?"
-        description={
-          pendingDelete
-            ? `« ${pendingDelete.name} » sera retiré du projet. Les déficiences qui y sont rattachées sont conservées — elles perdent seulement leur lot.`
-            : ""
-        }
-        confirmLabel="Supprimer"
-        destructive
-        onConfirm={() => void handleDelete()}
-        onCancel={() => setPendingDelete(null)}
-      />
+          {lots.length === 0 && !draft ? (
+            <EmptyState
+              icon={<IconVisit size={40} className="lucide-display" />}
+              label="Lots"
+              message="Aucun lot défini pour ce projet."
+              action={
+                canEdit
+                  ? { label: "Créer le premier lot", onClick: startCreate }
+                  : undefined
+              }
+            />
+          ) : (
+            // Two columns from md (iPad portrait): a lot row is short, and one
+            // per line leaves most of a large screen empty. Below md this is a
+            // single column — the phone list is unchanged.
+            <div className="grid gap-3 md:grid-cols-2">
+              {lots.map((lot, index) => (
+                <LotCard
+                  key={lot.id}
+                  lot={lot}
+                  index={index}
+                  total={lots.length}
+                  canEdit={canEdit}
+                  busy={reordering}
+                  onEdit={() => startEdit(lot)}
+                  onDelete={() => setPendingDelete(lot)}
+                  onMove={(d) => void move(index, d)}
+                />
+              ))}
+            </div>
+          )}
+
+        </>
+        )}
+
+        <ConfirmDialog
+          open={!!pendingDelete}
+          title="Supprimer le lot ?"
+          description={
+            pendingDelete
+              ? `« ${pendingDelete.name} » sera retiré du projet. Les déficiences qui y sont rattachées sont conservées — elles perdent seulement leur lot.`
+              : ""
+          }
+          confirmLabel="Supprimer"
+          destructive
+          onConfirm={() => void handleDelete()}
+          onCancel={() => setPendingDelete(null)}
+        />
+      </section>
+
+      {/* The rule between the two sections. The tab holds the project's two
+          organising axes — WHO is responsible (lots) and WHEN in the build
+          (étapes) — and they are genuinely different things, so they get a
+          visible division rather than just more vertical space. */}
+      <hr className="border-0 border-t border-line" />
+
+      <StageSection projectId={projectId} canEdit={canEdit} />
     </div>
   );
 }

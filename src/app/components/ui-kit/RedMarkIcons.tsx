@@ -223,6 +223,37 @@ export function IconVisit(props: RedMarkIconProps) {
   );
 }
 
+/**
+ * A CONSTRUCTION STAGE — where the build has got to.
+ *
+ * Not a calendar (that is IconVisit, a date) and not a lot (a contractual
+ * division, which carries a company). A stage is a POSITION IN A SEQUENCE, so
+ * the glyph is a progress track: a baseline with three station marks, the
+ * middle one filled to say "this is the one we are at". It reads as ordered
+ * left to right, which is exactly how the stage list is ordered.
+ *
+ * Geometry on whole/half units of the 24 grid, inside the 3..21 safe area, per
+ * the drawing rules above.
+ */
+export function IconStage(props: RedMarkIconProps) {
+  return (
+    <Glyph {...props}>
+      {/* Three stations, on the 24 grid's half units. The middle one is
+          filled for the same reason IconVisit's day cell is: a stroked square
+          this small closes into a dot at 16px anyway. */}
+      <rect x="3.5" y="9.5" width="5" height="5" />
+      <rect x="9.5" y="9.5" width="5" height="5" fill="currentColor" stroke="none" />
+      <rect x="15.5" y="9.5" width="5" height="5" />
+      {/* The track, drawn only in the GAPS between stations. A rule running
+          through the two hollow squares would cross their fill-less centres
+          and read as noise at 16px; connecting them edge to edge says
+          "sequence" with two 1-unit strokes. */}
+      <path d="M8.5 12 L9.5 12" />
+      <path d="M14.5 12 L15.5 12" />
+    </Glyph>
+  );
+}
+
 /* ── STATUS → GLYPH ───────────────────────────────────────────────────────
    One map, so every surface that shows a déficience's state resolves the
    same glyph. `Record<IssueStatus, …>` forces exhaustiveness: adding a
