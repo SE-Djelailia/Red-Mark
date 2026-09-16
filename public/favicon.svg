@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="32" height="32">
-  <!-- Same mark as icon.svg / <Logo variant="app" />. At 16px the red tile
-       is what reads first; the X resolves at 24px and up. -->
-  <rect width="100" height="100" rx="22" fill="#E10600"/>
-  <g transform="translate(50,50) scale(0.72) translate(-50,-50)">
-    <polygon points="79.03,96 96,79.03 20.97,4 4,20.97" fill="#FFFFFF"/>
-    <polygon points="96,20.97 79.03,4 4,79.03 20.97,96" fill="#FFFFFF"/>
-  </g>
+  <title>RedMark</title>
+  <!-- Red X on white — the one brand treatment, shared with the PWA icons,
+       the social avatars and the email signature. Geometry is BAR_A/BAR_B
+       from Logo.tsx, inset 20% so the mark never touches the edge. -->
+  <rect width="100" height="100" fill="#FFFFFF"/>
+  <polygon points="67.418,77.600 77.600,67.418 32.582,22.400 22.400,32.582" fill="#E10600"/>
+  <polygon points="77.600,32.582 67.418,22.400 22.400,67.418 32.582,77.600" fill="#E10600"/>
 </svg>

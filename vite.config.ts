@@ -22,7 +22,9 @@ export default defineConfig({
         description:
           "Document construction sites with photos, site visit logs, and generate structured reports",
         theme_color: "#E10600",
-        background_color: "#1A1A1A",
+        // White, matching the icons' own ground. Was ink, which framed a
+        // white-field icon in black on the PWA splash screen.
+        background_color: "#FFFFFF",
         display: "standalone",
         orientation: "portrait-primary",
         scope: "/",
@@ -30,14 +32,33 @@ export default defineConfig({
         // SVG first (scales to any launcher size), with PNGs for the
         // platforms that still refuse SVG icons.
         //
-        // purpose is "any", NOT "any maskable": a maskable icon is cropped
-        // to the launcher's shape (Android can cut ~20% off each edge), and
-        // this mark runs corner-to-corner — masking would slice the ends off
-        // the X. A dedicated padded asset would be needed to claim maskable.
+        // EVERY PNG HERE IS OPAQUE WHITE, never transparent. iOS composites a
+        // home-screen icon onto BLACK before rounding its corners, so a
+        // transparent field renders as a black tile with a red X on it.
+        //
+        // "maskable" now has its OWN files rather than being claimed on the
+        // "any" ones. Android crops a maskable icon to the launcher shape —
+        // up to ~20% off each edge — so the maskable assets are drawn with a
+        // 28% inset that keeps the whole X inside the safe zone, while the
+        // "any" assets keep the tighter 20% inset that looks right uncropped.
+        // One file cannot serve both: whichever purpose it is used for, the
+        // other one looks wrong.
         icons: [
           { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
           { src: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },
           { src: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          {
+            src: "/icons/icon-maskable-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable",
+          },
+          {
+            src: "/icons/icon-maskable-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
         ],
         shortcuts: [
           {
