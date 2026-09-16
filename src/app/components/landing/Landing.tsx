@@ -9,8 +9,11 @@ import {
   StateCorrige,
   StateVerifie,
 } from "../ui-kit/RedMarkIcons";
-import { BrowserFrame, PhoneFrame } from "./MockupFrame";
+import { BrowserFrame, TabletFrame } from "./MockupFrame";
+import { ProjectWalkthrough } from "./ProjectWalkthrough";
 import { VisitWalkthrough } from "./VisitWalkthrough";
+import { DeficiencyWalkthrough } from "./DeficiencyWalkthrough";
+import { ReportWalkthrough } from "./ReportWalkthrough";
 import SheetBackdrop from "./SheetBackdrop";
 import { useReveal } from "./useReveal";
 import { COPY, CONTACT_EMAIL, type Lang } from "./copy";
@@ -205,33 +208,49 @@ export default function Landing() {
 
       <main className="max-w-6xl mx-auto px-5 sm:px-8">
         {/* ── 01 · MOCKUPS ─────────────────────────────────────────
-            The proof, given weight: one large browser frame leading, two
-            phones staggered beneath it. Staggering rather than a neat row
-            so the group reads as sheets laid on a desk. */}
+            Four frames telling ONE story about ONE (fictional) job: the
+            project is created, visited, a déficience is raised and followed
+            to closure, and the report goes out.
+
+            Three iPad frames and one browser frame, and the split is an
+            argument rather than a layout: the first three happen ON SITE, on
+            the device the app is actually built for; the report is the one
+            act done sitting down. The deliverable therefore sits on a
+            desktop surface, given the full width, with the three field
+            frames ruled beneath it. */}
         <Section n="01" label={t.mockups.label} lead={t.mockups.lead} className="mt-16 sm:mt-24">
-          <div className="grid gap-10 lg:gap-8 lg:grid-cols-12 items-start">
-            <div className="lg:col-span-8">
-              <BrowserFrame
-                label={t.mockups.frames[2].label}
-                caption={t.mockups.frames[2].caption}
+          <BrowserFrame
+            label={t.mockups.frames[3].label}
+            caption={t.mockups.frames[3].caption}
+            demo={<ReportWalkthrough />}
+          />
+
+          {/* The three on-site frames. One column on a phone, three across
+              from sm — they are a sequence, so they read left to right. */}
+          <div className="grid gap-8 sm:grid-cols-3 sm:gap-6 lg:gap-8 mt-12 sm:mt-14">
+            {/* Staggered so the row reads as sheets laid on a desk rather
+                than a product grid — the same composition the page uses
+                elsewhere. */}
+            <div className="sm:mt-6">
+              <TabletFrame
+                label={t.mockups.frames[0].label}
+                caption={t.mockups.frames[0].caption}
+                demo={<ProjectWalkthrough />}
               />
             </div>
-            <div className="grid grid-cols-2 gap-6 sm:gap-8 lg:col-span-4 lg:grid-cols-1 lg:gap-10">
-              {/* Offset downward on wide screens so the trio is composed
-                  rather than aligned — the drawing-sheet look. */}
-              <div className="lg:mt-8">
-                <PhoneFrame
-                  label={t.mockups.frames[0].label}
-                  caption={t.mockups.frames[0].caption}
-                  demo={<VisitWalkthrough />}
-                />
-              </div>
-              <div className="lg:-mt-2">
-                <PhoneFrame
-                  label={t.mockups.frames[1].label}
-                  caption={t.mockups.frames[1].caption}
-                />
-              </div>
+            <div>
+              <TabletFrame
+                label={t.mockups.frames[1].label}
+                caption={t.mockups.frames[1].caption}
+                demo={<VisitWalkthrough />}
+              />
+            </div>
+            <div className="sm:mt-6">
+              <TabletFrame
+                label={t.mockups.frames[2].label}
+                caption={t.mockups.frames[2].caption}
+                demo={<DeficiencyWalkthrough />}
+              />
             </div>
           </div>
         </Section>

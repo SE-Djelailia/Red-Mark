@@ -92,6 +92,36 @@ export function PhoneFrame({ label, caption, src, alt, demo }: FrameProps) {
 }
 
 /**
+ * iPad frame. 4:3 portrait — the app's PRIMARY device, and the one the
+ * interface is now laid out for.
+ *
+ * Same drawn-frame language as the phone: a 1px rule and a 4px radius, not a
+ * rendered slab of glass. A photographic device mockup would be the one
+ * un-Swiss thing on the page — it sells hardware, and the product here is
+ * the drawing inside the frame.
+ *
+ * Wider than the phone frame because an iPad mockup that is not visibly
+ * WIDER reads as a big phone, which would waste the whole point of showing
+ * the primary device.
+ */
+export function TabletFrame({ label, caption, src, alt, demo }: FrameProps) {
+  return (
+    <figure>
+      <div className="relative mx-auto w-full max-w-[300px] aspect-[3/4] border border-line-strong rounded-[4px] overflow-hidden bg-surface shadow-[0_1px_2px_rgb(20_20_20/0.04)]">
+        {src ? (
+          <img src={src} alt={alt ?? caption} className="absolute inset-0 w-full h-full object-cover object-top" />
+        ) : demo ? (
+          demo
+        ) : (
+          <Placeholder />
+        )}
+      </div>
+      <Caption label={label} caption={caption} />
+    </figure>
+  );
+}
+
+/**
  * Browser frame, for the report / desktop views. 16:10 with a title bar
  * carrying three square dots — square, because nothing here is round.
  */

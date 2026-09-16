@@ -1,5 +1,9 @@
 // WORKFLOW 02 — STARTING A SITE VISIT
 //
+// Second of four. The project, visit date, stage, local and déficience all
+// come from demoProject.ts, so this frame is the same job the other three
+// show — created in 01, its déficience raised in 03, reported in 04.
+//
 // The app demonstrating itself: opening a visit, capturing a photo, and the
 // offline beat that is the product's actual differentiator on a job site.
 //
@@ -21,6 +25,7 @@
 import { useRef } from "react";
 import { IconLocation, IconPhoto, StateSignale } from "../ui-kit/RedMarkIcons";
 import { AppHeader, BottomNav, OfflinePill, Tap } from "./WalkthroughParts";
+import { DEMO_ISSUES, DEMO_PROJECT } from "./demoProject";
 import { useInView, useWalkthrough, type WalkStep } from "./useWalkthrough";
 
 /* Steps, with the dwell time that gives each its weight. */
@@ -59,7 +64,10 @@ export function VisitWalkthrough() {
 
   return (
     <div ref={hostRef} className="absolute inset-0 bg-canvas overflow-hidden" aria-hidden="true">
-      <AppHeader title="Tour du Centre-Ville" sub="Visite · 12 sept. 2026" />
+      <AppHeader
+        title={DEMO_PROJECT.shortName}
+        sub={`Visite · ${DEMO_PROJECT.visitDate}`}
+      />
 
       {/* ── The visit body ────────────────────────────────────────────── */}
       <div className="px-3 pt-2.5 pb-10">
@@ -67,15 +75,19 @@ export function VisitWalkthrough() {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="text-[7px] font-semibold uppercase tracking-[0.08em] text-muted leading-none">
-              Phase
+              Étape
             </p>
-            <p className="text-[9px] text-ink font-medium leading-tight mt-0.5">Fondation</p>
+            <p className="text-[9px] text-ink font-medium leading-tight mt-0.5">
+              {DEMO_ISSUES[0].stage}
+            </p>
           </div>
           <div className="text-right shrink-0">
             <p className="text-[7px] font-semibold uppercase tracking-[0.08em] text-muted leading-none">
               Météo
             </p>
-            <p className="text-[9px] text-ink font-medium leading-tight mt-0.5">4 °C · Nuageux</p>
+            <p className="text-[9px] text-ink font-medium leading-tight mt-0.5">
+              {DEMO_PROJECT.weather}
+            </p>
           </div>
         </div>
 
@@ -84,7 +96,7 @@ export function VisitWalkthrough() {
         {/* Location row — the custom plan-fragment glyph, not a map pin. */}
         <div className="flex items-center gap-1.5 mb-2">
           <IconLocation className="w-2.5 h-2.5 text-muted shrink-0" />
-          <span className="text-[8px] text-body leading-none">A-101 — Sous-sol</span>
+          <span className="text-[8px] text-body leading-none">{DEMO_ISSUES[0].location}</span>
         </div>
 
         {/* ── Photo grid ──────────────────────────────────────────────
@@ -131,7 +143,7 @@ export function VisitWalkthrough() {
             <div className="flex items-center gap-1">
               <StateSignale className="w-2 h-2 text-brand-600 shrink-0" />
               <span className="text-[7.5px] text-ink leading-none truncate">
-                Fissure — mur nord
+                {DEMO_ISSUES[0].short}
               </span>
             </div>
           </div>
