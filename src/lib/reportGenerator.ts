@@ -5,6 +5,7 @@ import { renderDocx, triggerDownload } from "./docxEngine";
 import type { Project, SiteVisit, Photo } from "./supabase";
 import { getPhotos, getPhotosSignedUrls } from "./supabaseApi";
 import { getObservationsByVisit, type Observation } from "./observationsApi";
+import { getObservationPhotoLinks } from "./observationPhotosApi";
 import { getLocations, type Location } from "./locationsApi";
 import { formatDateLong, extractDateOnly } from "./dateUtils";
 import { WEATHER_EVIDENCE_TAG } from "./issuePhotoUpload";
@@ -92,6 +93,10 @@ function buildObservationZones(
   observations: Observation[],
   locations: Location[],
   visitPhase?: string | null,
+  // observation id -> "(voir photos 3 et 4)", already resolved against THIS
+  // report's photo selection. Absent/empty for an observation that cites
+  // nothing, or whose every citation was excluded from the selection.
+  referenceByObservationId: Map<string, string> = new Map(),
 ): Zone[] {
   const zones: Zone[] = [];
   const zoneByKey = new Map<string, Zone>();
@@ -115,15 +120,76 @@ function buildObservationZones(
     const zoneName = loc
       ? `${loc.name ? `${loc.locationNumber} — ${loc.name}` : loc.locationNumber}${phaseSuffix}`
       : "Zone non spécifiée";
+    // The cross-reference is APPENDED to the observation's own text rather
+    // than living in its own placeholder: it reads as part of the sentence
+    // ("Le cadre a été installé. (voir photos 3 et 4)"), and the template
+    // needs no new tag for it.
+    const reference = referenceByObservationId.get(obs.id) || "";
     zoneFor(obs.locationId ?? "__none__", zoneName).items.push({
       number: `1.${counter}`,
-      text: obs.text,
+      text: reference ? `${obs.text} ${reference}` : obs.text,
       actionBy: obs.actionBy || "",
     });
     counter++;
   }
 
   return zones;
+}
+
+/**
+ * Formats photo numbers as a Québec-French cross-reference.
+ *
+ *   [3]        -> "(voir photo 3)"
+ *   [3, 4]     -> "(voir photos 3 et 4)"
+ *   [3, 4, 7]  -> "(voir photos 3, 4 et 7)"
+ *
+ * Empty in, empty out — the caller appends nothing rather than printing an
+ * empty parenthesis.
+ */
+export function formatPhotoReference(numbers: number[]): string {
+  if (numbers.length === 0) return "";
+  const sorted = [...numbers].sort((a, b) => a - b);
+  if (sorted.length === 1) return `(voir photo ${sorted[0]})`;
+  const last = sorted[sorted.length - 1];
+  const rest = sorted.slice(0, -1);
+  return `(voir photos ${rest.join(", ")} et ${last})`;
+}
+
+/**
+ * Resolves one observation's cited photos into THIS report's photo numbers.
+ *
+ * Two filters, both load-bearing:
+ *
+ * 1. A citation naming a photo that is NOT in this report's selection is
+ *    dropped. An observation can cite a photo the architect chose not to
+ *    include this time — printing "voir photo 7" when the document has six
+ *    photos would be worse than printing nothing. Dropping is silent: it is an
+ *    editorial outcome, not an error.
+ *
+ * 2. The surviving ids are mapped to their position in the ORDERED selection,
+ *    which is what buildPhotoRows numbers from (index + 1). The number is
+ *    therefore resolved fresh for every report: cite the same photo in two
+ *    reports whose selections differ and it correctly prints two different
+ *    numbers.
+ */
+export function resolvePhotoReferences(
+  citedPhotoIds: string[],
+  numberByPhotoId: Map<string, number>,
+): string {
+  const numbers = citedPhotoIds
+    .map((id) => numberByPhotoId.get(id))
+    .filter((n): n is number => n !== undefined);
+  return formatPhotoReference(numbers);
+}
+
+/**
+ * The photo-number lookup for one report: photo id -> its printed number.
+ *
+ * Built from the SAME array buildPhotoRows numbers, so the two cannot drift —
+ * if the ordering changes, both move together.
+ */
+export function buildPhotoNumberMap(orderedPhotos: Photo[]): Map<string, number> {
+  return new Map(orderedPhotos.map((photo, index) => [photo.id, index + 1]));
 }
 
 /**
@@ -298,14 +364,14 @@ export async function generateSiteVisitReport(
     getLocations(visit.project_id).catch(() => [] as Location[]),
   ]);
 
-  // Observations are strictly this visit's. Only photos may come from
-  // elsewhere — a report that silently merged findings from other visits
-  // would misstate what was seen on the day it is dated.
-  const zones = buildObservationZones(observations, locations, visit.phase);
-
   // selectableReportPhotos runs on the SELECTION too, not just the picker:
   // a weather shot must not be able to reach a client report through a stale
   // selection, whatever the UI passed.
+  //
+  // This now runs BEFORE the observation zones are built, because the zones'
+  // photo cross-references are numbered against this exact array — a weather
+  // shot dropped here must not leave a gap in the numbering the references
+  // were resolved from.
   const includedPhotos = selectableReportPhotos(
     photoSelection ? photoSelection.photos : ownPhotos,
   );
@@ -313,6 +379,40 @@ export async function generateSiteVisitReport(
     ? photoSelection.visitDates
     : { [visit.id]: visit.visit_date };
   const photoRows = await buildPhotoRows(includedPhotos, visitDates, locations);
+
+  // Photo cross-references: "(voir photos 3 et 4)" appended to the observations
+  // that cite photos. Resolved against includedPhotos, so a citation naming a
+  // photo the architect left out of THIS report prints nothing rather than a
+  // number pointing past the end of the document.
+  //
+  // Non-fatal: a failed lookup costs the references, not the report.
+  const numberByPhotoId = buildPhotoNumberMap(includedPhotos);
+  const referenceByObservationId = new Map<string, string>();
+  try {
+    const links = await getObservationPhotoLinks(observations.map((o) => o.id));
+    const citedByObservation = new Map<string, string[]>();
+    for (const link of links) {
+      const list = citedByObservation.get(link.observationId);
+      if (list) list.push(link.photoId);
+      else citedByObservation.set(link.observationId, [link.photoId]);
+    }
+    for (const [observationId, photoIds] of citedByObservation) {
+      const reference = resolvePhotoReferences(photoIds, numberByPhotoId);
+      if (reference) referenceByObservationId.set(observationId, reference);
+    }
+  } catch (e) {
+    console.error("Could not resolve observation photo references:", e);
+  }
+
+  // Observations are strictly this visit's. Only photos may come from
+  // elsewhere — a report that silently merged findings from other visits
+  // would misstate what was seen on the day it is dated.
+  const zones = buildObservationZones(
+    observations,
+    locations,
+    visit.phase,
+    referenceByObservationId,
+  );
 
   const data = {
     noteNumber: reportNumber || manual.noteNumber,

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ClipboardList, ChevronUp, ChevronDown, Pencil, Trash2, Plus } from "lucide-react";
+import { ClipboardList, ChevronUp, ChevronDown, Pencil, Trash2, Plus, Image as ImageIcon, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
   getObservationsByVisit,
@@ -10,6 +10,14 @@ import {
   type Observation,
 } from "../../lib/observationsApi";
 import { getLocations, type Location } from "../../lib/locationsApi";
+import {
+  getObservationPhotoLinks,
+  setObservationPhotos,
+} from "../../lib/observationPhotosApi";
+import { getPhotos } from "../../lib/supabaseApi";
+import { selectableReportPhotos } from "../../lib/reportGenerator";
+import type { Photo } from "../../lib/supabase";
+import SecureImage from "./SecureImage";
 import { getRlsErrorMessage } from "../../lib/rlsErrors";
 import { useAuth } from "../../contexts/useAuth";
 import { inputClassName, labelClassName } from "./ui-kit/Input";
@@ -36,6 +44,18 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
   const [deleteTarget, setDeleteTarget] = useState<Observation | null>(null);
   const [movingId, setMovingId] = useState<string | null>(null);
 
+  // Photo citations. `photos` is the visit's own eligible photos — the set an
+  // observation can cite from this screen. The report may later borrow photos
+  // from other visits, and a citation survives that (observation_photos is
+  // project-scoped, not visit-scoped), but choosing them here is deliberately
+  // limited to what this visit actually saw.
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  // observation id -> cited photo ids, in citation order.
+  const [citedByObservation, setCitedByObservation] = useState<Map<string, string[]>>(new Map());
+  // Which observation's picker is open; null when none.
+  const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const [savingCitations, setSavingCitations] = useState(false);
+
   // null = closed; "new" = the add form; otherwise the id being edited.
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState({ text: "", locationId: "", actionBy: "" });
@@ -45,14 +65,36 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
     setLoading(true);
     setLoadError(null);
     try {
-      const [obs, locs] = await Promise.all([
+      const [obs, locs, visitPhotos] = await Promise.all([
         getObservationsByVisit(visitId),
         // Locations are optional context; a failure here shouldn't hide the
         // observations themselves.
         getLocations(projectId).catch(() => [] as Location[]),
+        // Same contract for photos: the citation control simply shows nothing
+        // to pick from if this fails.
+        getPhotos(visitId).catch(() => [] as Photo[]),
       ]);
       setObservations(obs);
       setLocations(locs);
+      // Weather-evidence shots are filtered out with the same helper the
+      // report uses, so the picker cannot offer a photo the document would
+      // then refuse to print — which would leave a citation resolving to
+      // nothing for reasons invisible here.
+      setPhotos(selectableReportPhotos(visitPhotos));
+
+      // Citations for every observation in one query rather than per row.
+      try {
+        const links = await getObservationPhotoLinks(obs.map((o) => o.id));
+        const map = new Map<string, string[]>();
+        for (const link of links) {
+          const list = map.get(link.observationId);
+          if (list) list.push(link.photoId);
+          else map.set(link.observationId, [link.photoId]);
+        }
+        setCitedByObservation(map);
+      } catch (e) {
+        console.error("Error loading photo citations:", e);
+      }
     } catch (error) {
       console.error("Error loading observations:", error);
       setLoadError(getRlsErrorMessage(error, "Impossible de charger les observations."));
@@ -138,6 +180,35 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
     } catch (error) {
       console.error("Error deleting observation:", error);
       toast.error(getRlsErrorMessage(error, "Erreur lors de la suppression"));
+    }
+  };
+
+  // Toggles one photo's citation on an observation and persists the whole set.
+  //
+  // Optimistic: the chip state flips immediately and rolls back on failure.
+  // Tapping thumbnails on site should feel instant, and the write is one small
+  // delete+insert.
+  const toggleCitation = async (observationId: string, photoId: string) => {
+    if (savingCitations) return;
+    const current = citedByObservation.get(observationId) ?? [];
+    const next = current.includes(photoId)
+      ? current.filter((id) => id !== photoId)
+      : [...current, photoId];
+
+    const previous = citedByObservation;
+    const optimistic = new Map(previous);
+    optimistic.set(observationId, next);
+    setCitedByObservation(optimistic);
+    setSavingCitations(true);
+    try {
+      await setObservationPhotos(observationId, next);
+      onChanged?.();
+    } catch (error) {
+      console.error("Error saving photo citations:", error);
+      setCitedByObservation(previous);
+      toast.error(getRlsErrorMessage(error, "Impossible d'enregistrer les photos citées."));
+    } finally {
+      setSavingCitations(false);
     }
   };
 
@@ -277,6 +348,64 @@ export default function ObservationsSection({ projectId, visitId, canEdit, onCha
                         )}
                         {o.actionBy && (
                           <span className="text-xs text-muted">Actions par : {o.actionBy}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Photos citées — the cross-reference the report prints as
+                        "(voir photos 3 et 4)". The numbers shown in the
+                        DOCUMENT are computed per report, so none appear here:
+                        the same photo can be photo 3 in one report and photo 5
+                        in another, and showing a number here would be a
+                        promise this screen cannot keep. */}
+                    {(citedByObservation.get(o.id)?.length || canEdit) && photos.length > 0 && (
+                      <div className="mt-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setPickerFor(pickerFor === o.id ? null : o.id)}
+                          disabled={!canEdit}
+                          className="inline-flex items-center gap-1.5 min-h-[32px] text-xs text-muted hover:text-ink disabled:hover:text-muted transition-colors"
+                        >
+                          <ImageIcon size={12} className="flex-shrink-0" />
+                          {citedByObservation.get(o.id)?.length
+                            ? `${citedByObservation.get(o.id)!.length} photo${
+                                citedByObservation.get(o.id)!.length > 1 ? "s" : ""
+                              } citée${citedByObservation.get(o.id)!.length > 1 ? "s" : ""}`
+                            : "Citer des photos"}
+                        </button>
+
+                        {pickerFor === o.id && canEdit && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {photos.map((photo) => {
+                              const cited = (citedByObservation.get(o.id) ?? []).includes(photo.id);
+                              return (
+                                <button
+                                  key={photo.id}
+                                  type="button"
+                                  onClick={() => toggleCitation(o.id, photo.id)}
+                                  aria-pressed={cited}
+                                  aria-label={cited ? "Retirer cette photo" : "Citer cette photo"}
+                                  className={`relative w-16 h-16 rounded-[4px] overflow-hidden border-2 transition-colors ${
+                                    cited ? "border-ink" : "border-line hover:border-line-strong"
+                                  }`}
+                                >
+                                  <SecureImage
+                                    storagePath={photo.storage_path}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                  />
+                                  {/* Ink, not red: a citation is metadata, not
+                                      an alert. Shown as a badge as well as a
+                                      border so the state survives bright sun. */}
+                                  {cited && (
+                                    <span className="absolute top-0.5 right-0.5 w-4 h-4 rounded-[2px] bg-ink text-surface flex items-center justify-center">
+                                      <Check size={10} strokeWidth={3} />
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
                         )}
                       </div>
                     )}
