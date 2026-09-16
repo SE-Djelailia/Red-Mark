@@ -45,11 +45,11 @@ export const COPY: Record<Lang, Copy> = {
     mockups: {
       label: "L'application",
       lead: "Saisie sur place, pas de ressaisie au bureau.",
+      // Deux écrans, photographiés dans l'application réelle — pas des
+      // maquettes. Voir scripts/capture-demo.mjs.
       frames: [
-        { label: "Projet", caption: "Le projet, créé en trois champs" },
-        { label: "Visite", caption: "Une visite, tout son contenu" },
-        { label: "Déficience", caption: "Le cycle de vie d'une déficience" },
-        { label: "Rapport", caption: "Le rapport, prêt à envoyer" },
+        { label: "Projets", caption: "Tous vos chantiers, filtrés par statut" },
+        { label: "Déficience", caption: "Signalée sur place, avec son lot et son étape" },
       ],
     },
     benefits: {
@@ -100,10 +100,8 @@ export const COPY: Record<Lang, Copy> = {
       label: "The application",
       lead: "Captured on site, not re-entered at the office.",
       frames: [
-        { label: "Project", caption: "The project, created in three fields" },
-        { label: "Visit", caption: "One visit, everything in it" },
-        { label: "Deficiency", caption: "A deficiency's lifecycle" },
-        { label: "Report", caption: "The report, ready to send" },
+        { label: "Projects", caption: "Every site, filtered by status" },
+        { label: "Deficiency", caption: "Raised on site, with its lot and stage" },
       ],
     },
     benefits: {

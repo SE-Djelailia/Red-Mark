@@ -9,11 +9,7 @@ import {
   StateCorrige,
   StateVerifie,
 } from "../ui-kit/RedMarkIcons";
-import { BrowserFrame, TabletFrame } from "./MockupFrame";
-import { ProjectWalkthrough } from "./ProjectWalkthrough";
-import { VisitWalkthrough } from "./VisitWalkthrough";
-import { DeficiencyWalkthrough } from "./DeficiencyWalkthrough";
-import { ReportWalkthrough } from "./ReportWalkthrough";
+import { IPadFrame } from "./IPadFrame";
 import SheetBackdrop from "./SheetBackdrop";
 import { useReveal } from "./useReveal";
 import { COPY, CONTACT_EMAIL, type Lang } from "./copy";
@@ -208,50 +204,56 @@ export default function Landing() {
 
       <main className="max-w-6xl mx-auto px-5 sm:px-8">
         {/* ── 01 · MOCKUPS ─────────────────────────────────────────
-            Four frames telling ONE story about ONE (fictional) job: the
-            project is created, visited, a déficience is raised and followed
-            to closure, and the report goes out.
+            REAL SCREENSHOTS, not recreations.
 
-            Three iPad frames and one browser frame, and the split is an
-            argument rather than a layout: the first three happen ON SITE, on
-            the device the app is actually built for; the report is the one
-            act done sitting down. The deliverable therefore sits on a
-            desktop surface, given the full width, with the three field
-            frames ruled beneath it. */}
+            These are photographs of the running app, captured from
+            /demo-capture by scripts/capture-demo.mjs at exact iPad viewports
+            and committed to public/demo/. The previous version of this section
+            hand-drew miniature copies of each screen, which drifted from the
+            product on every restyle and had to have their type re-tuned for
+            every frame size. A photograph cannot drift.
+
+            ORIENTATION IS MATCHED TO THE FRAME, NOT MIXED
+
+            Each frame shows only captures of ITS OWN orientation. An earlier
+            pass cross-faded each screen's landscape and portrait shots inside
+            one landscape frame; because a 3:4 image cannot fill a 4:3 box, the
+            portrait state was cropped — the project list lost a card and the
+            déficience form lost its buttons. The two orientations therefore
+            drive the two FRAME layouts (landscape here, portrait below md),
+            and the cross-fade moves between SCREENS, which is the better story
+            anyway: this is one product, and here are two things it does.
+
+            Two screens, because two are honestly captured. More will be added
+            as their fixtures are built, rather than drawing stand-ins now. */}
         <Section n="01" label={t.mockups.label} lead={t.mockups.lead} className="mt-16 sm:mt-24">
-          <BrowserFrame
-            label={t.mockups.frames[3].label}
-            caption={t.mockups.frames[3].caption}
-            demo={<ReportWalkthrough />}
-          />
-
-          {/* The three on-site frames. One column on a phone, three across
-              from sm — they are a sequence, so they read left to right. */}
-          <div className="grid gap-8 sm:grid-cols-3 sm:gap-6 lg:gap-8 mt-12 sm:mt-14">
-            {/* Staggered so the row reads as sheets laid on a desk rather
-                than a product grid — the same composition the page uses
-                elsewhere. */}
-            <div className="sm:mt-6">
-              <TabletFrame
-                label={t.mockups.frames[0].label}
-                caption={t.mockups.frames[0].caption}
-                demo={<ProjectWalkthrough />}
-              />
-            </div>
-            <div>
-              <TabletFrame
-                label={t.mockups.frames[1].label}
-                caption={t.mockups.frames[1].caption}
-                demo={<VisitWalkthrough />}
-              />
-            </div>
-            <div className="sm:mt-6">
-              <TabletFrame
-                label={t.mockups.frames[2].label}
-                caption={t.mockups.frames[2].caption}
-                demo={<DeficiencyWalkthrough />}
-              />
-            </div>
+          {/* One column on a phone, two from md. No max-width cap on the
+              frames: they fill their column, which is the point — the old
+              frames were capped at 300px and read as cards stranded in white
+              space. */}
+          <div className="grid gap-10 md:grid-cols-2 md:gap-8 lg:gap-12">
+            <IPadFrame
+              label={t.mockups.frames[0].label}
+              caption={t.mockups.frames[0].caption}
+              shots={[
+                {
+                  landscape: "/demo/projects-landscape.png",
+                  portrait: "/demo/projects-portrait.png",
+                  alt: t.mockups.frames[0].caption,
+                },
+              ]}
+            />
+            <IPadFrame
+              label={t.mockups.frames[1].label}
+              caption={t.mockups.frames[1].caption}
+              shots={[
+                {
+                  landscape: "/demo/deficience-landscape.png",
+                  portrait: "/demo/deficience-portrait.png",
+                  alt: t.mockups.frames[1].caption,
+                },
+              ]}
+            />
           </div>
         </Section>
 

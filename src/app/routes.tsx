@@ -16,6 +16,7 @@ import Dashboard from "./components/Dashboard";
 import IssueDetail from "./components/IssueDetail";
 import VisitDetail from "./components/VisitDetail";
 import IconGenerator from "./components/IconGenerator";
+import DemoCapture from "./components/demo/DemoCapture";
 import SecurityPrivacy from "./components/SecurityPrivacy";
 import PhotoUploadPage from "./components/PhotoUploadPage";
 import PlanFileViewer from "./components/PlanFileViewer";
@@ -100,6 +101,15 @@ export const router = createBrowserRouter([
         // the visual system, not to ship as a feature.
         path: "/design",
         Component: DesignSystemPreview,
+      },
+      {
+        // The camera stage for the landing page's screenshots. Mounts REAL
+        // screen components against fixtures so a Playwright script can
+        // photograph them — see DemoCapture.tsx. Unauthenticated by design
+        // (it never touches a real database), unlinked, and its fake network
+        // refuses to install on any other path.
+        path: "/demo-capture",
+        Component: DemoCapture,
       },
       {
         // Platform-operator surface. MUST stay outside /app, like

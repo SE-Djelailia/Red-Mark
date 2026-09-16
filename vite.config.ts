@@ -89,6 +89,12 @@ export default defineConfig({
         // calls) since a custom SW source has full control; this only
         // covers which build output gets fed into self.__WB_MANIFEST.
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // demo/ holds the landing page's 2x screenshots (public/demo/*.png,
+        // ~500 KiB). They are marketing assets for one public page, never
+        // used inside the installed app, so precaching them would add half a
+        // megabyte to every user's install for something they will never open
+        // offline. Excluded deliberately — see scripts/capture-demo.mjs.
+        globIgnores: ["**/demo/**"],
       },
       devOptions: {
         enabled: true,
