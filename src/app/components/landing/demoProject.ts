@@ -1,9 +1,10 @@
-// THE MODEL PROJECT — the single fictional job the four walkthroughs narrate.
+// THE MODEL PROJECT — the single fictional job the demo-capture tool renders.
 //
-// ⚠ EVERYTHING HERE IS INVENTED. The landing page is public, so no real
-// client, building, address, contractor or déficience may appear. The names
-// below were chosen to read as plausible Québec institutional construction
-// without naming anything that exists:
+// ⚠ EVERYTHING HERE IS INVENTED. These fixtures feed /demo-capture, whose
+// screenshots may end up in a sales deck, so no real client, building,
+// address, contractor or déficience may appear. The names were chosen to
+// read as plausible Québec institutional construction without naming
+// anything that exists:
 //
 //   · "Centre communautaire Saint-Alphonse" — the parish-name convention is
 //     ubiquitous in Québec municipal buildings, so it reads as real. There is
@@ -18,10 +19,11 @@
 //     defect, building element, precise location. That specificity is what
 //     makes them read as genuine to the audience being sold to.
 //
-// One story across four frames: the project is created, visited, a
-// déficience is raised and progresses through its lifecycle, and the report
-// goes out. Anything shown in more than one walkthrough must come from here
-// so the narrative cannot drift.
+// The landing page itself no longer shows screenshots — the HistoryDiagram
+// is its visual — so this file is used ONLY by the capture tool
+// (src/app/components/demo/). It lives beside the landing code because that
+// is where the fiction was authored, and the capture tool imports it from
+// here rather than owning a second copy.
 
 export const DEMO_PROJECT = {
   name: "Centre communautaire Saint-Alphonse",

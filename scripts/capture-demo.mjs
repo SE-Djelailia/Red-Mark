@@ -1,16 +1,23 @@
-// CAPTURE THE LANDING PAGE'S SCREENSHOTS FROM THE REAL APP.
+// CAPTURE SCREENSHOTS OF THE REAL APP — for sales decks, not the website.
 //
 //   pnpm demo:capture
 //
 // Builds nothing and starts nothing by itself: it expects a server already
 // serving the app, and drives a headless Chromium over /demo-capture. Each
-// screen is photographed at both iPad orientations into public/demo/.
+// screen is photographed at both iPad orientations into demo-captures/.
+//
+// THE OUTPUT IS NOT SHIPPED
+//
+// demo-captures/ is gitignored and sits OUTSIDE public/. The landing page
+// does not show app screenshots — the HistoryDiagram is its visual — and the
+// real screens are kept for sales calls. An earlier version wrote into
+// public/demo/, which meant one careless `git add` would have published them;
+// the directory moved precisely so that cannot happen.
 //
 // WHY ON DEMAND AND NOT IN CI
 //
-// The output is committed PNGs. Regenerating them on every push would put
-// binary churn in every diff for changes that never touched the UI. Run it when
-// a captured screen actually changes, review the PNGs like any other asset.
+// Nothing consumes these files automatically. Run it when a deck needs fresh
+// pictures, take what you need, and the rest can be deleted.
 //
 // ADDING A SCREEN: add it to SCREENS in DemoCapture.tsx, then to SCREENS here.
 
@@ -20,10 +27,10 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const OUT = join(ROOT, "public", "demo");
+const OUT = join(ROOT, "demo-captures");
 const BASE = process.env.DEMO_BASE_URL ?? "http://localhost:4173";
 
-/** The iPad viewports the landing page frames are built around. */
+/** The iPad viewports — the app's primary device, both orientations. */
 const VIEWPORTS = [
   { name: "landscape", width: 1024, height: 768 },
   { name: "portrait", width: 768, height: 1024 },
@@ -35,8 +42,8 @@ const VIEWPORTS = [
  *
  * `prepare` drives the REAL form with real interactions rather than seeding
  * component state, so what is photographed is a form a person could have filled
- * in. An empty form is an honest screenshot but a poor advertisement: the
- * landing page needs to show the product holding content.
+ * in. An empty form is an honest screenshot but a poor slide: a deck needs
+ * to show the product holding content.
  */
 const SCREENS = [
   { key: "projectlist", file: "projects" },
@@ -177,8 +184,7 @@ async function main() {
   for (const vp of VIEWPORTS) {
     const context = await browser.newContext({
       viewport: { width: vp.width, height: vp.height },
-      // 2x so the PNGs stay sharp on the retina displays the landing page is
-      // actually viewed on. The frames render them at CSS size.
+      // 2x so the PNGs stay sharp when placed on a retina slide.
       deviceScaleFactor: 2,
       // fr-CA drives the app's own formatting (Intl, toLocaleDateString) and
       // navigator.language. It does NOT reach the native date widget — that
@@ -309,7 +315,7 @@ async function main() {
     console.error(`\n${failures} capture(s) failed.`);
     process.exit(1);
   }
-  console.log(`\nWrote ${VIEWPORTS.length * SCREENS.length} screenshots to public/demo/`);
+  console.log(`\nWrote ${VIEWPORTS.length * SCREENS.length} screenshots to demo-captures/ (gitignored, not shipped)`);
 }
 
 main().catch((e) => {

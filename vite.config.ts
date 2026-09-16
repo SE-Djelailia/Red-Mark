@@ -89,12 +89,14 @@ export default defineConfig({
         // calls) since a custom SW source has full control; this only
         // covers which build output gets fed into self.__WB_MANIFEST.
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        // demo/ holds the landing page's 2x screenshots (public/demo/*.png,
-        // ~500 KiB). They are marketing assets for one public page, never
-        // used inside the installed app, so precaching them would add half a
-        // megabyte to every user's install for something they will never open
-        // offline. Excluded deliberately — see scripts/capture-demo.mjs.
-        globIgnores: ["**/demo/**"],
+        // The demo-capture tool is an internal, unlinked route (see
+        // routes.tsx) that photographs real screens for sales decks. It is
+        // lazy-loaded, so keeping its chunk OUT of the precache means no
+        // user ever downloads it — otherwise the service worker would fetch
+        // it on install, undoing the point of splitting it. The demo/ pattern
+        // also covers any captured PNGs should they ever be placed in
+        // public/ again (they are not shipped today).
+        globIgnores: ["**/demo/**", "**/DemoCapture-*.js"],
       },
       devOptions: {
         enabled: true,

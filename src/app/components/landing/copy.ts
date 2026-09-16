@@ -17,7 +17,6 @@ export interface Copy {
     ctaPrimary: string;
     ctaSecondary: string;
   };
-  mockups: { label: string; lead: string; frames: { label: string; caption: string }[] };
   history: { label: string; lead: string };
   benefits: { label: string; lead: string; items: { title: string; body: string }[] };
   contact: {
@@ -42,16 +41,6 @@ export const COPY: Record<Lang, Copy> = {
       sub: "RedMark documente vos visites de chantier — photos localisées, déficiences suivies, rapports prêts à envoyer. Conçu pour le terrain, pas pour le bureau.",
       ctaPrimary: "Demander une démo",
       ctaSecondary: "Se connecter",
-    },
-    mockups: {
-      label: "L'application",
-      lead: "Saisie sur place, pas de ressaisie au bureau.",
-      // Deux écrans, photographiés dans l'application réelle — pas des
-      // maquettes. Voir scripts/capture-demo.mjs.
-      frames: [
-        { label: "Projets", caption: "Tous vos chantiers, filtrés par statut" },
-        { label: "Déficience", caption: "Signalée sur place, avec son lot et son étape" },
-      ],
     },
     history: {
       label: "L'historique",
@@ -100,14 +89,6 @@ export const COPY: Record<Lang, Copy> = {
       sub: "RedMark documents your site visits — located photos, tracked deficiencies, reports ready to send. Built for the field, not the office.",
       ctaPrimary: "Request a demo",
       ctaSecondary: "Sign in",
-    },
-    mockups: {
-      label: "The application",
-      lead: "Captured on site, not re-entered at the office.",
-      frames: [
-        { label: "Projects", caption: "Every site, filtered by status" },
-        { label: "Deficiency", caption: "Raised on site, with its lot and stage" },
-      ],
     },
     history: {
       label: "The history",

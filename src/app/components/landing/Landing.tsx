@@ -9,7 +9,6 @@ import {
   StateCorrige,
   StateVerifie,
 } from "../ui-kit/RedMarkIcons";
-import { IPadFrame } from "./IPadFrame";
 import { HistoryDiagram } from "./HistoryDiagram";
 import SheetBackdrop from "./SheetBackdrop";
 import { useReveal } from "./useReveal";
@@ -204,65 +203,13 @@ export default function Landing() {
       </section>
 
       <main className="max-w-6xl mx-auto px-5 sm:px-8">
-        {/* ── 01 · MOCKUPS ─────────────────────────────────────────
-            REAL SCREENSHOTS, not recreations.
-
-            These are photographs of the running app, captured from
-            /demo-capture by scripts/capture-demo.mjs at exact iPad viewports
-            and committed to public/demo/. The previous version of this section
-            hand-drew miniature copies of each screen, which drifted from the
-            product on every restyle and had to have their type re-tuned for
-            every frame size. A photograph cannot drift.
-
-            ORIENTATION IS MATCHED TO THE FRAME, NOT MIXED
-
-            Each frame shows only captures of ITS OWN orientation. An earlier
-            pass cross-faded each screen's landscape and portrait shots inside
-            one landscape frame; because a 3:4 image cannot fill a 4:3 box, the
-            portrait state was cropped — the project list lost a card and the
-            déficience form lost its buttons. The two orientations therefore
-            drive the two FRAME layouts (landscape here, portrait below md),
-            and the cross-fade moves between SCREENS, which is the better story
-            anyway: this is one product, and here are two things it does.
-
-            Two screens, because two are honestly captured. More will be added
-            as their fixtures are built, rather than drawing stand-ins now. */}
-        <Section n="01" label={t.mockups.label} lead={t.mockups.lead} className="mt-16 sm:mt-24">
-          {/* One column on a phone, two from md. No max-width cap on the
-              frames: they fill their column, which is the point — the old
-              frames were capped at 300px and read as cards stranded in white
-              space. */}
-          <div className="grid gap-10 md:grid-cols-2 md:gap-8 lg:gap-12">
-            <IPadFrame
-              label={t.mockups.frames[0].label}
-              caption={t.mockups.frames[0].caption}
-              shots={[
-                {
-                  landscape: "/demo/projects-landscape.png",
-                  portrait: "/demo/projects-portrait.png",
-                  alt: t.mockups.frames[0].caption,
-                },
-              ]}
-            />
-            <IPadFrame
-              label={t.mockups.frames[1].label}
-              caption={t.mockups.frames[1].caption}
-              shots={[
-                {
-                  landscape: "/demo/deficience-landscape.png",
-                  portrait: "/demo/deficience-portrait.png",
-                  alt: t.mockups.frames[1].caption,
-                },
-              ]}
-            />
-          </div>
-        </Section>
-
-        {/* ── 02 · THE HISTORY ─────────────────────────────────────
-            The conceptual map: how one project becomes a documented
-            building memory. Stage 1 is the static sheet; Stage 2 will drive
-            its reveal from scroll. See HistoryDiagram.tsx. */}
-        <Section n="02" label={t.history.label} lead={t.history.lead} className="mt-20 sm:mt-28">
+        {/* ── 01 · THE HISTORY ─────────────────────────────────────
+            The hero visual: how one project becomes a documented building
+            memory. A conceptual sheet, not app screenshots — the real
+            screens are kept for sales calls, not shown publicly. Stage 1 is
+            the static drawing; Stage 2 will drive its reveal from scroll.
+            See HistoryDiagram.tsx. */}
+        <Section n="01" label={t.history.label} lead={t.history.lead} className="mt-16 sm:mt-24">
           {/* The sheet keeps its own 5:3 proportion and fills the measure. It
               is legible down to ~640px; below that the labels get small, so
               on a phone it scrolls sideways in its own gutter rather than
@@ -274,10 +221,10 @@ export default function Landing() {
           </div>
         </Section>
 
-        {/* ── 03 · BENEFITS ────────────────────────────────────────
+        {/* ── 02 · BENEFITS ────────────────────────────────────────
             Each card carries the leading rule at rest — the system's own
             marked-row treatment, applied to a marketing card. */}
-        <Section n="03" label={t.benefits.label} lead={t.benefits.lead} className="mt-20 sm:mt-28">
+        <Section n="02" label={t.benefits.label} lead={t.benefits.lead} className="mt-20 sm:mt-28">
           <div className="grid gap-px bg-line border border-line rounded-[4px] overflow-hidden sm:grid-cols-2">
             {t.benefits.items.map((item, i) => (
               <div

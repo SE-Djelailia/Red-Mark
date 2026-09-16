@@ -1,5 +1,8 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router";
 import { SupabaseAuthProvider } from "../contexts/SupabaseAuthContext"; // ✅ Using Supabase Auth
+
+const DemoCapture = lazy(() => import("./components/demo/DemoCapture"));
 import { ModalOpenProvider } from "../contexts/ModalOpenContext";
 import Layout from "./components/Layout";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -16,7 +19,6 @@ import Dashboard from "./components/Dashboard";
 import IssueDetail from "./components/IssueDetail";
 import VisitDetail from "./components/VisitDetail";
 import IconGenerator from "./components/IconGenerator";
-import DemoCapture from "./components/demo/DemoCapture";
 import SecurityPrivacy from "./components/SecurityPrivacy";
 import PhotoUploadPage from "./components/PhotoUploadPage";
 import PlanFileViewer from "./components/PlanFileViewer";
@@ -103,13 +105,22 @@ export const router = createBrowserRouter([
         Component: DesignSystemPreview,
       },
       {
-        // The camera stage for the landing page's screenshots. Mounts REAL
-        // screen components against fixtures so a Playwright script can
-        // photograph them — see DemoCapture.tsx. Unauthenticated by design
-        // (it never touches a real database), unlinked, and its fake network
-        // refuses to install on any other path.
+        // INTERNAL TOOL, not a page. Mounts REAL screen components against
+        // fixtures so scripts/capture-demo.mjs can photograph them for sales
+        // decks — see DemoCapture.tsx. Unauthenticated by design (it never
+        // touches a real database), unlinked, and its fake network refuses to
+        // install on any other path.
+        //
+        // Lazy, and the ONLY lazy route: the landing page no longer shows
+        // screenshots, so nothing public needs this code. Splitting it keeps
+        // the tool's fixtures and fake network out of every user's bundle —
+        // they load only when someone opens /demo-capture on purpose.
         path: "/demo-capture",
-        Component: DemoCapture,
+        element: (
+          <Suspense fallback={null}>
+            <DemoCapture />
+          </Suspense>
+        ),
       },
       {
         // Platform-operator surface. MUST stay outside /app, like
