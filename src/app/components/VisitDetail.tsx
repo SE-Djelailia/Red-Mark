@@ -83,6 +83,8 @@ interface Photo {
 
 interface VisitDisplay {
   id: string;
+  /** See VisitCardData.visitNumber — the stable per-project reference. */
+  visitNumber: number;
   date: string;
   phase: string;
   tags: string[];
@@ -192,6 +194,7 @@ export default function VisitDetail() {
       const phase = apiVisit.phase ?? "";
       const transformedVisit: VisitDisplay = {
         id: apiVisit.id,
+        visitNumber: apiVisit.visit_number,
         date: apiVisit.visit_date,
         phase: phase ? phase.charAt(0).toUpperCase() + phase.slice(1) : "—",
         tags: [],
@@ -630,9 +633,12 @@ export default function VisitDetail() {
     }
   };
 
+  // The number IS the title: "Visite n° 4" is how this visit is referred to
+  // everywhere else, so the page announces itself the same way. Falls back to
+  // the generic label only while loading, before the number is known.
   // Project name + date carry the context the dark band used to show.
   usePageHeader(
-    "Visite du site",
+    visit ? `Visite n°\u00a0${visit.visitNumber}` : "Visite du site",
     isLoading
       ? undefined
       : [projectName, visit?.date ? formatDateLongWithWeekday(visit.date) : null]

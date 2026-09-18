@@ -1414,7 +1414,29 @@ BEGIN
     RETURN v_report;
 END $$;
 
+
+CREATE OR REPLACE FUNCTION "public"."number_site_visit"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    IF NEW.visit_number IS NOT NULL THEN
+        RETURN NEW;
+    END IF;
+
+    PERFORM pg_advisory_xact_lock(hashtext('visit_seq:' || NEW.project_id::text));
+
+    SELECT COALESCE(MAX(visit_number), 0) + 1
+      INTO NEW.visit_number
+      FROM public.site_visits
+     WHERE project_id = NEW.project_id;
+
+    RETURN NEW;
+END $$;
+
 ALTER FUNCTION "public"."create_report"("p_project_id" "uuid", "p_visit_ids" "uuid"[], "p_location_ids" "uuid"[]) OWNER TO "postgres";
+
+ALTER FUNCTION "public"."number_site_visit"() OWNER TO "postgres";
 
 
 
@@ -1447,11 +1469,14 @@ CREATE TABLE IF NOT EXISTS "public"."site_visits" (
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "start_time" "time",
     "end_time" "time",
-    "attendees" "jsonb"
+    "attendees" "jsonb",
+    "visit_number" integer NOT NULL
 );
 
 
 COMMENT ON COLUMN "public"."site_visits"."attendees" IS 'Array of { name, organization, role, initials } — fills the report''s ASSISTAIENT table.';
+
+COMMENT ON COLUMN "public"."site_visits"."visit_number" IS 'Stable per-project reference number ("Visite n° 4"), assigned at creation by the number_site_visit trigger and never changed. Sequential by CREATION order; existing rows were backfilled in date order. A backdated visit therefore gets a number higher than its date position implies — by design, because renumbering would break the stable reference. Gaps from deleted visits are permanent and never reused.';
 
 
 ALTER TABLE "public"."site_visits" OWNER TO "postgres";
@@ -2055,6 +2080,8 @@ CREATE INDEX "idx_site_visits_user_id" ON "public"."site_visits" USING "btree" (
 
 CREATE INDEX "idx_site_visits_phase_trgm" ON "public"."site_visits" USING "gin" ("phase" "extensions"."gin_trgm_ops");
 
+CREATE UNIQUE INDEX IF NOT EXISTS "site_visits_project_number_key" ON "public"."site_visits" USING "btree" ("project_id", "visit_number");
+
 
 
 CREATE INDEX "kv_store_9fe75696_key_idx" ON "public"."kv_store_9fe75696" USING "btree" ("key" "text_pattern_ops");
@@ -2208,6 +2235,8 @@ CREATE OR REPLACE TRIGGER "set_updated_at_projects" BEFORE UPDATE ON "public"."p
 
 
 CREATE OR REPLACE TRIGGER "set_updated_at_site_visits" BEFORE UPDATE ON "public"."site_visits" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
+
+CREATE OR REPLACE TRIGGER "number_site_visit" BEFORE INSERT ON "public"."site_visits" FOR EACH ROW EXECUTE FUNCTION "public"."number_site_visit"();
 
 
 

@@ -4,6 +4,7 @@ import { TERMINAL_ISSUE_STATUS, normalizeIssueStatus, type IssueStatus } from ".
 import type { Json } from "./database.types";
 import type {
   Insert,
+  InsertSiteVisit,
   InsertTriggerOrg,
   Update,
   VisitAttendee,
@@ -494,11 +495,19 @@ export async function getSiteVisitsSummaryByIds(
   }));
 }
 
-export async function createSiteVisit(
-  visit: Insert<"site_visits">,
-): Promise<SiteVisit> {
+// InsertSiteVisit omits visit_number: the trigger assigns it (see the alias
+// in supabase.ts). The `as never` is the same seam lotApi/observationPhotosApi
+// use — the SDK's generated parameter type still demands the column, and
+// cannot express "the database fills this". The narrow type on the SIGNATURE
+// is where callers are checked; the cast is confined to the one line that
+// hands the payload to the SDK.
+export async function createSiteVisit(visit: InsertSiteVisit): Promise<SiteVisit> {
   try {
-    const { data, error } = await supabase.from("site_visits").insert([visit]).select().single();
+    const { data, error } = await supabase
+      .from("site_visits")
+      .insert([visit as never])
+      .select()
+      .single();
 
     if (error) throw error;
     return toSiteVisit(data);

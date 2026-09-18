@@ -100,6 +100,16 @@ export type UpdateLot = Omit<Update<"lots">, "company_org_id">;
 // stage; the database decides which project that is.
 export type InsertVisitStage = Omit<Insert<"site_visit_stages">, "project_id">;
 
+// site_visits.visit_number is the pattern once more, with a counter instead
+// of a parent: number_site_visit() (Stage 27) assigns the next per-project
+// number under an advisory lock, so two visits created at the same moment
+// cannot collide. The trigger HONOURS a supplied value — that is what lets a
+// backfill or import keep numbers it already has — which is exactly why the
+// client must never send one: a value from the browser would bypass the lock
+// and race for a duplicate. NOT NULL with no default, so the generated
+// Insert demands it; this alias says the number is the database's to give.
+export type InsertSiteVisit = Omit<Insert<"site_visits">, "visit_number">;
+
 // project_stages.source_org_id is trigger-derived FROM THE PROJECT (not from
 // the construction_stages row named), which is what makes the composite FK
 // (source_stage_id, source_org_id) -> construction_stages(id, organization_id)

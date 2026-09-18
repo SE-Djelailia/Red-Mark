@@ -1425,6 +1425,7 @@ export type Database = {
           updated_at: string | null
           user_id: string
           visit_date: string
+          visit_number: number
           weather: string | null
         }
         Insert: {
@@ -1440,6 +1441,7 @@ export type Database = {
           updated_at?: string | null
           user_id: string
           visit_date: string
+          visit_number: number
           weather?: string | null
         }
         Update: {
@@ -1455,6 +1457,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           visit_date?: string
+          visit_number?: number
           weather?: string | null
         }
         Relationships: [

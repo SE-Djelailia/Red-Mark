@@ -88,6 +88,7 @@ interface Issue {
 
 interface SiteVisit {
   id: string;
+  visitNumber: number;
   date: string;
   phase: string;
   authorName: string;
@@ -133,6 +134,7 @@ function capitalizePhase(phase: unknown): string {
 function mapVisitRow(visit: any): SiteVisit {
   return {
     id: visit.id,
+    visitNumber: visit.visit_number,
     date: visit.visit_date,
     phase: capitalizePhase(visit.phase),
     authorName: visit.authorName,
