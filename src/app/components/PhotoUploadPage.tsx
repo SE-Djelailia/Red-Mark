@@ -5,6 +5,7 @@ import { uploadPhoto } from "../../lib/supabaseApi";
 import { getLocations, type Location } from "../../lib/locationsApi";
 import { locationLabel } from "../../lib/photoZone";
 import { toast } from "sonner";
+import PhotoCaptureButtons from "./PhotoCaptureButtons";
 import { useAuth } from "../../contexts/useAuth";
 import { compressImage } from "../../lib/imageCompression";
 import { addToQueue } from "../../lib/uploadQueue";
@@ -54,6 +55,9 @@ export default function PhotoUploadPage() {
   const [tempFreeText, setTempFreeText] = useState("");
   const [locationSearch, setLocationSearch] = useState("");
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // See PhotoCaptureButtons.tsx: the input must live in the tree, not be
+  // created inside the click handler.
+  const addMoreInputRef = useRef<HTMLInputElement>(null);
   const gpsToastShown = useRef(false);
 
   // The project's imported locations, for the picker. Failure is not fatal:
@@ -429,43 +433,35 @@ export default function PhotoUploadPage() {
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = "image/*";
-                    input.multiple = true;
-                    input.onchange = (e: any) => handleFileSelect(e.target.files);
-                    input.click();
-                  }}
-                  className="w-full sm:w-auto px-6 py-3 bg-subtle text-ink rounded-[4px] hover:bg-line active:bg-line-strong transition-colors text-base font-medium flex items-center justify-center gap-2 min-h-[48px]"
-                >
-                  <Camera size={20} />
-                  <span>Galerie</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = "image/*";
-                    input.multiple = true;
-                    input.setAttribute("capture", "environment");
-                    input.onchange = (e: any) => handleFileSelect(e.target.files);
-                    input.click();
-                  }}
-                  className="w-full sm:w-auto px-6 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-[#A00400] transition-colors text-base font-medium flex items-center justify-center gap-2 min-h-[48px]"
-                >
-                  <Camera size={20} />
-                  <span>Caméra</span>
-                </button>
+                {/* Gallery + camera. Shared component, not hand-built
+                    <input>s: a detached input is garbage-collected while the
+                    camera is open, which silently dropped the first photo.
+                    See PhotoCaptureButtons.tsx. */}
+                <div className="w-full sm:w-auto">
+                  <PhotoCaptureButtons onFilesSelected={handleFileSelect} />
+                </div>
               </div>
             </div>
           </div>
         ) : (
           <>
             {/* Photo Count and Add More */}
+            {/* Rendered, not created on click — see PhotoCaptureButtons.tsx
+                for why a detached input loses the first photo. Cleared before
+                each open so re-picking the same filename still fires change. */}
+            <input
+              ref={addMoreInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => {
+                if (e.target.files?.length) handleAddMorePhotos(e.target.files);
+                e.target.value = "";
+              }}
+              className="hidden"
+              tabIndex={-1}
+              aria-hidden="true"
+            />
             <div className="bg-surface rounded-[4px] p-4 flex items-center justify-between">
               <h3 className="text-base font-semibold text-ink">
                 {photosToUpload.length} photo{photosToUpload.length !== 1 ? "s" : ""} •{" "}
@@ -474,14 +470,7 @@ export default function PhotoUploadPage() {
               </h3>
               <button
                 type="button"
-                onClick={() => {
-                  const input = document.createElement("input");
-                  input.type = "file";
-                  input.accept = "image/*";
-                  input.multiple = true;
-                  input.onchange = (e: any) => handleAddMorePhotos(e.target.files);
-                  input.click();
-                }}
+                onClick={() => addMoreInputRef.current?.click()}
                 className="px-4 py-2 bg-subtle text-body rounded-[4px] hover:bg-line active:bg-line-strong transition-colors text-sm font-medium flex items-center gap-2 min-h-[44px]"
               >
                 <Plus size={16} />

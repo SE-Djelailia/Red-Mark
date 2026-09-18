@@ -53,6 +53,7 @@ import { useModalOpen } from "../../hooks/useModalOpen";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
 import { uploadIssuePhotos, WEATHER_EVIDENCE_TAG } from "../../lib/issuePhotoUpload";
 import SecureImage from "./SecureImage";
+import PhotoCaptureButtons from "./PhotoCaptureButtons";
 import { toast } from "sonner";
 import { PhotoAnnotator } from "./PhotoAnnotator";
 import ObservationsSection from "./ObservationsSection";
@@ -730,27 +731,18 @@ export default function VisitDetail() {
                 <span className="text-ink">{visit.temperature}</span>
               </div>
             )}
+            {/* Weather proof. Uses PhotoCaptureButtons rather than building its
+                own <input>: a detached input is garbage-collected while the
+                camera is open, which silently dropped the first photo. See
+                PhotoCaptureButtons.tsx. */}
             {projectRole.canUploadPhotos && (
-              <button
-                type="button"
+              <PhotoCaptureButtons
+                variant="inline"
+                cameraOnly
+                cameraLabel={uploadingWeatherPhoto ? "Envoi…" : "Preuve météo"}
                 disabled={uploadingWeatherPhoto}
-                onClick={() => {
-                  const input = document.createElement("input");
-                  input.type = "file";
-                  input.accept = "image/*";
-                  input.multiple = true;
-                  input.onchange = (e: any) => {
-                    if (e.target.files?.length) void handleWeatherPhotoSelected(e.target.files);
-                  };
-                  input.click();
-                }}
-                className="flex items-center gap-1.5 text-brand-strong hover:text-brand-800 disabled:opacity-40 disabled:cursor-not-allowed ml-auto"
-              >
-                <Camera size={12} className="flex-shrink-0" />
-                <span className="text-xs font-medium">
-                  {uploadingWeatherPhoto ? "Envoi…" : "Preuve météo"}
-                </span>
-              </button>
+                onFilesSelected={(files) => void handleWeatherPhotoSelected(files)}
+              />
             )}
           </div>
         </div>
