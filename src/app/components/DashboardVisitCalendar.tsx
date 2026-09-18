@@ -21,9 +21,18 @@ interface Props {
 // PROJECT name rather than the visit author, and tapping one navigates
 // across projects.
 //
-// Deliberately no onDayClick: on a per-project calendar an empty day means
-// "create a visit here", but cross-project there is no unambiguous project
-// to create it in, so empty days stay inert.
+// DAY CLICK: tapping an empty day opens /app/new-visit?date=…
+//
+// This used to be deliberately absent, because cross-project there is no
+// unambiguous project to create a visit in. QuickVisit answers that: it
+// picks a project FIRST and only then shows the form, carrying the date
+// through ?date= — the same convention ProjectVisitCalendar already uses
+// against SiteVisitCreation. So the missing piece was never the calendar,
+// it was somewhere to send the tap that asks which project.
+//
+// What this creates is a NEW VISIT dated that day, not a planned or
+// scheduled one — see the note in QuickVisit.tsx for why that distinction
+// matters and why the visit model cannot express the latter today.
 export default function DashboardVisitCalendar({ projectIds }: Props) {
   const navigate = useNavigate();
   const [month, setMonth] = useState(new Date());
@@ -117,7 +126,12 @@ export default function DashboardVisitCalendar({ projectIds }: Props) {
       {/* Month grid — iPad and desktop. A 7-column grid on a phone gives
           each day ~50px, too cramped to read a project name. */}
       <div className="hidden sm:block">
-        <MonthCalendar month={month} onMonthChange={setMonth} pillsByDate={pillsByDate} />
+        <MonthCalendar
+          month={month}
+          onMonthChange={setMonth}
+          pillsByDate={pillsByDate}
+          onDayClick={(key) => navigate(`/app/new-visit?date=${key}`)}
+        />
       </div>
 
       {/* Agenda — phones. Same month, same data, chronological list. */}
