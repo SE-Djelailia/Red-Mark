@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Calendar, Clock, Cloud, Thermometer, X, Camera } from "lucide-react";
 import { ButtonLoader } from "./LoadingStates";
-import { createSiteVisit } from "../../lib/supabaseApi";
+import { createSiteVisit, getSiteVisit, updateSiteVisit } from "../../lib/supabaseApi";
 import { notifyProjectOwner } from "../../lib/notificationsApi";
 import { useAuth } from "../../contexts/useAuth";
 import { uploadIssuePhotos, WEATHER_EVIDENCE_TAG } from "../../lib/issuePhotoUpload";
@@ -14,6 +14,7 @@ import DictationButton from "./ui-kit/DictationButton";
 import { appendDictated } from "../../hooks/useSpeechDictation";
 import {
   ensureProjectStages,
+  getVisitStages,
   joinStageNames,
   setVisitStages,
   type ProjectStage,
@@ -26,9 +27,20 @@ const TEMPERATURE_DEFAULT = 20;
 
 interface Props {
   projectId: string;
+  /**
+   * When present the form EDITS that visit; when absent it creates one.
+   *
+   * An ID rather than the object: callers hold view-models shaped for their
+   * own screen (VisitDetail's VisitDisplay has `date` and no start/end time),
+   * and the form needs the real row. Loading it here means the edit always
+   * starts from what the database currently holds rather than from whatever
+   * a screen happened to have cached.
+   */
+  editVisitId?: string | null;
   // Pre-fills the date field (e.g. from a calendar day-click or a picker
   // opened for "today"). Falls back to today when absent/malformed.
   initialDate?: string;
+  /** Called with the created OR updated visit. */
   onCreated: (visit: SiteVisit) => void;
   onCancel: () => void;
 }
@@ -38,8 +50,16 @@ interface Props {
 // "Nouvelle visite" option, so creating a visit mid-flow (e.g. while adding
 // a deficiency from a location) doesn't navigate away from that flow.
 // Permission gating is left to hosts (same convention as IssueForm).
-export default function VisitForm({ projectId, initialDate, onCreated, onCancel }: Props) {
+export default function VisitForm({
+  projectId,
+  editVisitId,
+  initialDate,
+  onCreated,
+  onCancel,
+}: Props) {
   const { user } = useAuth();
+  const isEdit = !!editVisitId;
+  const [loadingVisit, setLoadingVisit] = useState(!!editVisitId);
 
   const isValidDate = initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate);
   const [visitDate, setVisitDate] = useState(
@@ -95,6 +115,43 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
     };
   }, [projectId]);
 
+  // EDIT MODE: load the visit and seed every field, including stage links.
+  //
+  // The stage links come from site_visit_stages — NOT from the legacy `phase`
+  // string, which is a display join ("Fondation, Enveloppe") and cannot be
+  // parsed back into ids.
+  useEffect(() => {
+    if (!editVisitId) return;
+    let cancelled = false;
+    void (async () => {
+      setLoadingVisit(true);
+      try {
+        const [row, linked] = await Promise.all([
+          getSiteVisit(editVisitId),
+          getVisitStages(editVisitId),
+        ]);
+        if (cancelled || !row) return;
+        setVisitDate(row.visit_date ?? new Date().toISOString().split("T")[0]);
+        setStartTime(row.start_time ?? "");
+        setEndTime(row.end_time ?? "");
+        setNotes(row.notes ?? "");
+        setWeather(row.weather ?? "");
+        // Stored as "12°C"; the slider needs the number back.
+        const parsed = parseInt(String(row.temperature ?? "").replace(/[^\d-]/g, ""), 10);
+        setTemperature(Number.isFinite(parsed) ? parsed : null);
+        setSelectedStageIds(linked.map((st: ProjectStage) => st.id));
+      } catch (error) {
+        console.error("❌ Failed to load visit for editing:", error);
+        alert("Impossible de charger la visite. Réessayez.");
+      } finally {
+        if (!cancelled) setLoadingVisit(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editVisitId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -111,6 +168,53 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
       // them truthful — "Fondation, Enveloppe" is what an architect would
       // have typed anyway — while site_visit_stages carries the structure.
       const selectedStages = stages.filter((st) => selectedStageIds.includes(st.id));
+
+      // ── EDIT ────────────────────────────────────────────────────────
+      // Separate from create, and deliberately narrower: an edit touches the
+      // fields on this form and nothing else. It does NOT re-send user_id or
+      // project_id (the visit's ownership and project are not editable here),
+      // and it does not re-notify the project owner — "a modifié la visite"
+      // on every typo correction is noise, not news.
+      if (editVisitId) {
+        const updated = await updateSiteVisit(editVisitId, {
+          visit_date: visitDate,
+          phase: joinStageNames(selectedStages),
+          notes,
+          weather,
+          temperature: temperature === null ? "" : `${temperature}°C`,
+          start_time: startTime || null,
+          end_time: endTime || null,
+        });
+
+        // Stage links are replaced wholesale — setVisitStages is
+        // delete-then-insert, so deselecting a stage removes its link.
+        try {
+          await setVisitStages(editVisitId, selectedStageIds);
+        } catch (error) {
+          console.error("❌ Failed to update visit stages:", error);
+          alert(
+            "Visite modifiée, mais les étapes n'ont pas pu être enregistrées. Réessayez depuis la visite.",
+          );
+        }
+
+        // Weather photos added during an edit attach to the existing visit.
+        if (weatherPhotos.length > 0) {
+          const { queuedCount } = await uploadIssuePhotos(weatherPhotos, {
+            userId: user.id,
+            projectId,
+            visitId: editVisitId,
+            tags: [WEATHER_EVIDENCE_TAG],
+          });
+          if (queuedCount > 0) {
+            alert(
+              "Visite modifiée. Une preuve météo a été mise en file d'attente et sera envoyée une fois de retour en ligne.",
+            );
+          }
+        }
+
+        onCreated(updated);
+        return;
+      }
 
       const newVisit = await createSiteVisit({
         user_id: user.id,
@@ -164,8 +268,16 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
 
       onCreated(newVisit);
     } catch (error) {
-      console.error("Error creating site visit:", error);
-      alert("Une erreur s'est produite lors de la création de la visite de chantier.");
+      console.error(isEdit ? "Error updating site visit:" : "Error creating site visit:", error);
+      // RlsWriteError already carries a sentence about permissions — show it
+      // rather than burying a real cause under a generic message.
+      const message =
+        (error as { name?: string })?.name === "RlsWriteError"
+          ? (error as Error).message
+          : isEdit
+            ? "Une erreur s'est produite lors de la modification de la visite."
+            : "Une erreur s'est produite lors de la création de la visite de chantier.";
+      alert(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -392,11 +504,19 @@ export default function VisitForm({ projectId, initialDate, onCreated, onCancel 
           </button>
           <button
             type="submit"
-            disabled={isSubmitting}
+            // Disabled while an edit's row is still loading: submitting then
+            // would write the form's EMPTY defaults over the real visit.
+            disabled={isSubmitting || loadingVisit}
             className="flex-1 py-3 bg-brand-600 text-white rounded-[4px] hover:bg-brand-700 active:bg-brand-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[48px] font-medium"
           >
-            {isSubmitting && <ButtonLoader />}
-            <span>{isSubmitting ? "Enregistrement..." : "Enregistrer la visite"}</span>
+            {(isSubmitting || loadingVisit) && <ButtonLoader />}
+            <span>
+              {loadingVisit
+                ? "Chargement…"
+                : isSubmitting
+                  ? "Enregistrement..."
+                  : "Enregistrer la visite"}
+            </span>
           </button>
         </div>
       </div>

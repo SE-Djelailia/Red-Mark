@@ -48,7 +48,28 @@ const TABLES: Record<string, readonly unknown[]> = {
   site_visit_stages: [],
   observations: [],
   observation_photos: [],
-  locations: [],
+  locations: [
+    {
+      id: "00000000-0000-4000-8000-000000000050",
+      project_id: DEMO_IDS.project,
+      level_id: "00000000-0000-4000-8000-000000000060",
+      location_number: "S-01",
+      name: "Sous-sol",
+      type: "room",
+      discipline: null,
+      parent_location_id: null,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000051",
+      project_id: DEMO_IDS.project,
+      level_id: "00000000-0000-4000-8000-000000000060",
+      location_number: "204",
+      name: "Bureau",
+      type: "room",
+      discipline: null,
+      parent_location_id: null,
+    },
+  ],
   notifications: [],
 };
 

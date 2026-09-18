@@ -17,7 +17,8 @@ import {
 } from "../../lib/issueStatus";
 import { DISCIPLINES, DEFAULT_DISCIPLINE } from "../../lib/disciplines";
 import { DEFAULT_ISSUE_PRIORITY } from "../../lib/issuePriority";
-import { getLocation, type Location } from "../../lib/locationsApi";
+import { getLocation, getLocations, type Location } from "../../lib/locationsApi";
+import { locationLabel } from "../../lib/photoZone";
 import { getLots, type Lot } from "../../lib/lotApi";
 import { ensureProjectStages, type ProjectStage } from "../../lib/stagesApi";
 import { uploadIssuePhotos } from "../../lib/issuePhotoUpload";
@@ -54,7 +55,7 @@ interface Props {
 export default function IssueForm({
   projectId,
   visitId,
-  locationId,
+  locationId: pinnedLocationId,
   issue,
   initialPhotos,
   onSaved,
@@ -82,6 +83,19 @@ export default function IssueForm({
 
   const [location, setLocation] = useState<Location | null>(null);
   const [loadingLocation, setLoadingLocation] = useState(false);
+  // The project's locations, for the picker.
+  //
+  // This form used to render Emplacement as a READ-ONLY div: it could show a
+  // location passed in via the `locationId` prop (from a plan pin, or when
+  // editing an existing issue) but offered no way to choose one. Every other
+  // entry point — "Nouvelle déficience" from a visit — therefore showed
+  // "Aucun emplacement lié" with no control, which read as a stuck picker.
+  // The data was always there; getLocations was simply never called here.
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
+  const [locationsError, setLocationsError] = useState(false);
+  // "" = none. Seeded from the prop / the edited issue, then user-owned.
+  const [locationId, setLocationId] = useState<string>("");
 
   // Optional single-select metadata. "" is the "none" sentinel for both, so
   // the <select> has a real value rather than an uncontrolled undefined; it
@@ -126,8 +140,37 @@ export default function IssueForm({
     };
   }, [projectId]);
 
+  // Same loader shape as PhotoUploadPage's location picker — one query,
+  // cancellation on project change, an error flag rather than a thrown render.
   useEffect(() => {
-    const effectiveLocationId = issue?.locationId ?? locationId ?? null;
+    if (!projectId) return;
+    let cancelled = false;
+    void (async () => {
+      // Inside the callback, not the effect body: a synchronous setState
+      // during an effect triggers a cascading render (and the lint rule that
+      // names it). Same shape as LotTab's loader.
+      setLocationsLoading(true);
+      setLocationsError(false);
+      try {
+        const rows = await getLocations(projectId);
+        if (!cancelled) setLocations(rows);
+      } catch (e) {
+        console.error("Error loading locations for issue form:", e);
+        if (!cancelled) {
+          setLocations([]);
+          setLocationsError(true);
+        }
+      } finally {
+        if (!cancelled) setLocationsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
+
+  useEffect(() => {
+    const effectiveLocationId = locationId || null;
     if (!effectiveLocationId) {
       setLocation(null);
       return;
@@ -137,7 +180,7 @@ export default function IssueForm({
       .then(setLocation)
       .catch((e) => console.error("Error loading linked location:", e))
       .finally(() => setLoadingLocation(false));
-  }, [issue?.locationId, locationId]);
+  }, [locationId]);
 
   useEffect(() => {
     if (!issue) {
@@ -153,6 +196,8 @@ export default function IssueForm({
       setTags([]);
       setLotId("");
       setStageId("");
+      // A pin's location when created from one, otherwise unset and pickable.
+      setLocationId(pinnedLocationId ?? "");
       setExistingPhotos(initialPhotos || []);
       setRemovedPhotoIds([]);
       setNewPhotoFiles([]);
@@ -168,6 +213,7 @@ export default function IssueForm({
     setTags(issue.tags);
     setLotId(issue.lotId || "");
     setStageId(issue.stageId || "");
+    setLocationId(issue.locationId ?? pinnedLocationId ?? "");
     setExistingPhotos(issue.photos);
     setRemovedPhotoIds([]);
     setNewPhotoFiles([]);
@@ -214,8 +260,15 @@ export default function IssueForm({
         discipline: discipline || undefined,
         dueDate: dueDate || null,
         tags,
-        location: location ? location.name || location.locationNumber : "",
-        locationId: location?.id || null,
+        // Resolved from the PICKED id, not from the fetched `location`
+        // object: that object arrives via an async read, so saving quickly
+        // after choosing would otherwise write null. The list is already in
+        // memory, so the label needs no round trip.
+        location: (() => {
+          const picked = locations.find((l) => l.id === locationId) ?? location;
+          return picked ? picked.name || picked.locationNumber : "";
+        })(),
+        locationId: locationId || null,
         // No assignee keys here, DELIBERATELY omitted rather than sent as null.
         // The person-assignee UI was retired in #7 — the Lot now carries
         // responsibility (the company doing that lot). The assigned_to /
@@ -271,7 +324,7 @@ export default function IssueForm({
         userId: user.id,
         projectId,
         visitId,
-        locationId: location?.id,
+        locationId: locationId || undefined,
       });
 
       // For a brand-new issue, existingPhotos only ever holds initialPhotos
@@ -476,16 +529,56 @@ export default function IssueForm({
         />
       </div>
 
-      {/* Location — read-only */}
+      {/* Emplacement — a real picker.
+          
+          Was a read-only div: it could DISPLAY a location handed in from a
+          plan pin but offered no way to choose one, so every déficience
+          raised from a visit was stuck on "Aucun emplacement lié". The
+          project's locations were always available; this form just never
+          asked for them.
+
+          Locked when the déficience was created from a plan pin — there the
+          location IS the pin, and changing it here would silently disagree
+          with the marker on the drawing. */}
       <div>
         <label className={labelClassName}>Emplacement</label>
-        <div className="w-full px-4 py-3 bg-canvas border border-line rounded-[4px] text-sm text-body">
-          {loadingLocation
-            ? "Chargement…"
-            : location
-              ? `${location.locationNumber}${location.name ? ` — ${location.name}` : ""}`
-              : "Aucun emplacement lié"}
-        </div>
+        {pinnedLocationId ? (
+          <div className="w-full px-4 py-3 bg-canvas border border-line rounded-[4px] text-sm text-body">
+            {loadingLocation
+              ? "Chargement…"
+              : location
+                ? locationLabel(location)
+                : "Aucun emplacement lié"}
+          </div>
+        ) : (
+          <>
+            <select
+              value={locationId}
+              onChange={(e) => setLocationId(e.target.value)}
+              disabled={locationsLoading}
+              className={inputClassName}
+            >
+              <option value="">
+                {locationsLoading ? "Chargement…" : "Aucun emplacement"}
+              </option>
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {locationLabel(loc)}
+                </option>
+              ))}
+            </select>
+            {locationsError && (
+              <p className="text-xs text-muted mt-1">
+                Les emplacements n'ont pas pu être chargés.
+              </p>
+            )}
+            {!locationsLoading && !locationsError && locations.length === 0 && (
+              <p className="text-xs text-muted mt-1">
+                Aucun emplacement défini pour ce projet — ajoutez-en dans l'onglet Locaux.
+              </p>
+            )}
+          </>
+        )}
       </div>
 
       {/* Tags */}

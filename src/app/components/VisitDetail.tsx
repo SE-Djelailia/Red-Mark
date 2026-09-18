@@ -54,6 +54,7 @@ import { notifyProjectOwner } from "../../lib/notificationsApi";
 import { uploadIssuePhotos, WEATHER_EVIDENCE_TAG } from "../../lib/issuePhotoUpload";
 import SecureImage from "./SecureImage";
 import PhotoCaptureButtons from "./PhotoCaptureButtons";
+import VisitForm from "./VisitForm";
 import { toast } from "sonner";
 import { PhotoAnnotator } from "./PhotoAnnotator";
 import ObservationsSection from "./ObservationsSection";
@@ -149,8 +150,10 @@ export default function VisitDetail() {
   // the new issue, since those already exist as real photos rows and just
   // need attaching, not re-uploading.
   const [showIssueModal, setShowIssueModal] = useState(false);
+  const [showEditVisit, setShowEditVisit] = useState(false);
   useModalOpen(!!selectedPhoto);
   useModalOpen(showIssueModal);
+  useModalOpen(showEditVisit);
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null);
   const [initialIssuePhotos, setInitialIssuePhotos] = useState<Issue["photos"]>([]);
   const [showDeletePhotosConfirm, setShowDeletePhotosConfirm] = useState(false);
@@ -378,11 +381,20 @@ export default function VisitDetail() {
 
   const projectRole = useProjectRole(projectId);
 
-  // Mirrors the site_visits "Creator can update their visits" RLS policy.
-  // Anything that writes to the visit row itself — notes, attendees — has to
-  // be gated on this, or an editor who didn't create the visit is offered a
-  // button the database will refuse.
-  const canEditVisit = !!user?.id && !!visit && user.id === visit.createdBy;
+  // Mirrors the site_visits UPDATE policy, which Stage 26 widened from
+  // creator-only to owner/editor — the same widening the issues table got in
+  // Stage 12.
+  //
+  // It was creator-only here because the POLICY was creator-only: an editor
+  // who had not recorded the visit could not change it, and because a blocked
+  // UPDATE matches zero rows rather than erroring, the app would have claimed
+  // success while saving nothing. Verified in a sandbox against the real
+  // policies: the editor's UPDATE affected 0 rows and raised nothing.
+  //
+  // Now gated on the role, so an editor can correct a colleague's visit. This
+  // MUST stay in step with stage26-visit-update-policy.sql — a UI that offers
+  // more than the database allows is the failure this comment exists about.
+  const canEditVisit = !!visit && projectRole.canCreateIssues;
 
   // Weather evidence — a regular visit photo tagged "Météo" (a sky photo,
   // a weather-app screenshot, etc.), via the same shared capture/compress/
@@ -675,6 +687,21 @@ export default function VisitDetail() {
           </button>
 
           <div className="flex items-center gap-1">
+            {/* Edit the visit itself — date, times, stages, weather, notes.
+                Until Stage 26 there was no way to change a visit after
+                recording it: the form was create-only and the RLS policy was
+                creator-only. Gated on canEditVisit so a commenter never sees
+                a control the database would refuse. */}
+            {canEditVisit && (
+              <button
+                onClick={() => setShowEditVisit(true)}
+                className="w-10 h-10 flex items-center justify-center text-muted hover:text-ink hover:bg-subtle active:bg-line rounded-[4px] transition-colors"
+                title="Modifier la visite"
+                aria-label="Modifier la visite"
+              >
+                <Pencil size={20} />
+              </button>
+            )}
             {/* Same destination as "Générer rapport" in Actions rapides, with
                 this visit pre-selected. There is no share feature, so no
                 share control here. */}
@@ -1414,6 +1441,55 @@ export default function VisitDetail() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Visit Edit Modal — hosts VisitForm in edit mode, the same shared
+          form that creates a visit. One surface for both, exactly as
+          IssueForm is for déficiences: a second "edit visit" form would be a
+          second place for the stage-link and weather logic to drift. */}
+      {showEditVisit && visit && projectId && (
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowEditVisit(false)}
+        >
+          <div
+            className="relative max-w-2xl w-full bg-surface rounded-[4px] p-6 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowEditVisit(false)}
+              aria-label="Fermer"
+              className="absolute top-4 right-4 text-muted hover:text-ink transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <h2 className="text-xl font-semibold text-ink mb-6">Modifier la visite</h2>
+            <VisitForm
+              projectId={projectId}
+              editVisitId={visit.id}
+              onCreated={(updated) => {
+                // Map the saved row back onto this screen's view-model. Only
+                // the fields VisitDisplay actually holds — it is a display
+                // shape (`date`, no start/end time), not the DB row.
+                setVisit((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        date: updated.visit_date ?? prev.date,
+                        phase: updated.phase ?? prev.phase,
+                        notes: updated.notes ?? "",
+                        weather: updated.weather,
+                        temperature: updated.temperature,
+                      }
+                    : prev,
+                );
+                setShowEditVisit(false);
+                toast.success("Visite modifiée");
+              }}
+              onCancel={() => setShowEditVisit(false)}
+            />
           </div>
         </div>
       )}

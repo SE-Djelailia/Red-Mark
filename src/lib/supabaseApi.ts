@@ -508,6 +508,20 @@ export async function createSiteVisit(
   }
 }
 
+/**
+ * Updates a visit and returns the row the database actually wrote.
+ *
+ * The read-back is the point, not a convenience. An UPDATE that RLS refuses is
+ * NOT an error in Postgres — it matches zero rows and reports success — so a
+ * fire-and-forget update would show "Visite modifiée" while nothing changed.
+ * That is exactly what site_visits' old creator-only UPDATE policy did to any
+ * editor who was not the visit's author (Stage 26 widens it; verified in a
+ * sandbox that the editor's UPDATE affected 0 rows and raised nothing).
+ *
+ * `.single()` turns the zero-row case into PGRST116, which is re-thrown as an
+ * RlsWriteError so the caller can say something true about permissions instead
+ * of surfacing a PostgREST code.
+ */
 export async function updateSiteVisit(
   visitId: string,
   updates: Update<"site_visits">,
@@ -520,7 +534,17 @@ export async function updateSiteVisit(
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // Zero rows: the row exists (the caller is looking at it) but the write
+      // was filtered. Report it as the permission problem it is.
+      if (error.code === "PGRST116") {
+        throw new RlsWriteError(
+          "Modification refusée : vous n'avez pas les droits d'édition sur cette visite.",
+          "PGRST116",
+        );
+      }
+      throw error;
+    }
     return toSiteVisit(data);
   } catch (error) {
     console.error("❌ Error updating visit:", error);
