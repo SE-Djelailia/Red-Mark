@@ -23,6 +23,8 @@ import SecurityPrivacy from "./components/SecurityPrivacy";
 import PhotoUploadPage from "./components/PhotoUploadPage";
 import PlanFileViewer from "./components/PlanFileViewer";
 import LocationDetail from "./components/LocationDetail";
+import LotDetail from "./components/LotDetail";
+import StageDetail from "./components/StageDetail";
 import MigrationPrompt from "./components/MigrationPrompt"; // ✅ Migration prompt
 import FirmAdmin from "./components/FirmAdmin";
 import SetPassword from "./components/SetPassword";
@@ -153,6 +155,8 @@ export const router = createBrowserRouter([
           { path: "projects/:projectId/issues/:issueId", Component: IssueDetail },
           { path: "projects/:projectId/plan-files/:planFileId", Component: PlanFileViewer },
           { path: "projects/:projectId/locations/:locationId", Component: LocationDetail },
+          { path: "projects/:projectId/lots/:lotId", Component: LotDetail },
+          { path: "projects/:projectId/stages/:stageId", Component: StageDetail },
           { path: "projects/:id/visit/new", Component: SiteVisitCreation },
           { path: "projects/:id/report", Component: ReportGenerator },
           { path: "new-visit", Component: QuickVisit },

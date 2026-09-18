@@ -86,6 +86,79 @@ export async function getProjectStages(projectId: string): Promise<ProjectStage[
 }
 
 /**
+ * One stage — the stage detail view's header.
+ *
+ * Returns null for "no such stage, or not visible", matching getLot: RLS
+ * makes those indistinguishable from the client, and the screen renders an
+ * explicit not-found state either way.
+ */
+export async function getProjectStage(id: string): Promise<ProjectStage | null> {
+  if (!id) return null;
+  const { data, error } = await supabase
+    .from("project_stages")
+    .select("id, name, sort_order")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+  return { id: data.id, name: data.name, sortOrder: data.sort_order };
+}
+
+/** A visit that covered a stage — the row the stage detail view lists. */
+export interface StageVisit {
+  id: string;
+  visitNumber: number;
+  visitDate: string;
+  phase: string | null;
+}
+
+/**
+ * The visits that covered this stage, newest first.
+ *
+ * THIS IS A REAL RELATIONSHIP, unlike the lot side. site_visit_stages is a
+ * link table the architect writes deliberately (VisitForm's stage
+ * multi-select), so "this visit covered this stage" is a STATEMENT, not an
+ * inference. That is exactly why the lot detail view has no visits section:
+ * lots have no such link, and deriving one from where a lot's déficiences
+ * were flagged would make a lot with no problems read as "never inspected".
+ *
+ * The embed names its FK. site_visit_stages has TWO to site_visits — the
+ * plain …_visit_id_fkey and the Stage 22 composite …_visit_project_fkey — so
+ * an unqualified embed is refused with PGRST201. The plain one is the
+ * relationship; the composite exists to make a cross-project link
+ * unrepresentable, not to be traversed. (The file header in lotApi.ts lists
+ * both pairs; this is the first client embed through them.)
+ */
+export async function getVisitsByStage(stageId: string): Promise<StageVisit[]> {
+  if (!stageId) return [];
+  const { data, error } = await supabase
+    .from("site_visit_stages")
+    .select(
+      "visit_id, site_visits!site_visit_stages_visit_id_fkey (id, visit_number, visit_date, phase)",
+    )
+    .eq("stage_id", stageId);
+
+  if (error) throw error;
+
+  type VisitRow = { id: string; visit_number: number; visit_date: string; phase: string | null };
+  return (data ?? [])
+    .map((row) => {
+      const r = row as unknown as { site_visits: VisitRow | VisitRow[] | null };
+      // Same to-one normalisation as getVisitStages.
+      const v = Array.isArray(r.site_visits) ? (r.site_visits[0] ?? null) : r.site_visits;
+      return v
+        ? { id: v.id, visitNumber: v.visit_number, visitDate: v.visit_date, phase: v.phase }
+        : null;
+    })
+    .filter((v): v is StageVisit => v !== null)
+    // Newest first, by DATE — the number is a stable reference, not a
+    // chronological key (a backdated visit carries a higher number than its
+    // date implies; see Stage 27).
+    .sort((a, b) => b.visitDate.localeCompare(a.visitDate));
+}
+
+/**
  * Guarantees a project has a stage list, copying the firm's master if not.
  *
  * WHY COPY-ON-FIRST-NEED RATHER THAN COPY-ON-CREATE

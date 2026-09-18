@@ -34,6 +34,7 @@
 // drag interaction on a scrolling touch surface fights the scroll. Up/down
 // controls are unambiguous with a stylus, a gloved hand, or a mouse.
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
@@ -63,6 +64,7 @@ interface Props {
 type Draft = { lot: Lot | null; input: LotInput; company: Company | null };
 
 export default function LotTab({ projectId, canEdit }: Props) {
+  const navigate = useNavigate();
   const [lots, setLots] = useState<Lot[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -289,6 +291,7 @@ export default function LotTab({ projectId, canEdit }: Props) {
                   total={lots.length}
                   canEdit={canEdit}
                   busy={reordering}
+                  onOpen={() => navigate(`/app/projects/${projectId}/lots/${lot.id}`)}
                   onEdit={() => startEdit(lot)}
                   onDelete={() => setPendingDelete(lot)}
                   onMove={(d) => void move(index, d)}
@@ -334,6 +337,7 @@ function LotCard({
   total,
   canEdit,
   busy,
+  onOpen,
   onEdit,
   onDelete,
   onMove,
@@ -343,18 +347,39 @@ function LotCard({
   total: number;
   canEdit: boolean;
   busy: boolean;
+  onOpen: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onMove: (delta: number) => void;
 }) {
+  // FULL-CARD LINK, ACTIONS AS SIBLINGS.
+  //
+  // The whole card navigates, so the touch target is the row — the size a
+  // gloved hand on an iPad actually needs, and the behaviour VisitCard
+  // already sets. The edit/reorder cluster CANNOT be nested inside that
+  // button: interactive elements may not contain interactive elements, which
+  // breaks keyboard and screen-reader use and gives undefined click
+  // behaviour. So the card is `relative`, the link is an absolutely
+  // positioned overlay beneath the controls (z-0 under z-10), and the
+  // controls sit above it as siblings. Padding on the right reserves room
+  // for them so the link never sits under the icons.
   return (
-    <div className="bg-surface border border-line rounded-[4px] p-3 flex items-start gap-3">
+    <div className="relative bg-surface border border-line rounded-[4px] p-3 flex items-start gap-3">
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Ouvrir le lot ${lot.name}`}
+        className="absolute inset-0 z-0 rounded-[4px] hover:bg-subtle active:bg-line/40 transition-colors"
+      />
+
       {/* The ordinal. Tabular figures so a column of numbers aligns. */}
-      <span className="rm-figures text-sm text-faint font-medium mt-0.5 w-5 text-right flex-shrink-0">
+      <span className="rm-figures relative z-10 pointer-events-none text-sm text-faint font-medium mt-0.5 w-5 text-right flex-shrink-0">
         {index + 1}
       </span>
 
-      <div className="min-w-0 flex-1">
+      {/* pointer-events-none so taps fall THROUGH the text to the overlay
+          link behind it — the text is content, not a second target. */}
+      <div className="relative z-10 pointer-events-none min-w-0 flex-1">
         <p className="text-sm font-medium text-ink truncate">{lot.name}</p>
         {lot.company ? (
           <p className="text-xs text-body mt-0.5 truncate">
@@ -370,7 +395,7 @@ function LotCard({
       </div>
 
       {canEdit && (
-        <div className="flex items-center gap-0.5 flex-shrink-0">
+        <div className="relative z-10 flex items-center gap-0.5 flex-shrink-0">
           <IconButton
             label="Monter"
             disabled={index === 0 || busy}

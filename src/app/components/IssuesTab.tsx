@@ -43,6 +43,11 @@ export interface IssueRow {
   createdAt?: string;
   photos: { id: string }[];
   locationId?: string | null;
+  // Both are columns on issues (Stage 24 added stage_id beside lot_id) and
+  // are already mapped by issuesApi's rowToIssueBase, so filtering by them
+  // needs no query change — the values are on the rows this tab already has.
+  lotId?: string | null;
+  stageId?: string | null;
 }
 
 type SortKey = "age" | "dueDate" | "priority" | "status";
@@ -59,6 +64,11 @@ const SORT_LABEL: Record<SortKey, string> = {
 interface Props {
   issues: IssueRow[];
   locations: { id: string; locationNumber: string; name?: string | null }[];
+  /** Filter options for the lot/étape selects. Empty arrays simply hide the
+   *  corresponding select, so a project with no lots shows no lot filter
+   *  rather than an empty dropdown. */
+  lots: { id: string; name: string }[];
+  stages: { id: string; name: string }[];
   loadError: string | null;
   onRetry: () => void;
   onOpenIssue: (issueId: string) => void;
@@ -74,6 +84,8 @@ interface Props {
 export default function IssuesTab({
   issues,
   locations,
+  lots,
+  stages,
   loadError,
   onRetry,
   onOpenIssue,
@@ -87,6 +99,8 @@ export default function IssuesTab({
   const [disciplineFilter, setDisciplineFilter] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
+  const [lotFilter, setLotFilter] = useState("");
+  const [stageFilter, setStageFilter] = useState("");
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("age");
   const [showFilters, setShowFilters] = useState(false);
@@ -131,6 +145,11 @@ export default function IssuesTab({
       if (disciplineFilter && (issue.discipline ?? "") !== disciplineFilter) return false;
       if (locationFilter && issue.locationId !== locationFilter) return false;
       if (priorityFilter && issue.priority !== priorityFilter) return false;
+      // Nullable columns: a déficience with no lot must not match a specific
+      // lot, and `(issue.lotId ?? "")` makes that explicit rather than
+      // relying on undefined !== "lot-id" happening to be true.
+      if (lotFilter && (issue.lotId ?? "") !== lotFilter) return false;
+      if (stageFilter && (issue.stageId ?? "") !== stageFilter) return false;
       if (overdueOnly && !isOverdue(issue.dueDate, issue.status, now)) return false;
       return true;
     });
@@ -161,7 +180,18 @@ export default function IssuesTab({
         }
       }
     });
-  }, [issues, statusFilter, disciplineFilter, locationFilter, priorityFilter, overdueOnly, sortKey, now]);
+  }, [
+    issues,
+    statusFilter,
+    disciplineFilter,
+    locationFilter,
+    priorityFilter,
+    lotFilter,
+    stageFilter,
+    overdueOnly,
+    sortKey,
+    now,
+  ]);
 
   // Tiles summarise the WHOLE project, not the current filter — they are
   // the reference the filters are read against, and would be circular if
@@ -181,6 +211,8 @@ export default function IssuesTab({
     !!disciplineFilter ||
     !!locationFilter ||
     !!priorityFilter ||
+    !!lotFilter ||
+    !!stageFilter ||
     overdueOnly ||
     statusFilter.length !== OUTSTANDING_ISSUE_STATUSES.length ||
     !OUTSTANDING_ISSUE_STATUSES.every((s) => statusFilter.includes(s));
@@ -190,6 +222,8 @@ export default function IssuesTab({
     setDisciplineFilter("");
     setLocationFilter("");
     setPriorityFilter("");
+    setLotFilter("");
+    setStageFilter("");
     setOverdueOnly(false);
   };
 
@@ -304,7 +338,11 @@ export default function IssuesTab({
         </div>
 
         {showFilters && (
-          <div className="grid gap-3 sm:grid-cols-3 p-4 bg-subtle rounded-[4px] border border-line">
+          // Was sm:grid-cols-3 for three selects. Five would cram at tablet
+          // width, so the grid opens to four from 700px (the device boundary
+          // the type scale uses — iPad mini is 744px) and five at xl. Below
+          // that it stays one per row, as on the phone today.
+          <div className="grid gap-3 sm:grid-cols-2 min-[700px]:grid-cols-3 xl:grid-cols-5 p-4 bg-subtle rounded-[4px] border border-line">
             <select
               value={disciplineFilter}
               onChange={(e) => setDisciplineFilter(e.target.value)}
@@ -345,6 +383,40 @@ export default function IssuesTab({
                 </option>
               ))}
             </select>
+            {/* Lot and étape are the project's two organising axes — WHO is
+                responsible and WHEN in the build. Rendered only when the
+                project actually has some, so a project that uses neither is
+                not offered two empty dropdowns. */}
+            {lots.length > 0 && (
+              <select
+                value={lotFilter}
+                onChange={(e) => setLotFilter(e.target.value)}
+                className={selectClass}
+                aria-label="Lot"
+              >
+                <option value="">Tous les lots</option>
+                {lots.map((lot) => (
+                  <option key={lot.id} value={lot.id}>
+                    {lot.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            {stages.length > 0 && (
+              <select
+                value={stageFilter}
+                onChange={(e) => setStageFilter(e.target.value)}
+                className={selectClass}
+                aria-label="Étape"
+              >
+                <option value="">Toutes les étapes</option>
+                {stages.map((stage) => (
+                  <option key={stage.id} value={stage.id}>
+                    {stage.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         )}
       </div>

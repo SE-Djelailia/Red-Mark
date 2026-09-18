@@ -60,6 +60,8 @@ import { PLANS_ENABLED } from "../../lib/featureFlags";
 import type { IssueStatus } from "../../lib/issueStatus";
 import IssuesTab from "./IssuesTab";
 import LotTab from "./LotTab";
+import { getLots } from "../../lib/lotApi";
+import { getProjectStages } from "../../lib/stagesApi";
 import PhotoMetadataEditor, { type EditablePhoto } from "./PhotoMetadataEditor";
 import { IconPhoto, IconVisit } from "./ui-kit/RedMarkIcons";
 import EmptyState from "./ui-kit/EmptyState";
@@ -354,6 +356,12 @@ export default function ProjectDetail() {
   const [loadingLocations, setLoadingLocations] = useState(false);
   const [locationsLoadError, setLocationsLoadError] = useState<string | null>(null);
   const [locationsFetchStarted, setLocationsFetchStarted] = useState(false);
+  // Lot/étape names for the Déficiences tab's two new filters. Only the id
+  // and name are needed — the full Lot (with its company embed) belongs to
+  // the Lots tab, which fetches its own.
+  const [issueFilterLots, setIssueFilterLots] = useState<{ id: string; name: string }[]>([]);
+  const [issueFilterStages, setIssueFilterStages] = useState<{ id: string; name: string }[]>([]);
+  const [issueFiltersFetchStarted, setIssueFiltersFetchStarted] = useState(false);
 
   // Project state
   const [project, setProject] = useState<any>(null);
@@ -714,6 +722,31 @@ export default function ProjectDetail() {
       loadLocationsAndLevels();
     }
   }, [activeTab, locationsFetchStarted, loadLocationsAndLevels]);
+
+  useEffect(() => {
+    // Same lazy pattern as locations above: fetched when the Déficiences tab
+    // is first opened, not on project load, because most visits to this
+    // screen never open that tab. A failure is silent by design — the filter
+    // selects simply do not render, and the déficience list is unaffected.
+    if (activeTab !== "issues" || issueFiltersFetchStarted || !id) return;
+    setIssueFiltersFetchStarted(true);
+    void (async () => {
+      const [lotsRes, stagesRes] = await Promise.allSettled([
+        getLots(id),
+        getProjectStages(id),
+      ]);
+      if (lotsRes.status === "fulfilled") {
+        setIssueFilterLots(lotsRes.value.map((l) => ({ id: l.id, name: l.name })));
+      } else {
+        console.error("Could not load lots for the déficience filter:", lotsRes.reason);
+      }
+      if (stagesRes.status === "fulfilled") {
+        setIssueFilterStages(stagesRes.value.map((st) => ({ id: st.id, name: st.name })));
+      } else {
+        console.error("Could not load stages for the déficience filter:", stagesRes.reason);
+      }
+    })();
+  }, [activeTab, issueFiltersFetchStarted, id]);
 
   if (projectLoadError) {
     return (
@@ -1341,6 +1374,8 @@ export default function ProjectDetail() {
           <IssuesTab
             issues={issues}
             locations={locations}
+            lots={issueFilterLots}
+            stages={issueFilterStages}
             loadError={issuesLoadError}
             onRetry={loadIssues}
             onOpenIssue={(issueId) => navigate(`/app/projects/${id}/issues/${issueId}`)}

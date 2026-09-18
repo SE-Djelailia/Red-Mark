@@ -315,6 +315,49 @@ export async function getIssuesByLocation(locationId: string): Promise<Issue[]> 
   return attachPhotos((data || []).map(rowToIssueBase));
 }
 
+/**
+ * Every déficience assigned to a lot, newest first — the lot detail view.
+ *
+ * Shape and error policy copied from getIssuesByLocation deliberately: it
+ * THROWS rather than returning [], so the screen can tell "failed to load"
+ * apart from "this lot is clean". A silent empty array would render the two
+ * identically, and on a punch list those mean opposite things.
+ *
+ * No embed, so no PGRST201 exposure: issues.lot_id is read as a plain column
+ * and the lot's own details come from getLot.
+ */
+export async function getIssuesByLot(lotId: string): Promise<Issue[]> {
+  if (!lotId) return [];
+  const { data, error } = await supabase
+    .from("issues")
+    .select("*")
+    .eq("lot_id", lotId)
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("Error fetching issues by lot:", error);
+    throw error;
+  }
+  return attachPhotos((data || []).map(rowToIssueBase));
+}
+
+/**
+ * Every déficience recorded against a construction stage, newest first.
+ * Same contract as getIssuesByLot.
+ */
+export async function getIssuesByStage(stageId: string): Promise<Issue[]> {
+  if (!stageId) return [];
+  const { data, error } = await supabase
+    .from("issues")
+    .select("*")
+    .eq("stage_id", stageId)
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("Error fetching issues by stage:", error);
+    throw error;
+  }
+  return attachPhotos((data || []).map(rowToIssueBase));
+}
+
 // For a batch of location ids, reports which ones have at least one
 // UNVERIFIED issue — the live signal behind the plan viewer's pin color
 // (red = something outstanding, green = everything verified or no issues).

@@ -265,6 +265,51 @@ export async function getLots(projectId: string): Promise<Lot[]> {
   });
 }
 
+/**
+ * One lot, with its company — the lot detail view's header.
+ *
+ * Same named-FK embed as getLots (see the PGRST201 note at the top of this
+ * file): lots has two FKs to companies and an unqualified embed is refused.
+ *
+ * Returns null for "no such lot, or not visible to this caller" rather than
+ * throwing, so the screen can render an explicit not-found state. RLS makes
+ * those two cases indistinguishable from the client anyway.
+ */
+export async function getLot(id: string): Promise<Lot | null> {
+  if (!id) return null;
+  const { data, error } = await supabase
+    .from("lots")
+    .select(`id, project_id, name, description, company_id, sort_order,
+             company:companies!lots_company_id_fkey (${COMPANY_COLUMNS})`)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const r = data as unknown as {
+    id: string;
+    project_id: string;
+    name: string;
+    description: string | null;
+    company_id: string | null;
+    sort_order: number;
+    company: CompanyRow | CompanyRow[] | null;
+  };
+  // Same to-one normalisation as getLots: some PostgREST versions surface an
+  // embedded to-one as a single-element array.
+  const co = Array.isArray(r.company) ? (r.company[0] ?? null) : r.company;
+  return {
+    id: r.id,
+    projectId: r.project_id,
+    name: r.name,
+    description: r.description,
+    companyId: r.company_id,
+    sortOrder: r.sort_order,
+    company: co ? rowToCompany(co) : null,
+  };
+}
+
 export interface LotInput {
   name: string;
   description?: string | null;

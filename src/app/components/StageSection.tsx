@@ -29,6 +29,7 @@
 // ORDERING is up/down, not drag, for the reason LotTab gives: a drag gesture on
 // a scrolling touch surface fights the scroll, and these lists are short.
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
@@ -58,6 +59,7 @@ interface Props {
 type PendingDelete = { stage: ProjectStage; usage: StageUsage };
 
 export default function StageSection({ projectId, canEdit }: Props) {
+  const navigate = useNavigate();
   const [stages, setStages] = useState<ProjectStage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -316,6 +318,7 @@ export default function StageSection({ projectId, canEdit }: Props) {
                     canEdit={canEdit}
                     busy={reordering}
                     checking={checkingUsage === stage.id}
+                    onOpen={() => navigate(`/app/projects/${projectId}/stages/${stage.id}`)}
                     onEdit={() => setEditing({ id: stage.id, name: stage.name })}
                     onDelete={() => void askDelete(stage)}
                     onMove={(d) => void move(index, d)}
@@ -370,6 +373,7 @@ function StageRow({
   canEdit,
   busy,
   checking,
+  onOpen,
   onEdit,
   onDelete,
   onMove,
@@ -380,22 +384,35 @@ function StageRow({
   canEdit: boolean;
   busy: boolean;
   checking: boolean;
+  onOpen: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onMove: (delta: number) => void;
 }) {
+  // Full-card link with the action cluster as a SIBLING, not a descendant —
+  // same construction as LotCard, and for the same reason: nesting buttons
+  // is invalid and breaks keyboard and screen-reader use. See LotTab.tsx.
   return (
-    <div className="bg-surface border border-line rounded-[4px] px-3 py-2 flex items-center gap-3">
+    <div className="relative bg-surface border border-line rounded-[4px] px-3 py-2 flex items-center gap-3">
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Ouvrir l'étape ${stage.name}`}
+        className="absolute inset-0 z-0 rounded-[4px] hover:bg-subtle active:bg-line/40 transition-colors"
+      />
+
       {/* The ordinal. Tabular figures so a column of numbers aligns — and here
           the number IS the meaning: a stage's position is its sequence. */}
-      <span className="rm-figures text-sm text-faint font-medium w-5 text-right flex-shrink-0">
+      <span className="rm-figures relative z-10 pointer-events-none text-sm text-faint font-medium w-5 text-right flex-shrink-0">
         {index + 1}
       </span>
 
-      <p className="text-sm font-medium text-ink truncate flex-1 min-w-0">{stage.name}</p>
+      <p className="relative z-10 pointer-events-none text-sm font-medium text-ink truncate flex-1 min-w-0">
+        {stage.name}
+      </p>
 
       {canEdit && (
-        <div className="flex items-center gap-0.5 flex-shrink-0">
+        <div className="relative z-10 flex items-center gap-0.5 flex-shrink-0">
           <StageIconButton label="Monter" disabled={index === 0 || busy} onClick={() => onMove(-1)}>
             <ArrowUp size={16} />
           </StageIconButton>
