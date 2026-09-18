@@ -23,6 +23,37 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // it gets a line of helper text rather than a blocking modal.
 
 // ---------------------------------------------------------------------------
+// MICROPHONE PERMISSION: WHY THIS IS NOT THE SAME PROBLEM AS THE CAMERA
+//
+// useCameraCapture fixed its re-prompt by reading navigator.permissions before
+// calling getUserMedia, because a getUserMedia grant IS persisted per origin.
+// SpeechRecognition does not work that way, and the same fix does NOT apply:
+//
+//   · The permission this app can grant is "microphone". On iOS Safari,
+//     SpeechRecognition ALSO requires Apple's separate Speech Recognition
+//     consent, which is a system-level permission the page cannot query, is
+//     granted per app (Safari itself, or this PWA), and is prompted by the
+//     platform — not by us, and not on our schedule.
+//   · navigator.permissions.query({name:"microphone"}) is not implemented in
+//     WebKit. It rejects. So there is no state to read before starting, and
+//     pre-checking cannot suppress a prompt the way it does for the camera.
+//   · We never call getUserMedia for dictation at all. The engine opens the
+//     mic itself, so there is no speculative capture call to remove.
+//
+// WHAT WE CAN CONTROL, AND DO: how MANY sessions a single dictation opens.
+// Every new SpeechRecognition session is a fresh mic acquisition, and on iOS
+// that is what the user perceives as "asking again" — the in-use indicator
+// dropping and returning, and in a PWA sometimes a fresh prompt. The old code
+// ended the session after the first phrase and, on a silent mic, could churn
+// sessions; the restart path below is now bounded and deliberate.
+//
+// If iPad still prompts once per dictation after this, that is Apple's
+// Speech Recognition consent model and NOT something this code can fix. See
+// the report accompanying this change. Do not add a permission pre-check here
+// expecting it to help — it was tried and it cannot query.
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
 // The Web Speech API is not in TypeScript's DOM lib (it is a draft spec that
 // ships only behind a vendor prefix in Safari), so the shapes it actually
 // returns are declared here rather than reached for through `any` at each use.
@@ -106,6 +137,18 @@ export function isDictationSupported(): boolean {
 const PRIMARY_LANG = "fr-CA";
 const FALLBACK_LANG = "fr-FR";
 
+/** Gap before reopening a session that ended on its own.
+ *
+ *  Not zero. WebKit refuses a new session while the previous one is still
+ *  tearing down, and a 0ms timer can still land inside that window; a short
+ *  delay makes the restart reliable. It is also the audible gap between
+ *  phrases on iPad, so it stays as small as it can be. */
+const RESTART_DELAY_MS = 250;
+
+/** How many consecutive sessions may end with NOTHING heard before giving up.
+ *  Bounds the auto-restart loop on a muted or dead microphone. */
+const MAX_EMPTY_RESTARTS = 3;
+
 function describeError(code: string): string | null {
   switch (code) {
     case "not-allowed":
@@ -163,6 +206,19 @@ export function useSpeechDictation({
   // stop". iOS needs that distinction to auto-restart; see onend below.
   const wantListeningRef = useRef(false);
   const triedFallbackLangRef = useRef(false);
+  // Timer for the deferred restart in onend, so unmount/stop can cancel a
+  // restart that is already scheduled. Without this, tapping stop during the
+  // gap between phrases reopens the mic after the user asked for it to close.
+  const restartTimerRef = useRef<number | null>(null);
+  // Guards the auto-restart loop. A `no-speech` error on a silent mic ends the
+  // session, we restart, it goes silent again — on a device that never hears
+  // anything this is an unbounded loop of sessions. Counted restarts that
+  // produced NO speech, reset the moment any transcript arrives.
+  const emptyRestartsRef = useRef(0);
+  // start() is recursive (the fr-FR language retry re-enters it) and is also
+  // called from onend. A ref to the latest instance keeps those call sites off
+  // the useCallback dependency graph, which would otherwise be circular.
+  const startRef = useRef<(isRestart?: boolean) => void>(() => {});
 
   // Read through refs so a caller passing inline arrows doesn't have to
   // memoize them to keep start/stop stable — same convention as
@@ -176,24 +232,47 @@ export function useSpeechDictation({
 
   const supported = isDictationSupported();
 
+  /** Cancels a restart scheduled by onend. Both stop() and unmount need this. */
+  const cancelRestart = useCallback(() => {
+    if (restartTimerRef.current !== null) {
+      window.clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
+  }, []);
+
   const stop = useCallback(() => {
     wantListeningRef.current = false;
+    cancelRestart();
     const rec = recognitionRef.current;
     if (rec) {
       try {
-        rec.stop();
+        // abort(), not stop(). stop() asks the engine to finish processing
+        // what it already heard, which fires one more onresult AFTER the user
+        // has tapped the button off — text arriving in a field the user
+        // believes they closed. abort() discards it.
+        rec.abort();
       } catch {
         // Already stopped; nothing to unwind.
       }
     }
     setListening(false);
     setInterim("");
-  }, []);
+  }, [cancelRestart]);
 
-  const start = useCallback(() => {
+  const start = useCallback((isRestart = false) => {
     const Ctor = getRecognitionCtor();
     if (!Ctor) return;
     if (wantListeningRef.current) return; // already going
+
+    // A user-initiated start is a fresh attempt, so the give-up counter starts
+    // clean; an auto-restart keeps the count onend just incremented. Passed
+    // explicitly rather than inferred from timer state — the two call sites
+    // know which they are, and guessing here was a bug waiting to happen.
+    if (!isRestart) {
+      cancelRestart();
+      emptyRestartsRef.current = 0;
+      triedFallbackLangRef.current = false;
+    }
 
     let rec: SpeechRecognitionLike;
     try {
@@ -228,6 +307,10 @@ export function useSpeechDictation({
         if (result.isFinal) finalText += text;
         else interimText += text;
       }
+      // Any audio at all — even an uncommitted interim — proves the mic is
+      // live, so the give-up counter starts over.
+      if (finalText.trim() || interimText.trim()) emptyRestartsRef.current = 0;
+
       if (finalText.trim()) {
         onResultRef.current(finalText.trim());
         setInterim("");
@@ -246,14 +329,13 @@ export function useSpeechDictation({
         } catch {
           // ignore
         }
-        // Re-enter with the fallback tag. wantListening stays true so onend
-        // does not treat this as a user-initiated stop.
-        window.setTimeout(() => {
-          if (wantListeningRef.current) {
-            wantListeningRef.current = false;
-            start();
-          }
-        }, 0);
+        // Re-enter with the fallback tag. Goes through the same timer as the
+        // ordinary restart so stop() and unmount can cancel it.
+        wantListeningRef.current = false;
+        restartTimerRef.current = window.setTimeout(() => {
+          restartTimerRef.current = null;
+          startRef.current(true);
+        }, RESTART_DELAY_MS);
         return;
       }
 
@@ -270,18 +352,43 @@ export function useSpeechDictation({
       // iOS Safari is effectively single-shot: it ends the session after a
       // pause even with continuous = true. Restart while the user still wants
       // to dictate, so a long description can be spoken in several breaths.
-      // Expect a brief gap between phrases on iPad — a platform limit.
-      if (wantListeningRef.current) {
-        try {
-          rec.start();
-          return;
-        } catch {
-          // Some engines refuse an immediate restart; fall through and end
-          // the session rather than spin.
-        }
+      //
+      // THE BUG THIS REPLACES: the old code called rec.start() on the SAME
+      // object that had just ended. WebKit treats a SpeechRecognition instance
+      // as spent once it fires onend and throws InvalidStateError on restart —
+      // so the catch swallowed it, the session quietly ended, and dictation
+      // stopped dead after the first phrase. That is the "dictation has a bug"
+      // report. A restart must build a NEW instance, which is what start()
+      // does, and it must be deferred: re-entering synchronously from inside
+      // the engine's own onend is the case WebKit refuses most reliably.
+      if (!wantListeningRef.current) {
+        setListening(false);
+        setInterim("");
+        return;
       }
-      setListening(false);
-      setInterim("");
+
+      if (emptyRestartsRef.current >= MAX_EMPTY_RESTARTS) {
+        // Nothing has been heard across several sessions: the mic is muted, or
+        // covered, or this engine will not produce results here. Stop rather
+        // than reopen forever, and say so — a silent give-up would look
+        // exactly like the bug being fixed.
+        wantListeningRef.current = false;
+        setListening(false);
+        setInterim("");
+        onErrorRef.current?.(
+          "Aucun son détecté. Vérifiez le microphone, puis réessayez.",
+        );
+        return;
+      }
+
+      emptyRestartsRef.current += 1;
+      // `wantListening` is cleared here only so the guard at the top of start()
+      // does not reject this re-entry; the restart is already committed.
+      wantListeningRef.current = false;
+      restartTimerRef.current = window.setTimeout(() => {
+        restartTimerRef.current = null;
+        startRef.current(true);
+      }, RESTART_DELAY_MS);
     };
 
     recognitionRef.current = rec;
@@ -293,13 +400,25 @@ export function useSpeechDictation({
       wantListeningRef.current = false;
       onErrorRef.current?.("La dictée est déjà en cours.");
     }
-  }, [lang]);
+  }, [lang, cancelRestart]);
+
+  // Keep the ref pointing at the latest start, for onend and the language
+  // retry, which must not close over a stale one. In an effect, not during
+  // render: a ref written while rendering is torn by StrictMode's double
+  // invocation and by any render React discards.
+  useEffect(() => {
+    startRef.current = start;
+  }, [start]);
 
   // Abort on unmount: a live recognition session holds the microphone, and a
   // form closed mid-dictation must not leave it open.
   useEffect(() => {
     return () => {
       wantListeningRef.current = false;
+      if (restartTimerRef.current !== null) {
+        window.clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
+      }
       const rec = recognitionRef.current;
       if (rec) {
         try {
@@ -311,7 +430,15 @@ export function useSpeechDictation({
     };
   }, []);
 
-  return { listening, interim, supported, start, stop };
+  // The public start takes NO argument. `start` itself has an internal
+  // isRestart flag, and a caller wiring it straight to onClick would pass a
+  // MouseEvent into it — truthy, so the session would be treated as an
+  // auto-restart and skip its counter reset. The wrapper closes that door.
+  const startPublic = useCallback(() => {
+    startRef.current(false);
+  }, []);
+
+  return { listening, interim, supported, start: startPublic, stop };
 }
 
 /**
