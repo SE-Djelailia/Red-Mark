@@ -726,20 +726,25 @@ export default function LocationDetail() {
       // possible at all, and on a phone it also puts the thing you opened
       // the local to see first. Nothing is added, removed, or restyled.
       //
-      // The max-w-2xl cap lifts to max-w-6xl only at md. At 672px a two-pane
-      // layout would give each side ~320px — narrower than the phone, which
-      // would be a regression dressed up as an improvement.
-      <div className="px-4 sm:px-6 py-6 max-w-2xl md:max-w-6xl mx-auto">
-        <div className="grid gap-6 md:[grid-template-columns:3fr_2fr] items-start">
-        {/* `contents` below md: the wrappers dissolve and all six sections
+      // The max-w-2xl cap lifts to max-w-6xl only from 700px. Below that a
+      // two-pane layout would give each side ~320px — narrower than the
+      // phone, which would be a regression dressed up as an improvement.
+      //
+      // min-[700px] rather than md (768px), matching the type scale in
+      // theme.css: iPad mini portrait is 744px, so md would have left the
+      // smallest and most arm's-length iPad on the phone layout. See the
+      // --font-size comment there for why 700px is the device boundary.
+      <div className="px-4 sm:px-6 py-6 max-w-2xl min-[700px]:max-w-6xl mx-auto">
+        <div className="grid gap-6 min-[700px]:[grid-template-columns:3fr_2fr] items-start">
+        {/* `contents` below 700px: the wrappers dissolve and all six sections
             are direct children of the single-column grid, in the source
             order written here — which is why the phone still reads
-            déficiences, photos, visits, then the reference material. From md
-            the wrappers become real columns, each flowing independently, so
+            déficiences, photos, visits, then the reference material. From
+            700px the wrappers become real columns, each flowing independently, so
             a tall photo grid never drags a short metadata card down with it.
             (Explicit row placement would share row tracks between the
             columns and reintroduce exactly the dead space this fixes.) */}
-        <div className="contents md:block md:space-y-6">
+        <div className="contents min-[700px]:block min-[700px]:space-y-6">
         {/* Issues section */}
         <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center justify-between mb-3">
@@ -784,6 +789,7 @@ export default function LocationDetail() {
               ))}
             </div>
           )}
+        </div>
         {/* Photos section */}
         <div className="bg-surface rounded-[4px] border border-line p-5">
           <div className="flex items-center justify-between mb-3">
@@ -825,6 +831,7 @@ export default function LocationDetail() {
               onOpenPhoto={setLightboxPhoto}
             />
           )}
+        </div>
         {/* Visits at this location — derived, not stored. Sits above Photos
             because "when was this looked at" frames everything below it. */}
         <div className="bg-surface rounded-[4px] border border-line p-5">
@@ -868,7 +875,8 @@ export default function LocationDetail() {
             </div>
           )}
         </div>
-        <div className="contents md:block md:space-y-6">
+        </div>
+        <div className="contents min-[700px]:block min-[700px]:space-y-6">
         {/* Metadata card */}
         <div className="bg-surface rounded-[4px] border border-line p-5 space-y-2 text-sm">
           <div className="flex items-center gap-3">
@@ -891,6 +899,7 @@ export default function LocationDetail() {
               <span className="text-body">{location.discipline}</span>
             </div>
           )}
+        </div>
         {/* Parent/child locations — only shown when there's something to show */}
         {(parentLocation || childLocations.length > 0) && (
           <div className="bg-surface rounded-[4px] border border-line p-5 space-y-3">
@@ -972,14 +981,6 @@ export default function LocationDetail() {
               ))}
             </div>
           )}
-        </div>
-
-        </div>
-
-        </div>
-
-        </div>
-
         </div>
         </div>
         </div>

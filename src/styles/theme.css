@@ -16,6 +16,28 @@
 }
 
 :root {
+  /* ROOT TYPE SIZE, BY DEVICE CLASS.
+   *
+   * Every size token in design-tokens.css is in rem, as are Tailwind's
+   * spacing and sizing utilities. So this single value scales the whole
+   * interface — type, padding, touch targets — in proportion, preserving the
+   * hierarchy instead of bumping some sizes and not others.
+   *
+   * 16px is right for a phone (held close) and a laptop (a pointer, a desk).
+   * A tablet is the odd one out: held at arm's length, often outdoors, with
+   * a finger. Field testing found 14px body text hard to read on site.
+   *
+   * The step starts at 700px, NOT at Tailwind's md (768px). iPad mini
+   * portrait is 744px wide — a tablet by every argument above, but it sits
+   * just under md, so a scale keyed to md would have left the smallest and
+   * most arm's-length iPad as the only one still at phone type. 700px is
+   * above any phone in portrait (the largest are ~430px) and below every
+   * tablet, so it separates the two device classes rather than reusing a
+   * layout breakpoint that was never about reading distance.
+   *
+   * 17px to 1024px (iPad Pro portrait, any iPad landscape), then 18px.
+   * A laptop at 1440px is a pointer device again, so it steps back to 16px —
+   * pointer users read from a desk, not a scaffold. */
   --font-size: 16px;
   --background: #ffffff;
   --foreground: oklch(0.145 0 0);
@@ -57,6 +79,28 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+}
+
+
+/* Tablet ergonomics — see the --font-size comment in :root. Ordered so the
+ * most specific range wins. Chosen by WIDTH RANGE rather than pointer media
+ * queries because iPadOS reports a fine pointer when a trackpad is attached,
+ * which would silently drop the size back to 16px on a device still held in
+ * the hand. */
+@media (min-width: 700px) {
+  :root {
+    --font-size: 17px;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --font-size: 18px;
+  }
+}
+@media (min-width: 1440px) {
+  :root {
+    --font-size: 16px;
+  }
 }
 
 .dark {

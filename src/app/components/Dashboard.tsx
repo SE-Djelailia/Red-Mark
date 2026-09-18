@@ -151,22 +151,28 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Stats and activity sit side by side from md (iPad portrait):
-            they are both "what is happening right now" and each is short
-            enough that stacking them wastes the top of a large screen.
-            The calendar below stays full width — a month grid is the one
-            thing here that genuinely wants every pixel.
+        {/* LAYOUT, BY WIDTH.
 
-            items-start so the short stat column does not stretch to match
-            the activity list's height. Below md this grid is a single
-            column, so the phone keeps the exact stacking order it had. */}
-        <div className="grid gap-6 md:grid-cols-2 items-start">
-        {/* Stat tiles — hairline-joined so the pair reads as one panel.
+            Phone: one column, in this source order — stats, activity,
+            calendar.
+
+            From lg: the stat strip stays FULL WIDTH on top, and activity and
+            the calendar share the row beneath it. An earlier layout paired
+            the two stat tiles with the activity list instead; the tiles are
+            ~90px tall and the list ~330px, so half the screen's top band
+            was a hole under the stats at every width from md up. Two short
+            things never earn a column of their own. The calendar is tall —
+            it is the natural partner for the list, and a month grid at half
+            of 1440px is still ~560px, wider than it gets on a whole iPad
+            mini. Below lg the calendar keeps the full width it needs.
+
+            Stat tiles — hairline-joined so the pair reads as one panel.
             Only the open-déficiences figure is red; the rest are ink.
             Photos and visits were dropped: both are per-project concepts,
             and a count summed across every project is not a number anyone
-            acts on. What remains is exactly the two that drill down. */}
-        <StatGrid className="grid-cols-2">
+            acts on. What remains is exactly the two that drill down.
+            Capped at lg so two tiles don't stretch across the whole page. */}
+        <StatGrid className="grid-cols-2 lg:max-w-md">
           <StatTile
             label="Déficiences ouvertes"
             value={loading || loadError ? "—" : stats.openIssues}
@@ -183,6 +189,7 @@ export default function Dashboard() {
           />
         </StatGrid>
 
+        <div className="grid gap-6 lg:grid-cols-2 items-start">
         {/* Recent activity — merges new issues, resolved issues and new
             visits across every project the user is a member of. Capped
             to 5; "Voir tout" expands in place (data's already fetched). */}
@@ -237,13 +244,13 @@ export default function Dashboard() {
           </Card>
         </Section>
 
-        </div>
-
         {/* Cross-project visit calendar — month grid on iPad/desktop,
             agenda list on a phone (see DashboardVisitCalendar). */}
         <Section title="Calendrier des visites">
           <DashboardVisitCalendar projectIds={projectIds} />
-        </Section>      </div>
+        </Section>
+        </div>
+      </div>
 
       <FloatingActions
         menu={[
