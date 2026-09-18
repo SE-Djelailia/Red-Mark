@@ -2775,7 +2775,7 @@ CREATE POLICY "Creator can update their projects" ON "public"."projects" FOR UPD
 
 
 
-CREATE POLICY "Creator can update their visits" ON "public"."site_visits" FOR UPDATE USING (("auth"."uid"() = "user_id"));
+CREATE POLICY "Editors can update visits" ON "public"."site_visits" FOR UPDATE USING ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"])) WITH CHECK ("public"."has_project_role"("project_id", ARRAY['owner'::"text", 'editor'::"text"]));
 
 
 
