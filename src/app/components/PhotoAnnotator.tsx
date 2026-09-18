@@ -549,10 +549,22 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
     // renders after the routed screen in Layout, so at equal z-index the
     // nav won on DOM order and covered the bottom of the annotator,
     // clipping the cote label field out of reach on a phone.
-    <div className="fixed inset-0 bg-black/95 z-[60] flex flex-col">
-      {/* Single compact toolbar. The previous three stacked bars cost ~180px
-          of vertical space and scrolled horizontally on a phone. */}
-      <div className="bg-surface border-b border-line flex-shrink-0">
+    <div className="fixed inset-0 bg-black/95 z-[60] flex flex-col landscape:flex-row-reverse">
+      {/* THE CHROME SITS ON THE SHORT EDGE — top in portrait, RIGHT in
+          landscape — the same rule as CameraSheet.
+          
+          Landscape is the orientation an iPad is actually held in on site,
+          and it is the one with height to spare least: a 768px-tall viewport
+          lost 56px of toolbar plus a 44px contextual row to horizontal bars,
+          leaving the photo about two thirds of the screen. Moving the chrome
+          to the right edge gives that height back to the thing being
+          annotated, and puts the tools under the hand already holding the
+          device.
+          
+          flex-row-REVERSE, so the rail is on the right while staying FIRST in
+          the DOM — the toolbar keeps its reading order for a screen reader and
+          the tab order still starts with Fermer. */}
+      <div className="bg-surface border-b landscape:border-b-0 landscape:border-l border-line flex-shrink-0 landscape:w-[88px] landscape:h-screen landscape:overflow-y-auto landscape:overscroll-contain">
         {mode === "annotate" ? (
           <AnnotatorToolbar
             activeTool={activeTool}
@@ -607,8 +619,8 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
             deletes; this gives the same action a labelled target for
             anyone who would rather press a button than tap twice. */}
         {mode === "annotate" && activeTool === "eraser" && (
-          <div className="h-11 px-3 sm:px-4 flex items-center gap-3 border-t border-line">
-            <span className="text-xs text-muted truncate">
+          <div className="h-11 landscape:h-auto px-3 sm:px-4 landscape:px-1.5 landscape:py-2 flex landscape:flex-col items-center gap-3 landscape:gap-1 border-t border-line">
+            <span className="text-xs text-muted truncate landscape:hidden">
               {eraseTarget
                 ? "Touchez de nouveau la marque pour la supprimer"
                 : "Touchez une marque à supprimer"}
@@ -633,8 +645,11 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         {/* Contextual row — only the control relevant to the active tool,
             so the bar stays one row on a phone. */}
         {(showStrokeRow || showFontRow) && (
-          <div className="h-11 px-3 sm:px-4 flex items-center gap-3 border-t border-line">
-            <span className="text-xs text-muted whitespace-nowrap">
+          <div className="h-11 landscape:h-auto px-3 sm:px-4 landscape:px-1.5 landscape:py-2 flex landscape:flex-col items-center gap-3 landscape:gap-1 border-t border-line">
+            {/* The label is spelled out where there is width for it; in the
+                landscape rail the slider and its value speak for themselves
+                and the word would force the rail wider than the buttons. */}
+            <span className="text-xs text-muted whitespace-nowrap landscape:hidden">
               {showFontRow ? "Taille du texte" : "Épaisseur"}
             </span>
             <input
@@ -659,7 +674,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
                   setStrokeScale(v);
                 }
               }}
-              className="flex-1 max-w-xs accent-brand-600"
+              className="flex-1 max-w-xs landscape:flex-none landscape:w-14 accent-brand-600"
             />
             <span className="text-xs text-ink tabular-nums w-6">
               {showFontRow ? fontScale : strokeScale}
@@ -677,8 +692,18 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         )}
       </div>
 
-      {/* Canvas area */}
-      <div className="flex-1 overflow-auto flex items-center justify-center p-3 sm:p-6">
+      {/* THE CONTENT COLUMN — canvas plus the bars that belong under it.
+          
+          Grouped on purpose: the root is a ROW in landscape, so a bare
+          sibling here becomes a full-height COLUMN beside the rail. The hint
+          bar did exactly that and stretched down the left of the photo,
+          covering the canvas and shoving it off centre. Wrapping keeps the
+          row to two children — content, then rail — in both orientations. */}
+      <div className="flex-1 min-h-0 min-w-0 flex flex-col">
+      {/* Canvas area. min-h-0/min-w-0 so this flex child may actually SHRINK
+          to its container — without them a flex item defaults to its content
+          size and the photo pushes the layout instead of fitting it. */}
+      <div className="flex-1 min-h-0 min-w-0 overflow-auto flex items-center justify-center p-2 sm:p-4">
         {loadError ? (
           // Ruled treatment adapted to the dark canvas: red keeps its meaning
           // as the leading rule, but the text is white — brand red on near
@@ -698,12 +723,23 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
             <span className="text-sm">Chargement de l'image…</span>
           </div>
         ) : (
-          <div className="relative inline-block max-w-full">
+          // max-h-full alongside max-w-full: the image's own max-h-full
+          // resolves against THIS box, so without a height limit here it has
+          // nothing to shrink to and the photo stays at its natural size —
+          // which is why portrait and phone still showed the photo at about a
+          // third of the screen after landscape was fixed.
+          <div className="relative inline-block max-w-full max-h-full">
             <img
               ref={imageRef}
               src={preparedUrl}
               alt="Photo à annoter"
-              className="block max-w-full max-h-[70vh] select-none"
+              // max-h-full, not max-h-[70vh]. The old cap was measured for a
+              // portrait phone and left the photo at a THIRD of the screen on
+              // both a phone (275px of 844) and an iPad in landscape, ringed
+              // by dead black space. Filling the box the flex parent gives it
+              // means the photo is as large as the orientation allows, which
+              // is the whole point of a screen you draw on.
+              className="block max-w-full max-h-full object-contain select-none"
               draggable={false}
               onLoad={() => setImageLoaded(true)}
             />
@@ -823,6 +859,7 @@ export function PhotoAnnotator({ photo, onClose, onSave }: PhotoAnnotatorProps) 
         onCancel={() => setShowClearConfirm(false)}
         onConfirm={clearAll}
       />
+      </div>
     </div>
   );
 }

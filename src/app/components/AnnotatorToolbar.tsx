@@ -71,8 +71,13 @@ export const MENU_TOOLS: ToolDef[] = [
   { tool: "text", icon: Type, label: "Texte" },
 ];
 
+// 44px is the touch target everywhere EXCEPT the landscape rail, where the
+// full control set at 44 overflows a 768px-tall iPad and pushed Enregistrer
+// off the bottom — the exact "button you cannot reach" this work removes.
+// 40px in the rail keeps every control on screen and stays above the 36px the
+// app already accepts for secondary actions.
 const ICON_BUTTON =
-  "w-11 h-11 flex items-center justify-center rounded-[4px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
+  "w-11 h-11 landscape:w-10 landscape:h-10 flex items-center justify-center rounded-[4px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
 const ACTIVE = "bg-subtle text-ink";
 const INACTIVE = "text-body hover:bg-subtle";
 
@@ -183,13 +188,19 @@ export default function AnnotatorToolbar({
   // Enregistrer off the edge. Clipping the save button is exactly the
   // failure this toolbar replaces, so it must not be reachable at any
   // viewport width.
+  // In LANDSCAPE this becomes a vertical rail on the short edge (see
+  // PhotoAnnotator's root): the same controls in the same order, stacked. The
+  // horizontal bar cost ~100px of a 768px-tall viewport, which is exactly the
+  // height an annotator needs most when the iPad is held the way it is on
+  // site. Nothing is hidden in either orientation — the failure this replaces
+  // is a control the user cannot reach.
   return (
-    <div className="min-h-14 px-1.5 sm:px-4 flex flex-wrap items-center gap-0.5 sm:gap-1.5">
+    <div className="min-h-14 px-1.5 sm:px-4 landscape:px-1.5 landscape:py-2 flex flex-wrap landscape:flex-nowrap landscape:flex-col landscape:w-full items-center gap-0.5 sm:gap-1.5 landscape:gap-1">
       {/* 36px, not 44: a corner dismiss with nothing adjacent to mis-tap,
           and the 8px it frees is what keeps Enregistrer on a 360px screen. */}
       <button
         onClick={onClose}
-        className="w-9 h-11 flex items-center justify-center rounded-[4px] text-muted hover:bg-subtle active:bg-line transition-colors flex-shrink-0"
+        className="w-9 h-11 landscape:w-10 landscape:h-9 flex items-center justify-center rounded-[4px] text-muted hover:bg-subtle active:bg-line transition-colors flex-shrink-0"
         title="Fermer"
         aria-label="Fermer"
       >
@@ -235,7 +246,7 @@ export default function AnnotatorToolbar({
           </div>
         )}
       </div>
-      <div className="hidden sm:flex items-center gap-1">{MENU_TOOLS.map(toolButton)}</div>
+      <div className="hidden sm:flex landscape:flex-col items-center gap-1">{MENU_TOOLS.map(toolButton)}</div>
 
       <div className="hidden sm:block w-px h-6 bg-line mx-1" />
 
@@ -257,17 +268,17 @@ export default function AnnotatorToolbar({
         {colorsOpen && (
           <div
             role="menu"
-            className="absolute left-0 top-full mt-1 z-20 bg-surface border border-line rounded-[4px] shadow-lg p-2 flex items-center gap-2"
+            className="absolute left-0 top-full mt-1 landscape:left-auto landscape:right-full landscape:top-0 landscape:mt-0 landscape:mr-1 z-20 bg-surface border border-line rounded-[4px] shadow-lg p-2 flex items-center gap-2"
           >
             {MARKUP_COLORS.map((c) => swatch(c.value, c.label, "w-9 h-9"))}
           </div>
         )}
       </div>
-      <div className="hidden sm:flex items-center gap-1.5">
+      <div className="hidden sm:flex landscape:flex-col items-center gap-1.5">
         {MARKUP_COLORS.map((c) => swatch(c.value, c.label, "w-6 h-6"))}
       </div>
 
-      <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
+      <div className="ml-auto landscape:ml-0 landscape:mt-auto flex landscape:flex-col items-center gap-0.5 sm:gap-1">
         {/* Occasional actions: overflow menu below sm, inline from sm up. */}
         <div className="relative sm:hidden" ref={moreRef}>
           <button
@@ -283,12 +294,12 @@ export default function AnnotatorToolbar({
           {moreOpen && (
             <div
               role="menu"
-              className="absolute right-0 top-full mt-1 z-20 bg-surface border border-line rounded-[4px] shadow-lg p-1 w-60"
+              className="absolute right-0 top-full mt-1 landscape:right-full landscape:top-0 landscape:mt-0 landscape:mr-1 z-20 bg-surface border border-line rounded-[4px] shadow-lg p-1 w-60"
             >
               {[
                 {
                   icon: Crop,
-                  label: "Préparer l'image",
+                  label: "Recadrer ou pivoter (optionnel)",
                   onClick: onPrepare,
                   disabled: prepareDisabled,
                   hint: prepareDisabled ? "Impossible après une annotation" : undefined,
@@ -316,18 +327,33 @@ export default function AnnotatorToolbar({
           )}
         </div>
 
-        <div className="hidden sm:flex items-center gap-1">
+        <div className="hidden sm:flex landscape:flex-col items-center gap-1">
+          {/* RECADRER — labelled, not a bare icon.
+              
+              Cropping is OPTIONAL and always was: the annotator opens ready
+              to draw. But an unlabelled crop glyph beside undo/redo reads as
+              a required first step to anyone who has not found the pencil
+              already active, and on a phone it was buried in the "…" menu.
+              A word makes it legible as one thing you MAY do, which is what
+              it is. aria-label carries the same sentence for a screen reader
+              as the tooltip does for a pointer. */}
           <button
             onClick={onPrepare}
             disabled={prepareDisabled}
             title={
               prepareDisabled
                 ? "Recadrer/pivoter n'est possible qu'avant d'annoter"
-                : "Préparer l'image"
+                : "Recadrer ou pivoter — optionnel"
             }
-            className={`${ICON_BUTTON} ${INACTIVE}`}
+            aria-label={
+              prepareDisabled
+                ? "Recadrer — impossible après une annotation"
+                : "Recadrer ou pivoter, optionnel"
+            }
+            className={`h-11 landscape:h-10 px-2.5 landscape:px-0 landscape:w-10 rounded-[4px] text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 flex-shrink-0 ${INACTIVE}`}
           >
             <Crop size={16} />
+            <span className="hidden lg:inline landscape:hidden">Recadrer</span>
           </button>
           <button onClick={onUndo} disabled={!canUndo} title="Annuler" className={`${ICON_BUTTON} ${INACTIVE}`}>
             <Undo2 size={20} />
@@ -350,10 +376,12 @@ export default function AnnotatorToolbar({
           disabled={saveDisabled}
           title="Enregistrer"
           aria-label="Enregistrer"
-          className="ml-1 h-11 px-3 sm:px-4 rounded-[4px] bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 flex-shrink-0"
+          className="ml-1 landscape:ml-0 landscape:w-full h-11 landscape:h-10 px-3 sm:px-4 landscape:px-0 rounded-[4px] bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 flex-shrink-0"
         >
           <Check size={16} />
-          <span className="hidden sm:inline">{isSaving ? "Enregistrement…" : "Enregistrer"}</span>
+          <span className="hidden sm:inline landscape:hidden">
+            {isSaving ? "Enregistrement…" : "Enregistrer"}
+          </span>
         </button>
       </div>
     </div>

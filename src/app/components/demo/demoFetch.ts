@@ -212,8 +212,13 @@ export function installDemoFetch(): () => void {
     // A transparent 1x1 GIF, so any <img> resolves rather than showing a
     // broken-image glyph in a screenshot.
     if (url.pathname.includes("/storage/v1/")) {
-      if (url.pathname.includes("/object/sign")) {
-        return json({ signedURL: "data:image/gif;base64,R0lGODlhAQABAAAAACw=" });
+      if (url.pathname.includes("/object/sign") && !url.searchParams.has("token")) {
+        // The SDK builds its public signedUrl by prefixing this with the
+        // storage origin, so it must be the path AFTER /storage/v1 — and the
+        // token is what distinguishes this request from the GET that follows,
+        // which would otherwise match the same branch and be answered with
+        // JSON instead of bytes.
+        return json({ signedURL: "/object/sign/project-photos/demo.jpg?token=demo" });
       }
       const gif = Uint8Array.from(atob("R0lGODlhAQABAAAAACw="), (c) => c.charCodeAt(0));
       return new Response(gif, { status: 200, headers: { "Content-Type": "image/gif" } });
