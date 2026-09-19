@@ -215,6 +215,11 @@ export function useSpeechDictation({
   // anything this is an unbounded loop of sessions. Counted restarts that
   // produced NO speech, reset the moment any transcript arrives.
   const emptyRestartsRef = useRef(0);
+  // True only while a restart is scheduled between phrases — the window in
+  // which `listening` is true but `wantListeningRef` is false. start() treats
+  // it as "already going" so a stray tap cannot open a second engine beside
+  // the one about to reopen.
+  const restartPendingRef = useRef(false);
   // start() is recursive (the fr-FR language retry re-enters it) and is also
   // called from onend. A ref to the latest instance keeps those call sites off
   // the useCallback dependency graph, which would otherwise be circular.
@@ -234,6 +239,7 @@ export function useSpeechDictation({
 
   /** Cancels a restart scheduled by onend. Both stop() and unmount need this. */
   const cancelRestart = useCallback(() => {
+    restartPendingRef.current = false;
     if (restartTimerRef.current !== null) {
       window.clearTimeout(restartTimerRef.current);
       restartTimerRef.current = null;
@@ -262,7 +268,10 @@ export function useSpeechDictation({
   const start = useCallback((isRestart = false) => {
     const Ctor = getRecognitionCtor();
     if (!Ctor) return;
-    if (wantListeningRef.current) return; // already going
+    // "Already going" includes the inter-phrase gap: wantListening is false
+    // there, but a session is about to reopen and the button still shows
+    // listening, so a start() now would run two engines at once.
+    if (wantListeningRef.current || restartPendingRef.current) return;
 
     // A user-initiated start is a fresh attempt, so the give-up counter starts
     // clean; an auto-restart keeps the count onend just incremented. Passed
@@ -342,6 +351,7 @@ export function useSpeechDictation({
       const message = describeError(event.error);
       if (message) {
         wantListeningRef.current = false;
+        restartPendingRef.current = false;
         setListening(false);
         setInterim("");
         onErrorRef.current?.(message);
@@ -362,6 +372,7 @@ export function useSpeechDictation({
       // does, and it must be deferred: re-entering synchronously from inside
       // the engine's own onend is the case WebKit refuses most reliably.
       if (!wantListeningRef.current) {
+        restartPendingRef.current = false;
         setListening(false);
         setInterim("");
         return;
@@ -372,7 +383,14 @@ export function useSpeechDictation({
         // covered, or this engine will not produce results here. Stop rather
         // than reopen forever, and say so — a silent give-up would look
         // exactly like the bug being fixed.
+        //
+        // setListening(false) is what returns the BUTTON to its idle face.
+        // Without it the button still reads "listening", so the user's next
+        // tap runs stop() instead of start() and appears to do nothing — the
+        // "works once, then dead" report. Every terminal path here must clear
+        // it; only the restart path below may leave it set.
         wantListeningRef.current = false;
+        restartPendingRef.current = false;
         setListening(false);
         setInterim("");
         onErrorRef.current?.(
@@ -383,10 +401,20 @@ export function useSpeechDictation({
 
       emptyRestartsRef.current += 1;
       // `wantListening` is cleared here only so the guard at the top of start()
-      // does not reject this re-entry; the restart is already committed.
+      // does not reject this re-entry; the restart is already committed, and
+      // `listening` deliberately stays TRUE across the gap — the user is still
+      // dictating, and flickering the button off and on between every phrase
+      // would be worse than the pause itself.
+      //
+      // That divergence is exactly why restartPendingRef exists: for the few
+      // hundred milliseconds between sessions, `listening` (what the button
+      // shows) and `wantListeningRef` (what start() guards on) disagree, and
+      // anything reading only one of them gets a wrong answer.
       wantListeningRef.current = false;
+      restartPendingRef.current = true;
       restartTimerRef.current = window.setTimeout(() => {
         restartTimerRef.current = null;
+        restartPendingRef.current = false;
         startRef.current(true);
       }, RESTART_DELAY_MS);
     };
